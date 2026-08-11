@@ -1,21 +1,21 @@
 <div align="center">
 
-# Resource-Adaptive Multi-Agent for NestJS
+# AIOps RCA for Microservices
 
-### Hệ thống Multi-Agent tự triển khai, thích nghi theo tài nguyên, hỗ trợ phát triển backend NestJS theo Clean Architecture
+### Phát hiện bất thường và hỗ trợ phân tích nguyên nhân sự cố từ dữ liệu observability và học máy
 
 <p>
   <a href="#-tổng-quan">Tổng quan</a> •
   <a href="#-kiến-trúc">Kiến trúc</a> •
-  <a href="#-công-nghệ-dự-kiến">Công nghệ</a> •
-  <a href="#-lộ-trình">Lộ trình</a> •
+  <a href="#-phạm-vi">Phạm vi</a> •
+  <a href="#-tài-liệu">Tài liệu</a> •
   <a href="#-nhóm-thực-hiện">Nhóm</a>
 </p>
 
 <p>
   <img src="https://img.shields.io/badge/Status-In%20Development-2563EB?style=for-the-badge" alt="Project status: In Development" />
   <img src="https://img.shields.io/badge/Type-Graduation%20Thesis-7C3AED?style=for-the-badge" alt="Project type: Graduation Thesis" />
-  <img src="https://img.shields.io/badge/Focus-NestJS%20%26%20Multi--Agent-059669?style=for-the-badge" alt="Focus: NestJS and Multi-Agent" />
+  <img src="https://img.shields.io/badge/Focus-AIOps%20%26%20RCA-059669?style=for-the-badge" alt="Focus: AIOps and Root Cause Analysis" />
 </p>
 
 </div>
@@ -24,142 +24,106 @@
 
 ## ✨ Tổng quan
 
-Đây là đồ án tốt nghiệp nghiên cứu, thiết kế và đánh giá một hệ thống **Multi-Agent tự triển khai (self-hosted)** dành cho các tác vụ phát triển backend **NestJS** theo nguyên tắc **Clean Architecture**.
+Đây là đồ án tốt nghiệp về hệ thống hỗ trợ **developer/SRE phát hiện hành vi bất thường** và **xếp hạng ứng viên nguyên nhân gốc** (*Root Cause Analysis – RCA*) trong kiến trúc microservice, dựa trên dữ liệu observability và học máy.
 
-Thay vì luôn chạy một cấu hình agent và mô hình duy nhất, hệ thống quan sát độ phức tạp của yêu cầu cùng trạng thái GPU để tự lựa chọn:
+Hệ thống LMS thu gọn đóng vai trò **microservice testbed / System Under Test**. Testbed tạo workload, telemetry, fault propagation và ground truth có kiểm soát để đánh giá khách quan pipeline AI/RCA — không phải một sản phẩm LMS hoàn chỉnh và không còn là đề tài multi-agent.
 
-- Mô hình phù hợp (nhỏ hoặc mạnh hơn).
-- Topology agent phù hợp (single-agent hoặc multi-agent).
-- Số vòng phản hồi, ngân sách context và mức độ song song.
-- Thời điểm cần nâng cấp mô hình hoặc dừng tác vụ an toàn.
+> **Trạng thái hiện tại:** Hoàn thiện định hướng kỹ thuật, kiến trúc testbed và kế hoạch thực nghiệm.
 
-Mục tiêu là tìm được điểm cân bằng tốt hơn giữa **chất lượng bản vá**, **thời gian xử lý**, **mức sử dụng GPU** và **mức độ tuân thủ kiến trúc**.
+## 🎯 Mục tiêu
 
-> **Trạng thái hiện tại:** Đang xây dựng nền tảng, benchmark và các baseline đánh giá.
-
-## 🎯 Mục tiêu nghiên cứu
-
-| Mã | Câu hỏi nghiên cứu |
+| Mục tiêu | Kết quả hướng đến |
 | --- | --- |
-| **RQ1** | Hệ thống Multi-Agent thích nghi tài nguyên có nâng tỷ lệ hoàn thành tác vụ so với Single-Agent dùng model nhỏ không? |
-| **RQ2** | Cơ chế thích nghi có giảm chi phí GPU và thời gian xử lý so với Multi-Agent cấu hình cố định không? |
-| **RQ3** | Architecture Reviewer có giúp giảm vi phạm Clean Architecture trong mã được sinh ra không? |
-| **RQ4** | Đặc trưng nào của tác vụ ảnh hưởng mạnh nhất đến quyết định chọn model và topology agent? |
-| **RQ5** | Khi GPU bị giới hạn, chiến lược nào tối đa hoá số tác vụ thành công trên mỗi GPU-hour? |
+| **Microservice testbed** | LMS thu gọn có giao tiếp đồng bộ/bất đồng bộ và dependency thực tế. |
+| **Observability** | Thu thập metrics, distributed traces và structured logs với OpenTelemetry. |
+| **Anomaly detection** | Nhận diện hành vi bất thường/incident từ dữ liệu telemetry. |
+| **Root cause analysis** | Xếp hạng root-cause candidates từ dependency graph và thứ tự lan truyền bất thường. |
+| **Đánh giá có cơ sở** | Fault injection, workload tự động và ground truth để đo định lượng. |
 
-## 🧩 Phạm vi chức năng
-
-Hệ thống hướng đến năm nhóm tác vụ cho dự án NestJS:
-
-<table>
-  <tr>
-    <td width="50%"><b>Phát triển tính năng</b><br/>Entity, DTO, use case, repository port/adapter, controller, module wiring và Prisma migration.</td>
-    <td width="50%"><b>Sửa lỗi</b><br/>Đọc issue, truy vết nguyên nhân, tạo patch, chạy test và sửa lỗi theo phản hồi.</td>
-  </tr>
-  <tr>
-    <td><b>Refactor Clean Architecture</b><br/>Tách business logic, đảo chiều dependency và chuẩn hoá ranh giới layer.</td>
-    <td><b>Sinh &amp; sửa test</b><br/>Unit test cho use case, integration test repository và E2E test API.</td>
-  </tr>
-  <tr>
-    <td colspan="2"><b>Review kiến trúc &amp; chất lượng</b><br/>Phát hiện dependency sai tầng, repository abstraction không đúng, module/provider wiring thiếu và các lỗi kiến trúc có bằng chứng cụ thể.</td>
-  </tr>
-</table>
-
-## 🏗️ Kiến trúc đề xuất
+## 🏗️ Kiến trúc
 
 ```mermaid
-flowchart TD
-    U[Developer / Dashboard / CLI] --> API[NestJS Control API]
-    API --> RM[Task Queue & Run Manager]
-    RM --> RAC[Resource-Adaptive Controller]
+flowchart LR
+    U[Automated Workload] --> G[API Gateway]
+    G --> S[LMS Microservice Testbed]
+    S --> D[(PostgreSQL · Redis · RabbitMQ · Storage)]
+    S --> O[OpenTelemetry]
 
-    RAC --> TCE[Task Complexity Estimator]
-    RAC --> MON[Resource Monitor<br/>VRAM · GPU · Queue · Budget]
-    RAC --> ORCH[Agent Graph Orchestrator]
+    O --> T[Metrics · Traces · Logs]
+    T --> F[Feature Engineering]
+    F --> A[Anomaly & Incident Detection]
+    A --> R[Dependency & Temporal RCA]
+    R --> V[Root-cause Candidates<br/>Evidence · Timeline · Dashboard]
 
-    ORCH --> P[Planner / Architect]
-    ORCH --> R[Repository Retriever]
-    ORCH --> I[Implementer]
-    ORCH --> T[Tester / Debugger]
-    ORCH --> AR[Architecture Reviewer]
-
-    ORCH --> GW[Model Gateway / Router]
-    GW --> SM[Small Model]
-    GW --> LM[Strong Model]
-    SM --> VLLM[vLLM GPU Server]
-    LM --> VLLM
-
-    ORCH --> SB[Ephemeral Docker Sandbox]
-    SB --> EV[Build · Lint · Test · Prisma · Architecture Check]
-    EV --> OUT[Patch & Evaluation Report]
+    I[Fault Injection] --> S
+    I --> GT[Ground Truth]
+    GT --> E[Evaluation]
+    R --> E
 ```
 
-### Hồ sơ vận hành
-
-| Profile | Luồng agent | Mục đích |
-| --- | --- | --- |
-| `ECONOMY` | Implementer → Test | DTO, mapping, CRUD đơn giản. |
-| `BALANCED` | Planner → Implementer → Test | Tác vụ mức trung bình, có thể escalation. |
-| `QUALITY` | Planner → Implementer → Test → Reviewer | Refactor, transaction, migration và thay đổi phức tạp. |
-| `RECOVERY` | Debugger → Strong Implementer → Reviewer | Build/test thất bại qua nhiều vòng. |
-
-## 🔬 Cách đánh giá
-
-Đồ án so sánh các baseline Single-Agent, Fixed Multi-Agent và hệ thống Adaptive Multi-Agent trên bộ benchmark NestJS Clean Architecture. Các chỉ số chính gồm:
-
-- Tỷ lệ hoàn thành tác vụ và tỷ lệ vượt hidden tests.
-- Architecture Compliance Score.
-- Latency, GPU-second, peak VRAM và chi phí trên mỗi tác vụ thành công.
-- Hiệu quả routing theo độ khó và tình trạng tài nguyên.
-
-Để bảo đảm khả năng tái lập, mỗi lần thử nghiệm sẽ cố định commit mã nguồn, phiên bản model, prompt, Docker image và cấu hình đánh giá.
-
-## 🛠️ Công nghệ dự kiến
-
-<p>
-  <img src="https://img.shields.io/badge/NestJS-E0234E?logo=nestjs&logoColor=white" alt="NestJS" />
-  <img src="https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white" alt="TypeScript" />
-  <img src="https://img.shields.io/badge/LangGraph-1C3C3C?logo=langchain&logoColor=white" alt="LangGraph" />
-  <img src="https://img.shields.io/badge/PostgreSQL-4169E1?logo=postgresql&logoColor=white" alt="PostgreSQL" />
-  <img src="https://img.shields.io/badge/Prisma-2D3748?logo=prisma&logoColor=white" alt="Prisma" />
-  <img src="https://img.shields.io/badge/Redis-DC382D?logo=redis&logoColor=white" alt="Redis" />
-  <img src="https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=white" alt="Docker" />
-  <img src="https://img.shields.io/badge/Prometheus-E6522C?logo=prometheus&logoColor=white" alt="Prometheus" />
-  <img src="https://img.shields.io/badge/Grafana-F46800?logo=grafana&logoColor=white" alt="Grafana" />
-</p>
-
-| Thành phần | Công nghệ dự kiến |
-| --- | --- |
-| Control plane | NestJS |
-| Agent orchestration | LangGraph.js |
-| Hàng đợi | Redis + BullMQ |
-| Cơ sở dữ liệu | PostgreSQL + Prisma + pgvector |
-| Inference tự triển khai | vLLM qua OpenAI-compatible API |
-| Mô hình | Qwen2.5-Coder 7B/14B và Qwen3-Coder-30B-A3B |
-| Sandbox & kiểm thử | Docker, TypeScript, ESLint, Jest, Supertest, Prisma |
-| Monitoring | Prometheus, Grafana, NVIDIA SMI/DCGM |
-
-## 🗺️ Lộ trình
-
-- [x] Xác định bài toán, phạm vi và câu hỏi nghiên cứu.
-- [x] Thiết kế kiến trúc hệ thống và vai trò agent.
-- [ ] Xây dựng môi trường inference tự triển khai và Docker sandbox.
-- [ ] Xây dựng NestCleanBench cùng evaluation harness.
-- [ ] Hoàn thiện Single-Agent và Fixed Multi-Agent baselines.
-- [ ] Triển khai Resource-Adaptive Controller theo rule-based routing.
-- [ ] Thực nghiệm, phân tích kết quả và hoàn thiện luận văn.
-
-Chi tiết kế hoạch được lưu tại [plan/FirstPlan.md](plan/FirstPlan.md).
-
-## 📁 Cấu trúc repository
+### Luồng phân tích
 
 ```text
-.
-├── plan/                 # Kế hoạch, phạm vi và định hướng nghiên cứu
-└── README.md             # Giới thiệu dự án
+Metrics + Traces + Logs
+          ↓
+Feature engineering theo service và cửa sổ thời gian
+          ↓
+Anomaly detection → Incident detection
+          ↓
+Dependency graph + temporal propagation analysis
+          ↓
+Root-cause candidate ranking + evidence + incident timeline
 ```
 
-> Cấu trúc source, benchmark, hạ tầng và tài liệu triển khai sẽ được bổ sung theo các mốc lộ trình.
+## 🧩 Phạm vi
+
+### LMS Microservice Testbed
+
+Các service dự kiến gồm **API Gateway, Auth, Course, Enrollment, Assignment, Submission, Grading** và **Notification**. Hệ thống sử dụng PostgreSQL, Redis, RabbitMQ và object storage/storage mock để tạo nhiều loại dependency và failure mode.
+
+Các luồng nghiệp vụ trọng tâm là đăng nhập, xem khóa học, đăng ký học, tạo/nộp bài tập, chấm điểm và gửi thông báo.
+
+### Không thuộc MVP
+
+Chat realtime, forum, video streaming, AI tutor, recommendation, payment và mobile app không thuộc phạm vi vì không trực tiếp đóng góp cho bài toán observability, anomaly detection hoặc RCA.
+
+## 🔬 Hướng đánh giá
+
+| Hạng mục | Cách đánh giá |
+| --- | --- |
+| **Fault scenarios** | Service error/crash, dependency delay, database latency, cache slowdown, CPU saturation, queue backlog. |
+| **Anomaly/incident detection** | Precision, Recall, F1-score, Detection Delay. |
+| **RCA ranking** | Top-1, Top-3, Mean Reciprocal Rank (MRR). |
+| **So sánh & ablation** | Metrics-only so với metrics + traces; RCA có/không có dependency graph và temporal information. |
+| **Độ bền** | Runtime, chi phí tài nguyên và khả năng hoạt động khi telemetry thiếu hoặc sampling giảm. |
+
+## 🛠️ Công nghệ định hướng
+
+<p>
+  <img src="https://img.shields.io/badge/OpenTelemetry-000000?logo=opentelemetry&logoColor=white" alt="OpenTelemetry" />
+  <img src="https://img.shields.io/badge/Prometheus-E6522C?logo=prometheus&logoColor=white" alt="Prometheus" />
+  <img src="https://img.shields.io/badge/Grafana%20Tempo-F46800?logo=grafana&logoColor=white" alt="Grafana Tempo" />
+  <img src="https://img.shields.io/badge/Loki-F46800?logo=grafana&logoColor=white" alt="Loki" />
+  <img src="https://img.shields.io/badge/PostgreSQL-4169E1?logo=postgresql&logoColor=white" alt="PostgreSQL" />
+  <img src="https://img.shields.io/badge/Redis-DC382D?logo=redis&logoColor=white" alt="Redis" />
+  <img src="https://img.shields.io/badge/RabbitMQ-FF6600?logo=rabbitmq&logoColor=white" alt="RabbitMQ" />
+  <img src="https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=white" alt="Docker" />
+</p>
+
+| Thành phần | Hướng triển khai |
+| --- | --- |
+| Testbed | LMS microservices chạy bằng Docker Compose. |
+| Telemetry | OpenTelemetry Collector, Prometheus, Grafana Tempo và Loki. |
+| Phân tích | Feature engineering, statistical baselines, Isolation Forest, dependency/temporal ranking. |
+| Thực nghiệm | Automated workload, fault injection và ground-truth dataset. |
+
+## 📚 Tài liệu
+
+| Nhóm | Nội dung |
+| --- | --- |
+| [Mô tả đề tài](docs/description/Mô%20tả%20đề%20tài%20ĐATN_260811_125322.pdf) | Phạm vi và mục tiêu chính thức của đồ án. |
+| [Định hướng tổng thể](docs/direction/khung_dinh_huong_tong_the_lms_microservice_ai_rca.md) | Khung kỹ thuật, kiến trúc, hướng AI/ML, RCA và đánh giá. |
+| [Kiến trúc backend testbed](docs/architecture/dinh_huong_backend_microservice_testbed_lms.md) | Phạm vi LMS, service topology, workload và fault scenarios. |
 
 ## 👥 Nhóm thực hiện
 
@@ -186,8 +150,8 @@ Chi tiết kế hoạch được lưu tại [plan/FirstPlan.md](plan/FirstPlan.m
 
 ## 📌 Lưu ý
 
-Dự án được xây dựng cho mục đích học thuật và nghiên cứu. Các kết quả benchmark, chỉ số hiệu năng và kết luận chỉ được công bố sau khi hoàn thành quy trình thực nghiệm có thể tái lập.
+Dự án phục vụ mục đích học thuật. Kết quả benchmark và kết luận sẽ được công bố sau khi hoàn tất quy trình thực nghiệm có thể tái lập.
 
 <div align="center">
-  <sub>Made for a graduation thesis · Self-hosted · Resource-aware · Architecture-conscious</sub>
+  <sub>Made for a graduation thesis · Observable · Measurable · Evidence-driven</sub>
 </div>
