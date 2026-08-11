@@ -26,7 +26,7 @@
 
 Đây là đồ án tốt nghiệp về hệ thống hỗ trợ **developer/SRE phát hiện hành vi bất thường** và **xếp hạng ứng viên nguyên nhân gốc** (*Root Cause Analysis – RCA*) trong kiến trúc microservice, dựa trên dữ liệu observability và học máy.
 
-Hệ thống LMS thu gọn đóng vai trò **microservice testbed / System Under Test**. Testbed tạo workload, telemetry, fault propagation và ground truth có kiểm soát để đánh giá khách quan pipeline AI/RCA — không phải một sản phẩm LMS hoàn chỉnh và không còn là đề tài multi-agent.
+Hệ thống LMS thu gọn đóng vai trò **microservice testbed / System Under Test**. Testbed tạo workload, telemetry, fault propagation và ground truth có kiểm soát để đánh giá khách quan pipeline AI/RCA — không phải một sản phẩm LMS hoàn chỉnh.
 
 > **Trạng thái hiện tại:** Hoàn thiện định hướng kỹ thuật, kiến trúc testbed và kế hoạch thực nghiệm.
 
@@ -124,6 +124,7 @@ Chat realtime, forum, video streaming, AI tutor, recommendation, payment và mob
 | [Mô tả đề tài](docs/description/Mô%20tả%20đề%20tài%20ĐATN_260811_125322.pdf) | Phạm vi và mục tiêu chính thức của đồ án. |
 | [Định hướng tổng thể](docs/direction/khung_dinh_huong_tong_the_lms_microservice_ai_rca.md) | Khung kỹ thuật, kiến trúc, hướng AI/ML, RCA và đánh giá. |
 | [Kiến trúc backend testbed](docs/architecture/dinh_huong_backend_microservice_testbed_lms.md) | Phạm vi LMS, service topology, workload và fault scenarios. |
+| [First Plan — 20 tuần](docs/plan/FirstPlan.md) | Lộ trình theo tuần, mốc bàn giao, phối hợp hai thành viên và quản lý rủi ro. |
 
 ## 👥 Nhóm thực hiện
 
