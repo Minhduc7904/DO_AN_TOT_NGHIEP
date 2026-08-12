@@ -121,10 +121,11 @@ Chat realtime, forum, video streaming, AI tutor, recommendation, payment và mob
 
 | Nhóm | Nội dung |
 | --- | --- |
-| [Mô tả đề tài](docs/description/Mô%20tả%20đề%20tài%20ĐATN_260811_125322.pdf) | Phạm vi và mục tiêu chính thức của đồ án. |
-| [Định hướng tổng thể](docs/direction/khung_dinh_huong_tong_the_lms_microservice_ai_rca.md) | Khung kỹ thuật, kiến trúc, hướng AI/ML, RCA và đánh giá. |
-| [Kiến trúc backend testbed](docs/architecture/dinh_huong_backend_microservice_testbed_lms.md) | Phạm vi LMS, service topology, workload và fault scenarios. |
-| [First Plan — 20 tuần](docs/plan/FirstPlan.md) | Lộ trình theo tuần, mốc bàn giao, phối hợp hai thành viên và quản lý rủi ro. |
+| [Mô tả đề tài đã xử lý](docs/processed/description/Mo_ta_de_tai_DATN_260811_125322_day_du.md) | Phạm vi và mục tiêu chính thức của đồ án. |
+| [Định hướng tổng thể](docs/processed/direction/khung_dinh_huong_tong_the_lms_microservice_ai_rca.md) | Khung kỹ thuật, kiến trúc, hướng AI/ML, RCA và đánh giá. |
+| [Kiến trúc backend testbed](docs/processed/architecture/dinh_huong_backend_microservice_testbed_lms.md) | Phạm vi LMS, service topology, workload và fault scenarios. |
+| [First Plan — 20 tuần](docs/processed/plan/FirstPlan.md) | Lộ trình theo tuần, mốc bàn giao, phối hợp hai thành viên và quản lý rủi ro. |
+| [Quy ước workspace](agent-resources/skills/graduation-workspace/references/workspace-standard.md) | Cách tổ chức task, input/output và tài liệu của hai thành viên. |
 
 ## 👥 Nhóm thực hiện
 

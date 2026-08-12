@@ -1,0 +1,4 @@
+interface:
+  display_name: "Graduation Workspace"
+  short_description: "Quản lý task và tài liệu đồ án"
+  default_prompt: "Use $graduation-workspace to create or update a thesis task workspace."
