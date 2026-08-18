@@ -1,5 +1,11 @@
 # First Plan — Lộ trình hoàn thành đồ án trong 20 tuần
 
+> **Trạng thái:** Tài liệu lịch sử / đã được thay thế.
+>
+> Không sử dụng file này làm kế hoạch triển khai hiện tại.
+>
+> Kế hoạch canonical hiện tại: [`plan-v0.2-24-weeks.md`](plan-v0.2-24-weeks.md).
+
 > **Đề tài:** Xây dựng hệ thống phát hiện bất thường và hỗ trợ phân tích nguyên nhân sự cố trong kiến trúc microservice dựa trên dữ liệu observability và học máy  
 > **Phiên bản:** 0.1 — First Plan  
 > **Thời lượng:** 20 tuần  
