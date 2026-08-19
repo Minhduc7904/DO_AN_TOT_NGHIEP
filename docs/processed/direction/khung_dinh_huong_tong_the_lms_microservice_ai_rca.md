@@ -8,6 +8,8 @@
 >
 > **Implementation architecture:** [`../architecture/backend_microservice_testbed_blueprint.md`](../architecture/backend_microservice_testbed_blueprint.md)
 >
+> **Analysis/AI/RCA implementation:** [`../architecture/analysis-anomaly-rca-blueprint.md`](../architecture/analysis-anomaly-rca-blueprint.md)
+>
 > **Kế hoạch WHEN/WHO:** [`../plan/plan-v0.2-24-weeks.md`](../plan/plan-v0.2-24-weeks.md)
 
 Tài liệu này không định nghĩa cây source code, cấu trúc nội bộ service hoặc roadmap theo tuần. Các nội dung đó chỉ được duy trì trong blueprint và plan canonical được liên kết ở trên.
@@ -432,4 +434,4 @@ Phương châm:
 - LLM, Kubernetes, service mesh và component-level RCA không thuộc core MVP.
 - Plan v0.2 là tài liệu duy nhất định nghĩa 24 tuần và phân công.
 
-Mọi quyết định implementation chi tiết phải tham chiếu [`backend_microservice_testbed_blueprint.md`](../architecture/backend_microservice_testbed_blueprint.md); không tạo một cây source code hoặc roadmap khác trong tài liệu này.
+Implementation backend phải tham chiếu [`backend_microservice_testbed_blueprint.md`](../architecture/backend_microservice_testbed_blueprint.md); implementation Analysis/AI/RCA phải tham chiếu [`analysis-anomaly-rca-blueprint.md`](../architecture/analysis-anomaly-rca-blueprint.md). Không tạo một cây source code hoặc roadmap khác trong tài liệu này.

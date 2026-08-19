@@ -870,6 +870,10 @@ Plan không định nghĩa một cây repository riêng. Cấu trúc source code
 
 [`../architecture/backend_microservice_testbed_blueprint.md`](../architecture/backend_microservice_testbed_blueprint.md)
 
+Chi tiết implementation cho telemetry processing, feature engineering, anomaly/incident detection, graph, RCA, evidence và evaluation tuân theo:
+
+[`../architecture/analysis-anomaly-rca-blueprint.md`](../architecture/analysis-anomaly-rca-blueprint.md)
+
 Các task theo tuần phải link tới module canonical trong blueprint. Không gộp workload implementation hoặc fault injector vào `experiments/`; `experiments/` chỉ orchestration và lưu ledger/artifact theo run.
 
 ---
