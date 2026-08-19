@@ -129,7 +129,7 @@ Khi `Assignment` được triển khai ở Target, workflow W4 chuyển nhánh C
 
 ### 2.6. Phân tầng scope và điều kiện freeze
 
-MVP bắt buộc gồm topology 6 business service + Gateway, PostgreSQL/Redis/RabbitMQ/storage mock, HTTP + `grade.completed`, telemetry có correlation, workload tự động, năm fault scenario có ground truth, Docker Compose và service-level RCA evaluation. Target gồm Assignment, MinIO, thêm workload/fault intensity và repetitions, robustness với telemetry thiếu/sampling, cùng component evidence phong phú hơn. Stretch gồm Kubernetes/Chaos Mesh, multi-fault, instance-level hoặc component-level RCA chính thức và các resilience scenario nâng cao.
+MVP bắt buộc gồm topology 6 business service + Gateway, PostgreSQL/Redis/RabbitMQ/storage mock, HTTP + `grade.completed`, telemetry có correlation, workload tự động, năm fault scenario có ground truth, Docker Compose, service-level RCA evaluation và ít nhất một robustness evaluation focused bằng controlled trace dropping/sampling simulation trên telemetry artifact hoặc missing-modality evaluation. Robustness MVP tái sử dụng baseline thu với 100% trace sampling và không yêu cầu matrix lớn. Target gồm Assignment, MinIO, thêm workload/fault intensity và repetitions, expanded robustness với nhiều sampling level, nhiều missing-modality combination hoặc live sampling experiment, cùng component evidence phong phú hơn. Stretch gồm Kubernetes/Chaos Mesh, multi-fault, instance-level hoặc component-level RCA chính thức và các resilience scenario nâng cao.
 
 Business scope được freeze khi topology MVP, observability và năm fault scenario đã tạo được experiment hợp lệ. Sau mốc này, ưu tiên data quality, reproducibility, anomaly/RCA và evaluation thay vì thêm LMS feature.
 
@@ -511,7 +511,7 @@ Controlled experiment baseline dùng:
 100% trace sampling
 ```
 
-Giảm sampling chỉ được thực hiện như robustness experiment sau khi baseline đã ổn định.
+MVP robustness có thể mô phỏng trace dropping/sampling có kiểm soát trên telemetry artifact sau khi baseline ổn định. Việc giảm sampling trực tiếp khi chạy testbed và matrix nhiều sampling level chỉ thuộc Target khi thực sự cần.
 
 ### 9.3. Structured logs
 

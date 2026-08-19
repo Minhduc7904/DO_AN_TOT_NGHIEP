@@ -127,7 +127,7 @@ Các fault category như cache, downstream dependency, service error, async queu
 - dynamic service dependency graph;
 - service-level root-cause candidate ranking;
 - dependency/component evidence;
-- baseline, ablation, robustness và repeated evaluation.
+- baseline, ablation, repeated evaluation và ít nhất một robustness evaluation focused bằng controlled trace dropping/sampling simulation trên telemetry artifact hoặc missing-modality evaluation; không yêu cầu robustness matrix lớn.
 
 ### 5.2. Target
 
@@ -137,6 +137,7 @@ Các fault category như cache, downstream dependency, service error, async queu
 - log-template feature phong phú hơn;
 - change-point detection;
 - thêm intensity/target/repetition khi automation ổn;
+- expanded robustness evaluation với nhiều sampling level, nhiều missing-modality combination, thêm workload/fault intensity hoặc live sampling experiment khi thực sự cần;
 - external benchmark subset;
 - component-level evidence chi tiết hơn.
 
@@ -225,7 +226,7 @@ Traces cung cấp:
 - propagation path;
 - abnormal dependency evidence.
 
-Baseline controlled experiment dùng 100% trace sampling. Sampling reduction là robustness experiment sau khi baseline ổn định.
+Baseline controlled experiment dùng 100% trace sampling. MVP robustness có thể mô phỏng trace dropping/sampling có kiểm soát trên telemetry artifact đã thu; live sampling experiment và nhiều sampling level thuộc Target.
 
 ### 7.4. Logs
 
@@ -378,6 +379,8 @@ without temporal vs with temporal
 full telemetry vs missing modality/sampled trace
 normal load vs healthy high-load spike
 ```
+
+MVP phải thực hiện ít nhất một robustness comparison focused để trả lời RQ4, nhưng có thể chọn trace dropping/sampling simulation **hoặc** missing-modality evaluation và tái sử dụng baseline artifact 100% trace sampling. Matrix gồm nhiều sampling level, nhiều tổ hợp modality, thêm intensity/repetition hoặc live sampling thuộc Target.
 
 Không cần một “accuracy tổng hợp” duy nhất. Báo cáo phải nêu fault category nào tốt/xấu, failure cases, runtime, trade-off và threats to validity. Proposed method không thắng mọi baseline không đồng nghĩa đồ án thất bại nếu phân tích có bằng chứng.
 

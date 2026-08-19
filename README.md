@@ -37,7 +37,9 @@ Gateway
 ├── Course -> Redis + PostgreSQL
 ├── Enrollment -> Course
 ├── Submission -> Course + Enrollment + Storage mock
-└── Grading -> Submission -> grade.completed -> RabbitMQ -> Notification
+└── Grading
+    ├── Submission
+    └── grade.completed -> RabbitMQ -> Notification
 ```
 
 - Auth phát JWT; Gateway kiểm tra JWT cục bộ.
@@ -46,10 +48,11 @@ Gateway
 - Observability dùng OpenTelemetry, Prometheus, Tempo, Loki và Grafana.
 - Primary RCA evaluation ở service-level; component/dependency là evidence bổ sung.
 - Evaluation floor là 5 fault scenario × 3 repetitions.
+- Robustness MVP gồm ít nhất một đánh giá focused bằng controlled trace dropping/sampling simulation trên telemetry artifact hoặc missing-modality evaluation, tận dụng baseline thu với 100% trace sampling; không yêu cầu robustness matrix lớn.
 
 ### Target và Stretch
 
-Target có thể thêm Assignment, MinIO, thêm repetitions/intensity và robustness experiment. Kubernetes chỉ là Stretch; không thuộc critical path. Service mesh, production-grade enterprise platform và full LMS frontend không thuộc MVP.
+Target có thể thêm Assignment, MinIO và expanded robustness evaluation với nhiều sampling level, nhiều missing-modality combination, thêm workload/fault intensity, thêm repetitions hoặc live sampling experiment khi thực sự cần. Kubernetes chỉ là Stretch; không thuộc critical path. Service mesh, production-grade enterprise platform và full LMS frontend không thuộc MVP.
 
 ## Ranh giới module
 

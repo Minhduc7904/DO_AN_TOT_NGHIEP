@@ -689,7 +689,7 @@ Hai tuần này **không thuộc 20 tuần triển khai kỹ thuật** và khôn
 **A — Experiment/Systems primary**
 
 - rerun các experiment lỗi;
-- missing telemetry/sampling/robustness runs trong phạm vi đã chốt;
+- tối thiểu một robustness evaluation focused bằng controlled trace dropping/sampling simulation trên telemetry artifact hoặc missing-modality evaluation, tái sử dụng baseline 100% trace sampling; expanded matrix chỉ chạy nếu đạt Target;
 - runtime/resource benchmark;
 - kiểm tra fresh reproduction.
 
@@ -714,7 +714,7 @@ Target có thể tăng lên khoảng 30–60+ run nếu automation ổn và khô
 - evaluation dataset v1;
 - bảng kết quả chính;
 - plots/tables;
-- ablation/robustness results;
+- ablation results và ít nhất một focused robustness result;
 - findings + limitations.
 
 **Gate M5:** Kết quả chính đủ để trả lời research questions mà không cần thêm feature mới.
@@ -831,6 +831,7 @@ Các hạng mục sau là **MVP bắt buộc** trước khi xem xét extension:
 - [ ] Metric RCA chính dùng candidate set service-level; component/dependency chỉ là evidence trong MVP.
 - [ ] Có evaluation lặp lại tối thiểu `5 fault × 3 run`.
 - [ ] Có modality/graph/temporal ablation phù hợp với research questions.
+- [ ] Có ít nhất một robustness evaluation focused bằng controlled trace dropping/sampling simulation trên telemetry artifact hoặc missing-modality evaluation; không yêu cầu mở rộng controlled-fault campaign.
 - [ ] Có limitation, error analysis và hướng dẫn reproducibility.
 
 Extension chỉ được xem xét khi **M4 đã qua gate** và không đe dọa M5/M6:
@@ -841,6 +842,7 @@ Extension chỉ được xem xét khi **M4 đã qua gate** và không đe dọa 
 - log-template model nâng cao;
 - external benchmark quy mô lớn;
 - nhiều fault đồng thời;
+- expanded robustness matrix với nhiều sampling level, nhiều missing-modality combination, thêm intensity/repetition hoặc live sampling experiment;
 - Assignment hoặc business feature LMS khác.
 
 ---

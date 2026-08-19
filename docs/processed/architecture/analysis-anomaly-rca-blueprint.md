@@ -282,7 +282,7 @@ http_status
 peer_service/dependency_identity
 ```
 
-RabbitMQ publish/consume spans phải bảo toàn trace context. Controlled baseline dùng 100% trace sampling; sampling thấp hơn chỉ xuất hiện trong robustness experiment.
+RabbitMQ publish/consume spans phải bảo toàn trace context. Controlled baseline dùng 100% trace sampling. MVP robustness có thể mô phỏng trace dropping/sampling trên telemetry artifact; live sampling thấp hơn baseline chỉ thuộc expanded Target.
 
 ### 5.4. Structured logs đầu vào
 
@@ -1330,6 +1330,8 @@ Không tạo một “accuracy tổng hợp” duy nhất che mất trade-off.
 
 ## 17. Ablation và robustness
 
+MVP phải có ít nhất một robustness evaluation focused để trả lời RQ4: controlled trace dropping/sampling simulation trên telemetry artifact **hoặc** missing-modality evaluation. Kiểm tra này tái sử dụng baseline experiment thu với 100% trace sampling và không yêu cầu mở rộng controlled-fault campaign. Expanded matrix với nhiều sampling level, nhiều tổ hợp modality, thêm workload/fault intensity, thêm repetitions hoặc live sampling experiment thuộc Target.
+
 ### 17.1. Modality ablation
 
 ```text
@@ -1369,7 +1371,7 @@ Evidence ablation là Target nếu MVP budget chỉ đủ ba ablation chính.
 
 ### 17.5. Missing trace
 
-Có thể drop có kiểm soát:
+MVP có thể chọn một mức trace dropping/sampling simulation có kiểm soát trên telemetry artifact. Expanded Target có thể so sánh nhiều mức, ví dụ:
 
 ```text
 20%
@@ -1377,7 +1379,7 @@ Có thể drop có kiểm soát:
 80%
 ```
 
-traces/spans sau khi đã có 100% sampling baseline. Cần cố định random seed và không thay ground truth.
+traces/spans sau khi đã có 100% sampling baseline. Cần cố định random seed và không thay ground truth; ba mức trên không phải matrix bắt buộc của MVP.
 
 Đánh giá:
 
@@ -1389,7 +1391,7 @@ traces/spans sau khi đã có 100% sampling baseline. Cần cố định random 
 
 ### 17.6. Missing modality
 
-So sánh khi metrics/traces/logs không khả dụng theo config. Pipeline phải ghi rõ modality bị thiếu thay vì coi score bằng 0 không điều kiện.
+MVP có thể chọn một missing-modality evaluation thay cho trace dropping/sampling simulation. Pipeline phải ghi rõ modality bị thiếu thay vì coi score bằng 0 không điều kiện. Nhiều tổ hợp missing modality thuộc expanded Target.
 
 ### 17.7. Workload shift
 
@@ -1659,7 +1661,7 @@ Không bắt đầu deep model, Kubernetes hoặc component-level RCA trước k
 - [ ] Tính được Precision, Recall, F1, FPR và Detection Delay.
 - [ ] Tính service-level Top-1, Top-3 và MRR.
 - [ ] Có modality, graph và temporal ablation theo protocol.
-- [ ] Có robustness test được ưu tiên theo plan.
+- [ ] Có ít nhất một robustness evaluation focused bằng controlled trace dropping/sampling simulation trên telemetry artifact hoặc missing-modality evaluation; expanded matrix chỉ thuộc Target.
 - [ ] MVP floor có 5 scenario × 3 repetitions hợp lệ hoặc ghi rõ run invalid/rerun.
 - [ ] Prediction và evaluation artifact link ngược được tới manifest/config/commit.
 - [ ] Báo cáo có failure cases, limitations và trade-off.
