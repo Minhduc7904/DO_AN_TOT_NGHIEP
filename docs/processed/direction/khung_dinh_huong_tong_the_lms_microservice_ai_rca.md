@@ -4,11 +4,9 @@
 
 > **Vai trò canonical:** Source of truth cho WHY, WHAT, vấn đề nghiên cứu, research questions, research scope, high-level architecture, hướng anomaly detection/RCA và triết lý đánh giá.
 >
-> **Backend scope/topology:** [`../architecture/dinh_huong_backend_microservice_testbed_lms.md`](../architecture/dinh_huong_backend_microservice_testbed_lms.md)
+> **Backend scope, topology và implementation:** [`../architecture/backend_microservice_testbed_blueprint.md`](../architecture/backend_microservice_testbed_blueprint.md)
 >
-> **Implementation architecture:** [`../architecture/backend_microservice_testbed_blueprint.md`](../architecture/backend_microservice_testbed_blueprint.md)
->
-> **Analysis/AI/RCA implementation:** [`../architecture/analysis-anomaly-rca-blueprint.md`](../architecture/analysis-anomaly-rca-blueprint.md)
+> **Analysis/AI/RCA scope, direction và implementation:** [`../architecture/analysis-anomaly-rca-blueprint.md`](../architecture/analysis-anomaly-rca-blueprint.md)
 >
 > **Kế hoạch WHEN/WHO:** [`../plan/plan-v0.2-24-weeks.md`](../plan/plan-v0.2-24-weeks.md)
 
@@ -135,6 +133,7 @@ Các fault category như cache, downstream dependency, service error, async queu
 
 - Assignment service;
 - MinIO;
+- Submission crash/restart như fault Target sau khi năm scenario MVP đã ổn định;
 - log-template feature phong phú hơn;
 - change-point detection;
 - thêm intensity/target/repetition khi automation ổn;
@@ -190,7 +189,7 @@ Kubernetes không thuộc critical path. Không thêm service mesh.
 +-----------------------------------------------------------+
 ```
 
-Target có thể chèn `Assignment -> Course` và đổi Submission thành `Submission -> Assignment + Enrollment + Storage`. Chi tiết topology thuộc tài liệu định hướng backend; chi tiết source code thuộc blueprint.
+Target có thể chèn `Assignment -> Course` và đổi Submission thành `Submission -> Assignment + Enrollment + Storage`. Chi tiết topology và source code thuộc backend blueprint.
 
 ## 7. Hướng observability và dữ liệu
 
@@ -315,7 +314,7 @@ Mỗi experiment run phải truy được:
 - fault type, target, intensity, start/end;
 - `root_cause_service` và `root_cause_component`;
 - code commit và service versions;
-- experiment/detector/RCA config versions;
+- telemetry schema và experiment/feature/detector/incident/RCA/evaluation config versions;
 - telemetry, prediction và evaluation artifacts.
 
 Chi tiết schema và module ownership được định nghĩa trong backend blueprint.
@@ -330,7 +329,7 @@ MVP ưu tiên năm scenario đại diện cho năm category:
 2. Submission -> storage latency — downstream dependency.
 3. Submission service error — service error.
 4. Notification consumer slowdown / RabbitMQ backlog — async queue.
-5. Submission CPU pressure hoặc crash — resource/availability.
+5. Submission CPU pressure — resource.
 
 MVP evaluation floor:
 

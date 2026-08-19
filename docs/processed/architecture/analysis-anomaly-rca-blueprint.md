@@ -1,18 +1,16 @@
 # Blueprint triển khai Analysis, Anomaly Detection và RCA
 
-> **Trạng thái:** Canonical implementation blueprint cho phần Analysis/AI/RCA.
+> **Trạng thái:** Canonical source of truth cho định hướng và implementation architecture của phần Analysis/AI/RCA.
 >
 > **Nguồn khôi phục:** Phần Observability, dữ liệu và AI/RCA trong bản cũ của `docs/processed/direction/khung_dinh_huong_tong_the_lms_microservice_ai_rca.md` tại nhánh `main`, commit `a3ff193`.
 >
 > **Định hướng WHY/WHAT:** [`../direction/khung_dinh_huong_tong_the_lms_microservice_ai_rca.md`](../direction/khung_dinh_huong_tong_the_lms_microservice_ai_rca.md)
 >
-> **Backend implementation architecture:** [`backend_microservice_testbed_blueprint.md`](backend_microservice_testbed_blueprint.md)
->
-> **Backend SUT topology và fault scope:** [`dinh_huong_backend_microservice_testbed_lms.md`](dinh_huong_backend_microservice_testbed_lms.md)
+> **Backend SUT scope, topology và implementation architecture:** [`backend_microservice_testbed_blueprint.md`](backend_microservice_testbed_blueprint.md)
 >
 > **WHEN/WHO:** [`../plan/plan-v0.2-24-weeks.md`](../plan/plan-v0.2-24-weeks.md)
 
-Tài liệu này mô tả **cách triển khai phần Analysis/AI/RCA**: ranh giới module, telemetry contract, data model, feature pipeline, anomaly/incident detection, dynamic dependency graph, root-cause candidate ranking, evidence, API, evaluation, testing và Definition of Done.
+Tài liệu này mô tả **mục tiêu, phạm vi và cách triển khai phần Analysis/AI/RCA**: ranh giới module, telemetry contract, data model, feature pipeline, anomaly/incident detection, dynamic dependency graph, root-cause candidate ranking, evidence, API, evaluation, testing và Definition of Done.
 
 Tài liệu không định nghĩa lại backend topology, fault mechanism, repository tree cấp cao hoặc timeline. Khi có mâu thuẫn:
 
@@ -65,7 +63,7 @@ Analysis nhận các input logic sau:
 - structured logs từ Loki hoặc artifact tương đương;
 - experiment manifest;
 - ground truth;
-- feature, detector, RCA và evaluation config;
+- experiment, feature, detector, incident, RCA và evaluation config;
 - service catalogue và ownership mapping.
 
 ### 2.2. Output
@@ -346,9 +344,16 @@ ExperimentContext
 - root_cause_component
 - code_commit
 - service_versions
+- telemetry_schema_version
 - experiment_config_version
+- feature_schema_version
+- feature_config_version
 - detector_config_version
+- incident_config_version
 - rca_config_version
+- evaluation_config_version
+- environment_profile
+- environment_config_version
 - telemetry_artifact
 - prediction_artifact
 - evaluation_artifact
@@ -1114,6 +1119,7 @@ File lớn có thể nằm ngoài Git; các JSON trên được phép chỉ ch�
 ### 14.2. Feature config
 
 ```yaml
+feature_config_version: 1
 feature_schema_version: 1
 window_size_seconds: 60
 step_seconds: 15
@@ -1219,9 +1225,11 @@ Năm scenario canonical:
 2. Submission -> storage latency.
 3. Submission service error.
 4. Notification consumer slowdown / RabbitMQ backlog.
-5. Submission CPU pressure hoặc crash.
+5. Submission CPU pressure.
 
 Target có thể mở rộng khoảng 30–60+ run nếu automation, thời gian và ground truth đủ tốt. Không coi 60–100 run là điều kiện thành công.
+
+`Submission crash/restart` thuộc fault catalog Target/Stretch; không thay thế F5 trong evaluation floor của MVP.
 
 ### 15.4. External dataset
 

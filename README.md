@@ -68,12 +68,13 @@ Repository chỉ scaffold các module khi bắt đầu triển khai. Cây source
 | Tài liệu | Vai trò |
 | --- | --- |
 | [Định hướng tổng thể](docs/processed/direction/khung_dinh_huong_tong_the_lms_microservice_ai_rca.md) | WHY/WHAT, research questions, anomaly/RCA direction và evaluation philosophy. |
-| [Định hướng backend](docs/processed/architecture/dinh_huong_backend_microservice_testbed_lms.md) | Backend scope, topology, workflow, observability, workload, fault và MVP/Target/Stretch. |
-| [Backend blueprint](docs/processed/architecture/backend_microservice_testbed_blueprint.md) | **Canonical implementation architecture:** repository structure, service template, contract, instrumentation, experiment boundary và technical DoD. |
-| [Analysis/AI/RCA blueprint](docs/processed/architecture/analysis-anomaly-rca-blueprint.md) | **Canonical AI/RCA implementation:** telemetry/data model, feature pipeline, detector, incident, graph, RCA, evidence, API, evaluation và technical DoD. |
+| [Backend blueprint](docs/processed/architecture/backend_microservice_testbed_blueprint.md) | **Canonical backend:** định hướng, scope, topology, workload/fault/observability requirements và implementation architecture. |
+| [Analysis/AI/RCA blueprint](docs/processed/architecture/analysis-anomaly-rca-blueprint.md) | **Canonical Analysis/AI/RCA:** định hướng, telemetry/data model, feature pipeline, detector, incident, graph, RCA, evidence, evaluation và implementation architecture. |
 | [Plan v0.2 — 24 tuần](docs/processed/plan/plan-v0.2-24-weeks.md) | **Canonical project plan:** WHEN, WHO, milestone, dependency, deliverable và weekly DoD. |
 | [Mô tả đề tài](docs/processed/description/Mo_ta_de_tai_DATN_260811_125322_day_du.md) | Mô tả đề tài đã chuyển đổi từ tài liệu nguồn. |
 | [Quy ước workspace](agent-resources/skills/graduation-workspace/references/workspace-standard.md) | Cách tổ chức task, input/output và tài liệu của nhóm. |
+
+Định hướng tổng thể, hai blueprint và plan v0.2 tạo thành **architecture baseline v1** để bắt đầu implementation. Thay đổi architectural decision đáng kể sau mốc này phải được ghi bằng ADR và cập nhật tài liệu canonical liên quan.
 
 `plan-v0.1-20-weeks.md` là historical baseline và không được dùng làm kế hoạch triển khai hiện tại.
 

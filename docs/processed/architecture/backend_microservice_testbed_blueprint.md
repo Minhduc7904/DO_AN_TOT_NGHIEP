@@ -1,20 +1,22 @@
 # Blueprint triển khai Backend Microservice Testbed
 
-> **Trạng thái:** Canonical implementation architecture
+> **Trạng thái:** Canonical source of truth cho định hướng và implementation architecture của backend testbed
 >
-> **Phạm vi:** Cấu trúc source code, kiến trúc nội bộ service, contract, instrumentation, integration, ranh giới experiment và Definition of Done kỹ thuật.
+> **Baseline:** Architecture baseline v1, frozen để bắt đầu implementation; thay đổi quyết định đáng kể phải đi qua ADR.
+>
+> **Phạm vi:** Vai trò, scope, topology, workload/fault/observability requirements, cấu trúc source code, kiến trúc nội bộ service, contract, instrumentation, integration, ranh giới experiment và Definition of Done kỹ thuật.
 >
 > **Định hướng WHY/WHAT:** [`../direction/khung_dinh_huong_tong_the_lms_microservice_ai_rca.md`](../direction/khung_dinh_huong_tong_the_lms_microservice_ai_rca.md)
 >
-> **Phạm vi backend testbed:** [`dinh_huong_backend_microservice_testbed_lms.md`](dinh_huong_backend_microservice_testbed_lms.md)
->
 > **WHEN/WHO:** [`../plan/plan-v0.2-24-weeks.md`](../plan/plan-v0.2-24-weeks.md)
 
-Tài liệu này là **source of truth duy nhất cho implementation architecture**. Nếu một tài liệu khác mô tả cây source code, service template hoặc convention kỹ thuật khác, blueprint này được ưu tiên. Tài liệu không định nghĩa lịch triển khai theo tuần.
+Tài liệu này là **source of truth duy nhất cho backend testbed**, từ định hướng và phạm vi đến implementation architecture. Nếu một tài liệu khác mô tả topology, scope, cây source code, service template hoặc convention kỹ thuật khác, blueprint này được ưu tiên. Tài liệu không định nghĩa lịch triển khai theo tuần.
 
 ## 1. Mục tiêu và nguyên tắc
 
 Backend LMS là System Under Test (SUT), không phải một sản phẩm LMS production-grade. Kiến trúc phải tạo được dependency, workload, telemetry, fault propagation và ground truth có kiểm soát mà không làm quá tải nhóm hai người.
+
+Backend phải tạo được dependency đồng bộ và bất đồng bộ; database, cache, queue và storage dependency; workload bình thường, burst và tải cao nhưng khỏe; fault propagation quan sát được; telemetry đa nguồn có correlation; cùng ground truth và experiment có thể lặp lại. Một feature nghiệp vụ chỉ được thêm khi nó tạo dependency/fault có giá trị, cải thiện observability hoặc hỗ trợ trực tiếp research question/evaluation; số lượng CRUD không phải tiêu chí mở rộng scope.
 
 Các nguyên tắc bắt buộc:
 
@@ -101,6 +103,36 @@ Grading -> grade.completed -> RabbitMQ -> Notification
 
 Không tạo thêm event chỉ để làm topology phức tạp. Event Target chỉ được thêm khi có consumer, failure mode và giá trị thực nghiệm cụ thể.
 
+### 2.5. Trách nhiệm service và workflow cốt lõi
+
+- **API Gateway:** route request, kiểm tra JWT cục bộ, chuẩn hóa error response, truyền trace context và tạo điểm quan sát symptom upstream.
+- **Auth:** login/refresh, phát JWT, quản lý role/claim tối thiểu và sở hữu `auth_db`.
+- **Course:** create/get/list ở mức tối thiểu, sở hữu `course_db`, dùng Redis và tạo cache/database failure mode có giá trị cho RCA.
+- **Enrollment:** enroll/kiểm tra enrollment, gọi Course qua HTTP contract và sở hữu `enrollment_db`.
+- **Submission:** nhận/truy vấn bài nộp, gọi Course + Enrollment + storage mock trong MVP, sở hữu `submission_db` và là trọng tâm của synchronous fault propagation.
+- **Grading:** tạo/cập nhật grade tối thiểu, gọi Submission, sở hữu `grading_db` và publish `grade.completed`.
+- **Notification:** consume `grade.completed`, giả lập gửi thông báo và tạo queue backlog/consumer slowdown scenario; không cần gửi email thật.
+
+Các workflow phải chạy và quan sát được xuyên boundary:
+
+```text
+W1 Login              Client -> Gateway -> Auth -> auth_db -> JWT
+W2 Browse Course      Client -> Gateway -> Course -> Redis/PostgreSQL
+W3 Enroll Course      Client -> Gateway -> Enrollment -> Course + enrollment_db
+W4 Submit Course Work Client -> Gateway -> Submission -> Course + Enrollment
+                                                   -> Storage mock + submission_db
+W5 Grade and Notify   Client -> Gateway -> Grading -> Submission + grading_db
+                                                   -> RabbitMQ -> Notification
+```
+
+Khi `Assignment` được triển khai ở Target, workflow W4 chuyển nhánh Course/work-item thành `Submission -> Assignment -> Course`; workflow MVP không phụ thuộc vào thay đổi này.
+
+### 2.6. Phân tầng scope và điều kiện freeze
+
+MVP bắt buộc gồm topology 6 business service + Gateway, PostgreSQL/Redis/RabbitMQ/storage mock, HTTP + `grade.completed`, telemetry có correlation, workload tự động, năm fault scenario có ground truth, Docker Compose và service-level RCA evaluation. Target gồm Assignment, MinIO, thêm workload/fault intensity và repetitions, robustness với telemetry thiếu/sampling, cùng component evidence phong phú hơn. Stretch gồm Kubernetes/Chaos Mesh, multi-fault, instance-level hoặc component-level RCA chính thức và các resilience scenario nâng cao.
+
+Business scope được freeze khi topology MVP, observability và năm fault scenario đã tạo được experiment hợp lệ. Sau mốc này, ưu tiên data quality, reproducibility, anomaly/RCA và evaluation thay vì thêm LMS feature.
+
 ## 3. Công nghệ canonical
 
 | Thành phần | Quyết định |
@@ -122,6 +154,20 @@ Không tạo thêm event chỉ để làm topology phức tạp. Event Target ch
 | Kubernetes | Stretch only |
 
 Không dùng polyglot business services trong MVP. Analysis có thể là modular monolith Python thay vì tách thành nhiều microservice vật lý.
+
+### 3.1. Storage mock của MVP
+
+Storage mock là một **controllable external dependency**, không phải fake adapter chạy in-process bên trong Submission Service:
+
+```text
+Submission Service
+      |
+      | HTTP hoặc network protocol đơn giản
+      v
+Storage Mock
+```
+
+Mock chỉ cần nhận request lưu/đọc object ở mức tối thiểu, inject deterministic latency/error, có dependency identity ổn định, tạo outbound/dependency span từ Submission và cho phép fault scenario có `start`/`end` rõ ràng. Mục tiêu là tạo downstream dependency observable và controllable phục vụ RCA, không phải xây object-storage product hoàn chỉnh. MinIO chỉ thuộc Target và chỉ được thêm khi có giá trị thực nghiệm rõ.
 
 ## 4. Cấu trúc repository canonical
 
@@ -235,6 +281,8 @@ Profile MVP/Target có thể gồm:
 - grading burst;
 - healthy high-load spike.
 
+Mỗi profile phải ghi workload seed, tỷ lệ workflow, rate/stage và duration để chạy lại được. `healthy high-load spike` là negative control giúp kiểm tra detector có nhầm tăng tải hợp lệ thành incident hay không.
+
 `load/` không inject fault và không tính evaluation metric.
 
 ### 5.2. `faults/`
@@ -298,9 +346,17 @@ code_commit: <git-sha>
 service_versions:
   course: 0.1.0
 
+telemetry_schema_version: 1
 experiment_config_version: 1
+feature_schema_version: 1
+feature_config_version: 1
 detector_config_version: 1
+incident_config_version: 1
 rca_config_version: 1
+evaluation_config_version: 1
+
+environment_profile: docker-compose-local-v1
+environment_config_version: 1
 
 telemetry_artifact: <path-or-uri>
 prediction_artifact: <path-or-uri>
@@ -313,6 +369,8 @@ Quy ước:
 - `run_id` là duy nhất; `repeat_index` bắt đầu từ 1 trong cùng scenario.
 - Artifact có thể nằm trong repository hoặc object storage, nhưng manifest phải chứa đường dẫn/URI mở được.
 - Config version và commit phải được ghi trước khi chạy campaign chính.
+- Các field có thể nằm trong nested object hoặc được tham chiếu qua config bundle/hash; không cần ép tất cả thành một JSON phẳng.
+- Từ một `run_id` phải xác định được code, environment, workload/seed, fault/ground truth, telemetry schema, feature/detector/incident/RCA/evaluation config và vị trí artifact.
 - Runner phải lưu trạng thái run lỗi; không âm thầm bỏ run khỏi ledger.
 
 ## 7. Kiến trúc nội bộ service
@@ -498,9 +556,11 @@ MVP tập trung khoảng 5 scenario chất lượng:
 | F2 | Submission -> storage latency | Downstream dependency | `submission`, `submission-storage` |
 | F3 | Submission service error | Service error | `submission`, `submission-service` |
 | F4 | Notification consumer slowdown / RabbitMQ backlog | Async queue | `notification`, `notification-consumer` |
-| F5 | Submission CPU pressure hoặc crash | Resource/availability | `submission`, `submission-instance` |
+| F5 | Submission CPU pressure | Resource | `submission`, `submission-instance` |
 
 Scenario có thể điều chỉnh sau pilot nếu fault không tạo symptom ổn định, nhưng phải giữ đủ năm category. Không cần inject fault trên mọi service.
+
+Với F5, Submission vẫn còn sống trong khi CPU utilization tăng, latency/service behavior bị ảnh hưởng, resource signal rõ và propagation tới upstream/downstream quan sát được. `Submission crash/restart` thuộc fault catalog Target/Stretch, không phải một trong năm scenario bắt buộc của MVP.
 
 MVP evaluation floor:
 

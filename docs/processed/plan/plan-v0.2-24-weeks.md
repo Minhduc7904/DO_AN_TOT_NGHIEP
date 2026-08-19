@@ -2,9 +2,7 @@
 
 > **Trạng thái:** Sole canonical source of truth cho WHEN + WHO.
 >
-> **Implementation architecture:** [`../architecture/backend_microservice_testbed_blueprint.md`](../architecture/backend_microservice_testbed_blueprint.md)
->
-> **Backend scope/topology:** [`../architecture/dinh_huong_backend_microservice_testbed_lms.md`](../architecture/dinh_huong_backend_microservice_testbed_lms.md)
+> **Backend scope, topology và implementation architecture:** [`../architecture/backend_microservice_testbed_blueprint.md`](../architecture/backend_microservice_testbed_blueprint.md)
 
 > **Đề tài:** Xây dựng hệ thống phát hiện bất thường và hỗ trợ phân tích nguyên nhân sự cố trong kiến trúc microservice dựa trên dữ liệu observability và học máy  
 > **Phiên bản:** 0.2 — 24-week plan  
@@ -312,7 +310,7 @@ Hai tuần này **không thuộc 20 tuần triển khai kỹ thuật** và khôn
 
 **B — Backend collaborator**
 
-- Submission service ở mức MVP, gọi Course + Enrollment + storage mock;
+- Submission service ở mức MVP, gọi Course + Enrollment + controllable external storage mock qua HTTP/network;
 - contract/integration tests cho HTTP và storage dependency;
 - kiểm tra topology sinh ra từ trace có đúng dependency thiết kế.
 
@@ -320,7 +318,7 @@ Hai tuần này **không thuộc 20 tuần triển khai kỹ thuật** và khôn
 
 - luồng `enroll → nộp bài`;
 - ít nhất một HTTP contract test;
-- storage mock điều khiển được latency/error;
+- storage mock có dependency identity ổn định, điều khiển được latency/error và tạo outbound/dependency span;
 - trace xuyên Gateway, Submission và các dependency.
 
 ---
@@ -451,7 +449,7 @@ Hai tuần này **không thuộc 20 tuần triển khai kỹ thuật** và khôn
 **B — Diagnosis collaborator / ground-truth owner**
 
 - ground-truth manifest;
-- các trường identity, workload/seed, fault timing/intensity, root-cause service/component, commit/config version và artifact path;
+- các trường identity, workload/seed, fault timing/intensity, root-cause service/component, commit/service version, telemetry schema, experiment/feature/detector/incident/RCA/evaluation config, environment và artifact path;
 - expected symptom/propagation cho từng fault;
 - validation script đối chiếu injected interval với telemetry;
 - độc lập chạy và phân tích hai fault đầu.
@@ -469,7 +467,7 @@ Hai tuần này **không thuộc 20 tuần triển khai kỹ thuật** và khôn
 
 **A — Experiment primary**
 
-- hoàn thiện 5 scenario canonical: Course/Redis latency, Submission/storage latency, Submission service error, Notification consumer slowdown/RabbitMQ backlog và Submission CPU pressure hoặc crash;
+- hoàn thiện 5 scenario canonical: Course/Redis latency, Submission/storage latency, Submission service error, Notification consumer slowdown/RabbitMQ backlog và Submission CPU pressure;
 - automated reset;
 - repeatability checks.
 
