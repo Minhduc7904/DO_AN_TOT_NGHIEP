@@ -2,15 +2,7 @@
 
 # AIOps RCA for Microservices
 
-### Phát hiện bất thường và hỗ trợ phân tích nguyên nhân sự cố từ dữ liệu observability và học máy
-
-<p>
-  <a href="#-tổng-quan">Tổng quan</a> •
-  <a href="#-kiến-trúc">Kiến trúc</a> •
-  <a href="#-phạm-vi">Phạm vi</a> •
-  <a href="#-tài-liệu">Tài liệu</a> •
-  <a href="#-nhóm-thực-hiện">Nhóm</a>
-</p>
+### Phát hiện bất thường và hỗ trợ phân tích nguyên nhân sự cố từ observability telemetry
 
 <p>
   <img src="https://img.shields.io/badge/Status-In%20Development-2563EB?style=for-the-badge" alt="Project status: In Development" />
@@ -20,140 +12,80 @@
 
 </div>
 
----
+## Tổng quan
 
-## ✨ Tổng quan
-
-Đây là đồ án tốt nghiệp về hệ thống hỗ trợ **developer/SRE phát hiện hành vi bất thường** và **xếp hạng ứng viên nguyên nhân gốc** (*Root Cause Analysis – RCA*) trong kiến trúc microservice, dựa trên dữ liệu observability và học máy.
-
-Hệ thống LMS thu gọn đóng vai trò **microservice testbed / System Under Test**. Testbed tạo workload, telemetry, fault propagation và ground truth có kiểm soát để đánh giá khách quan pipeline AI/RCA — không phải một sản phẩm LMS hoàn chỉnh.
-
-> **Trạng thái hiện tại:** Hoàn thiện định hướng kỹ thuật, kiến trúc testbed và kế hoạch thực nghiệm.
-
-## 🎯 Mục tiêu
-
-| Mục tiêu | Kết quả hướng đến |
-| --- | --- |
-| **Microservice testbed** | LMS thu gọn có giao tiếp đồng bộ/bất đồng bộ và dependency thực tế. |
-| **Observability** | Thu thập metrics, distributed traces và structured logs với OpenTelemetry. |
-| **Anomaly detection** | Nhận diện hành vi bất thường/incident từ dữ liệu telemetry. |
-| **Root cause analysis** | Xếp hạng root-cause candidates từ dependency graph và thứ tự lan truyền bất thường. |
-| **Đánh giá có cơ sở** | Fault injection, workload tự động và ground truth để đo định lượng. |
-
-## 🏗️ Kiến trúc
-
-```mermaid
-flowchart LR
-    U[Automated Workload] --> G[API Gateway]
-    G --> S[LMS Microservice Testbed]
-    S --> D[(PostgreSQL · Redis · RabbitMQ · Storage)]
-    S --> O[OpenTelemetry]
-
-    O --> T[Metrics · Traces · Logs]
-    T --> F[Feature Engineering]
-    F --> A[Anomaly & Incident Detection]
-    A --> R[Dependency & Temporal RCA]
-    R --> V[Root-cause Candidates<br/>Evidence · Timeline · Dashboard]
-
-    I[Fault Injection] --> S
-    I --> GT[Ground Truth]
-    GT --> E[Evaluation]
-    R --> E
-```
-
-### Luồng phân tích
+Đây là đồ án tốt nghiệp xây dựng hệ thống hỗ trợ developer/SRE phát hiện incident và xếp hạng root-cause candidates trong kiến trúc microservice. Một LMS thu gọn đóng vai trò System Under Test để tạo workload, telemetry, fault propagation và ground truth có kiểm soát; LMS không phải sản phẩm chính.
 
 ```text
-Metrics + Traces + Logs
-          ↓
-Feature engineering theo service và cửa sổ thời gian
-          ↓
-Anomaly detection → Incident detection
-          ↓
-Dependency graph + temporal propagation analysis
-          ↓
-Root-cause candidate ranking + evidence + incident timeline
+LMS testbed
+-> OpenTelemetry metrics + traces + structured logs
+-> feature/anomaly/incident pipeline
+-> dependency + temporal RCA
+-> service-level candidates + evidence
+-> evaluation với ground truth
 ```
 
-## 🧩 Phạm vi
+## Phạm vi canonical
 
-### LMS Microservice Testbed
+### MVP
 
-Các service dự kiến gồm **API Gateway, Auth, Course, Enrollment, Assignment, Submission, Grading** và **Notification**. Hệ thống sử dụng PostgreSQL, Redis, RabbitMQ và object storage/storage mock để tạo nhiều loại dependency và failure mode.
+MVP gồm 6 business service và 1 API Gateway:
 
-Các luồng nghiệp vụ trọng tâm là đăng nhập, xem khóa học, đăng ký học, tạo/nộp bài tập, chấm điểm và gửi thông báo.
+```text
+Gateway
+├── Auth
+├── Course -> Redis + PostgreSQL
+├── Enrollment -> Course
+├── Submission -> Course + Enrollment + Storage mock
+└── Grading
+    ├── Submission
+    └── grade.completed -> RabbitMQ -> Notification
+```
 
-### Không thuộc MVP
+- Auth phát JWT; Gateway kiểm tra JWT cục bộ.
+- Backend testbed dùng TypeScript + NestJS; analysis/anomaly/RCA dùng Python.
+- Runtime dùng Docker Compose; workload dùng k6.
+- Observability dùng OpenTelemetry, Prometheus, Tempo, Loki và Grafana.
+- Primary RCA evaluation ở service-level; component/dependency là evidence bổ sung.
+- Evaluation floor là 5 fault scenario × 3 repetitions.
+- Robustness MVP gồm ít nhất một đánh giá focused bằng controlled trace dropping/sampling simulation trên telemetry artifact hoặc missing-modality evaluation, tận dụng baseline thu với 100% trace sampling; không yêu cầu robustness matrix lớn.
 
-Chat realtime, forum, video streaming, AI tutor, recommendation, payment và mobile app không thuộc phạm vi vì không trực tiếp đóng góp cho bài toán observability, anomaly detection hoặc RCA.
+### Target và Stretch
 
-## 🔬 Hướng đánh giá
+Target có thể thêm Assignment, MinIO và expanded robustness evaluation với nhiều sampling level, nhiều missing-modality combination, thêm workload/fault intensity, thêm repetitions hoặc live sampling experiment khi thực sự cần. Kubernetes chỉ là Stretch; không thuộc critical path. Service mesh, production-grade enterprise platform và full LMS frontend không thuộc MVP.
 
-| Hạng mục | Cách đánh giá |
+## Ranh giới module
+
+- `services/`: API Gateway và LMS business services.
+- `packages/observability/`: shared application instrumentation.
+- `infrastructure/observability/`: Collector, Prometheus, Tempo, Loki và Grafana runtime/config.
+- `load/`: workload implementation.
+- `faults/`: reusable fault mechanisms.
+- `experiments/`: protocol, scenario orchestration, runner và run artifacts.
+- `analysis/evaluation/`: prediction + ground truth → metrics.
+
+Repository chỉ scaffold các module khi bắt đầu triển khai. Cây source code đầy đủ và convention kỹ thuật nằm trong backend blueprint.
+
+## Tài liệu canonical
+
+| Tài liệu | Vai trò |
 | --- | --- |
-| **Fault scenarios** | Service error/crash, dependency delay, database latency, cache slowdown, CPU saturation, queue backlog. |
-| **Anomaly/incident detection** | Precision, Recall, F1-score, Detection Delay. |
-| **RCA ranking** | Top-1, Top-3, Mean Reciprocal Rank (MRR). |
-| **So sánh & ablation** | Metrics-only so với metrics + traces; RCA có/không có dependency graph và temporal information. |
-| **Độ bền** | Runtime, chi phí tài nguyên và khả năng hoạt động khi telemetry thiếu hoặc sampling giảm. |
+| [Định hướng tổng thể](docs/processed/direction/khung_dinh_huong_tong_the_lms_microservice_ai_rca.md) | WHY/WHAT, research questions, anomaly/RCA direction và evaluation philosophy. |
+| [Backend blueprint](docs/processed/architecture/backend_microservice_testbed_blueprint.md) | **Canonical backend:** định hướng, scope, topology, workload/fault/observability requirements và implementation architecture. |
+| [Analysis/AI/RCA blueprint](docs/processed/architecture/analysis-anomaly-rca-blueprint.md) | **Canonical Analysis/AI/RCA:** định hướng, telemetry/data model, feature pipeline, detector, incident, graph, RCA, evidence, evaluation và implementation architecture. |
+| [Plan v0.2 — 24 tuần](docs/processed/plan/plan-v0.2-24-weeks.md) | **Canonical project plan:** WHEN, WHO, milestone, dependency, deliverable và weekly DoD. |
+| [Mô tả đề tài](docs/processed/description/Mo_ta_de_tai_DATN_260811_125322_day_du.md) | Mô tả đề tài đã chuyển đổi từ tài liệu nguồn. |
+| [Quy ước workspace](agent-resources/skills/graduation-workspace/references/workspace-standard.md) | Cách tổ chức task, input/output và tài liệu của nhóm. |
 
-## 🛠️ Công nghệ định hướng
+Định hướng tổng thể, hai blueprint và plan v0.2 tạo thành **architecture baseline v1** để bắt đầu implementation. Thay đổi architectural decision đáng kể sau mốc này phải được ghi bằng ADR và cập nhật tài liệu canonical liên quan.
 
-<p>
-  <img src="https://img.shields.io/badge/OpenTelemetry-000000?logo=opentelemetry&logoColor=white" alt="OpenTelemetry" />
-  <img src="https://img.shields.io/badge/Prometheus-E6522C?logo=prometheus&logoColor=white" alt="Prometheus" />
-  <img src="https://img.shields.io/badge/Grafana%20Tempo-F46800?logo=grafana&logoColor=white" alt="Grafana Tempo" />
-  <img src="https://img.shields.io/badge/Loki-F46800?logo=grafana&logoColor=white" alt="Loki" />
-  <img src="https://img.shields.io/badge/PostgreSQL-4169E1?logo=postgresql&logoColor=white" alt="PostgreSQL" />
-  <img src="https://img.shields.io/badge/Redis-DC382D?logo=redis&logoColor=white" alt="Redis" />
-  <img src="https://img.shields.io/badge/RabbitMQ-FF6600?logo=rabbitmq&logoColor=white" alt="RabbitMQ" />
-  <img src="https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=white" alt="Docker" />
-</p>
+`plan-v0.1-20-weeks.md` là historical baseline và không được dùng làm kế hoạch triển khai hiện tại.
 
-| Thành phần | Hướng triển khai |
-| --- | --- |
-| Testbed | LMS microservices chạy bằng Docker Compose. |
-| Telemetry | OpenTelemetry Collector, Prometheus, Grafana Tempo và Loki. |
-| Phân tích | Feature engineering, statistical baselines, Isolation Forest, dependency/temporal ranking. |
-| Thực nghiệm | Automated workload, fault injection và ground-truth dataset. |
+## Nhóm thực hiện
 
-## 📚 Tài liệu
+- Nguyễn Minh Đức — [Minhduc7904](https://github.com/Minhduc7904)
+- Mai Khoa Bách — [b4schh](https://github.com/b4schh)
 
-| Nhóm | Nội dung |
-| --- | --- |
-| [Mô tả đề tài đã xử lý](docs/processed/description/Mo_ta_de_tai_DATN_260811_125322_day_du.md) | Phạm vi và mục tiêu chính thức của đồ án. |
-| [Định hướng tổng thể](docs/processed/direction/khung_dinh_huong_tong_the_lms_microservice_ai_rca.md) | Khung kỹ thuật, kiến trúc, hướng AI/ML, RCA và đánh giá. |
-| [Kiến trúc backend testbed](docs/processed/architecture/dinh_huong_backend_microservice_testbed_lms.md) | Phạm vi LMS, service topology, workload và fault scenarios. |
-| [First Plan — 20 tuần](docs/processed/plan/FirstPlan.md) | Lộ trình theo tuần, mốc bàn giao, phối hợp hai thành viên và quản lý rủi ro. |
-| [Quy ước workspace](agent-resources/skills/graduation-workspace/references/workspace-standard.md) | Cách tổ chức task, input/output và tài liệu của hai thành viên. |
+## Lưu ý
 
-## 👥 Nhóm thực hiện
-
-<div align="center">
-  <table>
-    <tr>
-      <td align="center" width="220">
-        <a href="https://github.com/Minhduc7904">
-          <img src="https://github.com/Minhduc7904.png?size=160" width="120" height="120" alt="Nguyễn Minh Đức" style="border-radius: 50%;" />
-          <br /><sub><b>Nguyễn Minh Đức</b></sub>
-        </a>
-        <br /><sub>Thành viên thực hiện</sub>
-      </td>
-      <td align="center" width="220">
-        <a href="https://github.com/b4schh">
-          <img src="https://github.com/b4schh.png?size=160" width="120" height="120" alt="Mai Khoa Bách" style="border-radius: 50%;" />
-          <br /><sub><b>Mai Khoa Bách</b></sub>
-        </a>
-        <br /><sub>Thành viên thực hiện</sub>
-      </td>
-    </tr>
-  </table>
-</div>
-
-## 📌 Lưu ý
-
-Dự án phục vụ mục đích học thuật. Kết quả benchmark và kết luận sẽ được công bố sau khi hoàn tất quy trình thực nghiệm có thể tái lập.
-
-<div align="center">
-  <sub>Made for a graduation thesis · Observable · Measurable · Evidence-driven</sub>
-</div>
+Dự án phục vụ mục đích học thuật. Kết luận chỉ được đưa ra từ experiment có manifest, ground truth và artifact đủ để kiểm tra/tái lập.

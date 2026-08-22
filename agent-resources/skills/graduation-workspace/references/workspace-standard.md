@@ -64,24 +64,23 @@ meetings/
 ```text
 docs/
 ├── raw/
-│   ├── course-materials/
-│   ├── topic-description/
-│   ├── reference/
-│   └── meeting-notes/
+│   └── ...
 └── processed/
-    ├── course-materials/
-    ├── topic-description/
-    ├── reference/
-    ├── direction/
     ├── architecture/
+    ├── direction/
     ├── plan/
-    ├── reports/
-    └── governance/
+    ├── description/
+    ├── course-materials/
+    ├── adr/              # tùy chọn, khi có ADR thực tế
+    └── ...
 ```
 
 - `docs/raw/`: tài liệu nhận vào, file gốc, bản scan, PDF/DOCX chưa đọc hoặc chưa chuẩn hóa. Không đặt bản tóm tắt tại đây.
 - `docs/processed/`: Markdown tiếng Việt đã đọc, trích xuất, tóm tắt, chuẩn hóa hoặc là sản phẩm quản trị của nhóm. Phân loại theo mục đích ở các thư mục con.
+- Giữ nguyên taxonomy hiện có trong `docs/raw/`; không bắt buộc rename folder hoặc file nguồn để khớp một cây mẫu.
+- `architecture/`, `direction/`, `plan/`, `description/` và `course-materials/` là các nhóm đang được repository sử dụng. `adr/` và thư mục khác chỉ tạo khi có sản phẩm thực tế; không coi folder tùy chọn là bắt buộc.
 - Khi xử lý một tài liệu raw, tạo file Markdown mới trong thư mục processed tương ứng, ghi rõ nguồn gốc bằng đường dẫn tương đối ở đầu tài liệu. Không xóa raw sau khi đã xử lý.
+- Cây tài liệu này chỉ quy định nơi lưu và provenance. Quyết định kiến trúc phải tham chiếu tài liệu canonical được liệt kê trong `README.md`, không được định nghĩa cạnh tranh trong workspace standard.
 
 ## Cách viết input
 
@@ -92,7 +91,7 @@ docs/
 3. Sản phẩm dự kiến là gì, loại gì (docs/code/khác), và sẽ nằm hoặc được liên kết ở đâu?
 4. Definition of Done (DoD) gồm những điều kiện kiểm tra nào?
 
-DoD phải kiểm chứng được, không dùng câu mơ hồ như “hoàn thiện tốt”. Ví dụ tốt: “Tài liệu có sơ đồ topology cho 8 service và được lưu tại `docs/processed/architecture/service-topology.md`.”
+DoD phải kiểm chứng được, không dùng câu mơ hồ như “hoàn thiện tốt”. Ví dụ tốt: “Backend blueprint ghi rõ topology MVP gồm 6 business service + Gateway, `Assignment` thuộc Target và sản phẩm nằm tại `docs/processed/architecture/backend_microservice_testbed_blueprint.md`.”
 
 ## Cách viết output và điều kiện hoàn thành
 

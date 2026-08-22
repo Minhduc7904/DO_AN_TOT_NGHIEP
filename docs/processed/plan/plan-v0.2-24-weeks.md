@@ -1,5 +1,9 @@
 # Plan v0.2 — Lộ trình đồ án 24 tuần
 
+> **Trạng thái:** Sole canonical source of truth cho WHEN + WHO.
+>
+> **Backend scope, topology và implementation architecture:** [`../architecture/backend_microservice_testbed_blueprint.md`](../architecture/backend_microservice_testbed_blueprint.md)
+
 > **Đề tài:** Xây dựng hệ thống phát hiện bất thường và hỗ trợ phân tích nguyên nhân sự cố trong kiến trúc microservice dựa trên dữ liệu observability và học máy  
 > **Phiên bản:** 0.2 — 24-week plan  
 > **Thời lượng chính thức:** 24 tuần  
@@ -23,8 +27,8 @@ Tuần 23–24  : Buffer / contingency
 
 Vì vậy:
 
-- **Tuần 3 của lịch chính thức tương ứng Tuần 1 của `FirstPlan.md` cũ.**
-- **Tuần 22 của lịch chính thức tương ứng Tuần 20 của `FirstPlan.md` cũ.**
+- **Tuần 3 của lịch chính thức tương ứng Tuần 1 của `plan-v0.1-20-weeks.md` cũ.**
+- **Tuần 22 của lịch chính thức tương ứng Tuần 20 của `plan-v0.1-20-weeks.md` cũ.**
 - Tuần 1–2 và 23–24 không được dùng để hợp thức hóa việc tăng scope của 20 tuần triển khai chính.
 - Mọi milestone kỹ thuật phải được lập kế hoạch để hoàn thành chậm nhất ở tuần 22.
 
@@ -105,11 +109,11 @@ Nhờ đó, cả hai thành viên đều có kiến thức thực tế về back
 
 ### 3.1. Nhịp làm việc mỗi tuần
 
-| Thời điểm | Hoạt động | Kết quả |
-| --- | --- | --- |
-| Đầu tuần | Chốt mục tiêu, task, owner chính, collaborator và tiêu chí nghiệm thu | Task/issue có scope và DoD rõ |
-| Giữa tuần | Pair session cho phần thiết kế hoặc rủi ro cao | Quyết định được ghi trong issue/ADR |
-| Cuối tuần | Review chéo, chạy độc lập, demo và retrospective | Artifact chạy được; backlog/risk được cập nhật |
+| Thời điểm | Hoạt động                                                             | Kết quả                                        |
+| --------- | --------------------------------------------------------------------- | ---------------------------------------------- |
+| Đầu tuần  | Chốt mục tiêu, task, owner chính, collaborator và tiêu chí nghiệm thu | Task/issue có scope và DoD rõ                  |
+| Giữa tuần | Pair session cho phần thiết kế hoặc rủi ro cao                        | Quyết định được ghi trong issue/ADR            |
+| Cuối tuần | Review chéo, chạy độc lập, demo và retrospective                      | Artifact chạy được; backlog/risk được cập nhật |
 
 ### 3.2. Definition of Done chung
 
@@ -127,16 +131,16 @@ Một hạng mục chỉ hoàn thành khi:
 
 ## 4. Các mốc bàn giao chính
 
-| Mốc | Cuối tuần chính thức | Sản phẩm kiểm tra được |
-| --- | ---: | --- |
-| **P0 — Readiness** | 2 | Hai thành viên sẵn sàng bắt đầu; không có deliverable kỹ thuật bắt buộc. |
-| **M1 — Nền tảng tái lập** | 5 | Scope, architecture, contract, repository, Compose và CI đã có baseline. |
-| **M2 — Testbed MVP** | 9 | LMS testbed chạy E2E, có HTTP + async dependency và test tự động. |
-| **M3 — Observability & Fault** | 13 | Metrics/traces/logs, workload, fault framework và dataset/ground truth mẫu chạy lặp lại được. |
-| **M4 — AI/RCA Integrated MVP** | 19 | Pipeline từ experiment telemetry đến incident + Top-K RCA candidates chạy end-to-end. |
-| **M5 — Evaluation Freeze** | 21 | Experimental campaign, baseline/ablation/robustness và kết quả chính hoàn tất. |
-| **M6 — Planned Final Release** | 22 | Source, reproducibility package, báo cáo, slide và demo đã hoàn tất theo kế hoạch. |
-| **B1/B2 — Contingency** | 23–24 | Buffer cho rủi ro; không có feature mới được lên lịch từ trước. |
+| Mốc                            | Cuối tuần chính thức | Sản phẩm kiểm tra được                                                                        |
+| ------------------------------ | -------------------: | --------------------------------------------------------------------------------------------- |
+| **P0 — Readiness**             |                    2 | Hai thành viên sẵn sàng bắt đầu; không có deliverable kỹ thuật bắt buộc.                      |
+| **M1 — Nền tảng tái lập**      |                    5 | Scope, architecture, contract, repository, Compose và CI đã có baseline.                      |
+| **M2 — Testbed MVP**           |                    9 | LMS testbed chạy E2E, có HTTP + async dependency và test tự động.                             |
+| **M3 — Observability & Fault** |                   13 | Metrics/traces/logs, workload, fault framework và dataset/ground truth mẫu chạy lặp lại được. |
+| **M4 — AI/RCA Integrated MVP** |                   19 | Pipeline từ experiment telemetry đến incident + Top-K RCA candidates chạy end-to-end.         |
+| **M5 — Evaluation Freeze**     |                   21 | Experimental campaign, baseline/ablation/robustness và kết quả chính hoàn tất.                |
+| **M6 — Planned Final Release** |                   22 | Source, reproducibility package, báo cáo, slide và demo đã hoàn tất theo kế hoạch.            |
+| **B1/B2 — Contingency**        |                23–24 | Buffer cho rủi ro; không có feature mới được lên lịch từ trước.                               |
 
 ---
 
@@ -146,9 +150,9 @@ Một hạng mục chỉ hoàn thành khi:
 
 Hai tuần này **không thuộc 20 tuần triển khai kỹ thuật** và không được dùng để tăng scope.
 
-| Tuần | Mục đích | Nội dung gợi ý | Deliverable bắt buộc |
-| ---: | --- | --- | --- |
-| **1** | Chuẩn bị | Rà soát yêu cầu học phần, lịch cá nhân, tài khoản/repository, công cụ làm việc, quy ước trao đổi và cách lưu tài liệu. Có thể đọc tài liệu nền để làm quen đề tài. | Không có deliverable kỹ thuật bắt buộc. |
+|  Tuần | Mục đích                  | Nội dung gợi ý                                                                                                                                                                  | Deliverable bắt buộc                                        |
+| ----: | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| **1** | Chuẩn bị                  | Rà soát yêu cầu học phần, lịch cá nhân, tài khoản/repository, công cụ làm việc, quy ước trao đổi và cách lưu tài liệu. Có thể đọc tài liệu nền để làm quen đề tài.              | Không có deliverable kỹ thuật bắt buộc.                     |
 | **2** | Chuẩn bị trước triển khai | Kiểm tra điều kiện làm việc của hai thành viên, thống nhất lịch họp cố định, cách quản lý task/PR, chuẩn bị môi trường cá nhân và giải quyết các vấn đề hành chính còn tồn tại. | Readiness checklist nếu cần; không có milestone triển khai. |
 
 > Nếu hai tuần này rảnh, nhóm có thể đọc tài liệu hoặc thử công cụ cá nhân, nhưng kết quả đó không được coi là điều kiện bắt buộc để kế hoạch tuần 3–22 chạy đúng.
@@ -227,7 +231,7 @@ Hai tuần này **không thuộc 20 tuần triển khai kỹ thuật** và khôn
 
 - architecture diagram v1;
 - ADR/service catalogue;
-- OpenAPI/event schema v1;
+- OpenAPI và event schema `grade.completed` v1;
 - fault matrix MVP;
 - telemetry schema v0;
 - evaluation protocol v0.
@@ -245,7 +249,7 @@ Hai tuần này **không thuộc 20 tuần triển khai kỹ thuật** và khôn
 
 **A — Backend/Platform primary**
 
-- repository/module structure;
+- repository/module structure theo backend blueprint canonical;
 - service template;
 - Compose cho PostgreSQL/Redis/RabbitMQ và service mẫu;
 - lint/unit test/CI.
@@ -276,7 +280,7 @@ Hai tuần này **không thuộc 20 tuần triển khai kỹ thuật** và khôn
 **A — Backend/Platform primary**
 
 - Gateway/Auth;
-- JWT/role cơ bản;
+- Auth phát JWT, Gateway kiểm tra JWT cục bộ và role cơ bản;
 - PostgreSQL migration và seed;
 - timeout/error handling cơ bản.
 
@@ -296,61 +300,59 @@ Hai tuần này **không thuộc 20 tuần triển khai kỹ thuật** và khôn
 
 ---
 
-### Tuần 7 — Enrollment, Assignment và propagation xuyên service
+### Tuần 7 — Enrollment, Submission và propagation xuyên service
 
 **A — Backend/Platform primary**
 
-- Enrollment và service-to-service call;
+- Enrollment, service-to-service call tới Course và `enrollment_db`;
 - resilience cơ bản cho dependency;
 - trace-context propagation qua HTTP.
 
 **B — Backend collaborator**
 
-- Assignment service;
-- contract/integration tests;
-- event contract `assignment.created` hoặc event tương đương;
+- Submission service ở mức MVP, gọi Course + Enrollment + controllable external storage mock qua HTTP/network;
+- contract/integration tests cho HTTP và storage dependency;
 - kiểm tra topology sinh ra từ trace có đúng dependency thiết kế.
 
 **Bàn giao**
 
-- luồng `enroll → tạo/xem assignment`;
+- luồng `enroll → nộp bài`;
 - ít nhất một HTTP contract test;
-- một event schema được version hóa;
-- trace xuyên nhiều service.
+- storage mock có dependency identity ổn định, điều khiển được latency/error và tạo outbound/dependency span;
+- trace xuyên Gateway, Submission và các dependency.
 
 ---
 
-### Tuần 8 — Submission, Grading và async dependency
+### Tuần 8 — Grading, Notification và async dependency
 
 **A — Backend/Platform primary**
 
-- Submission service;
-- storage mock/MinIO nếu cần;
-- RabbitMQ integration;
+- Grading service và call tới Submission;
+- RabbitMQ publisher cho `grade.completed`;
 - publisher reliability/idempotency ở mức MVP.
 
 **B — Backend collaborator / diagnosis owner**
 
-- Grading consumer/endpoint;
+- Notification consumer cho `grade.completed`;
 - async trace propagation;
 - integration/E2E tests;
 - xác nhận các dependency async có thể quan sát và tạo fault được.
 
 **Bàn giao**
 
-- luồng `nộp bài → chấm điểm` E2E;
+- luồng `nộp bài → chấm điểm → thông báo` E2E;
 - HTTP + queue cùng xuất hiện trong topology;
 - trace async có correlation;
+- event schema `grade.completed` được version hóa;
 - test E2E đầu tiên.
 
 ---
 
-### Tuần 9 — Notification và hardening Testbed MVP
+### Tuần 9 — Hardening Testbed MVP
 
 **A — Backend/Platform primary**
 
-- Notification consumer;
-- retry/dead-letter hoặc cơ chế thất bại tương đương ở mức MVP;
+- kiểm tra publisher/consumer idempotency và failure handling ở mức MVP;
 - timeout/retry/error handling thống nhất;
 - reset/seed command.
 
@@ -364,7 +366,7 @@ Hai tuần này **không thuộc 20 tuần triển khai kỹ thuật** và khôn
 **Bàn giao**
 
 - **Testbed MVP v0.1**;
-- tối thiểu 6 service có dependency có ý nghĩa;
+- 6 business service + Gateway theo topology MVP canonical;
 - PostgreSQL + Redis + RabbitMQ;
 - E2E suite;
 - reset/seed command.
@@ -382,21 +384,26 @@ Hai tuần này **không thuộc 20 tuần triển khai kỹ thuật** và khôn
 - OTel Collector;
 - Prometheus;
 - Tempo;
+- Loki;
 - Grafana;
-- hoàn thiện instrumentation HTTP/database/queue.
+- hoàn thiện inbound/outbound HTTP, PostgreSQL, Redis, storage và RabbitMQ spans;
+- kiểm tra `service.name`, `service.version`, `service.instance.id` và 100% trace sampling cho controlled baseline.
 
 **B — Data/Diagnosis primary**
 
 - structured logs;
 - `trace_id`/`span_id` correlation;
 - Loki/query validation;
+- xác minh error status, HTTP status, error type, dependency identity và timeout semantics;
 - dashboard/query phục vụ anomaly/RCA.
 
 **Bàn giao**
 
 - một request có trace xuyên service;
+- trace context xuyên RabbitMQ;
 - metrics service-level;
 - structured logs truy theo trace;
+- timestamp UTC ISO-8601;
 - dashboard service overview.
 
 ---
@@ -437,11 +444,12 @@ Hai tuần này **không thuộc 20 tuần triển khai kỹ thuật** và khôn
 - workload profiles: normal, burst/high load;
 - fault runner/manifest;
 - start/stop/reset orchestration;
-- fault: service delay và DB latency.
+- hai pilot fault từ danh sách canonical.
 
 **B — Diagnosis collaborator / ground-truth owner**
 
 - ground-truth manifest;
+- các trường identity, workload/seed, fault timing/intensity, root-cause service/component, commit/service version, telemetry schema, experiment/feature/detector/incident/RCA/evaluation config, environment và artifact path;
 - expected symptom/propagation cho từng fault;
 - validation script đối chiếu injected interval với telemetry;
 - độc lập chạy và phân tích hai fault đầu.
@@ -459,14 +467,14 @@ Hai tuần này **không thuộc 20 tuần triển khai kỹ thuật** và khôn
 
 **A — Experiment primary**
 
-- bổ sung fault: service error/crash, CPU saturation, Redis/cache hoặc queue/dependency issue;
+- hoàn thiện 5 scenario canonical: Course/Redis latency, Submission/storage latency, Submission service error, Notification consumer slowdown/RabbitMQ backlog và Submission CPU pressure;
 - automated reset;
 - repeatability checks.
 
 **B — Data/Evaluation primary**
 
 - kiểm tra label/ground truth;
-- định nghĩa run ID và metadata version;
+- kiểm tra `experiment_id`, `scenario_id`, `run_id`, `repeat_index`, workload seed, code/service/config version và artifact link;
 - tạo dataset v0 từ healthy/fault runs;
 - cập nhật evaluation protocol từ kinh nghiệm pilot nhưng chưa dùng test result để tune model.
 
@@ -681,32 +689,32 @@ Hai tuần này **không thuộc 20 tuần triển khai kỹ thuật** và khôn
 **A — Experiment/Systems primary**
 
 - rerun các experiment lỗi;
-- missing telemetry/sampling/robustness runs trong phạm vi đã chốt;
+- tối thiểu một robustness evaluation focused bằng controlled trace dropping/sampling simulation trên telemetry artifact hoặc missing-modality evaluation, tái sử dụng baseline 100% trace sampling; expanded matrix chỉ chạy nếu đạt Target;
 - runtime/resource benchmark;
 - kiểm tra fresh reproduction.
 
 **B — Evaluation/Analysis primary**
 
 - anomaly metrics;
-- RCA Top-1/Top-3/MRR/Average Rank;
+- service-level RCA Top-1/Top-3/MRR/Average Rank; component/dependency chỉ dùng làm evidence bổ sung;
 - modality ablation;
 - graph/temporal ablation;
 - error analysis, findings và limitations.
 
-**Target tối thiểu**
+**MVP evaluation floor**
 
 ```text
 5 fault scenario × 3 repetitions
 ```
 
-Có thể tăng số target/intensity/run nếu automation ổn và không làm ảnh hưởng deadline, nhưng không coi số run lớn là mục tiêu quan trọng hơn chất lượng ground truth và reproducibility.
+Target có thể tăng lên khoảng 30–60+ run nếu automation ổn và không làm ảnh hưởng deadline, nhưng không coi số run lớn là mục tiêu quan trọng hơn chất lượng ground truth và reproducibility.
 
 **Bàn giao**
 
 - evaluation dataset v1;
 - bảng kết quả chính;
 - plots/tables;
-- ablation/robustness results;
+- ablation results và ít nhất một focused robustness result;
 - findings + limitations.
 
 **Gate M5:** Kết quả chính đủ để trả lời research questions mà không cần thêm feature mới.
@@ -796,13 +804,13 @@ Mục đích:
 
 Để tuần 22 không trở thành bottleneck, tài liệu được cập nhật xuyên suốt:
 
-| Thời điểm | Nội dung nên được viết/freeze dần |
-| --- | --- |
-| Tuần 3–5 | Scope, research questions, architecture, technology choices |
-| Tuần 6–13 | Testbed, observability, workload, fault injection, ground truth |
-| Tuần 14–19 | Data pipeline, anomaly detection, RCA methodology |
-| Tuần 20–21 | Experimental protocol, results, ablation, limitations |
-| Tuần 22 | Hợp nhất, chỉnh sửa, kiểm tra consistency, slide và defense |
+| Thời điểm  | Nội dung nên được viết/freeze dần                               |
+| ---------- | --------------------------------------------------------------- |
+| Tuần 3–5   | Scope, research questions, architecture, technology choices     |
+| Tuần 6–13  | Testbed, observability, workload, fault injection, ground truth |
+| Tuần 14–19 | Data pipeline, anomaly detection, RCA methodology               |
+| Tuần 20–21 | Experimental protocol, results, ablation, limitations           |
+| Tuần 22    | Hợp nhất, chỉnh sửa, kiểm tra consistency, slide và defense     |
 
 ---
 
@@ -810,7 +818,7 @@ Mục đích:
 
 Các hạng mục sau là **MVP bắt buộc** trước khi xem xét extension:
 
-- [ ] Testbed có tối thiểu 6 service với dependency đủ cho fault propagation.
+- [ ] Testbed có 6 business service + Gateway theo topology MVP canonical; Assignment không phải điều kiện MVP.
 - [ ] Có HTTP + async queue.
 - [ ] Có PostgreSQL + Redis + RabbitMQ.
 - [ ] Metrics, traces và structured logs có correlation.
@@ -820,8 +828,10 @@ Các hạng mục sau là **MVP bắt buộc** trước khi xem xét extension:
 - [ ] Có incident detection với `estimated_start_time`.
 - [ ] Có dynamic dependency graph từ traces.
 - [ ] Có ít nhất một RCA baseline và một graph/temporal RCA method có evidence.
+- [ ] Metric RCA chính dùng candidate set service-level; component/dependency chỉ là evidence trong MVP.
 - [ ] Có evaluation lặp lại tối thiểu `5 fault × 3 run`.
 - [ ] Có modality/graph/temporal ablation phù hợp với research questions.
+- [ ] Có ít nhất một robustness evaluation focused bằng controlled trace dropping/sampling simulation trên telemetry artifact hoặc missing-modality evaluation; không yêu cầu mở rộng controlled-fault campaign.
 - [ ] Có limitation, error analysis và hướng dẫn reproducibility.
 
 Extension chỉ được xem xét khi **M4 đã qua gate** và không đe dọa M5/M6:
@@ -832,43 +842,39 @@ Extension chỉ được xem xét khi **M4 đã qua gate** và không đe dọa 
 - log-template model nâng cao;
 - external benchmark quy mô lớn;
 - nhiều fault đồng thời;
-- thêm business feature LMS.
+- expanded robustness matrix với nhiều sampling level, nhiều missing-modality combination, thêm intensity/repetition hoặc live sampling experiment;
+- Assignment hoặc business feature LMS khác.
 
 ---
 
 # 8. Quy tắc chống scope creep và rủi ro
 
-| Rủi ro | Dấu hiệu sớm | Quy tắc xử lý |
-| --- | --- | --- |
-| Testbed quá lớn | Cuối tuần 8 chưa có E2E ổn | Giữ 6 service cốt lõi; giản lược business logic nhưng giữ dependency. |
-| Observability bị làm muộn | Service chạy nhưng trace không xuyên | Instrument ngay khi tạo service; không đợi đến tuần 10 mới bắt đầu. |
-| Telemetry không liên kết | Tuần 11 không query được trace/log theo cùng request | Ưu tiên metrics + traces; structured log giữ schema tối thiểu có correlation. |
-| Fault không tái lập | Cùng manifest cho symptom khác biệt lớn | Cố định workload/seed/config; tự động reset; lưu manifest từng run. |
-| Data leakage | Window của cùng run xuất hiện ở train và test | Split theo experiment run; test manifest được freeze trước final campaign. |
-| ML không vượt baseline | Isolation Forest không tốt hơn thống kê | Báo cáo trung thực; tập trung contribution ở fusion/RCA/evidence thay vì đổi model liên tục. |
-| RCA tìm symptom thay vì root cause | Downstream service thường đứng Top-1 | Dùng onset time + dependency + propagation evidence; đánh giá theo injected target. |
-| Evaluation bị thiết kế theo model | Protocol thay đổi sau khi xem test result | Draft protocol từ tuần 4; freeze trước final campaign; test set không dùng để tune. |
-| Thiếu thời gian báo cáo | Tuần 20 mới bắt đầu viết | Viết dần theo artifact từ tuần 3; tuần 22 chỉ hợp nhất/finalize. |
-| Tuần buffer bị biến thành feature time | Tuần 22 vẫn còn danh sách extension | Cắt extension; tuần 23–24 chỉ contingency. |
+| Rủi ro                                 | Dấu hiệu sớm                                         | Quy tắc xử lý                                                                                |
+| -------------------------------------- | ---------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| Testbed quá lớn                        | Cuối tuần 8 chưa có E2E ổn                           | Giữ 6 service cốt lõi; giản lược business logic nhưng giữ dependency.                        |
+| Observability bị làm muộn              | Service chạy nhưng trace không xuyên                 | Instrument ngay khi tạo service; không đợi đến tuần 10 mới bắt đầu.                          |
+| Telemetry không liên kết               | Tuần 11 không query được trace/log theo cùng request | Ưu tiên metrics + traces; structured log giữ schema tối thiểu có correlation.                |
+| Fault không tái lập                    | Cùng manifest cho symptom khác biệt lớn              | Cố định workload/seed/config; tự động reset; lưu manifest từng run.                          |
+| Data leakage                           | Window của cùng run xuất hiện ở train và test        | Split theo experiment run; test manifest được freeze trước final campaign.                   |
+| ML không vượt baseline                 | Isolation Forest không tốt hơn thống kê              | Báo cáo trung thực; tập trung contribution ở fusion/RCA/evidence thay vì đổi model liên tục. |
+| RCA tìm symptom thay vì root cause     | Downstream service thường đứng Top-1                 | Dùng onset time + dependency + propagation evidence; đánh giá theo injected target.          |
+| Evaluation bị thiết kế theo model      | Protocol thay đổi sau khi xem test result            | Draft protocol từ tuần 4; freeze trước final campaign; test set không dùng để tune.          |
+| Thiếu thời gian báo cáo                | Tuần 20 mới bắt đầu viết                             | Viết dần theo artifact từ tuần 3; tuần 22 chỉ hợp nhất/finalize.                             |
+| Tuần buffer bị biến thành feature time | Tuần 22 vẫn còn danh sách extension                  | Cắt extension; tuần 23–24 chỉ contingency.                                                   |
 
 ---
 
-# 9. Cấu trúc repository khuyến nghị
+# 9. Tham chiếu kiến trúc triển khai
 
-Repository nên chia theo module kỹ thuật, không theo thành viên:
+Plan không định nghĩa một cây repository riêng. Cấu trúc source code, service template, contract, instrumentation, ranh giới `load/`, `faults/`, `experiments/` và `analysis/evaluation/` tuân theo:
 
-```text
-services/                 # LMS microservice testbed
-analysis/                 # ingestion, features, detector, graph, RCA, evaluation
-infrastructure/           # Compose, OTel Collector, Prometheus, Tempo, Loki, Grafana
-experiments/              # workload, fault manifests, run/reset/orchestration
-contracts/                # OpenAPI/event schemas nếu cần tách riêng
-packages/                 # shared package có kiểm soát
-scripts/                  # dev/reproducibility utilities
-docs/                     # ADR, protocol, runbook, report assets
-```
+[`../architecture/backend_microservice_testbed_blueprint.md`](../architecture/backend_microservice_testbed_blueprint.md)
 
-Nếu nhóm đã chọn tên khác như `platform/observability/` và `platform/experiments/`, cần chốt một convention duy nhất trước khi code mở rộng; không duy trì hai cấu trúc song song.
+Chi tiết implementation cho telemetry processing, feature engineering, anomaly/incident detection, graph, RCA, evidence và evaluation tuân theo:
+
+[`../architecture/analysis-anomaly-rca-blueprint.md`](../architecture/analysis-anomaly-rca-blueprint.md)
+
+Các task theo tuần phải link tới module canonical trong blueprint. Không gộp workload implementation hoặc fault injector vào `experiments/`; `experiments/` chỉ orchestration và lưu ledger/artifact theo run.
 
 ---
 
@@ -890,8 +896,8 @@ Không sửa lịch sử của baseline cũ. Lưu tài liệu này như một ph
 
 ```text
 docs/processed/plan/
-├── FirstPlan.md
-└── Plan-v0.2-24-weeks.md
+├── plan-v0.1-20-weeks.md
+└── plan-v0.2-24-weeks.md
 ```
 
 Mỗi lần điều chỉnh tiếp theo cần ghi:
