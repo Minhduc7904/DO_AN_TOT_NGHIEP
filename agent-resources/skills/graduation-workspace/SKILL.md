@@ -17,7 +17,7 @@ Follow the shared work standard in [references/workspace-standard.md](references
 6. Store original documents under `docs/raw/`; store Vietnamese Markdown summaries, extracted content, plans, and reports under `docs/processed/`.
 7. Store each meeting summary in its dated `meetings/week-.../` folder; name it with the meeting start time and record meeting type, participants, decisions, and follow-up tasks.
 
-For a user-reported completed weekly task, read `task-completion-recording` before changing its status. That workflow collects products and verifies every DoD before updating the shared task card and personal record.
+For a user-reported completed weekly task, read `task-completion-recording` before changing its status. That workflow collects products and verifies every DoD before updating the shared task card and personal record to `Chờ review`. For a code review request, read `task-code-review`; it alone may move a task from `Chờ review` to `Hoàn thành`.
 
 Before creating a branch, changing code or opening a pull request, read `docs/processed/rules/naming-rules.md` and `docs/processed/rules/git-and-pull-request-rules.md`. Follow `docs/processed/guides/git-workflow.md` for the execution sequence.
 

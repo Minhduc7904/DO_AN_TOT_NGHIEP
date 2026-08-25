@@ -36,14 +36,15 @@
 
 2. Tạo một pull request từ nhánh task vào `main`. Dùng [PR template](../../../.github/pull_request_template.md), không xóa các heading bắt buộc.
 3. Gắn link PR vào file task chung và `output/task-output.md` khi có.
-4. Yêu cầu collaborator hoặc thành viên còn lại review đúng phần đã ghi trong mục **Cần review** của PR.
-5. Xử lý comment, cập nhật kiểm tra nếu cần và chỉ merge sau khi PR được chấp thuận theo rule.
+4. Khi người phụ trách báo đã xong và đã xác nhận từng DoD, ghi output/card task với link PR và chuyển task sang `Chờ review`.
+5. Yêu cầu collaborator hoặc thành viên còn lại review đúng phần đã ghi trong mục **Cần review** của PR.
+6. Xử lý comment và cập nhật kiểm tra nếu cần. Chỉ khi review đạt mới chuyển task sang `Hoàn thành`.
 
-## 4. Sau khi merge
+## 4. Sau khi review và merge
 
-- Xác nhận link PR mở được và trạng thái merged.
-- Ghi sản phẩm, link PR và bằng chứng DoD trong output task.
-- Chỉ sau đó mới cập nhật task chung thành `Hoàn thành`.
+- Ghi reviewer, kết quả review, sản phẩm, link PR và bằng chứng DoD trong output task.
+- Sau khi task ở `Hoàn thành`, PR mới đủ điều kiện để merge. Không tự merge nếu người dùng chưa yêu cầu.
+- Khi đã merge, cập nhật trạng thái PR trong output/card task.
 
 ## Xử lý ngoại lệ
 

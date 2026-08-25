@@ -12,8 +12,10 @@
 
 - Mỗi task phải có một pull request vào `main`, kể cả task chỉ thay đổi tài liệu.
 - Pull request phải gắn với đúng nhánh và card task; link PR phải được ghi trong output task và card task chung.
-- Không đánh dấu task **Hoàn thành** khi PR chưa được merge, sản phẩm chưa truy cập được hoặc còn DoD chưa đạt.
-- Ít nhất collaborator được chỉ định, hoặc thành viên còn lại của nhóm, phải review PR trước khi merge. Chỉ bỏ qua review khi người dùng yêu cầu rõ và lý do được ghi trong PR.
+- Khi người phụ trách xác nhận đã làm xong và DoD có bằng chứng, task chuyển sang **Chờ review**, không phải **Hoàn thành**.
+- Chỉ sau code review đạt, sản phẩm truy cập được và mọi DoD đạt mới chuyển task sang **Hoàn thành**.
+- Pull request không được merge khi task chưa ở trạng thái **Hoàn thành**. Agent không tự merge; thao tác merge cần yêu cầu rõ của người dùng.
+- Ít nhất collaborator được chỉ định, hoặc thành viên còn lại của nhóm, phải review PR trước khi task được chuyển **Hoàn thành**. Chỉ bỏ qua review khi người dùng yêu cầu rõ và lý do được ghi trong PR.
 
 ## Nội dung pull request bắt buộc
 

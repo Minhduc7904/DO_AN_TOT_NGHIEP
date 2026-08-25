@@ -6,11 +6,14 @@
 | --- | --- |
 | Mã task | `task-xx_short-title` |
 | Người phụ trách | Đức hoặc Bách |
-| Trạng thái | Đang thực hiện / Hoàn thành / Chờ xử lý |
+| Trạng thái | Đang thực hiện / Chờ review / Hoàn thành / Chờ xử lý |
 | Bắt đầu thực tế |  |
 | Hoàn thành thực tế |  |
 | Tổng thời lượng |  |
-| Pull request đã merge |  |
+| Pull request |  |
+| Trạng thái pull request | Chưa tạo / Đang mở / Đã merge |
+| Người review |  |
+| Kết quả review | Chưa review / Đạt / Cần chỉnh sửa |
 
 ## Báo cáo công việc đã làm
 
@@ -35,4 +38,4 @@
 - Việc chưa hoàn thành hoặc trở ngại:
 - Bước tiếp theo:
 
-> Chỉ chọn trạng thái **Hoàn thành** khi mọi điều kiện DoD đều đạt, mọi sản phẩm bên trên có link hoặc đường dẫn truy cập được và pull request của task đã merge.
+> Khi phần việc và DoD đã xong nhưng chưa review, dùng **Chờ review**. Chỉ chọn **Hoàn thành** khi mọi DoD đạt, sản phẩm có link/đường dẫn truy cập được và code review đã đạt. Pull request chỉ được merge sau khi task đã ở **Hoàn thành**.

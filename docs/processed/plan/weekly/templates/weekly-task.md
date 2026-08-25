@@ -45,6 +45,7 @@
 - Input workspace: Chưa tạo.
 - Output workspace: Chưa tạo.
 - Pull request: Chưa tạo.
+- Kết quả review: Chưa review.
 
 ## Cập nhật tiến độ
 

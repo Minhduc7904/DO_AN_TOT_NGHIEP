@@ -18,16 +18,16 @@ description: "Lập bảng task chung theo tuần từ plan canonical, chia vi�
 - Tạo đúng một `weekly-overview.md` và một file `task-<nn>_<short-title>.md` cho mỗi task; các file task nằm trực tiếp trong thư mục tuần.
 - Mỗi task phải có một kết quả kiểm tra được, người phụ trách duy nhất, phạm vi rõ, phụ thuộc, sản phẩm kỳ vọng và DoD kiểm chứng được. Chia task lớn theo ranh giới deliverable hoặc dependency, không chia thành các thao tác vụn.
 - Gán một nhánh Git riêng cho mỗi task theo `docs/processed/rules/naming-rules.md`: `<type>/week-<nn>/task-<nn>-<short-title>`. Ghi nhánh vào card trước khi giao; không dùng một nhánh cho hai task.
-- Mỗi task phải có một pull request vào `main`. Card task và output phải giữ link PR; chỉ task có PR đã merge mới được hoàn thành. PR phải tuân thủ `docs/processed/rules/git-and-pull-request-rules.md`.
+- Mỗi task phải có một pull request vào `main`. Card task và output phải giữ link PR. Khi người phụ trách hoàn tất phần việc, task chuyển `Chờ review`; chỉ review đạt mới chuyển `Hoàn thành`, rồi PR mới đủ điều kiện merge. PR phải tuân thủ `docs/processed/rules/git-and-pull-request-rules.md`.
 - Phân công cân bằng theo vai trò primary/collaborator, độ phức tạp, phụ thuộc và khả năng review chéo. Không gán một người nếu nguồn canonical hoặc người dùng đã gán người khác. Khi dữ kiện không đủ để gán hợp lý, để `Chưa phân công` và hỏi người dùng thay vì suy đoán.
-- Cập nhật bảng task trong overview để khớp mọi file task. Trạng thái hợp lệ: `Chưa phân công`, `Đã giao`, `Đang thực hiện`, `Chờ xử lý`, `Hoàn thành`.
+- Cập nhật bảng task trong overview để khớp mọi file task. Trạng thái hợp lệ: `Chưa phân công`, `Đã giao`, `Đang thực hiện`, `Chờ xử lý`, `Chờ review`, `Hoàn thành`.
 - Không đánh dấu hoàn thành chỉ vì plan nói cần làm. Chỉ skill ghi nhận hoàn thành mới được chuyển trạng thái khi có bằng chứng.
 
 ## Trả lời “tuần này tôi phải làm gì?”
 
 1. Xác định tuần hiện tại theo ngày hiện hành; nếu người dùng chỉ định tuần khác thì dùng tuần đó.
-2. Đọc `weekly-overview.md` và toàn bộ file `task-*.md` của tuần. Lọc theo trường **Người phụ trách** đúng với người hỏi, trạng thái không phải `Hoàn thành`.
-3. Trả lời ngắn gọn theo thứ tự ưu tiên: mã task, yêu cầu/kết quả cần đạt, hạn, phụ thuộc và trạng thái. Nếu không có task, nói rõ không có task đang mở; không tự tạo task.
+2. Đọc `weekly-overview.md` và toàn bộ file `task-*.md` của tuần. Lọc hai nhóm: (a) task có **Người phụ trách** đúng với người hỏi và trạng thái không phải `Hoàn thành`; (b) task có trạng thái `Chờ review` mà người hỏi là collaborator/reviewer.
+3. Trả lời thành hai nhóm rõ ràng: **Task cần thực hiện** và **Task cần review**. Mỗi dòng nêu mã task, yêu cầu/kết quả cần đạt, hạn, phụ thuộc, trạng thái và link PR nếu có. Nếu không có task ở một nhóm, nói rõ nhóm đó trống; không tự tạo task.
 
 ## Liên kết với workspace cá nhân
 
