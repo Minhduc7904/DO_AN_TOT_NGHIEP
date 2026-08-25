@@ -9,13 +9,15 @@ Follow the shared work standard in [references/workspace-standard.md](references
 
 ## Required workflow
 
-1. Identify the item type. For a personal task, identify the owner: `duc` or `bach`. For a group or advisor meeting, use `meetings/` instead of a personal folder.
+1. Identify the item type. For a personal task, identify the owner: `duc` or `bach`. For shared weekly planning and task assignment, use `docs/processed/plan/weekly/` and read the `weekly-task-planning` skill. For a group or advisor meeting, use `meetings/` instead of a personal folder.
 2. Find or create the dated week folder in `workspace/<owner>/` using the required naming format.
 3. Number the task sequentially within that week. Create its `input/` and `output/` folders from `workspace/_templates/task/`.
 4. Complete the input before work starts. Do not mark a task complete from a plan alone.
 5. Complete the output after work ends. Mark every Definition of Done item with evidence, time, and a product link or repository path.
 6. Store original documents under `docs/raw/`; store Vietnamese Markdown summaries, extracted content, plans, and reports under `docs/processed/`.
 7. Store each meeting summary in its dated `meetings/week-.../` folder; name it with the meeting start time and record meeting type, participants, decisions, and follow-up tasks.
+
+For a user-reported completed weekly task, read `task-completion-recording` before changing its status. That workflow collects products and verifies every DoD before updating the shared task card and personal record.
 
 ## Non-negotiable checks
 

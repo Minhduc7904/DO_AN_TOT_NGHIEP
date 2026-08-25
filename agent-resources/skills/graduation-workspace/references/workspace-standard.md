@@ -24,6 +24,28 @@ workspace/
 - Mỗi người có riêng các tuần và task của mình. Một task cần phối hợp vẫn có một chủ sở hữu duy nhất; task phụ của người còn lại phải tạo trong thư mục của người đó và liên kết chéo trong input.
 - Chỉ tạo tuần khi đã có kế hoạch làm việc. Không dùng thư mục tuần chung cho cả hai người.
 
+## Bảng task chung theo tuần
+
+Kế hoạch tác nghiệp dùng chung được lưu tại `docs/processed/plan/weekly/`, tách biệt với `workspace/`. Đây là nơi hai thành viên xem, nhận và theo dõi các task của tuần; không phải nơi lưu báo cáo input/output cá nhân.
+
+```text
+docs/processed/plan/weekly/
+├── templates/
+│   ├── weekly-overview.md
+│   └── weekly-task.md
+└── week-03_2026-08-16_to_2026-08-22/
+    ├── weekly-overview.md
+    ├── task-01_define-service-boundaries.md
+    └── task-02_define-telemetry-schema.md
+```
+
+- Mỗi tuần có đúng một `weekly-overview.md`: nguồn plan canonical, mục tiêu tuần, bảng tất cả task và người phụ trách, phụ thuộc/rủi ro, cùng tiêu chí kết thúc tuần.
+- Mỗi file `task-<02-so-thu-tu>_<short-title>.md` là một task nhỏ, ghi người phụ trách duy nhất, collaborator (nếu có), yêu cầu/phạm vi, đầu vào, sản phẩm kỳ vọng, DoD, trạng thái và link đến hồ sơ cá nhân khi đã có.
+- Trạng thái card task chỉ dùng một trong: `Chưa phân công`, `Đã giao`, `Đang thực hiện`, `Chờ xử lý`, `Hoàn thành`.
+- Khi hỏi “tuần này tôi làm gì?”, đọc các file task trong tuần hiện tại có **Người phụ trách** là người hỏi và trạng thái khác `Hoàn thành`; không suy diễn từ task của người còn lại.
+- Bảng task chỉ là bản phân công. Một card chỉ được chuyển sang **Hoàn thành** sau khi mọi DoD có bằng chứng và đã có link đến `workspace/<owner>/.../input/task-input.md` và `output/task-output.md`.
+- Đây là thư mục dùng chung, nhưng chỉ thay đổi người phụ trách/trạng thái của card khi người sở hữu task hoặc nhóm đã yêu cầu rõ ràng.
+
 ## Biên bản họp dùng chung
 
 ```text
@@ -81,6 +103,7 @@ docs/
 - `architecture/`, `direction/`, `plan/`, `description/` và `course-materials/` là các nhóm đang được repository sử dụng. `adr/` và thư mục khác chỉ tạo khi có sản phẩm thực tế; không coi folder tùy chọn là bắt buộc.
 - Khi xử lý một tài liệu raw, tạo file Markdown mới trong thư mục processed tương ứng, ghi rõ nguồn gốc bằng đường dẫn tương đối ở đầu tài liệu. Không xóa raw sau khi đã xử lý.
 - Cây tài liệu này chỉ quy định nơi lưu và provenance. Quyết định kiến trúc phải tham chiếu tài liệu canonical được liệt kê trong `README.md`, không được định nghĩa cạnh tranh trong workspace standard.
+- Các file trong `docs/processed/plan/weekly/` là kế hoạch tác nghiệp ngắn hạn. Chúng phải dẫn link đến plan canonical hiện hành và không được âm thầm đổi milestone, phạm vi hay phân vai canonical.
 
 ## Cách viết input
 
@@ -103,3 +126,5 @@ DoD phải kiểm chứng được, không dùng câu mơ hồ như “hoàn thi
 4. Bảng/checkbox đối chiếu từng DoD với bằng chứng.
 
 Chỉ đặt trạng thái **Hoàn thành** khi tất cả DoD được đánh dấu đạt và sản phẩm có thể mở được từ link/đường dẫn đã ghi. Nếu thiếu bất kỳ điều kiện nào, dùng **Đang thực hiện** hoặc **Chờ xử lý** và nêu rõ phần còn thiếu.
+
+Thông thường tạo `input/task-input.md` ngay khi task được giao, trước khi bắt đầu làm. Nếu người dùng chỉ thông báo task sau khi đã hoàn thành, được phép tạo hồ sơ **ghi nhận hồi tố**: input phải ghi rõ đây là ghi nhận hồi tố và dùng thông tin người dùng cung cấp; output vẫn phải có thời gian, sản phẩm, DoD và bằng chứng đầy đủ. Không được ghi nhận hồi tố khi người dùng chưa xác nhận sản phẩm và từng DoD.
