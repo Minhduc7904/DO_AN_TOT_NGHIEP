@@ -1,0 +1,6 @@
+interface:
+  display_name: "Kế hoạch task tuần"
+  short_description: "Lập, phân công và tra cứu task tuần"
+  default_prompt: "Use $weekly-task-planning to plan or list this week's thesis tasks."
+policy:
+  allow_implicit_invocation: true

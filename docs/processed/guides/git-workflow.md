@@ -23,7 +23,7 @@
 ## 2. Trong khi làm
 
 - Chỉ đưa thay đổi phục vụ task vào nhánh; nếu phát sinh việc độc lập, tạo task và nhánh mới.
-- Commit theo lát thay đổi có thể review; dùng thông điệp ngắn, mệnh lệnh và tiếng Anh, ví dụ `docs: define mvp scope` hoặc `feat: add auth service skeleton`.
+- Commit theo lát thay đổi có thể review. Dùng [mẫu commit message](../../../.github/commit-message-template.md): tóm tắt bằng tiếng Việt, ví dụ `docs: chốt phạm vi MVP`. Khi cần mô tả thêm, dùng phần `Tổng quan:` với 1–3 gạch đầu dòng ngắn.
 - Trước khi push, chạy các kiểm tra phù hợp với thay đổi và xem lại `git diff`.
 
 ## 3. Tạo pull request

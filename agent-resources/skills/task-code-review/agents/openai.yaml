@@ -1,0 +1,6 @@
+interface:
+  display_name: "Review task và PR"
+  short_description: "Review PR theo DoD và thay đổi thực tế"
+  default_prompt: "Use $task-code-review to review a thesis task pull request."
+policy:
+  allow_implicit_invocation: true

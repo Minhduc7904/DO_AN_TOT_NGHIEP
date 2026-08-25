@@ -8,6 +8,14 @@
 - Card task chung phải ghi nhánh dự kiến; input task cá nhân phải ghi nhánh thực hiện.
 - Không commit trực tiếp lên `main`; không gộp thay đổi của nhiều task độc lập vào cùng nhánh.
 
+## Commit message bắt buộc
+
+- Dùng [mẫu commit message](../../../.github/commit-message-template.md) làm nguồn chuẩn duy nhất.
+- Dòng tóm tắt dùng dạng `<type>: <tóm tắt bằng tiếng Việt>`; `type` chỉ dùng `feat`, `fix`, `docs`, `refactor`, `test` hoặc `chore`.
+- Tóm tắt viết bằng tiếng Việt, thể mệnh lệnh, ngắn gọn, không quá 72 ký tự và không có dấu chấm cuối câu.
+- Khi cần phần thân, dùng nhãn `Tổng quan:` và 1–3 gạch đầu dòng ngắn, mỗi gạch mô tả một thay đổi có trong diff. Không viết đoạn văn dài, không lặp lại toàn bộ PR và không bịa thông tin.
+- Copilot phải sinh commit message theo mẫu trên, dựa trên staged diff hoặc diff người dùng chỉ định; người dùng vẫn là người quyết định commit cuối cùng.
+
 ## Pull request bắt buộc
 
 - Mỗi task phải có một pull request vào `main`, kể cả task chỉ thay đổi tài liệu.
