@@ -9,9 +9,10 @@ description: "Review pull request của một task đang chờ review theo thay 
 
 ## Xác định task và PR
 
-1. Nếu người dùng chưa nêu task cần review, hỏi ngắn gọn: “Bạn muốn review task nào (tuần và mã/tên task)?” rồi chờ câu trả lời.
-2. Tìm card task trong `docs/processed/plan/weekly/`. Task phải có trạng thái `Chờ review`, nhánh và link PR. Nếu thiếu link PR, yêu cầu người dùng cung cấp; không đoán PR từ tên nhánh.
-3. Lấy mô tả, trạng thái, nhánh nguồn/đích, file thay đổi và diff của PR. Ưu tiên công cụ GitHub có sẵn; nếu không truy xuất được PR/diff, yêu cầu người dùng cung cấp URL, nội dung PR và diff cần review. Không kết luận khi chưa có thay đổi thực tế.
+1. Xác định reviewer là **Đức** hay **Bách** từ yêu cầu hiện tại. Nếu chưa rõ, hỏi lại và không suy đoán từ lịch sử hội thoại, tên tài khoản, tên thư mục hoặc phân công cũ.
+2. Nếu người dùng chưa nêu task cần review, hỏi ngắn gọn: “Bạn muốn review task nào (tuần và mã/tên task)?” rồi chờ câu trả lời.
+3. Tìm card task trong `docs/processed/plan/weekly/`. Task phải có trạng thái `Chờ review`, nhánh và link PR. Nếu thiếu link PR, yêu cầu người dùng cung cấp; không đoán PR từ tên nhánh.
+4. Lấy mô tả, trạng thái, nhánh nguồn/đích, file thay đổi và diff của PR. Ưu tiên công cụ GitHub có sẵn; nếu không truy xuất được PR/diff, yêu cầu người dùng cung cấp URL, nội dung PR và diff cần review. Không kết luận khi chưa có thay đổi thực tế.
 
 ## Kiểm tra bắt buộc
 

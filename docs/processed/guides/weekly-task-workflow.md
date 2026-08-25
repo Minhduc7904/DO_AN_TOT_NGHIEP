@@ -11,6 +11,10 @@ Giao task → Nhận task → Làm trên branch riêng → PR + DoD
 
 Không bỏ qua hoặc đảo thứ tự các trạng thái trên.
 
+## Xác định người dùng
+
+Khi yêu cầu liên quan task cá nhân, agent chỉ dùng workspace/filter của Đức hoặc Bách khi người dùng đã nói rõ mình là ai trong yêu cầu hiện tại. Nếu chưa rõ, agent phải hỏi “Bạn là Đức hay Bách?”; không dùng lịch sử hội thoại, tên tài khoản, tên thư mục, task cũ hoặc tên branch để đoán.
+
 ## 1. Đầu tuần: người giao task
 
 Người giao task yêu cầu agent lập kế hoạch tuần. Agent phải dùng [skill chia task tuần](../../../agent-resources/skills/weekly-task-planning/SKILL.md) để:

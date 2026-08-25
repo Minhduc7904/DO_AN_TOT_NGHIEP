@@ -25,10 +25,11 @@ description: "Lập bảng task chung theo tuần từ plan canonical, chia vi�
 
 ## Trả lời “tuần này tôi phải làm gì?”
 
-1. Xác định tuần hiện tại theo ngày hiện hành; nếu người dùng chỉ định tuần khác thì dùng tuần đó.
-2. Đọc `weekly-overview.md` và toàn bộ file `task-*.md` của tuần. Lọc hai nhóm: (a) task có **Người phụ trách** đúng với người hỏi và trạng thái không phải `Hoàn thành`; (b) task có trạng thái `Chờ review` mà người hỏi là collaborator/reviewer.
-3. Trả lời thành hai nhóm rõ ràng: **Task cần thực hiện** và **Task cần review**. Mỗi dòng nêu mã task, yêu cầu/kết quả cần đạt, hạn, phụ thuộc, trạng thái và link PR nếu có. Nếu không có task ở một nhóm, nói rõ nhóm đó trống; không tự tạo task.
+1. Xác định người hỏi là **Đức** hay **Bách** từ yêu cầu hiện tại. Nếu chưa được nêu rõ, hỏi lại “Bạn là Đức hay Bách?” và không lọc task theo lịch sử hội thoại, tên tài khoản, tên thư mục hoặc phân công trước đó.
+2. Xác định tuần hiện tại theo ngày hiện hành; nếu người dùng chỉ định tuần khác thì dùng tuần đó.
+3. Đọc `weekly-overview.md` và toàn bộ file `task-*.md` của tuần. Lọc hai nhóm: (a) task có **Người phụ trách** đúng với người hỏi và trạng thái không phải `Hoàn thành`; (b) task có trạng thái `Chờ review` mà người hỏi là collaborator/reviewer.
+4. Trả lời thành hai nhóm rõ ràng: **Task cần thực hiện** và **Task cần review**. Mỗi dòng nêu mã task, yêu cầu/kết quả cần đạt, hạn, phụ thuộc, trạng thái và link PR nếu có. Nếu không có task ở một nhóm, nói rõ nhóm đó trống; không tự tạo task.
 
 ## Liên kết với workspace cá nhân
 
-Khi task được nhận, khuyến nghị tạo `input/task-input.md` trước khi làm. File task chung ghi link đến input/output khi chúng có. Tôn trọng quyền sở hữu `workspace/duc/` và `workspace/bach/`; chỉ sửa workspace người dùng đã yêu cầu rõ.
+Khi task được nhận, khuyến nghị tạo `input/task-input.md` trước khi làm. File task chung ghi link đến input/output khi chúng có. Tôn trọng quyền sở hữu `workspace/duc/` và `workspace/bach/`; chỉ sửa workspace khi người dùng đã nói rõ mình là người sở hữu tương ứng.

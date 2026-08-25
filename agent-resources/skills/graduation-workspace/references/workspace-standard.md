@@ -22,6 +22,7 @@ workspace/
 
 - `workspace/duc/` chỉ do Đức chủ động sửa; `workspace/bach/` chỉ do Bách chủ động sửa.
 - Mỗi người có riêng các tuần và task của mình. Một task cần phối hợp vẫn có một chủ sở hữu duy nhất; task phụ của người còn lại phải tạo trong thư mục của người đó và liên kết chéo trong input.
+- Trước khi lọc task cho người dùng hoặc tạo/sửa hồ sơ trong `workspace/<owner>/`, agent phải biết rõ người dùng là **Đức** hay **Bách** từ yêu cầu hiện tại. Nếu chưa rõ, agent phải hỏi lại; không suy đoán từ lịch sử hội thoại, tên tài khoản, tên nhánh, thư mục hoặc task đã có.
 - Chỉ tạo tuần khi đã có kế hoạch làm việc. Không dùng thư mục tuần chung cho cả hai người.
 
 ## Bảng task chung theo tuần

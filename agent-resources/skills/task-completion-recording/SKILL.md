@@ -9,7 +9,7 @@ description: "Ghi nhận một task tuần đã hoàn thành bằng quy trình h
 
 ## Quy trình bắt buộc
 
-Khi người dùng nói đã hoàn thành một task, xác định tuần, mã/tên task và người phụ trách từ card task. Nếu một trong các thông tin này không xác định được, chỉ hỏi phần thiếu; không đoán hoặc sửa card của người khác.
+Khi người dùng nói đã hoàn thành một task, xác định tuần, mã/tên task và người phụ trách từ card task. Người dùng phải nói rõ họ là **Đức** hay **Bách**; nếu chưa rõ, hỏi lại trước khi đọc/sửa workspace và không suy đoán từ lịch sử hội thoại, tên tài khoản, tên thư mục hoặc card task. Nếu tuần/mã task cũng chưa xác định được, chỉ hỏi phần thiếu; không đoán hoặc sửa card của người khác.
 
 1. **Hỏi sản phẩm trước.** Hỏi người dùng sản phẩm/đường dẫn/link thực tế là gì, nhánh task và URL pull request đang mở là gì, đã bắt đầu và hoàn thành lúc nào, cùng thay đổi phạm vi hoặc tồn đọng nếu có. Yêu cầu người dùng xác nhận PR giữ các mục bắt buộc: Tổng quan, Trước thay đổi, Sau thay đổi, Database và Cần review. Không cập nhật trạng thái hoàn thành ở bước này.
 2. **Hỏi DoD sau.** Liệt kê nguyên văn từng DoD chưa có bằng chứng từ card task và yêu cầu người dùng xác nhận từng mục `Đạt` hoặc `Chưa đạt`, kèm bằng chứng/đường dẫn khi phù hợp. Không gộp thành một câu hỏi “đã xong hết chưa?”.

@@ -9,7 +9,7 @@ Follow the shared work standard in [references/workspace-standard.md](references
 
 ## Required workflow
 
-1. Identify the item type. For a personal task, identify the owner: `duc` or `bach`. For shared weekly planning and task assignment, use `docs/processed/plan/weekly/` and read the `weekly-task-planning` skill. For a group or advisor meeting, use `meetings/` instead of a personal folder.
+1. Identify the item type. For a personal task, identify the owner explicitly as `duc` or `bach`; if the user has not stated who they are, ask and do not infer it from history, account names or folders. For shared weekly planning and task assignment, use `docs/processed/plan/weekly/` and read the `weekly-task-planning` skill. For a group or advisor meeting, use `meetings/` instead of a personal folder.
 2. Find or create the dated week folder in `workspace/<owner>/` using the required naming format.
 3. Number the task sequentially within that week. Create its `input/` and `output/` folders from `workspace/_templates/task/`.
 4. Complete the input before work starts. Do not mark a task complete from a plan alone.

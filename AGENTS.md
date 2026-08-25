@@ -7,6 +7,8 @@ Trước khi tạo, sửa hoặc đánh giá code, tài liệu, kế hoạch, tu
 
 Áp dụng các quy tắc trong đó. Đặc biệt: tôn trọng quyền sở hữu `workspace/duc/` và `workspace/bach/`, dùng tiếng Việt cho nội dung diễn giải, dùng tên file/thư mục mới bằng tiếng Anh, và không đánh dấu task hoàn thành khi chưa có output chứng minh DoD.
 
+Khi yêu cầu cần biết người dùng là ai để lọc task, tạo/sửa workspace, ghi nhận hoàn thành hoặc review, chỉ nhận diện theo việc người dùng nói rõ “tôi là Đức” hoặc “tôi là Bách” trong yêu cầu hiện tại. Nếu chưa có thông tin này, phải hỏi lại; không suy đoán từ lịch sử hội thoại, tên tài khoản, tên nhánh, thư mục hoặc task cũ.
+
 Khi lập/chia task tuần hoặc trả lời “tuần này tôi phải làm gì”, đọc thêm `agent-resources/skills/weekly-task-planning/SKILL.md`. Khi người dùng báo đã hoàn thành một task, đọc thêm `agent-resources/skills/task-completion-recording/SKILL.md` và thực hiện đúng chuỗi xác nhận sản phẩm rồi đến từng DoD trước khi chuyển task sang `Chờ review`. Khi review code hoặc pull request, đọc `agent-resources/skills/task-code-review/SKILL.md`.
 
 Trước khi tạo branch, vibe code, hard code hoặc mở pull request, bắt buộc đọc:
