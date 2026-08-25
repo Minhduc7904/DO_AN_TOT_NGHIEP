@@ -11,6 +11,7 @@
 | Collaborator | Không có |
 | Ưu tiên | Cao / Trung bình / Thấp |
 | Hạn dự kiến |  |
+| Nhánh thực hiện |  |
 
 ## Yêu cầu và phạm vi
 
@@ -43,6 +44,7 @@
 
 - Input workspace: Chưa tạo.
 - Output workspace: Chưa tạo.
+- Pull request: Chưa tạo.
 
 ## Cập nhật tiến độ
 

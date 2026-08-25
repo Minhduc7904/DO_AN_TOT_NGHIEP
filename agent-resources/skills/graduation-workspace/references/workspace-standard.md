@@ -41,6 +41,7 @@ docs/processed/plan/weekly/
 
 - Mỗi tuần có đúng một `weekly-overview.md`: nguồn plan canonical, mục tiêu tuần, bảng tất cả task và người phụ trách, phụ thuộc/rủi ro, cùng tiêu chí kết thúc tuần.
 - Mỗi file `task-<02-so-thu-tu>_<short-title>.md` là một task nhỏ, ghi người phụ trách duy nhất, collaborator (nếu có), yêu cầu/phạm vi, đầu vào, sản phẩm kỳ vọng, DoD, trạng thái và link đến hồ sơ cá nhân khi đã có.
+- Mỗi task được giao phải có một nhánh Git riêng và một pull request vào `main`; card task ghi tên nhánh và link PR. Chỉ chuyển trạng thái **Hoàn thành** sau khi PR đã merge, output có link PR/sản phẩm và mọi DoD đạt.
 - Trạng thái card task chỉ dùng một trong: `Chưa phân công`, `Đã giao`, `Đang thực hiện`, `Chờ xử lý`, `Hoàn thành`.
 - Khi hỏi “tuần này tôi làm gì?”, đọc các file task trong tuần hiện tại có **Người phụ trách** là người hỏi và trạng thái khác `Hoàn thành`; không suy diễn từ task của người còn lại.
 - Bảng task chỉ là bản phân công. Một card chỉ được chuyển sang **Hoàn thành** sau khi mọi DoD có bằng chứng và đã có link đến `workspace/<owner>/.../input/task-input.md` và `output/task-output.md`.
@@ -101,6 +102,7 @@ docs/
 - `docs/processed/`: Markdown tiếng Việt đã đọc, trích xuất, tóm tắt, chuẩn hóa hoặc là sản phẩm quản trị của nhóm. Phân loại theo mục đích ở các thư mục con.
 - Giữ nguyên taxonomy hiện có trong `docs/raw/`; không bắt buộc rename folder hoặc file nguồn để khớp một cây mẫu.
 - `architecture/`, `direction/`, `plan/`, `description/` và `course-materials/` là các nhóm đang được repository sử dụng. `adr/` và thư mục khác chỉ tạo khi có sản phẩm thực tế; không coi folder tùy chọn là bắt buộc.
+- `guides/` chứa quy trình/hướng dẫn thực hiện; `rules/` chứa quy tắc bắt buộc. Khi có mâu thuẫn, `rules/` được ưu tiên hơn `guides/`.
 - Khi xử lý một tài liệu raw, tạo file Markdown mới trong thư mục processed tương ứng, ghi rõ nguồn gốc bằng đường dẫn tương đối ở đầu tài liệu. Không xóa raw sau khi đã xử lý.
 - Cây tài liệu này chỉ quy định nơi lưu và provenance. Quyết định kiến trúc phải tham chiếu tài liệu canonical được liệt kê trong `README.md`, không được định nghĩa cạnh tranh trong workspace standard.
 - Các file trong `docs/processed/plan/weekly/` là kế hoạch tác nghiệp ngắn hạn. Chúng phải dẫn link đến plan canonical hiện hành và không được âm thầm đổi milestone, phạm vi hay phân vai canonical.
@@ -124,6 +126,8 @@ DoD phải kiểm chứng được, không dùng câu mơ hồ như “hoàn thi
 2. Việc đã làm, thay đổi phạm vi (nếu có), và các trở ngại còn lại.
 3. Sản phẩm thực tế với link URL hoặc đường dẫn tương đối. Docs phải gắn link file/docs; code phải gắn link repository, pull request hoặc đường dẫn project.
 4. Bảng/checkbox đối chiếu từng DoD với bằng chứng.
+
+Với mọi task mới, output phải ghi link pull request đã merge. Mô tả PR phải tuân thủ `docs/processed/rules/git-and-pull-request-rules.md`.
 
 Chỉ đặt trạng thái **Hoàn thành** khi tất cả DoD được đánh dấu đạt và sản phẩm có thể mở được từ link/đường dẫn đã ghi. Nếu thiếu bất kỳ điều kiện nào, dùng **Đang thực hiện** hoặc **Chờ xử lý** và nêu rõ phần còn thiếu.
 

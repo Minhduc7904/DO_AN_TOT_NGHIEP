@@ -11,6 +11,7 @@
 | Collaborator | Bách review để loại feature LMS không phục vụ nghiên cứu |
 | Ưu tiên | Cao |
 | Hạn dự kiến | 18/08/2026 |
+| Nhánh thực hiện | `docs/week-03/task-01-define-mvp-scope` |
 
 ## Yêu cầu và phạm vi
 
@@ -47,6 +48,7 @@ Tạo scope v1 cho đồ án, chuyển các quyết định MVP/Target/Stretch �
 
 - Input workspace: Chưa tạo.
 - Output workspace: Chưa tạo.
+- Pull request: Chưa tạo.
 
 ## Cập nhật tiến độ
 

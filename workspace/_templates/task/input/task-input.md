@@ -11,6 +11,8 @@
 | Trạng thái | Chưa bắt đầu |
 | Ngày tạo |  |
 | Thời gian dự kiến |  |
+| Nhánh thực hiện |  |
+| Pull request dự kiến |  |
 
 ## Mục tiêu và phạm vi
 
@@ -39,3 +41,4 @@
 - [ ] Điều kiện kiểm tra 1 có thể xác minh được.
 - [ ] Điều kiện kiểm tra 2 có thể xác minh được.
 - [ ] Sản phẩm đã được lưu/đẩy lên vị trí dự kiến và có thể truy cập.
+- [ ] Pull request từ nhánh task đã được merge và có mô tả đúng quy tắc.

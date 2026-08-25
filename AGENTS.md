@@ -9,4 +9,12 @@ Trước khi tạo, sửa hoặc đánh giá code, tài liệu, kế hoạch, tu
 
 Khi lập/chia task tuần hoặc trả lời “tuần này tôi phải làm gì”, đọc thêm `agent-resources/skills/weekly-task-planning/SKILL.md`. Khi người dùng báo đã hoàn thành một task, đọc thêm `agent-resources/skills/task-completion-recording/SKILL.md` và thực hiện đúng chuỗi xác nhận sản phẩm rồi đến từng DoD trước khi cập nhật trạng thái.
 
+Trước khi tạo branch, vibe code, hard code hoặc mở pull request, bắt buộc đọc:
+
+1. `docs/processed/rules/naming-rules.md`
+2. `docs/processed/rules/git-and-pull-request-rules.md`
+3. `docs/processed/guides/git-workflow.md`
+
+Mỗi task phải có nhánh riêng và pull request đã merge trước khi được ghi nhận hoàn thành. Pull request phải dùng template `.github/pull_request_template.md`.
+
 Không tự sửa, di chuyển hoặc xóa tài liệu trong `docs/raw/` hay công việc của thành viên còn lại nếu không có yêu cầu rõ ràng.

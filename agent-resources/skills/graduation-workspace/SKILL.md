@@ -19,6 +19,8 @@ Follow the shared work standard in [references/workspace-standard.md](references
 
 For a user-reported completed weekly task, read `task-completion-recording` before changing its status. That workflow collects products and verifies every DoD before updating the shared task card and personal record.
 
+Before creating a branch, changing code or opening a pull request, read `docs/processed/rules/naming-rules.md` and `docs/processed/rules/git-and-pull-request-rules.md`. Follow `docs/processed/guides/git-workflow.md` for the execution sequence.
+
 ## Non-negotiable checks
 
 - Write explanatory content in Vietnamese. Use lowercase English kebab-case for new folder and file names.

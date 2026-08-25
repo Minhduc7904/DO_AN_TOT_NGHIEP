@@ -11,6 +11,7 @@
 | Collaborator | Đức review rủi ro platform, observability và reproducibility |
 | Ưu tiên | Trung bình |
 | Hạn dự kiến | 21/08/2026 |
+| Nhánh thực hiện | `docs/week-03/task-04-create-risk-register` |
 
 ## Yêu cầu và phạm vi
 
@@ -47,6 +48,7 @@ Tạo risk register v1 cho các rủi ro scope, testbed, observability, telemetr
 
 - Input workspace: Chưa tạo.
 - Output workspace: Chưa tạo.
+- Pull request: Chưa tạo.
 
 ## Cập nhật tiến độ
 

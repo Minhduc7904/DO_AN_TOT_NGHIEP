@@ -11,6 +11,7 @@
 | Collaborator | Bách bổ sung dependency của telemetry, feature, model và evaluation |
 | Ưu tiên | Cao |
 | Hạn dự kiến | 21/08/2026 |
+| Nhánh thực hiện | `docs/week-03/task-02-create-implementation-backlog` |
 
 ## Yêu cầu và phạm vi
 
@@ -47,6 +48,7 @@ Tạo backlog triển khai có thứ tự cho tuần 3–22. Mỗi backlog item 
 
 - Input workspace: Chưa tạo.
 - Output workspace: Chưa tạo.
+- Pull request: Chưa tạo.
 
 ## Cập nhật tiến độ
 

@@ -10,6 +10,7 @@
 | Bắt đầu thực tế |  |
 | Hoàn thành thực tế |  |
 | Tổng thời lượng |  |
+| Pull request đã merge |  |
 
 ## Báo cáo công việc đã làm
 
@@ -34,4 +35,4 @@
 - Việc chưa hoàn thành hoặc trở ngại:
 - Bước tiếp theo:
 
-> Chỉ chọn trạng thái **Hoàn thành** khi mọi điều kiện DoD đều đạt và mọi sản phẩm bên trên có link hoặc đường dẫn truy cập được.
+> Chỉ chọn trạng thái **Hoàn thành** khi mọi điều kiện DoD đều đạt, mọi sản phẩm bên trên có link hoặc đường dẫn truy cập được và pull request của task đã merge.

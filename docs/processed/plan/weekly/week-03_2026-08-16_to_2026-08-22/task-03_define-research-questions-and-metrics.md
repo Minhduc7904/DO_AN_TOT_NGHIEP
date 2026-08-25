@@ -11,6 +11,7 @@
 | Collaborator | Đức kiểm tra tính khả thi của telemetry, fault và experiment |
 | Ưu tiên | Cao |
 | Hạn dự kiến | 20/08/2026 |
+| Nhánh thực hiện | `docs/week-03/task-03-define-research-questions-and-metrics` |
 
 ## Yêu cầu và phạm vi
 
@@ -47,6 +48,7 @@ Chốt tập RQ và metric v1 phục vụ anomaly detection, incident detection,
 
 - Input workspace: Chưa tạo.
 - Output workspace: Chưa tạo.
+- Pull request: Chưa tạo.
 
 ## Cập nhật tiến độ
 

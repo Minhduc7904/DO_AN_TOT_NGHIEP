@@ -11,6 +11,7 @@
 | Collaborator | Đức review tính phù hợp với testbed, telemetry và fault có thể tạo |
 | Ưu tiên | Trung bình |
 | Hạn dự kiến | 22/08/2026 |
+| Nhánh thực hiện | `docs/week-03/task-05-create-literature-matrix` |
 
 ## Yêu cầu và phạm vi
 
@@ -47,6 +48,7 @@ Lập literature matrix v0 cho các baseline và hướng phương pháp cần t
 
 - Input workspace: Chưa tạo.
 - Output workspace: Chưa tạo.
+- Pull request: Chưa tạo.
 
 ## Cập nhật tiến độ
 
