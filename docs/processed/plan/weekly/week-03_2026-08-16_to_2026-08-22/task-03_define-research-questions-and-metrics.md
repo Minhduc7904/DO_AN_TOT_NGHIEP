@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-03_define-research-questions-and-metrics` |
 | Tuần | `week-03_2026-08-16_to_2026-08-22` |
-| Trạng thái | Đã giao |
+| Trạng thái | Đang thực hiện |
 | Người phụ trách | Bách |
 | Collaborator | Đức kiểm tra tính khả thi của telemetry, fault và experiment |
 | Ưu tiên | Cao |
@@ -46,11 +46,11 @@ Chốt tập RQ và metric v1 phục vụ anomaly detection, incident detection,
 
 ## Liên kết hồ sơ thực hiện
 
-- Input workspace: Chưa tạo.
-- Output workspace: Chưa tạo.
+- Input workspace: [`workspace/bach/week-03_2026-08-16_to_2026-08-22/task-03_define-research-questions-and-metrics/input/task-input.md`](../../../../../workspace/bach/week-03_2026-08-16_to_2026-08-22/task-03_define-research-questions-and-metrics/input/task-input.md).
+- Output workspace: [`workspace/bach/week-03_2026-08-16_to_2026-08-22/task-03_define-research-questions-and-metrics/output/task-output.md`](../../../../../workspace/bach/week-03_2026-08-16_to_2026-08-22/task-03_define-research-questions-and-metrics/output/task-output.md).
 - Pull request: Chưa tạo.
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 16/08/2026 — task được phân công.
+- Cập nhật gần nhất: 26/08/2026 — Bách đã khởi tạo task theo workflow và bắt đầu thực hiện.
 - Ghi chú/tồn đọng: là đầu vào cho task-04 và task-05.
