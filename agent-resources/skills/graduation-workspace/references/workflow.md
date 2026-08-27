@@ -16,11 +16,11 @@
 
 - Khi người phụ trách đã hoàn thiện work, bằng chứng DoD và PR, người phụ trách cập nhật URL/số PR và task sang `Chờ review`, rồi commit/push transition này vào chính PR trước review theo [vòng đời task canonical](../../../../docs/processed/rules/git-and-pull-request-rules.md#vòng-đời-task-canonical). Requirement này không tự cho phép agent chạy Git write khi user chưa yêu cầu.
 - Khi review code hoặc PR của người khác, đọc `task-code-review`; skill này chỉ đưa verdict review, không cập nhật hồ sơ hoặc trạng thái task.
-- Khi người phụ trách xử lý feedback trên PR của chính task, đọc `pr-review-response`; sau khi review lại đạt, đọc `task-completion-recording` để finalization và ghi `Hoàn thành` vào chính branch/PR trước merge.
+- Khi người phụ trách xử lý feedback trên PR của chính task, đọc `pr-review-response`; sau khi mọi feedback blocking đã được sửa, kiểm chứng, push và reply, reviewer kiểm tra tập trung phần sửa rồi gửi `APPROVED`. Chỉ sau khi xác minh approval hợp lệ trên GitHub mới đọc `task-completion-recording` để finalization và ghi `Hoàn thành` vào chính branch/PR.
 - Trước khi tạo nhánh, thay đổi code hoặc mở PR, đọc `docs/processed/rules/naming-rules.md`, `docs/processed/rules/git-and-pull-request-rules.md` và `docs/processed/guides/git-workflow.md`; dùng template PR canonical.
 
 ## Ràng buộc không thương lượng
 
 - Nội dung diễn giải viết bằng tiếng Việt; tên file và thư mục mới dùng tiếng Anh, chữ thường, ASCII và kebab-case.
 - Tôn trọng quyền sở hữu `workspace/duc/` và `workspace/bach/`; không âm thầm ghi đè việc hoặc output của thành viên còn lại.
-- Trên branch task, người phụ trách chỉ finalization/ghi `Hoàn thành` khi mọi DoD được đánh dấu đạt, sản phẩm có thể truy cập, thời gian được ghi và review đã đạt. Trạng thái đó chỉ canonically hoàn thành khi cùng commit đã merge vào nhánh canonical; không tạo commit bookkeeping sau merge.
+- Trên branch task, người phụ trách chỉ finalization/ghi `Hoàn thành` khi mọi DoD được đánh dấu đạt, sản phẩm có thể truy cập, thời gian được ghi, mọi feedback blocking đã được xử lý và GitHub có `APPROVED` hợp lệ từ thành viên còn lại. Người phụ trách là người duy nhất yêu cầu/thực hiện merge task của mình; trạng thái chỉ canonically hoàn thành khi cùng commit đã merge vào nhánh canonical. Không tạo commit bookkeeping sau merge.

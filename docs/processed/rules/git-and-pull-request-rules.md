@@ -27,25 +27,26 @@
 → tạo PR
 → cập nhật URL/số PR vào hồ sơ task và chuyển sang Chờ review
 → commit/push URL PR + trạng thái Chờ review vào chính branch/PR của task
-→ task-code-review đưa verdict
-→ (CHANGES_REQUESTED: pr-review-response xử lý, rồi review lại)
-→ APPROVED
+→ task-code-review thực hiện một vòng review đầy đủ và đưa verdict
+→ (CHANGES_REQUESTED: người phụ trách dùng pr-review-response xử lý, kiểm chứng và reply)
+→ reviewer kiểm tra tập trung phần đã sửa và gửi APPROVED
 → người phụ trách dùng task-completion-recording để finalization metadata
 → commit/push metadata vào chính branch/PR của task
-→ (nếu approval bị invalidated: reviewer kiểm tra finalization diff rồi re-approve)
-→ merge PR vào nhánh canonical
+→ người phụ trách yêu cầu/thực hiện merge PR vào nhánh canonical
 → `main` nhận substantive work + completion record + trạng thái Hoàn thành
 ```
 
 - **Invariant Git khép kín:** Mọi thay đổi tracked thuộc lifecycle của một task, gồm artifact, output task, card task, weekly overview, tham chiếu PR/review và trạng thái `Hoàn thành`, phải được commit/push và đưa vào chính branch/PR của task trước khi merge, đồng thời tuân thủ các review và branch-protection requirements áp dụng cho PR đó. Sau khi PR task đã merge, không tạo bookkeeping commit chỉ để cập nhật trạng thái task, merge SHA, merge timestamp, trạng thái PR hoặc metadata có thể suy ra từ Git/GitHub. Post-merge commit chỉ hợp lệ khi là thay đổi/correction thực sự mới có scope riêng.
 - **Readiness review trên PR head:** Nếu user cung cấp URL/số PR, reviewer dùng trực tiếp. Nếu user chỉ nêu task, reviewer đọc card canonical để lấy tên branch rồi tìm PR đang mở có head branch khớp; không tìm được hoặc có nhiều PR mơ hồ thì báo rõ, không suy diễn. `Chờ review` chỉ hợp lệ để bắt đầu review khi URL/số PR và trạng thái này đã nằm trong commit hiện tại ở remote PR head/task branch. Reviewer lấy trạng thái operational của task từ card trên PR head tương ứng, không từ working tree local hoặc `main`. Nếu không xác định/đọc được đúng PR head, không tự suy diễn từ `main` và chưa bắt đầu review.
-- **Trạng thái trên branch và trạng thái canonical:** Sau `APPROVED`, `task-completion-recording` được phép ghi `Hoàn thành` trên branch task như trạng thái đã finalization/sẵn sàng merge. Đây chưa phải trạng thái hoàn thành project-wide. Task chỉ **canonically hoàn thành** khi commit đó đã được merge vào `main`; khi trả lời trạng thái task hoặc công việc tuần phải ưu tiên card trên `main`, và chỉ nêu branch state là thông tin bổ sung khi cần.
+- **Trạng thái trên branch và trạng thái canonical:** Chỉ sau khi GitHub ghi nhận verdict `APPROVED` hợp lệ từ thành viên còn lại, `task-completion-recording` mới được phép ghi `Hoàn thành` trên branch task như trạng thái đã finalization/sẵn sàng merge. Đây chưa phải trạng thái hoàn thành project-wide. Task chỉ **canonically hoàn thành** khi chính người phụ trách merge commit đó vào `main`; khi trả lời trạng thái task hoặc công việc tuần phải ưu tiên card trên `main`, và chỉ nêu branch state là thông tin bổ sung khi cần.
 - Người phụ trách tự cập nhật card/output/weekly overview với URL/số PR rồi chuyển task sang `Chờ review` khi work, bằng chứng DoD và PR hợp lệ đã sẵn sàng. Transition này phải được commit/push vào chính PR trước khi request hoặc bắt đầu review; `Chờ review` chỉ ở local không đủ điều kiện.
-- Reviewer chỉ dùng `task-code-review` để review và đưa verdict `APPROVED` hoặc `CHANGES_REQUESTED`; reviewer không sửa artifact của người phụ trách, không cập nhật card/weekly overview/output và không chuyển trạng thái task.
-- Khi có `CHANGES_REQUESTED`, người phụ trách dùng `pr-review-response` để xử lý feedback, kiểm chứng, commit/push và reply đúng thread; task vẫn chờ review lại.
-- `APPROVED` chỉ xác nhận substantive work đủ điều kiện finalization; không đồng nghĩa PR đã merge hoặc task đã canonically hoàn thành. Sau verdict này, chính người phụ trách dùng `task-completion-recording` **trước merge** để cập nhật output, card task, weekly overview, URL PR và verdict review, rồi chuyển trạng thái branch sang `Hoàn thành`. Agent không tự merge nếu người dùng chưa yêu cầu rõ.
-- Finalization commit chỉ được chứa metadata/lifecycle: output, card, weekly overview, trạng thái, URL/số PR và verdict/reviewer. Không được lén thay đổi substantive artifact hoặc code; nếu cần sửa substantive work sau `APPROVED`, quay lại luồng review bình thường.
-- Nếu GitHub/branch protection dismiss approval sau finalization commit, reviewer chỉ kiểm tra diff finalization có đúng metadata hợp lệ rồi re-approve. Nếu approval vẫn hợp lệ, không bắt buộc thêm một review ceremony. Sau re-approval không tạo thêm tracked lifecycle change trước merge, trừ khi phát hiện vấn đề mới; khi đó quay lại đúng luồng review. Không bypass branch protection và không tạo vòng lặp review vô hạn.
+- Reviewer dùng `task-code-review` để thực hiện **một vòng review đầy đủ** và đưa verdict `APPROVED` hoặc `CHANGES_REQUESTED`; reviewer không sửa artifact của người phụ trách, không cập nhật card/weekly overview/output, không chuyển trạng thái task và không chịu trách nhiệm merge.
+- Khi có `CHANGES_REQUESTED`, người phụ trách dùng `pr-review-response` để xử lý từng feedback blocking, kiểm chứng, commit/push và reply đúng thread. Sau đó reviewer chỉ cần kiểm tra tập trung các thay đổi xử lý feedback, không review lại toàn bộ PR, nhưng vẫn phải gửi verdict GitHub `APPROVED` trước khi task được finalization hoặc merge.
+- **Cổng approval bắt buộc:** trước finalization và trước merge, phải đọc review submissions trên GitHub và xác minh có `APPROVED` còn hiệu lực từ đúng collaborator/reviewer là thành viên còn lại. Self-approval của người phụ trách, review `COMMENTED`, approval đã bị dismiss/stale hoặc approval không thuộc reviewer được chỉ định đều không hợp lệ.
+- `APPROVED` chỉ xác nhận task đủ điều kiện finalization; không đồng nghĩa PR đã merge hoặc task đã canonically hoàn thành. Chính người phụ trách dùng `task-completion-recording` **trước merge** để cập nhật output, card task, weekly overview, URL PR và reviewer/verdict, rồi chuyển trạng thái branch sang `Hoàn thành`.
+- Finalization commit chỉ được chứa metadata/lifecycle: output, card, weekly overview, trạng thái, URL/số PR và verdict/reviewer. Không được lén thay đổi substantive artifact hoặc code. Mọi sửa đổi substantive do feedback phải nằm trong commit xử lý feedback trước finalization.
+- **Quyền merge:** người phụ trách task là người duy nhất được yêu cầu hoặc thực hiện merge PR của task đó sau finalization. Reviewer không merge thay người phụ trách. Agent chỉ merge khi người dùng hiện tại nói rõ họ là đúng người phụ trách và yêu cầu merge.
+- Nếu có commit mới sau `APPROVED`, gồm cả finalization, làm approval bị stale/dismissed thì người phụ trách chưa được merge. Reviewer chỉ cần kiểm tra diff mới kể từ lần review trước và re-approve; không cần review lại toàn bộ PR. Không bypass branch protection.
 - `Chờ xử lý` chỉ dùng cho blocker/dependency thực sự (ví dụ: quyết định, credential, hạ tầng hoặc artifact từ task khác), không dùng chỉ vì PR đang chờ merge.
 
 ## Commit/push: điều kiện workflow và quyền thực thi
@@ -59,8 +60,8 @@
 - Mỗi task phải có một pull request vào `main`, kể cả task chỉ thay đổi tài liệu.
 - Pull request phải gắn với đúng nhánh và card task; link PR phải được ghi trong output task và card task chung.
 - Khi người phụ trách xác nhận đã làm xong và DoD có bằng chứng, cập nhật URL/số PR, output/card/weekly overview và chuyển task sang **Chờ review**, không phải **Hoàn thành**. Toàn bộ transition này phải được commit/push vào PR head trước khi request hoặc bắt đầu review.
-- Ít nhất collaborator được chỉ định, hoặc thành viên còn lại của nhóm, phải review PR trước khi verdict `APPROVED` được đưa ra. Chỉ bỏ qua review khi người dùng yêu cầu rõ và lý do được ghi trong PR.
-- Sau `APPROVED`, người phụ trách phải finalization bằng `task-completion-recording` và push metadata vào chính PR. PR chỉ được merge vào `main` sau khi finalization đã sẵn sàng và mọi yêu cầu review/branch protection còn hiệu lực đã được đáp ứng.
+- Ít nhất collaborator được chỉ định, hoặc thành viên còn lại của nhóm, phải review PR và gửi verdict GitHub `APPROVED`. Không được bỏ qua approval cho task thông thường.
+- Sau `APPROVED`, người phụ trách finalization bằng `task-completion-recording` và push metadata vào chính PR. PR chỉ được người phụ trách merge vào `main` khi approval của thành viên còn lại vẫn hợp lệ trên GitHub, finalization đã sẵn sàng và mọi yêu cầu branch protection còn hiệu lực đã được đáp ứng.
 - URL hoặc số PR là tham chiếu ổn định bắt buộc và có thể được cập nhật sau khi PR được tạo bằng một commit tiếp theo trên chính branch task. Không yêu cầu merge SHA, merge commit/reference, merge timestamp hoặc trạng thái mutable `Đã merge` trong Markdown; Git/GitHub là nguồn tra cứu các dữ liệu đó.
 
 ## Nội dung pull request bắt buộc
@@ -79,4 +80,4 @@ Mục **Database** phải ghi rõ có hay không có migration, schema, seed, d�
 
 - Mọi kiểm tra phù hợp với task phải chạy và kết quả được ghi trong PR.
 - Thay đổi contract, schema telemetry, database hoặc cấu hình runtime phải được nêu trong PR và cập nhật tài liệu liên quan.
-- PR chỉ được merge khi không còn comment bắt buộc, review đã đáp ứng rule và phạm vi vẫn đúng task đã giao.
+- PR chỉ được người phụ trách merge khi không còn feedback blocking chưa xử lý, GitHub có `APPROVED` hợp lệ từ thành viên còn lại, finalization đã được push, branch protection cho phép và phạm vi vẫn đúng task đã giao.
