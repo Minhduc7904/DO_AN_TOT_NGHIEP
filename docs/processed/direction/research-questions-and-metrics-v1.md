@@ -43,7 +43,7 @@ test runs              -> final metrics only
 
 Không để window của cùng một `run_id` xuất hiện ở nhiều split. Không thay threshold, RCA weight, feature/window configuration hoặc lựa chọn model sau khi xem kết quả final test campaign.
 
-### 2.3. Testbed và ground truth tối thiểu
+### 2.3. Testbed, ground truth và provenance tối thiểu
 
 MVP sử dụng năm fault category canonical:
 
@@ -55,21 +55,42 @@ MVP sử dụng năm fault category canonical:
 
 Evaluation floor là `5 scenarios × 3 repetitions = 15 controlled fault runs`, cộng healthy runs gồm normal traffic và healthy high-load spike để đo false positive/workload shift.
 
-Mỗi run cần truy vết tối thiểu được:
+Mỗi experiment run cần có provenance tối thiểu sau để tái lập và truy ngược kết quả:
 
 ```text
 run_id
 scenario_id
+repeat_index
 fault_type
 fault_target
+fault_intensity
+fault_parameters (nếu có)
 fault_start
 fault_end
 root_cause_service
 root_cause_component (nếu có)
 workload_profile / workload_seed
-telemetry artifact + config/schema versions
-prediction artifact
+code_commit
+service_versions
+experiment_config_version
+feature_config_version
+detector_config_version
+incident_config_version
+rca_config_version
+evaluation_config_version
+raw telemetry artifact + telemetry schema version
+feature artifact
+detector output
+incident artifact
+RCA artifact
 evaluation artifact
+degradation_type / degradation_config_version / degradation_seed / degradation_parameters (khi áp dụng RQ4)
+```
+
+Không dùng một `config_version` chung thay cho các version theo từng stage. Với RQ4, degraded telemetry là transformation có thể tái lập từ raw telemetry artifact của baseline run; mọi field degradation được lưu cùng lineage của pair so sánh. Từ một evaluation result phải truy ngược được theo chuỗi:
+
+```text
+evaluation → RCA → incident → detector → feature → telemetry/degradation → baseline run → code/config/fault/workload provenance
 ```
 
 ### 2.4. Telemetry modalities
@@ -238,6 +259,8 @@ vs
 one controlled degraded-telemetry condition
 ```
 
+Đây là **strict paired comparison** bắt buộc: full và degraded condition của mỗi pair phải được tạo từ cùng một baseline experiment run/raw telemetry artifact và dùng cùng ground truth. Không được dùng hai workload/fault run độc lập làm hai nhánh của cùng comparison, vì sẽ làm lẫn tác động của telemetry degradation với workload variation, fault variation hoặc runtime noise.
+
 Điều kiện degraded được chốt ở evaluation protocol tuần 4 theo một trong hai hướng canonical:
 
 1. controlled trace dropping/sampling simulation trên telemetry artifact; hoặc
@@ -248,14 +271,16 @@ Không mở rộng thành matrix nhiều sampling level × nhiều modality comb
 ### 6.3. Input cần thiết
 
 - Baseline telemetry artifact thu theo campaign chuẩn, ưu tiên 100% trace sampling cho baseline.
+- Cùng baseline `run_id`, scenario, `repeat_index`, workload, fault, fault timing và ground truth cho cả full/degraded condition của mỗi pair.
 - Missingness flags/coverage metadata.
 - Cùng prediction/evaluation config version cho từng pair so sánh, trừ phần cấu hình degradation được ghi rõ.
-- Ground truth của cùng run/scenario để so sánh paired khi khả thi.
+- `degradation_type`, `degradation_config_version`, `degradation_parameters` và `degradation_seed` nếu transformation có randomness.
 
 ### 6.4. Baseline/phương pháp
 
-- Full telemetry/baseline condition.
-- Degraded telemetry condition được tạo có kiểm soát và reproducible.
+- Full condition giữ nguyên baseline telemetry artifact.
+- Degraded condition được tạo có kiểm soát và reproducible bằng transformation trên chính baseline telemetry artifact; chỉ telemetry condition được thay đổi.
+- Cả hai condition giữ nguyên baseline run identity, scenario, repetition, workload, fault, fault timing, ground truth và các configuration không thuộc degradation.
 - Fallback metrics/log evidence được ghi nhận khi trace không đủ, thay vì silently impute như dữ liệu quan sát thật.
 
 ### 6.5. Metrics
@@ -329,7 +354,7 @@ Không tạo một “accuracy tổng hợp” hoặc utility score duy nhất c
 | RQ1 — Multi-source telemetry | `M` vs `M+T` vs `M+T+L` | Metrics, traces, logs; run/fault interval; `root_cause_service` | Static threshold, robust z-score, Isolation Forest/equivalent; cùng RCA logic theo modality | Detection Precision/Recall/F1/FPR/Delay; RCA Top-1/Top-3/MRR |
 | RQ2 — Dependency graph | severity-only vs graph-aware; without graph vs with graph | Anomaly score, trace dependency graph, edge degradation, `root_cause_service` | Rank by anomaly severity; graph-aware baseline/ranker | RCA Top-1/Top-3/MRR; Average Rank bổ sung |
 | RQ3 — Temporal information | without temporal vs with temporal | UTC timeline, fault start/end, per-service anomaly/evidence onset, trace timing | No-temporal variant; earliest-anomaly baseline; temporal-aware ranker | RCA Top-1/Top-3/MRR; Average Rank bổ sung |
-| RQ4 — Robustness | full telemetry vs một degraded condition | Baseline artifact, coverage/missingness, same ground truth | Controlled trace dropping/sampling **hoặc** missing-modality evaluation | Delta + absolute Detection metrics; delta + absolute RCA metrics |
+| RQ4 — Robustness | full telemetry vs một degraded condition, strict paired trên cùng baseline run/artifact | Baseline artifact, coverage/missingness, cùng ground truth; degradation config/parameters/seed | Controlled trace dropping/sampling **hoặc** missing-modality evaluation từ baseline artifact | Delta + absolute Detection metrics; delta + absolute RCA metrics |
 | RQ5 — Engineering trade-off | representative simple vs richer variants | Kết quả RQ1–RQ4 + timing/resource + app overhead + evidence | Bảng trade-off, không composite score | Quality metrics + runtime/CPU/memory/artifact size + throughput/p95 overhead + explainability checks |
 
 ## 9. Metric definitions v1
@@ -381,6 +406,8 @@ Các metric system canonical:
 - cùng test campaign không dùng để chọn threshold/weight/model;
 - cùng version metadata đủ để tái lập.
 
+Riêng RQ4 phải giữ cùng baseline run/artifact và ground truth giữa full/degraded condition; chỉ transformation telemetry có kiểm soát được phép khác.
+
 Nếu một comparison bắt buộc phải thay configuration vì feature/input khác nhau, thay đổi phải được ghi rõ và tune chỉ trên training/validation.
 
 ## 11. Feasibility review cần Đức xác nhận
@@ -392,7 +419,7 @@ Trước khi task được chuyển `Hoàn thành`, collaborator cần review t�
 | RQ1 | Metrics/traces/logs có correlation và đủ signal để tạo `M`, `M+T`, `M+T+L`; workload/fault tạo được symptom quan sát được ở nhiều modality. |
 | RQ2 | Distributed traces cho phép dựng dependency edge ổn định ở các flow HTTP/RabbitMQ cần đánh giá; fault propagation tạo được case severity-only dễ nhầm root cause với symptom. |
 | RQ3 | Timestamp/trace timing và fault `start/end` đủ nhất quán để ước lượng onset/precedence; propagation không bị che bởi clock/config inconsistency. |
-| RQ4 | Có thể tạo degraded telemetry condition reproducible từ baseline artifact mà không làm sai ground truth; coverage/missingness được lưu rõ. |
+| RQ4 | Có thể tạo degraded telemetry condition reproducible từ telemetry artifact của cùng baseline run, lưu type/config/parameters/seed và giữ nguyên ground truth; coverage/missingness được lưu rõ. |
 | RQ5 | Runner/testbed có thể đo timing/resource và application throughput/p95 overhead đủ lặp lại để so sánh variant. |
 
 Nếu một điểm không khả thi, cần chỉnh **phép đo hoặc scope evaluation**, không tự thay đổi RQ canonical trong file này. Thay đổi RQ canonical phải cập nhật tài liệu định hướng tương ứng.
