@@ -8,11 +8,11 @@
 | Tên task | Chốt research questions và metric đánh giá |
 | Người phụ trách | Bách |
 | Tuần thực hiện | `week-03_2026-08-16_to_2026-08-22` |
-| Trạng thái | Đang thực hiện |
+| Trạng thái | Hoàn thành |
 | Ngày tạo | 26/08/2026 |
 | Thời gian dự kiến | Theo hạn dự kiến trong task card: 20/08/2026; thời lượng cụ thể sẽ chốt khi bắt đầu deliverable |
 | Nhánh thực hiện | `docs/week-03/task-03-define-research-questions-and-metrics` |
-| Pull request dự kiến | PR vào `main` từ branch task này, sẽ tạo sau khi hoàn tất deliverable |
+| Pull request dự kiến | [PR #2](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/2) từ branch task vào `main`, đã merge tại commit `7a8217165cbd27d986751d26aedc79fb0b628f42` |
 
 ## Mục tiêu và phạm vi
 
@@ -45,4 +45,4 @@ Chốt bộ research questions và metric v1 phục vụ anomaly detection, inci
 - [ ] Metric detection, RCA và system phù hợp blueprint, bao gồm quy tắc không tune trên test campaign.
 - [ ] Đức đã review tính khả thi của việc instrument, inject fault, thu ground truth và chạy evaluation cho từng RQ.
 - [ ] Sản phẩm được lưu tại `docs/processed/direction/research-questions-and-metrics-v1.md` và có thể truy cập.
-- [ ] Pull request từ branch task vào `main` có đủ mục bắt buộc, được Đức review và chỉ được merge sau khi task đạt trạng thái `Hoàn thành`.
+- [ ] Pull request từ branch task vào `main` có đủ mục bắt buộc, được Đức review, merge vào `main` và có merge reference để ghi nhận task hoàn thành.

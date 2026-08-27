@@ -24,9 +24,10 @@
 - Chỉ đăng các nhận xét đã được kiểm chứng từ diff, card task hoặc DoD. Phân biệt blocking issue với góp ý không blocking để người phụ trách biết điều kiện cần sửa.
 - Comment inline không tự đồng nghĩa với `Approve`, `Request changes` hoặc merge; chỉ thực hiện các hành động đó khi người dùng yêu cầu rõ.
 
-## Kết quả và trạng thái
+## Kết quả và ranh giới trách nhiệm
 
-1. Báo cáo phạm vi thay đổi, các yêu cầu PR đã kiểm, blocking issues, non-blocking suggestions và kết luận `Đạt` hoặc `Cần chỉnh sửa`.
-2. Nếu có blocking issue hoặc thiếu bằng chứng DoD, nêu rõ phần cần sửa và không approve/merge.
-3. Reviewer không tự sửa trạng thái card task, weekly overview, input/output hoặc gắn link PR thay người phụ trách. Người phụ trách task tự ghi nhận các cập nhật đó theo quy trình tương ứng.
-4. Không tự merge. Pull request chỉ được merge sau khi task ở trạng thái `Hoàn thành` và người dùng yêu cầu rõ.
+1. Báo cáo phạm vi thay đổi, các yêu cầu PR đã kiểm, blocking issues, non-blocking suggestions và verdict duy nhất: `APPROVED` khi không còn blocking issue/thiếu bằng chứng DoD, hoặc `CHANGES_REQUESTED` khi còn ít nhất một điều kiện blocking.
+2. Khi người dùng yêu cầu rõ và tài khoản GitHub xác thực đúng reviewer, có thể đăng verdict review và inline comment tương ứng. Không approve/request changes/merge chỉ vì đã đăng comment inline.
+3. Reviewer không tự sửa artifact của người phụ trách, trạng thái card task, weekly overview, input/output hoặc gắn link PR. Reviewer không ghi completion record hay chuyển task sang `Hoàn thành`.
+4. Với `CHANGES_REQUESTED`, người phụ trách xử lý bằng `pr-review-response` rồi gửi review lại. Với `APPROVED`, PR vẫn phải merge vào nhánh canonical trước khi người phụ trách dùng `task-completion-recording` để ghi nhận `Hoàn thành` theo [vòng đời task canonical](../../../../docs/processed/rules/git-and-pull-request-rules.md#vòng-đời-task-canonical).
+5. Không tự merge; thao tác merge chỉ thực hiện khi người dùng yêu cầu rõ.

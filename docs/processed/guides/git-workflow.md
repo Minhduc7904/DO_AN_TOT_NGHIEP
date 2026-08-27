@@ -23,7 +23,7 @@
 ## 2. Trong khi làm
 
 - Chỉ đưa thay đổi phục vụ task vào nhánh; nếu phát sinh việc độc lập, tạo task và nhánh mới.
-- Commit theo lát thay đổi có thể review. Dùng [mẫu commit message](../../../.github/commit-message-template.md): tóm tắt bằng tiếng Việt, ví dụ `docs: chốt phạm vi MVP`. Khi cần mô tả thêm, dùng phần `Tổng quan:` với 1–3 gạch đầu dòng ngắn.
+- Commit theo lát thay đổi có thể review. Dùng [mẫu commit message](../../../.github/commit-message-template.md): ưu tiên tóm tắt tiếng Việt, ví dụ `docs: chốt phạm vi MVP`; dùng tiếng Anh khi thuật ngữ kỹ thuật, tên riêng hoặc ngữ cảnh rõ hơn. Khi cần mô tả thêm, dùng phần `Tổng quan:` với 1–3 gạch đầu dòng ngắn.
 - Trước khi push, chạy các kiểm tra phù hợp với thay đổi và xem lại `git diff`.
 
 ## 3. Tạo pull request
@@ -38,13 +38,12 @@
 3. Gắn link PR vào file task chung và `output/task-output.md` khi có.
 4. Khi người phụ trách báo đã xong và đã xác nhận từng DoD, ghi output/card task với link PR và chuyển task sang `Chờ review`.
 5. Yêu cầu collaborator hoặc thành viên còn lại review đúng phần đã ghi trong mục **Cần review** của PR.
-6. Xử lý comment và cập nhật kiểm tra nếu cần. Chỉ khi review đạt mới chuyển task sang `Hoàn thành`.
+6. Nếu review yêu cầu thay đổi, người phụ trách dùng `pr-review-response` để xử lý, kiểm chứng, push và reply thread; sau đó gửi review lại. Review đạt chưa được chuyển task sang `Hoàn thành`.
 
-## 4. Sau khi review và merge
+## 4. Sau review: merge rồi ghi nhận hoàn thành
 
-- Ghi reviewer, kết quả review, sản phẩm, link PR và bằng chứng DoD trong output task.
-- Sau khi task ở `Hoàn thành`, PR mới đủ điều kiện để merge. Không tự merge nếu người dùng chưa yêu cầu.
-- Khi đã merge, cập nhật trạng thái PR trong output/card task.
+- `APPROVED` là verdict review, không phải trạng thái task `Hoàn thành`. PR chỉ được merge sau verdict này và khi người dùng yêu cầu rõ.
+- Sau khi PR đã merge vào `main`, người phụ trách dùng `task-completion-recording` để ghi reviewer/verdict, sản phẩm, link PR, merge reference và bằng chứng DoD trong output/card/weekly overview, rồi chuyển task sang `Hoàn thành`.
 
 ## Xử lý ngoại lệ
 

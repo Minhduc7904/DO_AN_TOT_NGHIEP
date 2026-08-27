@@ -46,4 +46,4 @@
 
 - Báo cáo comment nào đã xử lý, commit/file/kiểm tra tương ứng, comment nào đang chờ làm rõ và link các reply đã đăng.
 - Chỉ người phụ trách task mới tự cập nhật hồ sơ của mình theo quy trình phù hợp. Skill này không cập nhật card task, weekly overview, input/output, link PR hoặc trạng thái `Hoàn thành`.
-- Không tự merge; chỉ merge sau khi task đã `Hoàn thành` và người dùng yêu cầu rõ.
+- Skill này không tự quyết định task đã hoàn thành, không tự merge và không đổi trạng thái task. Sau khi feedback đã được xử lý, task cần review lại; sau `APPROVED` và khi PR đã merge vào nhánh canonical, người phụ trách dùng `task-completion-recording` để ghi nhận `Hoàn thành` theo [vòng đời task canonical](../../../../docs/processed/rules/git-and-pull-request-rules.md#vòng-đời-task-canonical).

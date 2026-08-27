@@ -41,4 +41,4 @@
 - [ ] Điều kiện kiểm tra 1 có thể xác minh được.
 - [ ] Điều kiện kiểm tra 2 có thể xác minh được.
 - [ ] Sản phẩm đã được lưu/đẩy lên vị trí dự kiến và có thể truy cập.
-- [ ] Pull request từ nhánh task có mô tả đúng quy tắc, đã được review và được phép merge.
+- [ ] Pull request từ nhánh task có mô tả đúng quy tắc, đã được review, merge vào nhánh canonical và có merge reference để ghi nhận task hoàn thành.

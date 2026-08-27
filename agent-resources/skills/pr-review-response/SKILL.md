@@ -9,4 +9,4 @@ Dùng skill này khi người phụ trách task cần đọc review của ngư�
 
 Trước khi thực hiện, đọc [AGENTS.md](../../../AGENTS.md), skill `graduation-workspace`, [quy trình xử lý review](references/workflow.md) và [bảng nguồn canonical](templates/canonical-templates.md).
 
-Mọi reply trên GitHub phải được đăng qua tài khoản GitHub đã xác thực của người phụ trách và không được nhắc đến hoặc ký tên ChatGPT. Skill này không tự approve, request changes, merge, cập nhật trạng thái card/output hay gắn link PR.
+Mọi reply trên GitHub phải được đăng qua tài khoản GitHub đã xác thực của người phụ trách và không được nhắc đến hoặc ký tên ChatGPT. Skill này không tự đưa verdict `APPROVED`/`CHANGES_REQUESTED`, merge, cập nhật trạng thái card/output hay gắn link PR. Sau khi xử lý, task vẫn cần reviewer review lại; chỉ sau khi PR merge, người phụ trách mới dùng `task-completion-recording` để ghi nhận hoàn thành.

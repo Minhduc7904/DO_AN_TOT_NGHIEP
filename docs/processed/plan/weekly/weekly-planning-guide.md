@@ -22,6 +22,6 @@ week-xx_yyyy-mm-dd_to_yyyy-mm-dd/
 1. Đầu tuần, chia hạng mục của plan canonical thành các task nhỏ, kiểm chứng được và phân cho Đức hoặc Bách.
 2. Người thực hiện mở các file có trường **Người phụ trách** là mình để biết task cần làm.
 3. Khi nhận task, đổi trạng thái thành `Đã giao` hoặc `Đang thực hiện`; nên tạo input trong workspace cá nhân trước khi bắt đầu.
-4. Khi hoàn thành, chỉ đánh dấu `Hoàn thành` sau khi sản phẩm và mọi DoD đã được xác nhận, đồng thời có link đến input/output trong workspace cá nhân.
+4. Khi work và DoD đã sẵn sàng, người phụ trách chuyển task sang `Chờ review`. Chỉ ghi nhận `Hoàn thành` sau review đạt, PR đã merge vào nhánh canonical và người phụ trách đã cập nhật completion record cùng link input/output trong workspace cá nhân.
 
 Plan canonical hiện hành quyết định mốc, phạm vi và phân vai cấp cao. Bảng tuần chỉ cụ thể hóa thành task thực hiện; không tự thay đổi nội dung canonical.

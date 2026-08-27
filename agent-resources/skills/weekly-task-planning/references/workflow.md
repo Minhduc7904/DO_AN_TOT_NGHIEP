@@ -13,10 +13,10 @@
 - Tạo đúng một `weekly-overview.md` và một file `task-<nn>_<short-title>.md` cho mỗi task; các file task nằm trực tiếp trong thư mục tuần.
 - Mỗi task phải có kết quả kiểm tra được, người phụ trách duy nhất, phạm vi rõ, phụ thuộc, sản phẩm kỳ vọng và DoD kiểm chứng được. Chia task lớn theo ranh giới deliverable hoặc dependency, không chia thành thao tác vụn.
 - Gán một nhánh Git riêng cho mỗi task theo `docs/processed/rules/naming-rules.md`: `<type>/week-<nn>/task-<nn>-<short-title>`. Ghi nhánh vào card trước khi giao; không dùng một nhánh cho hai task.
-- Mỗi task phải có PR vào `main`. Card task và output giữ link PR. Người phụ trách hoàn tất phần việc sẽ chuyển task sang `Chờ review`; chỉ review đạt mới chuyển `Hoàn thành`, rồi PR mới đủ điều kiện merge. PR tuân thủ rule Git/PR và dùng template PR canonical.
+- Mỗi task phải có PR vào `main`. Card task và output giữ link PR. Người phụ trách hoàn tất phần việc sẽ chuyển task sang `Chờ review`; review đạt phải được merge vào `main` trước khi chính người phụ trách dùng `task-completion-recording` chuyển `Hoàn thành`. PR tuân thủ [vòng đời task canonical](../../../../docs/processed/rules/git-and-pull-request-rules.md#vòng-đời-task-canonical) và template PR canonical.
 - Phân công cân bằng theo vai trò primary/collaborator, độ phức tạp, phụ thuộc và khả năng review chéo. Không gán trái plan canonical hoặc phân công người dùng đã nêu. Nếu chưa đủ dữ kiện, để `Chưa phân công` và hỏi lại.
 - Cập nhật bảng overview khớp với mọi file task. Chỉ dùng trạng thái: `Chưa phân công`, `Đã giao`, `Đang thực hiện`, `Chờ xử lý`, `Chờ review`, `Hoàn thành`.
-- Không đánh dấu hoàn thành chỉ vì plan nói cần làm. Chỉ skill ghi nhận hoàn thành mới chuyển trạng thái khi có bằng chứng.
+- Không đánh dấu hoàn thành chỉ vì plan nói cần làm. Chỉ người phụ trách, qua `task-completion-recording` sau merge, mới chuyển trạng thái khi có đủ bằng chứng.
 
 ## Trả lời “tuần này tôi phải làm gì?”
 

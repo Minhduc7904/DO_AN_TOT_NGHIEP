@@ -38,4 +38,4 @@
 - Việc chưa hoàn thành hoặc trở ngại:
 - Bước tiếp theo:
 
-> Khi phần việc và DoD đã xong nhưng chưa review, dùng **Chờ review**. Chỉ chọn **Hoàn thành** khi mọi DoD đạt, sản phẩm có link/đường dẫn truy cập được và code review đã đạt. Pull request chỉ được merge sau khi task đã ở **Hoàn thành**.
+> Khi phần việc và DoD đã xong nhưng chưa review, dùng **Chờ review**. Review đạt chưa là **Hoàn thành**: PR phải merge vào nhánh canonical, rồi người phụ trách dùng `task-completion-recording` để cập nhật hồ sơ trước khi chuyển **Hoàn thành**. Nếu đang chờ merge, dùng **Chờ xử lý** và ghi rõ điều kiện còn thiếu.

@@ -9,7 +9,7 @@ Trước khi tạo, sửa hoặc đánh giá code, tài liệu, kế hoạch, tu
 
 Khi yêu cầu cần biết người dùng là ai để lọc task, tạo/sửa workspace, ghi nhận hoàn thành hoặc review, chỉ nhận diện theo việc người dùng nói rõ “tôi là Đức” hoặc “tôi là Bách” trong yêu cầu hiện tại. Nếu chưa có thông tin này, phải hỏi lại; không suy đoán từ lịch sử hội thoại, tên tài khoản, tên nhánh, thư mục hoặc task cũ.
 
-Khi lập/chia task tuần hoặc trả lời “tuần này tôi phải làm gì”, đọc thêm `agent-resources/skills/weekly-task-planning/SKILL.md`. Khi người dùng báo đã hoàn thành một task, đọc thêm `agent-resources/skills/task-completion-recording/SKILL.md` và thực hiện đúng chuỗi xác nhận sản phẩm rồi đến từng DoD trước khi chuyển task sang `Chờ review`. Khi review code hoặc pull request, đọc `agent-resources/skills/task-code-review/SKILL.md`.
+Khi lập/chia task tuần hoặc trả lời “tuần này tôi phải làm gì”, đọc thêm `agent-resources/skills/weekly-task-planning/SKILL.md`. Khi review task/PR của người khác, dùng `agent-resources/skills/task-code-review/SKILL.md`. Khi người dùng là người phụ trách và muốn xử lý feedback/comment/review trên PR của chính task, dùng `agent-resources/skills/pr-review-response/SKILL.md`. Khi PR đã được review đạt, merge vào nhánh canonical và người phụ trách muốn ghi nhận/đóng task, dùng `agent-resources/skills/task-completion-recording/SKILL.md`.
 
 Trước khi tạo branch, vibe code, hard code hoặc mở pull request, bắt buộc đọc:
 
@@ -17,6 +17,6 @@ Trước khi tạo branch, vibe code, hard code hoặc mở pull request, bắt 
 2. `docs/processed/rules/git-and-pull-request-rules.md`
 3. `docs/processed/guides/git-workflow.md`
 
-Mỗi task phải có nhánh riêng và pull request trước khi chuyển sang `Chờ review`. Chỉ skill review mới được chuyển task sang `Hoàn thành`; PR chỉ được merge sau trạng thái này và khi người dùng yêu cầu rõ. Pull request phải dùng template `.github/pull_request_template.md`.
+Mỗi task phải có nhánh riêng và pull request trước khi chuyển sang `Chờ review`. Vòng đời task canonical nằm tại `docs/processed/rules/git-and-pull-request-rules.md`: review đạt không đồng nghĩa `Hoàn thành`; chỉ người phụ trách, qua `task-completion-recording`, mới ghi nhận `Hoàn thành` sau khi PR đã merge vào nhánh canonical. Pull request phải dùng template `.github/pull_request_template.md`.
 
 Không tự sửa, di chuyển hoặc xóa tài liệu trong `docs/raw/` hay công việc của thành viên còn lại nếu không có yêu cầu rõ ràng.

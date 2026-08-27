@@ -14,12 +14,13 @@
 
 ## Chuyển trạng thái và Git
 
-- Khi người dùng báo hoàn thành task, đọc `task-completion-recording`. Skill này mới được chuyển task sang `Chờ review` khi có sản phẩm, bằng chứng DoD và PR mở.
-- Khi review code hoặc PR, đọc `task-code-review`. Chỉ skill này được chuyển task sang `Hoàn thành` sau review đạt.
+- Khi người phụ trách đã hoàn thiện work, bằng chứng DoD và PR, người phụ trách cập nhật task sang `Chờ review` theo [vòng đời task canonical](../../../../docs/processed/rules/git-and-pull-request-rules.md#vòng-đời-task-canonical).
+- Khi review code hoặc PR của người khác, đọc `task-code-review`; skill này chỉ đưa verdict review, không cập nhật hồ sơ hoặc trạng thái task.
+- Khi người phụ trách xử lý feedback trên PR của chính task, đọc `pr-review-response`; sau khi review lại đạt và PR đã merge vào nhánh canonical, đọc `task-completion-recording` để người phụ trách ghi nhận `Hoàn thành`.
 - Trước khi tạo nhánh, thay đổi code hoặc mở PR, đọc `docs/processed/rules/naming-rules.md`, `docs/processed/rules/git-and-pull-request-rules.md` và `docs/processed/guides/git-workflow.md`; dùng template PR canonical.
 
 ## Ràng buộc không thương lượng
 
 - Nội dung diễn giải viết bằng tiếng Việt; tên file và thư mục mới dùng tiếng Anh, chữ thường, ASCII và kebab-case.
 - Tôn trọng quyền sở hữu `workspace/duc/` và `workspace/bach/`; không âm thầm ghi đè việc hoặc output của thành viên còn lại.
-- Task chỉ đủ điều kiện hoàn thành khi mọi DoD được đánh dấu đạt, sản phẩm có thể truy cập, thời gian được ghi và review đã đạt.
+- Task chỉ đủ điều kiện hoàn thành khi mọi DoD được đánh dấu đạt, sản phẩm có thể truy cập, thời gian được ghi, review đã đạt, PR đã merge vào nhánh canonical và completion record đã được người phụ trách cập nhật.
