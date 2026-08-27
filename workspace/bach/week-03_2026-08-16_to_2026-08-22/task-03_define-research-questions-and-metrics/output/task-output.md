@@ -11,7 +11,7 @@
 | Hoàn thành thực tế | Đã xử lý blocking review và push cập nhật lúc 27/08/2026 |
 | Tổng thời lượng | 30 phút phiên hoàn thiện ban đầu; có thêm phiên xử lý review ngày 27/08/2026 |
 | Pull request | [PR #2](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/2) |
-| Trạng thái pull request | Đang mở, commit mới nhất `317d01a` |
+| Trạng thái pull request | Đang mở; đã push commit xử lý artifact `317d01a` và commit cập nhật hồ sơ |
 | Người review | Đức |
 | Kết quả review | Đạt; Đức đã review và các blocking feedback đã được xử lý trong commit `317d01a` |
 
@@ -22,7 +22,7 @@
 - Đã bổ sung quy ước split theo experiment run, chống leakage, không tune trên final test campaign và bảng ánh xạ RQ → input → phương pháp → metric.
 - Đã bổ sung provenance/reproducibility cho từng experiment run, gồm identity, fault, implementation, version/config theo từng stage và artifact lineage.
 - Đã xử lý hai blocking comment về provenance và RQ4 strict paired comparison; full/degraded telemetry hiện bắt buộc dùng cùng baseline run/artifact và ground truth.
-- Đã commit `317d01a` và push lên branch của PR #2; không thay đổi phạm vi RQ1–RQ5.
+- Đã commit `317d01a` và push thay đổi artifact lên branch của PR #2; sau đó đã commit/push cập nhật hồ sơ trạng thái, không thay đổi phạm vi RQ1–RQ5.
 - Đã lập checklist feasibility và được Đức review đạt trong PR; PR vẫn đang mở và đủ điều kiện merge.
 
 ## Sản phẩm thực tế
@@ -40,7 +40,7 @@
 | Metric detection, RCA và system phù hợp blueprint, bao gồm quy tắc không tune trên test campaign. | Đạt | [Metric definitions v1](../../../../../docs/processed/direction/research-questions-and-metrics-v1.md#9-metric-definitions-v1) và [các biến phải kiểm soát](../../../../../docs/processed/direction/research-questions-and-metrics-v1.md#10-các-biến-phải-được-kiểm-soát-khi-so-sánh). |
 | Đức đã review tính khả thi của việc instrument, inject fault, thu ground truth và chạy evaluation cho từng RQ. | Đạt | Đức đã review và chấp thuận sau khi xử lý hai blocking comment; thay đổi nằm ở commit `317d01a` trên [PR #2](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/2). |
 | Sản phẩm được lưu tại `docs/processed/direction/research-questions-and-metrics-v1.md` và có thể truy cập. | Đạt | [Tài liệu sản phẩm](../../../../../docs/processed/direction/research-questions-and-metrics-v1.md). |
-| Pull request từ branch task vào `main` có đủ mục bắt buộc, được Đức review và chỉ được merge sau khi task đạt trạng thái `Hoàn thành`. | Đạt; chưa merge | [PR #2](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/2) đang mở đúng branch vào `main`, đã cập nhật commit `317d01a`; task đã ở trạng thái `Hoàn thành`, PR đủ điều kiện merge. |
+| Pull request từ branch task vào `main` có đủ mục bắt buộc, được Đức review và chỉ được merge sau khi task đạt trạng thái `Hoàn thành`. | Đạt; chưa merge | [PR #2](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/2) đang mở đúng branch vào `main`, đã cập nhật artifact bằng commit `317d01a`; task đã ở trạng thái `Hoàn thành`, PR đủ điều kiện merge. |
 
 ## Thay đổi, tồn đọng và bước tiếp theo
 

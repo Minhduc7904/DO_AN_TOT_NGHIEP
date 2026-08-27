@@ -39,10 +39,10 @@ Chốt tập RQ và metric v1 phục vụ anomaly detection, incident detection,
 
 ## Definition of Done
 
-- [ ] RQ1–RQ5 được ghi rõ, có phạm vi MVP và loại phép so sánh/ablation dự kiến; RQ6 chỉ xuất hiện nếu được quyết định bổ sung có chủ đích.
-- [ ] Có bảng ánh xạ RQ → telemetry/ground truth → baseline hoặc phương pháp → metric detection/RCA/system/robustness.
-- [ ] Metric detection, RCA và system phù hợp blueprint, bao gồm quy tắc không tune trên test campaign.
-- [ ] Đức đã review tính khả thi của việc instrument, inject fault, thu ground truth và chạy evaluation cho từng RQ.
+- [x] RQ1–RQ5 được ghi rõ, có phạm vi MVP và loại phép so sánh/ablation dự kiến; RQ6 chỉ xuất hiện nếu được quyết định bổ sung có chủ đích.
+- [x] Có bảng ánh xạ RQ → telemetry/ground truth → baseline hoặc phương pháp → metric detection/RCA/system/robustness.
+- [x] Metric detection, RCA và system phù hợp blueprint, bao gồm quy tắc không tune trên test campaign.
+- [x] Đức đã review tính khả thi của việc instrument, inject fault, thu ground truth và chạy evaluation cho từng RQ.
 
 ## Liên kết hồ sơ thực hiện
 
