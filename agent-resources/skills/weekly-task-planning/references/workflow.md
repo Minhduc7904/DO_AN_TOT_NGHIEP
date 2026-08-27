@@ -23,8 +23,9 @@
 1. Xác định người hỏi là **Đức** hay **Bách** từ yêu cầu hiện tại. Nếu chưa được nêu rõ, hỏi “Bạn là Đức hay Bách?” và không suy đoán từ lịch sử, tài khoản, thư mục hoặc phân công cũ.
 2. Xác định tuần hiện tại theo ngày hiện hành; nếu người dùng chỉ định tuần khác thì dùng tuần đó.
 3. Đọc `weekly-overview.md` và toàn bộ `task-*.md` của tuần. Lọc: (a) task có người phụ trách đúng với người hỏi và trạng thái khác `Hoàn thành`; (b) task `Chờ review` mà người hỏi là collaborator/reviewer.
-4. Tra cứu hệ thống Git của repository để tìm các PR đang mở vào `main` mà người hỏi được yêu cầu review và review của họ chưa hoàn tất. Đối chiếu từng PR với link PR trên card task (nếu có); vẫn liệt kê PR hợp lệ chưa có hoặc chưa đồng bộ với card, nhưng nêu rõ đó là chênh lệch cần xử lý.
-5. Trả lời hai nhóm: **Task cần thực hiện** và **Task/PR cần review**. Nhóm review phải gộp kết quả từ card `Chờ review` và PR đang chờ người hỏi review, không liệt kê trùng. Mỗi dòng có mã task (nếu xác định được), PR, yêu cầu/kết quả, hạn, phụ thuộc và trạng thái. Nếu một nhóm trống, nói rõ; không tự tạo task hoặc thay đổi trạng thái card/PR.
+4. Tra cứu hệ thống Git của repository để tìm mọi PR đang mở vào `main` liên quan đến task của tuần, bằng link PR trên card hoặc nhánh thực hiện ghi trên card. Với mỗi PR, kiểm tra review request và review đã có. Một PR chưa có review vẫn được xem là cần review khi card xác định người hỏi là collaborator/reviewer; không yêu cầu GitHub phải có review request tường minh.
+5. Đối chiếu từng PR với card task. Liệt kê PR cần người hỏi review khi: (a) GitHub yêu cầu người hỏi review và review của họ chưa hoàn tất; hoặc (b) task tương ứng ghi người hỏi là collaborator/reviewer và PR đang mở, chưa có review đạt. Vẫn liệt kê PR hợp lệ chưa có hoặc chưa đồng bộ với card, nhưng nêu rõ đó là chênh lệch cần xử lý.
+6. Trả lời hai nhóm: **Task cần thực hiện** và **Task/PR cần review**. Nhóm review phải gộp kết quả từ card `Chờ review` và PR đang chờ người hỏi review, không liệt kê trùng. Mỗi dòng có mã task (nếu xác định được), PR, yêu cầu/kết quả, hạn, phụ thuộc và trạng thái. Nếu một nhóm trống, nói rõ; không tự tạo task hoặc thay đổi trạng thái card/PR.
 
 ## Liên kết với workspace cá nhân
 
