@@ -6,11 +6,11 @@
 | --- | --- |
 | Mã task | `task-01_define-service-topology` |
 | Người phụ trách | Đức |
-| Trạng thái | Đang thực hiện |
+| Trạng thái | Chờ review |
 | Bắt đầu thực tế | Chưa được Đức cung cấp; hồ sơ được tạo hồi tố ngày 27/08/2026 |
 | Hoàn thành thực tế | Chưa ghi — chờ Bách `APPROVED` và Đức finalization |
 | Tổng thời lượng | Chưa được Đức cung cấp |
-| Pull request | Chưa tạo |
+| Pull request | [PR #6](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/6) |
 | Người review | Bách |
 | Kết quả review | Chưa review |
 
@@ -36,13 +36,13 @@
 | Scope nhất quán backend blueprint | Đạt về nội dung | Mục 9–10 và kết quả đối chiếu canonical |
 | Bách review node/edge quan sát | Chưa đạt | Mục 13 đang ghi `PENDING`; cần review thật trên PR |
 | Artifact nằm đúng vị trí và mở được | Đạt trên nhánh task | Link sản phẩm ở trên |
-| URL PR và `Chờ review` có trên PR head | Chưa đạt | Sẽ cập nhật sau khi PR được tạo |
+| URL PR và `Chờ review` có trên PR head | Đạt | PR #6 và metadata được commit/push trên nhánh task |
 | Approval và finalization trước merge | Chưa đạt | Chờ Bách `APPROVED` trên GitHub |
 
 ## Thay đổi, tồn đọng và bước tiếp theo
 
 - Thay đổi so với input: không mở rộng scope; artifact được đưa từ thư mục gốc vào `docs/processed/architecture/`.
 - Việc chưa hoàn thành hoặc trở ngại: chưa có review/approval của Bách; thời gian bắt đầu và tổng thời lượng chưa được Đức cung cấp.
-- Bước tiếp theo: tạo PR, cập nhật URL và `Chờ review`, sau đó nhờ Bách review boundary telemetry/graph/RCA.
+- Bước tiếp theo: Bách review boundary telemetry/graph/RCA và gửi verdict trên GitHub.
 
 > `Hoàn thành thực tế` chỉ được ghi sau khi có `APPROVED` hợp lệ và Đức thực hiện finalization. Task chỉ canonically hoàn thành sau khi Đức merge PR vào `main`.

@@ -8,11 +8,11 @@
 | Tên task | Chốt service catalogue, dependency graph và architecture diagram v1 |
 | Người phụ trách | Đức |
 | Tuần thực hiện | `week-04_2026-08-23_to_2026-08-29` |
-| Trạng thái | Đang thực hiện |
+| Trạng thái | Chờ review |
 | Ngày tạo | 27/08/2026 — hồ sơ ghi nhận hồi tố từ artifact Đức cung cấp |
 | Thời gian dự kiến | Theo kế hoạch tuần 4; hạn dự kiến 25/08/2026 |
 | Nhánh thực hiện | `docs/week-04/task-01-define-service-topology` |
-| Pull request dự kiến | Từ nhánh task vào `main` |
+| Pull request dự kiến | [PR #6](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/6) |
 
 ## Mục tiêu và phạm vi
 
@@ -45,5 +45,5 @@ Chuẩn hóa service catalogue, dependency graph và architecture diagram v1 cho
 - [x] Scope MVP/Target/Stretch của topology nhất quán với backend blueprint.
 - [ ] Bách review các node/edge cần quan sát và phản hồi được ghi trong artifact.
 - [x] Sản phẩm đã được lưu tại vị trí dự kiến và có thể truy cập trên nhánh task.
-- [ ] URL/số PR và trạng thái `Chờ review` đã được commit/push vào PR head trước khi reviewer bắt đầu review.
+- [x] URL/số PR và trạng thái `Chờ review` đã được commit/push vào PR head trước khi reviewer bắt đầu review.
 - [ ] Pull request có `APPROVED` hợp lệ từ Bách và completion metadata được commit/push trước khi Đức merge.

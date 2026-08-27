@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-01_define-service-topology` |
 | Tuần | `week-04_2026-08-23_to_2026-08-29` |
-| Trạng thái | Đang thực hiện |
+| Trạng thái | Chờ review |
 | Người phụ trách | Đức |
 | Collaborator | Bách review boundary phục vụ telemetry, graph và RCA |
 | Ưu tiên | Cao |
@@ -39,19 +39,19 @@ Chuẩn hóa service catalogue và dependency graph MVP, đồng thời tạo ar
 
 ## Definition of Done
 
-- [ ] Catalogue nêu trách nhiệm, owner dữ liệu và inbound/outbound dependency cho 6 business service cùng Gateway.
-- [ ] Diagram thể hiện HTTP flow tối thiểu, `Grading -> grade.completed -> Notification` và dependency PostgreSQL/Redis/RabbitMQ/storage mock.
-- [ ] Scope MVP/Target/Stretch của topology nhất quán backend blueprint.
+- [x] Catalogue nêu trách nhiệm, owner dữ liệu và inbound/outbound dependency cho 6 business service cùng Gateway.
+- [x] Diagram thể hiện HTTP flow tối thiểu, `Grading -> grade.completed -> Notification` và dependency PostgreSQL/Redis/RabbitMQ/storage mock.
+- [x] Scope MVP/Target/Stretch của topology nhất quán backend blueprint.
 - [ ] Bách review được các node/edge cần quan sát và phản hồi được ghi trong artifact.
 
 ## Liên kết hồ sơ thực hiện
 
 - Input workspace: [task-input.md](../../../../../workspace/duc/week-04_2026-08-23_to_2026-08-29/task-01_define-service-topology/input/task-input.md).
 - Output workspace: [task-output.md](../../../../../workspace/duc/week-04_2026-08-23_to_2026-08-29/task-01_define-service-topology/output/task-output.md).
-- Pull request: Chưa tạo.
+- Pull request: [PR #6](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/6).
 - Kết quả review: Chưa review.
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 27/08/2026 — artifact đã được review nội bộ, đặt đúng thư mục và tạo hồ sơ hồi tố; đang chuẩn bị PR.
+- Cập nhật gần nhất: 27/08/2026 — đã tạo PR #6, ghi nhận đủ bằng chứng nội dung và chuyển sang `Chờ review`.
 - Ghi chú/tồn đọng: là đầu vào cho task-02, task-03 và task-04; còn chờ Bách review node/edge và gửi verdict trên GitHub.
