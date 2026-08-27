@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-04_create-risk-register` |
 | Tuần | `week-03_2026-08-16_to_2026-08-22` |
-| Trạng thái | Đã giao |
+| Trạng thái | Đang thực hiện |
 | Người phụ trách | Bách |
 | Collaborator | Đức review rủi ro platform, observability và reproducibility |
 | Ưu tiên | Trung bình |
@@ -46,11 +46,11 @@ Tạo risk register v1 cho các rủi ro scope, testbed, observability, telemetr
 
 ## Liên kết hồ sơ thực hiện
 
-- Input workspace: Chưa tạo.
-- Output workspace: Chưa tạo.
+- Input workspace: [workspace/bach/week-03_2026-08-16_to_2026-08-22/task-04_create-risk-register/input/task-input.md](../../../../../workspace/bach/week-03_2026-08-16_to_2026-08-22/task-04_create-risk-register/input/task-input.md).
+- Output workspace: [workspace/bach/week-03_2026-08-16_to_2026-08-22/task-04_create-risk-register/output/task-output.md](../../../../../workspace/bach/week-03_2026-08-16_to_2026-08-22/task-04_create-risk-register/output/task-output.md).
 - Pull request: Chưa tạo.
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 16/08/2026 — task được phân công.
-- Ghi chú/tồn đọng: chờ scope/RQ v1 để chốt mức ưu tiên.
+- Cập nhật gần nhất: 27/08/2026 — Bách đã nhận task, tạo branch và khởi tạo hồ sơ workspace.
+- Ghi chú/tồn đọng: risk register artifact chưa tạo theo yêu cầu hiện tại; vẫn cần chốt mức ưu tiên dựa trên scope/RQ v1 và thực hiện review với Đức.
