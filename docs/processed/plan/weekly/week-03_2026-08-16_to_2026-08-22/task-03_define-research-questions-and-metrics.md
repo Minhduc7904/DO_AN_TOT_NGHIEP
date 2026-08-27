@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-03_define-research-questions-and-metrics` |
 | Tuần | `week-03_2026-08-16_to_2026-08-22` |
-| Trạng thái | Đã giao |
+| Trạng thái | Hoàn thành |
 | Người phụ trách | Bách |
 | Collaborator | Đức kiểm tra tính khả thi của telemetry, fault và experiment |
 | Ưu tiên | Cao |
@@ -39,18 +39,18 @@ Chốt tập RQ và metric v1 phục vụ anomaly detection, incident detection,
 
 ## Definition of Done
 
-- [ ] RQ1–RQ5 được ghi rõ, có phạm vi MVP và loại phép so sánh/ablation dự kiến; RQ6 chỉ xuất hiện nếu được quyết định bổ sung có chủ đích.
-- [ ] Có bảng ánh xạ RQ → telemetry/ground truth → baseline hoặc phương pháp → metric detection/RCA/system/robustness.
-- [ ] Metric detection, RCA và system phù hợp blueprint, bao gồm quy tắc không tune trên test campaign.
-- [ ] Đức đã review tính khả thi của việc instrument, inject fault, thu ground truth và chạy evaluation cho từng RQ.
+- [x] RQ1–RQ5 được ghi rõ, có phạm vi MVP và loại phép so sánh/ablation dự kiến; RQ6 chỉ xuất hiện nếu được quyết định bổ sung có chủ đích.
+- [x] Có bảng ánh xạ RQ → telemetry/ground truth → baseline hoặc phương pháp → metric detection/RCA/system/robustness.
+- [x] Metric detection, RCA và system phù hợp blueprint, bao gồm quy tắc không tune trên test campaign.
+- [x] Đức đã review tính khả thi của việc instrument, inject fault, thu ground truth và chạy evaluation cho từng RQ.
 
 ## Liên kết hồ sơ thực hiện
 
-- Input workspace: Chưa tạo.
-- Output workspace: Chưa tạo.
-- Pull request: Chưa tạo.
+- Input workspace: [`workspace/bach/week-03_2026-08-16_to_2026-08-22/task-03_define-research-questions-and-metrics/input/task-input.md`](../../../../../workspace/bach/week-03_2026-08-16_to_2026-08-22/task-03_define-research-questions-and-metrics/input/task-input.md).
+- Output workspace: [`workspace/bach/week-03_2026-08-16_to_2026-08-22/task-03_define-research-questions-and-metrics/output/task-output.md`](../../../../../workspace/bach/week-03_2026-08-16_to_2026-08-22/task-03_define-research-questions-and-metrics/output/task-output.md).
+- Pull request: [PR #2](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/2) — đang mở.
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 16/08/2026 — task được phân công.
+- Cập nhật gần nhất: 27/08/2026 — Đức đã review đạt sau khi Bách xử lý blocking feedback trong commit `317d01a`; [PR #2](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/2) đủ điều kiện merge.
 - Ghi chú/tồn đọng: là đầu vào cho task-04 và task-05.
