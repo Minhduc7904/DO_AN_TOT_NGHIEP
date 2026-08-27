@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-02_define-http-and-event-contracts` |
 | Tuần | `week-04_2026-08-23_to_2026-08-29` |
-| Trạng thái | Đã giao |
+| Trạng thái | Đang thực hiện |
 | Người phụ trách | Đức |
 | Collaborator | Bách review một HTTP flow và event field phục vụ telemetry/evaluation |
 | Ưu tiên | Cao |
@@ -46,12 +46,12 @@ Thiết kế contract v1 cho HTTP flow MVP và event bất đồng bộ `grade.c
 
 ## Liên kết hồ sơ thực hiện
 
-- Input workspace: Chưa tạo.
-- Output workspace: Chưa tạo.
+- Input workspace: [task-input.md](../../../../../workspace/duc/week-04_2026-08-23_to_2026-08-29/task-02_define-http-and-event-contracts/input/task-input.md).
+- Output workspace: [task-output.md](../../../../../workspace/duc/week-04_2026-08-23_to_2026-08-29/task-02_define-http-and-event-contracts/output/task-output.md).
 - Pull request: Chưa tạo.
 - Kết quả review: Chưa review.
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 23/08/2026 — task được phân công.
-- Ghi chú/tồn đọng: phụ thuộc topology v1.
+- Cập nhật gần nhất: 27/08/2026 — artifact đã được review nội bộ, đặt đúng thư mục và tạo hồ sơ hồi tố; đang chuẩn bị PR.
+- Ghi chú/tồn đọng: phụ thuộc topology v1 của task-01; còn chờ Bách review W4 Submit và event `grade.completed` rồi gửi verdict trên GitHub.
