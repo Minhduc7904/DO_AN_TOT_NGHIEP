@@ -25,7 +25,6 @@ Tạo risk register v1 cho các rủi ro scope, testbed, observability, telemetr
 - Không tạo risk register cấp vận hành/production không liên quan đồ án.
 - Không thay thế quy tắc chống scope creep trong plan canonical.
 - Không đánh dấu rủi ro đã đóng nếu chưa có bằng chứng.
-- Chưa tạo artifact risk register trong phiên setup này.
 
 ## Sản phẩm dự kiến
 

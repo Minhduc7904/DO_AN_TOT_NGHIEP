@@ -35,7 +35,7 @@ Tạo risk register v1 cho các rủi ro scope, testbed, observability, telemetr
 
 | Sản phẩm | Loại | Vị trí hoặc link dự kiến |
 | --- | --- | --- |
-| Risk register v1 | Docs | `docs/processed/plan/risk-register-v1.md` |
+| Risk register v1 | Docs | [docs/processed/plan/risk-register-v1.md](../../risk-register-v1.md) |
 
 ## Definition of Done
 
@@ -52,5 +52,5 @@ Tạo risk register v1 cho các rủi ro scope, testbed, observability, telemetr
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 27/08/2026 — Bách đã nhận task, tạo branch và khởi tạo hồ sơ workspace.
-- Ghi chú/tồn đọng: risk register artifact chưa tạo theo yêu cầu hiện tại; vẫn cần chốt mức ưu tiên dựa trên scope/RQ v1 và thực hiện review với Đức.
+- Cập nhật gần nhất: 27/08/2026 — đã tạo `docs/processed/plan/risk-register-v1.md` và đối chiếu với plan/blueprint/RQ v1.
+- Ghi chú/tồn đọng: đã commit cục bộ; chưa push, chưa có review của Đức và chưa tạo pull request.
