@@ -21,7 +21,7 @@
 1. Chỉ thay đổi những file cần thiết để đáp ứng từng comment đã xác nhận, giữ đúng phạm vi task và không sửa `docs/raw/` hoặc workspace của thành viên còn lại.
 2. Đối chiếu lại diff với yêu cầu reviewer, DoD và mô tả PR. Không nói đã sửa khi thay đổi chưa có trong diff hoặc chưa được đẩy lên PR.
 3. Chạy các kiểm tra phù hợp với thay đổi; với tài liệu, tối thiểu kiểm tra link/Markdown, consistency với tài liệu canonical và `git diff --check`. Ghi nhận chính xác kiểm tra đã chạy hoặc lý do không áp dụng.
-4. Đẩy commit lên chính nhánh PR trước khi reply để reviewer có thể thấy thay đổi thực tế. Không tự merge hay đổi trạng thái task.
+4. Thay đổi phải được commit/push lên chính nhánh PR trước khi reply để reviewer có thể thấy thay đổi thực tế. Agent chỉ trực tiếp chạy Git write khi yêu cầu hiện tại của user cho phép; nếu chưa cho phép, không reply rằng đã sửa và báo rõ commit/push còn thiếu. Không tự merge hay đổi trạng thái task.
 
 ## Reply chi tiết trên review thread
 
@@ -46,4 +46,4 @@
 
 - Báo cáo comment nào đã xử lý, commit/file/kiểm tra tương ứng, comment nào đang chờ làm rõ và link các reply đã đăng.
 - Chỉ người phụ trách task mới tự cập nhật hồ sơ của mình theo quy trình phù hợp. Skill này không cập nhật card task, weekly overview, input/output, link PR hoặc trạng thái `Hoàn thành`.
-- Skill này không tự quyết định task đã hoàn thành, không tự merge và không đổi trạng thái task. Sau khi feedback đã được xử lý, task cần review lại; sau `APPROVED` và khi PR đã merge vào nhánh canonical, người phụ trách dùng `task-completion-recording` để ghi nhận `Hoàn thành` theo [vòng đời task canonical](../../../../docs/processed/rules/git-and-pull-request-rules.md#vòng-đời-task-canonical).
+- Skill này không tự quyết định task đã hoàn thành, không tự merge và không đổi trạng thái task. Sau khi feedback đã được xử lý, task cần review lại; sau `APPROVED`, người phụ trách dùng `task-completion-recording` để ghi `Hoàn thành` và push metadata vào chính PR trước merge theo [vòng đời task canonical](../../../../docs/processed/rules/git-and-pull-request-rules.md#vòng-đời-task-canonical). Skill này không được dùng để đóng task hoặc xử lý bookkeeping hậu-merge.

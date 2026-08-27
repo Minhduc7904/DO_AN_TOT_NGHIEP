@@ -1,27 +1,30 @@
-# Quy trình ghi nhận task hoàn thành sau merge
+# Quy trình finalization task trước merge
 
 Đọc `AGENTS.md`, skill `graduation-workspace`, `graduation-workspace/references/workspace-standard.md`, [vòng đời task canonical](../../../../docs/processed/rules/git-and-pull-request-rules.md#vòng-đời-task-canonical) và card task chung tương ứng trong `docs/processed/plan/weekly/` trước khi thay đổi.
 
-Skill này chỉ áp dụng khi người phụ trách muốn ghi nhận/đóng task **sau** khi PR đã có verdict `APPROVED` và đã merge vào nhánh canonical. Không dùng skill này để tạo PR, chuyển sang `Chờ review`, review artifact hoặc xử lý feedback.
+Skill này chỉ áp dụng khi người phụ trách muốn finalization/ghi nhận task **sau** verdict `APPROVED` và **trước** khi PR merge vào nhánh canonical. Không dùng skill này để tạo PR, chuyển sang `Chờ review`, review artifact, xử lý feedback hoặc làm bookkeeping sau merge.
 
 ## Điều kiện đầu vào
 
 1. Người dùng phải nói rõ họ là **Đức** hay **Bách** trong yêu cầu hiện tại, đồng thời nêu tuần và mã/tên task. Nếu thiếu, chỉ hỏi phần thiếu trước khi đọc/sửa workspace hoặc card task.
 2. Xác nhận người dùng là đúng người phụ trách trên card task. Không ghi completion record thay người phụ trách.
-3. Xác minh PR đúng nhánh task, có verdict `APPROVED` và đã merge vào nhánh canonical (hiện là `main`). Không suy đoán trạng thái merge từ review đạt hay từ một PR đang mở.
-4. Xác minh sản phẩm có thể truy cập và từng DoD có bằng chứng. Nếu thiếu điều kiện nào, giữ trạng thái hiện có hoặc dùng `Chờ xử lý`, nêu rõ phần thiếu và không chuyển `Hoàn thành`.
+3. Xác minh task đang ở trạng thái phù hợp để finalization (thông thường là `Chờ review`), PR đang mở đúng nhánh task, có verdict `APPROVED`, không còn blocking issue/thread cần xử lý và chưa merge vào nhánh canonical (hiện là `main`). Không suy đoán verdict hoặc trạng thái PR từ card task.
+4. Xác minh substantive work đã hoàn tất, sản phẩm có thể truy cập và từng DoD có bằng chứng. Nếu thiếu điều kiện nào, giữ trạng thái hiện có; chỉ dùng `Chờ xử lý` khi có blocker/dependency thật, không dùng vì PR đang chờ merge.
 
 ## Quy trình bắt buộc
 
-1. **Đối chiếu bằng chứng cuối cùng.** Thu thập hoặc xác minh URL PR, commit/merge reference, sản phẩm thực tế, thời điểm bắt đầu/hoàn thành, mọi thay đổi phạm vi hoặc tồn đọng, cùng bằng chứng cho từng DoD. Không gộp xác nhận DoD thành một câu hỏi chung khi bằng chứng còn thiếu.
-2. **Cập nhật hồ sơ người phụ trách.** Trong `workspace/<owner>/<week>/`, cập nhật output với thời gian thực tế, sản phẩm, từng DoD, reviewer/verdict, URL PR và trạng thái/commit merge. Nếu chưa có hồ sơ thì chỉ tạo khi người phụ trách yêu cầu rõ; input ghi rõ đây là ghi nhận hồi tố.
-3. **Cập nhật card và tổng quan tuần.** Ghi link input/output, URL PR, reviewer/verdict và merge reference cần thiết vào card; đồng bộ hàng tương ứng trong `weekly-overview.md`.
-4. **Chuyển trạng thái.** Sau khi các điều kiện trên đều đạt, chính người phụ trách chuyển output, card task và hàng weekly overview sang `Hoàn thành`.
+1. **Đối chiếu bằng chứng finalization.** Thu thập hoặc xác minh URL/số PR, reviewer/verdict, sản phẩm thực tế, thời điểm bắt đầu/hoàn thành, mọi thay đổi phạm vi hoặc tồn đọng, cùng bằng chứng cho từng DoD. `Hoàn thành thực tế` là thời điểm người phụ trách đã hoàn tất work, DoD, review và finalization; không phải thời điểm merge. Không yêu cầu hoặc ghi merge SHA, merge commit/reference, merge timestamp hay trạng thái mutable của PR.
+2. **Cập nhật hồ sơ người phụ trách.** Trong `workspace/<owner>/<week>/`, cập nhật output với thời gian thực tế, sản phẩm, từng DoD, reviewer/verdict và URL PR. Nếu chưa có hồ sơ thì chỉ tạo khi người phụ trách yêu cầu rõ; input ghi rõ đây là ghi nhận hồi tố.
+3. **Cập nhật card và tổng quan tuần.** Ghi link input/output, URL/số PR và reviewer/verdict vào card; đồng bộ hàng tương ứng trong `weekly-overview.md`.
+4. **Chuyển trạng thái trên branch task.** Sau khi các điều kiện trên đều đạt, chính người phụ trách chuyển output, card task và hàng weekly overview sang `Hoàn thành`. Đây là trạng thái đã finalization/sẵn sàng merge trên branch, chưa là trạng thái project-wide canonical.
+5. **Commit/push vào chính PR.** Chỉ kiểm tra diff finalization có output/card/weekly overview/trạng thái/tham chiếu PR-review; không để diff này sửa substantive artifact hoặc code. Metadata phải được commit/push vào chính branch/PR của task trước merge. Agent chỉ trực tiếp chạy Git write khi yêu cầu hiện tại của user cho phép; nếu chưa cho phép, giữ thay đổi đã chuẩn bị, báo rõ finalization chưa sẵn sàng merge trên remote và không tự tạo commit. Nếu PR URL chỉ có sau khi tạo PR, cập nhật nó bằng commit tiếp theo trên chính branch này là hợp lệ.
+6. **Xử lý approval bị invalidate.** Nếu branch protection dismiss approval sau finalization commit, yêu cầu reviewer kiểm tra đúng finalization diff rồi re-approve. Sau re-approval không tạo thêm tracked lifecycle change trước merge, trừ khi phát hiện vấn đề mới; khi đó quay lại luồng review tương ứng.
 
 ## Ràng buộc
 
-- Không tự tạo bằng chứng, thời điểm, verdict, merge reference hoặc kết quả DoD.
+- Không tự tạo bằng chứng, thời điểm, verdict hoặc kết quả DoD.
 - Không tự merge; thao tác merge chỉ thực hiện khi người dùng yêu cầu rõ.
-- `APPROVED` không đủ để ghi nhận `Hoàn thành`; PR phải đã merge vào nhánh canonical.
+- `APPROVED` không tự chuyển task sang `Hoàn thành`; người phụ trách phải finalization metadata và push vào chính PR trước merge. Sau merge, commit đó mới là trạng thái canonical trên `main`; không tạo commit hậu-merge chỉ để đóng task.
+- Finalization commit chỉ chứa metadata/lifecycle. Nếu cần thay đổi substantive artifact/code sau `APPROVED`, dừng finalization và quay lại review bình thường.
 - Card task chung và task workspace có thể khác số thứ tự; liên kết giữa hai nơi là nguồn đối chiếu bắt buộc.
 - Chỉ tạo hoặc sửa `workspace/duc/` khi Đức nói rõ mình là chủ sở hữu, và tương tự với `workspace/bach/`.
