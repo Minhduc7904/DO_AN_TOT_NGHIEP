@@ -23,7 +23,8 @@
 1. Xác định người hỏi là **Đức** hay **Bách** từ yêu cầu hiện tại. Nếu chưa được nêu rõ, hỏi “Bạn là Đức hay Bách?” và không suy đoán từ lịch sử, tài khoản, thư mục hoặc phân công cũ.
 2. Xác định tuần hiện tại theo ngày hiện hành; nếu người dùng chỉ định tuần khác thì dùng tuần đó.
 3. Đọc `weekly-overview.md` và toàn bộ `task-*.md` của tuần. Lọc: (a) task có người phụ trách đúng với người hỏi và trạng thái khác `Hoàn thành`; (b) task `Chờ review` mà người hỏi là collaborator/reviewer.
-4. Trả lời hai nhóm: **Task cần thực hiện** và **Task cần review**. Mỗi dòng có mã, yêu cầu/kết quả, hạn, phụ thuộc, trạng thái và PR nếu có. Nếu một nhóm trống, nói rõ; không tự tạo task.
+4. Tra cứu hệ thống Git của repository để tìm các PR đang mở vào `main` mà người hỏi được yêu cầu review và review của họ chưa hoàn tất. Đối chiếu từng PR với link PR trên card task (nếu có); vẫn liệt kê PR hợp lệ chưa có hoặc chưa đồng bộ với card, nhưng nêu rõ đó là chênh lệch cần xử lý.
+5. Trả lời hai nhóm: **Task cần thực hiện** và **Task/PR cần review**. Nhóm review phải gộp kết quả từ card `Chờ review` và PR đang chờ người hỏi review, không liệt kê trùng. Mỗi dòng có mã task (nếu xác định được), PR, yêu cầu/kết quả, hạn, phụ thuộc và trạng thái. Nếu một nhóm trống, nói rõ; không tự tạo task hoặc thay đổi trạng thái card/PR.
 
 ## Liên kết với workspace cá nhân
 
