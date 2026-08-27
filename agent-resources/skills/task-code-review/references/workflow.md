@@ -16,9 +16,16 @@
 - Review các điểm trong mục **Cần review**, rồi kiểm tra scope creep, lỗi logic/xử lý lỗi, bảo mật, test, contract/schema và migration/database nếu có liên quan.
 - Mỗi blocking issue phải nêu file/vị trí, tác động và yêu cầu sửa. Phân loại rõ các góp ý không blocking.
 
+## Đăng nhận xét inline trên pull request
+
+- Chỉ đăng nhận xét khi người dùng yêu cầu rõ review đó được đăng lên GitHub. Việc yêu cầu review không mặc nhiên cho phép tạo comment bên ngoài repository.
+- Mỗi nhận xét inline phải gắn vào đúng file và dòng thay đổi trong diff, nêu rõ vấn đề, tác động và hướng xử lý. Không dùng inline comment cho nhận xét không xác định được vị trí; đưa nhận xét đó vào phần tổng kết của review.
+- Chỉ đăng các nhận xét đã được kiểm chứng từ diff, card task hoặc DoD. Phân biệt blocking issue với góp ý không blocking để người phụ trách biết điều kiện cần sửa.
+- Comment inline không tự đồng nghĩa với `Approve`, `Request changes` hoặc merge; chỉ thực hiện các hành động đó khi người dùng yêu cầu rõ.
+
 ## Kết quả và trạng thái
 
 1. Báo cáo phạm vi thay đổi, các yêu cầu PR đã kiểm, blocking issues, non-blocking suggestions và kết luận `Đạt` hoặc `Cần chỉnh sửa`.
-2. Nếu có blocking issue hoặc thiếu bằng chứng DoD, giữ task/card/output là `Chờ review`, ghi phần cần sửa và không approve/merge.
-3. Nếu review đạt, cập nhật output với reviewer, ngày review và kết quả `Đạt`; cập nhật card task/overview thành `Hoàn thành`, giữ link PR và ghi đã đủ điều kiện merge.
-4. Không tự merge. Chỉ sau trạng thái `Hoàn thành` và khi người dùng yêu cầu rõ thì PR mới được merge.
+2. Nếu có blocking issue hoặc thiếu bằng chứng DoD, nêu rõ phần cần sửa và không approve/merge.
+3. Reviewer không tự sửa trạng thái card task, weekly overview, input/output hoặc gắn link PR thay người phụ trách. Người phụ trách task tự ghi nhận các cập nhật đó theo quy trình tương ứng.
+4. Không tự merge. Pull request chỉ được merge sau khi task ở trạng thái `Hoàn thành` và người dùng yêu cầu rõ.
