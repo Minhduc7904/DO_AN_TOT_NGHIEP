@@ -19,6 +19,7 @@
 ## Đăng nhận xét inline trên pull request
 
 - Chỉ đăng nhận xét khi người dùng yêu cầu rõ review đó được đăng lên GitHub. Việc yêu cầu review không mặc nhiên cho phép tạo comment bên ngoài repository.
+- Trước khi đăng, kiểm tra tài khoản GitHub đang xác thực có đúng là reviewer đã được người dùng xác định trong yêu cầu hiện tại. Nhận xét sẽ hiển thị dưới tên tài khoản này; không được giả danh tài khoản khác hoặc ký/ghi nội dung là ChatGPT. Nếu không khớp hoặc không xác thực được, không đăng và yêu cầu người dùng đăng nhập đúng tài khoản.
 - Mỗi nhận xét inline phải gắn vào đúng file và dòng thay đổi trong diff, nêu rõ vấn đề, tác động và hướng xử lý. Không dùng inline comment cho nhận xét không xác định được vị trí; đưa nhận xét đó vào phần tổng kết của review.
 - Chỉ đăng các nhận xét đã được kiểm chứng từ diff, card task hoặc DoD. Phân biệt blocking issue với góp ý không blocking để người phụ trách biết điều kiện cần sửa.
 - Comment inline không tự đồng nghĩa với `Approve`, `Request changes` hoặc merge; chỉ thực hiện các hành động đó khi người dùng yêu cầu rõ.
