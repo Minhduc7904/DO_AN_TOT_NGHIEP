@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-02_define-http-and-event-contracts` |
 | Tuần | `week-04_2026-08-23_to_2026-08-29` |
-| Trạng thái | Đang thực hiện |
+| Trạng thái | Chờ review |
 | Người phụ trách | Đức |
 | Collaborator | Bách review một HTTP flow và event field phục vụ telemetry/evaluation |
 | Ưu tiên | Cao |
@@ -39,19 +39,19 @@ Thiết kế contract v1 cho HTTP flow MVP và event bất đồng bộ `grade.c
 
 ## Definition of Done
 
-- [ ] Có contract cho các workflow MVP cần thiết, gồm request/response/error tối thiểu và service ownership.
-- [ ] Event `grade.completed` có producer, consumer, payload/schema version, correlation identity và failure/retry expectation.
-- [ ] Contract không vi phạm rule cross-service source import hoặc data ownership của blueprint.
+- [x] Có contract cho các workflow MVP cần thiết, gồm request/response/error tối thiểu và service ownership.
+- [x] Event `grade.completed` có producer, consumer, payload/schema version, correlation identity và failure/retry expectation.
+- [x] Contract không vi phạm rule cross-service source import hoặc data ownership của blueprint.
 - [ ] Bách review một HTTP flow và event async; các yêu cầu telemetry/evaluation được phản ánh hoặc ghi tồn đọng.
 
 ## Liên kết hồ sơ thực hiện
 
 - Input workspace: [task-input.md](../../../../../workspace/duc/week-04_2026-08-23_to_2026-08-29/task-02_define-http-and-event-contracts/input/task-input.md).
 - Output workspace: [task-output.md](../../../../../workspace/duc/week-04_2026-08-23_to_2026-08-29/task-02_define-http-and-event-contracts/output/task-output.md).
-- Pull request: Chưa tạo.
+- Pull request: [PR #7](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/7).
 - Kết quả review: Chưa review.
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 27/08/2026 — artifact đã được review nội bộ, đặt đúng thư mục và tạo hồ sơ hồi tố; đang chuẩn bị PR.
+- Cập nhật gần nhất: 27/08/2026 — đã tạo PR #7, ghi nhận đủ bằng chứng nội dung và chuyển sang `Chờ review`.
 - Ghi chú/tồn đọng: phụ thuộc topology v1 của task-01; còn chờ Bách review W4 Submit và event `grade.completed` rồi gửi verdict trên GitHub.

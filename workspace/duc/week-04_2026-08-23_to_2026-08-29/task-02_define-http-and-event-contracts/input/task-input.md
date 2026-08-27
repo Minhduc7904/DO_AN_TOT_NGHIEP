@@ -8,11 +8,11 @@
 | Tên task | Thiết kế HTTP contract và event `grade.completed` v1 |
 | Người phụ trách | Đức |
 | Tuần thực hiện | `week-04_2026-08-23_to_2026-08-29` |
-| Trạng thái | Đang thực hiện |
+| Trạng thái | Chờ review |
 | Ngày tạo | 27/08/2026 — hồ sơ ghi nhận hồi tố từ artifact Đức cung cấp |
 | Thời gian dự kiến | Theo kế hoạch tuần 4; hạn dự kiến 27/08/2026 |
 | Nhánh thực hiện | `docs/week-04/task-02-define-http-and-event-contracts` |
-| Pull request dự kiến | Từ nhánh task vào `main` |
+| Pull request dự kiến | [PR #7](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/7) |
 
 ## Mục tiêu và phạm vi
 
@@ -46,5 +46,5 @@ Thiết kế HTTP contract v1 cho các workflow W1–W5 và event bất đồng 
 - [x] Contract không vi phạm cross-service source import hoặc data ownership của backend blueprint.
 - [ ] Bách review một HTTP flow và event async; yêu cầu telemetry/evaluation được phản ánh hoặc ghi tồn đọng.
 - [x] Sản phẩm đã được lưu tại vị trí dự kiến và có thể truy cập trên nhánh task.
-- [ ] URL/số PR và trạng thái `Chờ review` đã được commit/push vào PR head trước khi reviewer bắt đầu review.
+- [x] URL/số PR và trạng thái `Chờ review` đã được commit/push vào PR head trước khi reviewer bắt đầu review.
 - [ ] Pull request có `APPROVED` hợp lệ từ Bách và completion metadata được commit/push trước khi Đức merge.
