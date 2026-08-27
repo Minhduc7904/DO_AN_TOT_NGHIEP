@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-01_define-mvp-scope` |
 | Tuần | `week-03_2026-08-16_to_2026-08-22` |
-| Trạng thái | Đã giao |
+| Trạng thái | Đang thực hiện |
 | Người phụ trách | Đức |
 | Collaborator | Bách review để loại feature LMS không phục vụ nghiên cứu |
 | Ưu tiên | Cao |
@@ -46,11 +46,11 @@ Tạo scope v1 cho đồ án, chuyển các quyết định MVP/Target/Stretch �
 
 ## Liên kết hồ sơ thực hiện
 
-- Input workspace: Chưa tạo.
-- Output workspace: Chưa tạo.
+- Input workspace: [`workspace/duc/week-03_2026-08-16_to_2026-08-22/task-01_define-mvp-scope/input/task-input.md`](../../../../../workspace/duc/week-03_2026-08-16_to_2026-08-22/task-01_define-mvp-scope/input/task-input.md).
+- Output workspace: [`workspace/duc/week-03_2026-08-16_to_2026-08-22/task-01_define-mvp-scope/output/task-output.md`](../../../../../workspace/duc/week-03_2026-08-16_to_2026-08-22/task-01_define-mvp-scope/output/task-output.md).
 - Pull request: Chưa tạo.
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 16/08/2026 — task được phân công.
-- Ghi chú/tồn đọng: chưa có.
+- Cập nhật gần nhất: 27/08/2026 — artifact đã được rà soát, đặt đúng vị trí và bổ sung hồ sơ thực hiện hồi tố; đang chuẩn bị pull request.
+- Ghi chú/tồn đọng: chờ Bách review tác động tới telemetry, feature, anomaly/RCA và evaluation.
