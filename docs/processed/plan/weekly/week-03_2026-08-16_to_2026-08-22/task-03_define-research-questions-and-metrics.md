@@ -48,9 +48,9 @@ Chốt tập RQ và metric v1 phục vụ anomaly detection, incident detection,
 
 - Input workspace: [`workspace/bach/week-03_2026-08-16_to_2026-08-22/task-03_define-research-questions-and-metrics/input/task-input.md`](../../../../../workspace/bach/week-03_2026-08-16_to_2026-08-22/task-03_define-research-questions-and-metrics/input/task-input.md).
 - Output workspace: [`workspace/bach/week-03_2026-08-16_to_2026-08-22/task-03_define-research-questions-and-metrics/output/task-output.md`](../../../../../workspace/bach/week-03_2026-08-16_to_2026-08-22/task-03_define-research-questions-and-metrics/output/task-output.md).
-- Pull request: [PR #2](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/2) — đang mở.
+- Pull request: [PR #2](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/2).
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 27/08/2026 — Đức đã review đạt sau khi Bách xử lý blocking feedback trong commit `317d01a`; [PR #2](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/2) đủ điều kiện merge.
+- Cập nhật gần nhất: 27/08/2026 — Đức đã đưa verdict `APPROVED` sau khi Bách xử lý blocking feedback trong commit `317d01a`. Việc đồng bộ card này diễn ra sau khi PR #2 đã merge theo workflow cũ và là correction/migration một lần; không phải tiền lệ cho lifecycle canonical hiện hành.
 - Ghi chú/tồn đọng: là đầu vào cho task-04 và task-05.

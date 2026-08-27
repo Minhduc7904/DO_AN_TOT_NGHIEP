@@ -11,9 +11,8 @@
 | Hoàn thành thực tế |  |
 | Tổng thời lượng |  |
 | Pull request |  |
-| Trạng thái pull request | Chưa tạo / Đang mở / Đã merge |
 | Người review |  |
-| Kết quả review | Chưa review / Đạt / Cần chỉnh sửa |
+| Kết quả review | `APPROVED` / `CHANGES_REQUESTED` / Chưa review |
 
 ## Báo cáo công việc đã làm
 
@@ -38,4 +37,4 @@
 - Việc chưa hoàn thành hoặc trở ngại:
 - Bước tiếp theo:
 
-> Khi phần việc và DoD đã xong nhưng chưa review, dùng **Chờ review**. Chỉ chọn **Hoàn thành** khi mọi DoD đạt, sản phẩm có link/đường dẫn truy cập được và code review đã đạt. Pull request chỉ được merge sau khi task đã ở **Hoàn thành**.
+> `Hoàn thành thực tế` là thời điểm người phụ trách đã hoàn tất work, DoD, review và finalization; không ghi merge time. URL/số PR cùng trạng thái **Chờ review** phải được commit/push vào PR head trước review. Sau `APPROVED`, người phụ trách dùng `task-completion-recording` để cập nhật hồ sơ và chuyển **Hoàn thành** trên chính branch/PR trước merge. Task chỉ canonically hoàn thành khi commit đó vào nhánh canonical. `Chờ xử lý` chỉ dùng cho blocker/dependency thực sự, không dùng chỉ vì PR đang chờ merge.

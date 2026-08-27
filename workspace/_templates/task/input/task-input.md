@@ -41,4 +41,5 @@
 - [ ] Điều kiện kiểm tra 1 có thể xác minh được.
 - [ ] Điều kiện kiểm tra 2 có thể xác minh được.
 - [ ] Sản phẩm đã được lưu/đẩy lên vị trí dự kiến và có thể truy cập.
-- [ ] Pull request từ nhánh task có mô tả đúng quy tắc, đã được review và được phép merge.
+- [ ] URL/số PR và trạng thái `Chờ review` đã được commit/push vào PR head trước khi reviewer bắt đầu review.
+- [ ] Pull request từ nhánh task có mô tả đúng quy tắc, có verdict review `APPROVED` và completion metadata được commit/push vào chính PR trước merge.

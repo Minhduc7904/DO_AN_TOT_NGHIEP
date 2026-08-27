@@ -6,7 +6,9 @@
 
 ```text
 Giao task → Nhận task → Làm trên branch riêng → PR + DoD
-→ Chờ review → Review đạt → Hoàn thành → Merge khi được yêu cầu
+→ Chờ review → Review → (xử lý feedback và review lại nếu cần)
+→ APPROVED → Finalization trên branch/PR → Hoàn thành đã chuẩn bị
+→ Merge vào nhánh canonical → Hoàn thành canonical
 ```
 
 Không bỏ qua hoặc đảo thứ tự các trạng thái trên.
@@ -32,7 +34,7 @@ Ví dụ yêu cầu cho agent: “Chia task tuần 5 từ plan canonical và ph�
 Người thực hiện hỏi agent, ví dụ: “Tuần này Đức phải làm gì?” Agent phải dùng skill chia task tuần để đọc toàn bộ card task của tuần và trả lời hai nhóm:
 
 - **Task cần thực hiện**: các task chưa hoàn thành có người phụ trách là người hỏi.
-- **Task cần review**: các task đang `Chờ review` mà người hỏi là collaborator/reviewer.
+- **Task cần review**: các PR còn mở mà card ở PR head/task branch trên remote đang `Chờ review` và người hỏi là collaborator/reviewer.
 
 Sau khi nhận task, người thực hiện tạo nhánh đúng tên ghi trên card, tạo `input/task-input.md` trong workspace cá nhân trước khi làm và chuyển card thành `Đang thực hiện`.
 
@@ -42,17 +44,13 @@ Người thực hiện chỉ làm thay đổi thuộc task trên branch riêng. 
 
 1. Push branch và tạo PR vào `main` bằng [PR template](../../../.github/pull_request_template.md).
 2. Đảm bảo PR có đủ: **Tổng quan**, **Trước thay đổi**, **Sau thay đổi**, **Database** và **Cần review**.
-3. Ghi link PR vào card task chung và output task.
-4. Không merge PR ở bước này.
+3. Ghi URL/số PR vào card task chung, output task và weekly overview; chuyển trạng thái task sang `Chờ review`.
+4. Commit/push các metadata trên vào chính PR trước khi request hoặc bắt đầu review. Nếu user chưa cho phép Git write, agent chỉ chuẩn bị thay đổi và báo rõ review chưa được phép bắt đầu trên remote.
+5. Không merge PR ở bước này.
 
-## 4. Người làm báo đã xong
+## 4. Người làm hoàn tất work và chờ review
 
-Người thực hiện báo agent, ví dụ: “Tôi, Đức, đã hoàn thành task-01 của tuần 5.” Agent phải dùng [skill ghi nhận hoàn thành](../../../agent-resources/skills/task-completion-recording/SKILL.md):
-
-1. Hỏi sản phẩm thực tế, branch, link PR đang mở, thời gian làm và tồn đọng.
-2. Liệt kê từng DoD và yêu cầu người dùng xác nhận/bổ sung bằng chứng cho từng mục.
-3. Cập nhật `input/task-input.md`, `output/task-output.md`, card task và `weekly-overview.md`.
-4. Chuyển task sang **Chờ review** khi có đủ DoD, sản phẩm và PR hợp lệ.
+Khi work, DoD và PR đã sẵn sàng, người phụ trách cập nhật output/card/weekly overview với bằng chứng, URL/số PR và chuyển task sang **Chờ review**. Người phụ trách phải commit/push transition này vào PR head trước review; trạng thái chỉ ở working tree/local không đủ. Không dùng `task-completion-recording` ở bước này.
 
 Agent không được chuyển task sang **Hoàn thành** ở bước này.
 
@@ -60,12 +58,14 @@ Agent không được chuyển task sang **Hoàn thành** ở bước này.
 
 Reviewer nói với agent, ví dụ: “Review task-01 tuần 5.” Nếu chưa rõ task nào, agent phải hỏi lại task cần review. Sau đó agent dùng [skill review task/PR](../../../agent-resources/skills/task-code-review/SKILL.md) để:
 
-1. Tìm card task và PR tương ứng; kiểm tra task đang `Chờ review`.
+1. Nếu user cung cấp PR URL/#, dùng trực tiếp. Nếu user chỉ nêu task, đọc card canonical để lấy nhánh thực hiện rồi tìm PR đang mở có head branch khớp; không tìm được hoặc có nhiều PR mơ hồ thì không bắt đầu review. Khi đã xác định PR, kiểm tra card ở **PR head/task branch trên remote** đang `Chờ review`, không kiểm tra readiness từ `main` hoặc working tree local.
 2. Đọc mô tả PR, các file/diff thay đổi, DoD và mục **Cần review**.
 3. Review đúng yêu cầu PR, đồng thời kiểm tra phạm vi, test, database/schema, contract và lỗi có thể chặn merge.
-4. Nếu có lỗi blocking, giữ task ở **Chờ review** và ghi rõ nội dung cần sửa.
-5. Nếu review đạt, cập nhật kết quả review trong output/card task và chuyển task sang **Hoàn thành**.
+4. Nếu có lỗi blocking, đưa verdict `CHANGES_REQUESTED`; task giữ **Chờ review** và người phụ trách dùng [skill xử lý phản hồi review](../../../agent-resources/skills/pr-review-response/SKILL.md) để sửa, kiểm chứng, push và reply thread trước khi review lại.
+5. Nếu review đạt, đưa verdict `APPROVED`. Reviewer không sửa output/card/weekly overview và không chuyển task sang **Hoàn thành**.
 
-## 6. Merge pull request
+## 6. Finalization và merge pull request
 
-PR chỉ được phép merge sau khi task đã ở trạng thái **Hoàn thành**. Agent không tự merge; chỉ thực hiện merge khi người dùng yêu cầu rõ. Sau khi merge, cập nhật trạng thái PR trong output và card task.
+Sau verdict `APPROVED`, người phụ trách dùng [skill ghi nhận hoàn thành](../../../agent-resources/skills/task-completion-recording/SKILL.md) để cập nhật output, card task, weekly overview, URL PR và verdict review, rồi chuyển task sang **Hoàn thành** trên chính branch/PR. Finalization metadata phải được commit/push vào PR và không được sửa substantive artifact/code. Agent chỉ thực hiện Git write khi user đã cho phép; nếu không, phải nêu rõ finalization còn ở local và chưa sẵn sàng merge.
+
+PR chỉ được merge sau khi finalization đã sẵn sàng và mọi yêu cầu review/branch protection còn hiệu lực đã đạt. Agent không tự merge; chỉ thực hiện merge khi người dùng yêu cầu rõ. Nếu finalization commit dismiss approval, reviewer chỉ kiểm tra diff metadata và re-approve. Khi PR merge vào nhánh canonical, task mới **Hoàn thành** theo trạng thái project-wide; không tạo bookkeeping commit hậu-merge cho merge SHA, merge timestamp, trạng thái PR hay việc đóng task.

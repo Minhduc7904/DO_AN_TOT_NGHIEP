@@ -45,7 +45,9 @@
 - Input workspace: Chưa tạo.
 - Output workspace: Chưa tạo.
 - Pull request: Chưa tạo.
-- Kết quả review: Chưa review.
+- Kết quả review: Chưa review / `APPROVED` / `CHANGES_REQUESTED`.
+
+> URL/số PR và `Chờ review` phải được commit/push vào PR head trước review. Sau `APPROVED`, người phụ trách finalization metadata và ghi `Hoàn thành` trên chính branch/PR trước merge. Card chỉ canonically hoàn thành khi commit đó vào nhánh canonical; xem [vòng đời task canonical](../../../rules/git-and-pull-request-rules.md#vòng-đời-task-canonical).
 
 ## Cập nhật tiến độ
 

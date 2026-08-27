@@ -15,6 +15,8 @@
 | --- | --- | --- | --- | --- | --- |
 | [task-01_short-title](task-01_short-title.md) |  |  |  | Cao / Trung bình / Thấp | Chưa phân công |
 
+> Khi đọc tiến độ project-wide, chỉ coi hàng có trạng thái `Hoàn thành` trên nhánh canonical là hoàn thành; trạng thái đã finalization trên task branch chưa thay thế nguồn này.
+
 ## Phụ thuộc, rủi ro và quyết định
 
 - Phụ thuộc:

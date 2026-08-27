@@ -1,6 +1,6 @@
 interface:
   display_name: "Ghi nhận hoàn thành task"
-  short_description: "Xác nhận DoD, tạo PR và chuyển chờ review"
-  default_prompt: "Use $task-completion-recording to record my completed thesis task."
+  short_description: "Finalization hồ sơ task đã approved trước merge"
+  default_prompt: "Use $task-completion-recording to finalize my approved thesis task on its current pull request before merge."
 policy:
   allow_implicit_invocation: true

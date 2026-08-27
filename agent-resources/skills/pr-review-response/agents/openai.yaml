@@ -1,0 +1,6 @@
+interface:
+  display_name: "Xử lý phản hồi review PR"
+  short_description: "Sửa feedback và phản hồi review thread của task owner"
+  default_prompt: "Use $pr-review-response to address feedback on my thesis task pull request."
+policy:
+  allow_implicit_invocation: true
