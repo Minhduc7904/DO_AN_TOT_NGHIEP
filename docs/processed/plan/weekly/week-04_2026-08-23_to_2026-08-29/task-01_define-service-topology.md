@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-01_define-service-topology` |
 | Tuần | `week-04_2026-08-23_to_2026-08-29` |
-| Trạng thái | Đã giao |
+| Trạng thái | Đang thực hiện |
 | Người phụ trách | Đức |
 | Collaborator | Bách review boundary phục vụ telemetry, graph và RCA |
 | Ưu tiên | Cao |
@@ -46,12 +46,12 @@ Chuẩn hóa service catalogue và dependency graph MVP, đồng thời tạo ar
 
 ## Liên kết hồ sơ thực hiện
 
-- Input workspace: Chưa tạo.
-- Output workspace: Chưa tạo.
+- Input workspace: [task-input.md](../../../../../workspace/duc/week-04_2026-08-23_to_2026-08-29/task-01_define-service-topology/input/task-input.md).
+- Output workspace: [task-output.md](../../../../../workspace/duc/week-04_2026-08-23_to_2026-08-29/task-01_define-service-topology/output/task-output.md).
 - Pull request: Chưa tạo.
 - Kết quả review: Chưa review.
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 23/08/2026 — task được phân công.
-- Ghi chú/tồn đọng: là đầu vào cho task-02, task-03 và task-04.
+- Cập nhật gần nhất: 27/08/2026 — artifact đã được review nội bộ, đặt đúng thư mục và tạo hồ sơ hồi tố; đang chuẩn bị PR.
+- Ghi chú/tồn đọng: là đầu vào cho task-02, task-03 và task-04; còn chờ Bách review node/edge và gửi verdict trên GitHub.
