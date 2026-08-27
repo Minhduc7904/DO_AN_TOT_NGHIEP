@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-03_define-research-questions-and-metrics` |
 | Tuần | `week-03_2026-08-16_to_2026-08-22` |
-| Trạng thái | Chờ review |
+| Trạng thái | Hoàn thành |
 | Người phụ trách | Bách |
 | Collaborator | Đức kiểm tra tính khả thi của telemetry, fault và experiment |
 | Ưu tiên | Cao |
@@ -52,5 +52,5 @@ Chốt tập RQ và metric v1 phục vụ anomaly detection, incident detection,
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 26/08/2026 — Bách đã hoàn tất sản phẩm, mở [PR #2](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/2) và chuyển task sang chờ review.
+- Cập nhật gần nhất: 27/08/2026 — Đức đã review đạt sau khi Bách xử lý blocking feedback trong commit `317d01a`; [PR #2](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/2) đủ điều kiện merge.
 - Ghi chú/tồn đọng: là đầu vào cho task-04 và task-05.
