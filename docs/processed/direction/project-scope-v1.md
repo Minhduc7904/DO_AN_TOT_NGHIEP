@@ -354,6 +354,8 @@ Full/degraded condition phải là strict paired comparison trên cùng baseline
 
 ### System/trade-off metrics
 
+RQ5 xem xét trade-off giữa các dimension được báo cáo riêng: **quality/effectiveness**, runtime/resource cost, complexity, interpretability/explainability và instrumentation overhead.
+
 Khi phù hợp phải đo:
 
 - telemetry query/export time;
@@ -365,7 +367,11 @@ Khi phù hợp phải đo:
 - artifact size;
 - instrumentation overhead trên throughput/p95 latency.
 
-Không tạo một “accuracy tổng hợp” duy nhất che mất trade-off.
+**Complexity** được báo cáo/đánh giá định tính để so sánh trade-off giữa các phương pháp, dựa trên các yếu tố phù hợp như số modality cần sử dụng; số component hoặc pipeline stage cần phối hợp; dependency/failure mode cần xử lý; và mức độ phức tạp khi vận hành, cấu hình hoặc phân tích phương pháp. Không tạo metric định lượng phức tạp hoặc scoring framework mới.
+
+**Interpretability/explainability** yêu cầu RCA output, khi dữ liệu cho phép, có thể giải thích/truy vết vì sao một service được xếp hạng trong Top-K qua component/sub-score hoặc contribution của các tín hiệu, evidence reference, vị trí/timing trong incident timeline, dependency/graph evidence và config/version metadata liên quan. Đây là traceability của ranking service-level, không thêm yêu cầu LLM reasoning, causal proof hoặc explainability framework mới.
+
+Không tạo composite score hoặc một “accuracy tổng hợp” duy nhất che mất trade-off; các dimension phải được báo cáo riêng.
 
 ---
 
