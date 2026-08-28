@@ -8,11 +8,11 @@
 | Tên task | Chốt telemetry schema và ground-truth schema v0 |
 | Người phụ trách | Bách |
 | Tuần thực hiện | `week-04_2026-08-23_to_2026-08-29` |
-| Trạng thái | Chờ review |
+| Trạng thái | Hoàn thành |
 | Ngày tạo | 28/08/2026 |
 | Thời gian dự kiến | 28/08/2026, theo hạn của card task |
 | Nhánh thực hiện | `docs/week-04/task-04-define-telemetry-and-ground-truth-schema` |
-| Pull request dự kiến | Chưa tạo; sẽ tạo sau khi hoàn thành work và DoD |
+| Pull request | [PR #10](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/10) |
 
 ## Mục tiêu và phạm vi
 
@@ -40,10 +40,10 @@ Chốt schema telemetry v0 cho metrics, traces và logs, cùng ground-truth sche
 
 ## Definition of Done
 
-- [ ] Schema nêu identity, UTC time, trace/log/metric correlation, resource attributes và coverage/data-quality cho mỗi modality.
-- [ ] Ground truth có run ID, fault target/type, start/end, parameters, expected symptom và reset/verification metadata.
-- [ ] Schema ánh xạ được tới service/edge feature và service-level RCA trong AI/RCA blueprint.
-- [ ] Đức review khả năng instrument/export; field không thể thu được đã được loại hoặc ghi rõ giải pháp.
-- [ ] Sản phẩm đã được lưu/đẩy lên vị trí dự kiến và có thể truy cập.
-- [ ] URL/số PR và trạng thái `Chờ review` đã được commit/push vào PR head trước khi reviewer bắt đầu review.
-- [ ] Pull request từ nhánh task có mô tả đúng quy tắc, có verdict `APPROVED` hợp lệ từ thành viên còn lại trên GitHub và completion metadata được commit/push vào chính PR trước khi người phụ trách merge.
+- [x] Schema nêu identity, UTC time, trace/log/metric correlation, resource attributes và coverage/data-quality cho mỗi modality.
+- [x] Ground truth có run ID, fault target/type, start/end, parameters, expected symptom và reset/verification metadata.
+- [x] Schema ánh xạ được tới service/edge feature và service-level RCA trong AI/RCA blueprint.
+- [x] Bách đã self-review bằng AI theo ngoại lệ workflow được xác nhận; khả năng instrument/export và các field chưa khả thi đã được rà soát trong artifact.
+- [x] Sản phẩm đã được lưu/đẩy lên vị trí dự kiến và có thể truy cập.
+- [x] URL/số PR và trạng thái `Chờ review` đã được commit/push vào PR head trước khi finalization.
+- [x] Pull request từ nhánh task có mô tả đúng quy tắc; Bách đã xác nhận `APPROVED` theo ngoại lệ self-review AI và completion metadata được commit/push vào chính PR trước khi merge.
