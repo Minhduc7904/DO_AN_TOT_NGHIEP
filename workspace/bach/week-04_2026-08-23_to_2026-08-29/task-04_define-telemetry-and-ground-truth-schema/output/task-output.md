@@ -40,7 +40,7 @@
 | Đức review khả năng instrument/export; field không thể thu được đã được loại hoặc ghi rõ giải pháp. | Chưa đạt | Chưa review. |
 | Sản phẩm đã được lưu/đẩy lên vị trí dự kiến và có thể truy cập. | Đạt | [`telemetry-and-ground-truth-schema-v0.md`](../../../../../docs/processed/architecture/telemetry-and-ground-truth-schema-v0.md) đã được commit/push. |
 | URL/số PR và trạng thái `Chờ review` đã được commit/push vào PR head trước khi reviewer bắt đầu review. | Đạt | [PR #10](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/10); commit metadata này được push vào PR head trước review. |
-| Pull request có mô tả đúng quy tắc, verdict `APPROVED` hợp lệ và completion metadata trước merge. | Chưa đạt | Chưa tạo PR hoặc review. |
+| Pull request có mô tả đúng quy tắc, verdict `APPROVED` hợp lệ và completion metadata trước merge. | Chưa đạt | PR #10 đã tạo; còn thiếu verdict `APPROVED` hợp lệ và completion metadata. |
 
 ## Thay đổi, tồn đọng và bước tiếp theo
 

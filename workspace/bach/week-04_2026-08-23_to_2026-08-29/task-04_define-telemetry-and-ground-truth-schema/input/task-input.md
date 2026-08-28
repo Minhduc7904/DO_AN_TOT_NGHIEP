@@ -8,7 +8,7 @@
 | Tên task | Chốt telemetry schema và ground-truth schema v0 |
 | Người phụ trách | Bách |
 | Tuần thực hiện | `week-04_2026-08-23_to_2026-08-29` |
-| Trạng thái | Đang thực hiện |
+| Trạng thái | Chờ review |
 | Ngày tạo | 28/08/2026 |
 | Thời gian dự kiến | 28/08/2026, theo hạn của card task |
 | Nhánh thực hiện | `docs/week-04/task-04-define-telemetry-and-ground-truth-schema` |
