@@ -82,11 +82,9 @@ timestamp
 
 MVP không dùng `trace_id`, `span_id`, user ID hoặc request ID làm Prometheus label.
 
-### Principal identity sau Gateway
+### Trust boundary và principal context HTTP
 
-Luồng canonical yêu cầu Gateway validate JWT locally, không remote-introspect Auth cho mọi request.
-
-Contract v1 chọn:
+Luồng canonical yêu cầu Gateway validate JWT locally, không remote-introspect Auth cho mọi request. Contract v1 chọn:
 
 ```text
 x-principal-id
@@ -95,18 +93,18 @@ x-principal-role
 
 là **internal trusted headers** do Gateway tạo từ JWT claims sau khi validate.
 
-Quy tắc:
+Ba loại caller có trust boundary khác nhau:
 
-1. Client không được quyết định giá trị hai header này.
-2. Gateway phải strip/overwrite header cùng tên từ external request.
-3. Service-to-service call chỉ propagate khi downstream cần principal context.
-4. Header này không được dùng làm Prometheus label.
-5. Nếu tuần 5 chọn cơ chế truyền principal khác, phải cập nhật contract/ADR trước scaffold rộng; không được để mỗi service tự chọn convention riêng.
+1. **External client -> Gateway:** client gửi `Authorization: Bearer <JWT>` và không được quyết định `x-principal-id`/`x-principal-role`. Gateway validate JWT tại chỗ, strip/overwrite mọi `x-principal-*` từ external request và derive principal context tin cậy từ JWT claims.
+2. **Gateway -> business service:** đây là internal request sau khi Gateway đã xác thực principal. Gateway propagate W3C trace context, cùng `x-principal-id`/`x-principal-role` khi downstream endpoint cần principal context. Business service không remote-introspect Auth.
+3. **Service -> service:** call dùng published HTTP contract trên internal network, không mặc định phải propagate end-user Bearer JWT và không phụ thuộc Auth remote introspection. Chỉ propagate principal context khi downstream thực sự cần để xử lý contract; call không cần user/principal context không bắt buộc mang principal headers.
+
+Header này không được dùng làm Prometheus label. MVP không thêm mTLS, service IAM, OAuth service credential hoặc production-grade service authentication chỉ để mở rộng trust boundary này. Nếu tuần 5 chọn cơ chế truyền principal khác, phải cập nhật contract/ADR trước scaffold rộng; không được để mỗi service tự chọn convention riêng.
 
 ## 2.4. Authentication
 
 - `POST /api/v1/auth/login` và `POST /api/v1/auth/refresh` không yêu cầu access JWT.
-- Các public business API khác đi qua Gateway và yêu cầu Bearer JWT.
+- Các public business API khác đi qua Gateway và yêu cầu Bearer JWT; service-to-service chỉ gọi published internal contract tương ứng.
 - Gateway validate signature, expiry và claim cần thiết tại chỗ.
 - Auth **không** là runtime dependency của mọi request đã có JWT hợp lệ.
 
@@ -184,6 +182,8 @@ Service không trả raw stack trace, password, JWT, secret hoặc internal DB d
 | Grading | event `grade.completed` | Notification | W5 |
 
 Notification không cần business HTTP endpoint trong MVP ngoài health/readiness endpoint kỹ thuật của service template.
+
+`GET /api/v1/courses/{course_id}` và `GET /api/v1/submissions/{submission_id}` có thể được gọi qua Gateway hoặc service-to-service. Published resource semantics giữ nguyên, còn authentication/trusted-caller context phụ thuộc loại caller theo mục 2.3.
 
 ---
 
@@ -420,6 +420,8 @@ Success `200`:
 
 Endpoint này là published service contract; Submission không được đọc `enrollment_db`.
 
+`GET /api/v1/enrollments/check` là internal published service contract với caller chính là Submission; MVP không cần expose nó như public client route qua Gateway.
+
 ---
 
 # 8. W4 — Submission contracts
@@ -508,7 +510,7 @@ Errors:
 
 # 9. Storage Mock HTTP contract
 
-Storage Mock là controllable external dependency, không phải in-process fake adapter.
+Storage Mock là controllable external dependency, không phải in-process fake adapter và không phải public LMS API cho client. Endpoint của nó là internal/external-dependency contract cho Submission hoặc test utility khi cần.
 
 ## 9.1. `PUT /api/v1/objects/{object_key}`
 
@@ -674,6 +676,12 @@ Không tạo thêm event MVP nếu chưa có consumer, failure mode và experime
 
 ## 11.3. Field definition
 
+### Transport carrier RabbitMQ cho trace context
+
+RabbitMQ message headers/properties là **canonical transport carrier** cho W3C trace context. Producer Grading phải inject `traceparent` và `tracestate` (khi có) vào headers/properties theo convention tương thích OpenTelemetry; Consumer Notification phải extract context đó để nối producer/business span, publish span và consume/process span vào cùng distributed trace khi telemetry đầy đủ.
+
+`correlation.traceparent` và `correlation.tracestate` trong JSON envelope vẫn giữ cho application-level traceability, artifact/debug correlation và fallback correlation khi cần. Chúng **không** thay thế transport-level propagation qua RabbitMQ headers. Khi envelope và transport headers cùng có trace context, chúng phải phản ánh cùng context/convention, không cố ý tạo hai trace độc lập.
+
 ### Envelope
 
 | Field | Type | Required | Ý nghĩa |
@@ -684,8 +692,8 @@ Không tạo thêm event MVP nếu chưa có consumer, failure mode và experime
 | `occurred_at` | string(date-time) | ✓ | Thời điểm domain event xảy ra, UTC |
 | `producer.service_name` | string | ✓ | `grading` |
 | `producer.service_version` | string | ✓ | Version service phát event |
-| `correlation.traceparent` | string | ✓ | W3C trace context để nối publish/consume |
-| `correlation.tracestate` | string/null | ✓ | Optional W3C trace state |
+| `correlation.traceparent` | string | ✓ | Application-level traceability/fallback; không thay transport carrier RabbitMQ |
+| `correlation.tracestate` | string/null | ✓ | Application-level trace state/fallback; không thay transport carrier RabbitMQ |
 | `payload` | object | ✓ | Snapshot đủ để Notification xử lý mà không đọc DB service khác |
 
 ### Payload
@@ -728,7 +736,8 @@ MVP contract giả định message delivery có thể bị redelivery. Vì vậy
 5. Số retry, delay và DLQ topology **không phải business schema** và chưa freeze trong contract này.
 6. Nếu implementation thêm bounded retry/DLQ, config đó phải versioned/observable và không được che mất F4 RabbitMQ backlog/consumer slowdown.
 7. Event payload/schema không thay đổi chỉ vì transport retry config thay đổi.
-8. Async trace context phải được propagate qua RabbitMQ message headers/envelope tương thích với OTel.
+8. Primary async correlation là W3C trace context qua RabbitMQ message headers/properties. Khi trace context thiếu hoặc telemetry degraded, dùng `event_id` và temporal correlation làm fallback, đồng thời Analysis giảm confidence theo blueprint. `event_id` vẫn là event identity/idempotency key, không thay trace identity.
+9. Không freeze exchange name, queue name, retry count, DLQ topology hoặc broker implementation detail trong task này.
 
 ### MVP duplicate handling
 
@@ -884,8 +893,9 @@ payload identity
 
 đủ để:
 
-- nối publish -> consume;
-- fallback correlation bằng `event_id`/time nếu trace thiếu;
+- nối publish -> consume bằng RabbitMQ transport headers/properties;
+- hỗ trợ application-level traceability/debug bằng `correlation.traceparent`/`correlation.tracestate`, không thay transport propagation;
+- fallback correlation bằng `event_id`/time nếu trace thiếu hoặc telemetry degraded;
 - kiểm tra async edge `grading -> notification`;
 - đo F4 queue/consumer symptom;
 - giữ provenance của event schema.
@@ -920,13 +930,18 @@ Tối thiểu:
 - [ ] Storage timeout map thành stable `DEPENDENCY_TIMEOUT`.
 - [ ] Grading gọi Submission bằng published contract.
 - [ ] Error envelope luôn có `code`, `trace_id`, UTC `timestamp`.
+- [ ] External client không thể spoof `x-principal-id`/`x-principal-role`; Gateway strip/overwrite trusted headers.
+- [ ] Internal service call không cần remote Auth introspection; chỉ mang principal headers khi contract cần.
+- [ ] `GET /api/v1/enrollments/check` hoạt động như internal service contract của Submission.
 
 ## Event contract tests
 
 - [ ] Producer emit đúng `event_name=grade.completed`.
 - [ ] `schema_version=1`.
 - [ ] Required envelope/payload fields có đủ.
-- [ ] Trace context được propagate.
+- [ ] Producer inject W3C trace context vào RabbitMQ transport headers/properties và Consumer extract đúng context.
+- [ ] Publish -> consume/process nối được thành cùng trace khi telemetry không degraded.
+- [ ] Envelope correlation không được dùng thay transport propagation và không tạo trace độc lập khi cả hai carrier có context.
 - [ ] Notification parse event mà không import Grading entity.
 - [ ] Duplicate `event_id` tạo một logical outcome.
 - [ ] Consumer failure observable và không ack giả success.
@@ -977,11 +992,13 @@ Không để open point trên làm thay đổi topology/service ownership đã f
 - [ ] Timeout/error contract đủ map metric/trace/log evidence.
 - [ ] `principal_id`, `course_id`, `submission_id` đủ cho downstream RCA/evidence nhưng không đưa PII không cần thiết.
 - [ ] Không có cross-service DB access.
+- [ ] External principal headers không spoof được; internal calls chỉ propagate principal context khi contract cần.
+- [ ] `GET /api/v1/enrollments/check` vẫn là internal contract của Submission, không thành public client route trong MVP.
 
 ## Async flow đề nghị Bách review: W5 `grade.completed`
 
 - [ ] Envelope có đủ `event_id`, name, schema version, occurred time, producer.
-- [ ] Trace context đủ nối publish/consume.
+- [ ] RabbitMQ transport headers/properties là carrier primary để nối publish/consume; envelope correlation không thay carrier này.
 - [ ] Payload đủ để Notification không query DB service khác.
 - [ ] `event_id` hỗ trợ fallback correlation/dedup.
 - [ ] Retry/DLQ chưa freeze không làm sai semantics hoặc che F4.
