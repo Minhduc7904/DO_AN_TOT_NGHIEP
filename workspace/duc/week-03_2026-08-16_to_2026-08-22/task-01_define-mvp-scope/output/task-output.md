@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-01_define-mvp-scope` |
 | Người phụ trách | Đức |
-| Trạng thái | Hoàn thành trên branch task — sẵn sàng merge vào `main` |
+| Trạng thái | Hoàn thành |
 | Bắt đầu thực tế | Không xác định — hồ sơ ghi nhận hồi tố; bản thảo được cung cấp ngày 27/08/2026 |
 | Hoàn thành thực tế | 28/08/2026 — Bách đã xác nhận `APPROVED` và completion record đã được finalization trên branch task |
 | Tổng thời lượng | Không xác định — Đức chưa cung cấp thời lượng thực tế |
@@ -43,4 +43,4 @@
 
 - Thay đổi so với input: hồ sơ input/output được tạo hồi tố vì artifact đã có trước hồ sơ workspace.
 - Việc chưa hoàn thành hoặc trở ngại: thiếu thời gian bắt đầu/thời lượng thực tế chỉ là hạn chế của hồ sơ hồi tố; không phải blocker cho DoD.
-- Bước tiếp theo: merge PR #4 vào `main`; không tạo bookkeeping commit sau merge.
+- Bước tiếp theo: Không có trong phạm vi W3-T1.
