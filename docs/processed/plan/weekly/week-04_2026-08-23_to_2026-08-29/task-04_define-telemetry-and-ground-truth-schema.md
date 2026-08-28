@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-04_define-telemetry-and-ground-truth-schema` |
 | Tuần | `week-04_2026-08-23_to_2026-08-29` |
-| Trạng thái | Đã giao |
+| Trạng thái | Đang thực hiện |
 | Người phụ trách | Bách |
 | Collaborator | Đức kiểm tra khả năng instrument/export từ testbed |
 | Ưu tiên | Cao |
@@ -46,12 +46,12 @@ Chốt schema telemetry v0 cho metrics, traces và logs, cùng ground-truth sche
 
 ## Liên kết hồ sơ thực hiện
 
-- Input workspace: Chưa tạo.
-- Output workspace: Chưa tạo.
+- Input workspace: [`task-input.md`](../../../../../workspace/bach/week-04_2026-08-23_to_2026-08-29/task-04_define-telemetry-and-ground-truth-schema/input/task-input.md).
+- Output workspace: [`task-output.md`](../../../../../workspace/bach/week-04_2026-08-23_to_2026-08-29/task-04_define-telemetry-and-ground-truth-schema/output/task-output.md).
 - Pull request: Chưa tạo.
 - Kết quả review: Chưa review.
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 23/08/2026 — task được phân công.
+- Cập nhật gần nhất: 28/08/2026 — Bách nhận task; đã tạo branch và hồ sơ workspace, chưa bắt đầu triển khai sản phẩm chính.
 - Ghi chú/tồn đọng: là đầu vào của task-02, task-03 và task-05.
