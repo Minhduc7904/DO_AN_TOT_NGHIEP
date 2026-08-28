@@ -6,11 +6,11 @@
 | --- | --- |
 | Mã task | `task-01_define-mvp-scope` |
 | Người phụ trách | Đức |
-| Trạng thái | Đang thực hiện |
+| Trạng thái | Chờ review |
 | Bắt đầu thực tế | Không xác định — hồ sơ ghi nhận hồi tố; bản thảo được cung cấp ngày 27/08/2026 |
 | Hoàn thành thực tế | Chưa có — chờ review và finalization |
 | Tổng thời lượng | Không xác định — Đức chưa cung cấp thời lượng thực tế |
-| Pull request | Chưa tạo |
+| Pull request | [#4](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/4) |
 | Người review | Bách |
 | Kết quả review | Chưa review |
 
@@ -35,11 +35,11 @@
 | Có bảng out-of-scope cùng lý do hoãn/loại | Đạt | Mục 6 trong `project-scope-v1.md` |
 | Bách review tác động tới telemetry, feature, anomaly/RCA và evaluation | Chưa đạt | Review record mục 10 đang `PENDING` |
 | Artifact lưu đúng vị trí và mở được | Đạt | Link sản phẩm thực tế ở trên |
-| URL PR và `Chờ review` có trên remote PR head | Chưa đạt | Sẽ cập nhật sau khi tạo PR |
+| URL PR và `Chờ review` có trên remote PR head | Đạt | PR #4 và metadata lifecycle được cập nhật trên chính nhánh PR |
 | Verdict `APPROVED` và completion metadata trước merge | Chưa đạt | Chưa đến bước finalization |
 
 ## Thay đổi, tồn đọng và bước tiếp theo
 
 - Thay đổi so với input: hồ sơ input/output được tạo hồi tố vì artifact đã có trước hồ sơ workspace.
 - Việc chưa hoàn thành hoặc trở ngại: thiếu thời gian bắt đầu/thời lượng thực tế; chưa có verdict review của Bách.
-- Bước tiếp theo: tạo PR, cập nhật URL và trạng thái `Chờ review` trên PR head; sau đó Bách review substantive artifact.
+- Bước tiếp theo: Bách review substantive artifact trên PR #4.

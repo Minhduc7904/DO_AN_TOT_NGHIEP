@@ -13,7 +13,7 @@
 
 | Mã task | Task | Người phụ trách | Collaborator | Ưu tiên | Trạng thái |
 | --- | --- | --- | --- | --- | --- |
-| [task-01_define-mvp-scope](task-01_define-mvp-scope.md) | Chốt scope và out-of-scope MVP | Đức | Bách | Cao | Đang thực hiện |
+| [task-01_define-mvp-scope](task-01_define-mvp-scope.md) | Chốt scope và out-of-scope MVP | Đức | Bách | Cao | Chờ review |
 | [task-02_create-implementation-backlog](task-02_create-implementation-backlog.md) | Lập backlog triển khai tuần 3–22 | Đức | Bách | Cao | Đã giao |
 | [task-03_define-research-questions-and-metrics](task-03_define-research-questions-and-metrics.md) | Chốt research questions và metric đánh giá | Bách | Đức | Cao | Hoàn thành |
 | [task-04_create-risk-register](task-04_create-risk-register.md) | Lập risk register và quy tắc giảm scope | Bách | Đức | Trung bình | Đã giao |

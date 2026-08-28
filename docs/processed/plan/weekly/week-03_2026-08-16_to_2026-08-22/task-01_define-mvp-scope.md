@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-01_define-mvp-scope` |
 | Tuần | `week-03_2026-08-16_to_2026-08-22` |
-| Trạng thái | Đang thực hiện |
+| Trạng thái | Chờ review |
 | Người phụ trách | Đức |
 | Collaborator | Bách review để loại feature LMS không phục vụ nghiên cứu |
 | Ưu tiên | Cao |
@@ -48,9 +48,9 @@ Tạo scope v1 cho đồ án, chuyển các quyết định MVP/Target/Stretch �
 
 - Input workspace: [`workspace/duc/week-03_2026-08-16_to_2026-08-22/task-01_define-mvp-scope/input/task-input.md`](../../../../../workspace/duc/week-03_2026-08-16_to_2026-08-22/task-01_define-mvp-scope/input/task-input.md).
 - Output workspace: [`workspace/duc/week-03_2026-08-16_to_2026-08-22/task-01_define-mvp-scope/output/task-output.md`](../../../../../workspace/duc/week-03_2026-08-16_to_2026-08-22/task-01_define-mvp-scope/output/task-output.md).
-- Pull request: Chưa tạo.
+- Pull request: [#4](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/4).
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 27/08/2026 — artifact đã được rà soát, đặt đúng vị trí và bổ sung hồ sơ thực hiện hồi tố; đang chuẩn bị pull request.
-- Ghi chú/tồn đọng: chờ Bách review tác động tới telemetry, feature, anomaly/RCA và evaluation.
+- Cập nhật gần nhất: 28/08/2026 — PR #4 đã được tạo và metadata sẵn sàng review đã được cập nhật trên chính PR head.
+- Ghi chú/tồn đọng: chờ Bách review tác động tới telemetry, feature, anomaly/RCA và evaluation trên PR #4.
