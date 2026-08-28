@@ -2,7 +2,7 @@
 
 > **Task:** `task-03_define-data-ownership-and-fault-matrix`
 >
-> **Trạng thái:** **DRAFT cho W4-T4** — ownership/dependency boundary và fault semantics đã chốt ở mức đủ làm input cho telemetry/ground-truth schema; chưa phải artifact review-ready/final của W4-T3.
+> **Trạng thái:** **Final cross-check với W4-T4** — ownership/dependency boundary và fault semantics đã được đồng bộ với telemetry/ground-truth schema v0; artifact sẵn sàng review/merge theo workflow task.
 >
 > **Vị trí canonical dự kiến:** `docs/processed/architecture/data-ownership-and-fault-matrix-v1.md`
 >
@@ -18,10 +18,11 @@ Artifact này phải nhất quán với:
 2. `http-and-event-contracts-v1.md` — published HTTP/event boundary, timeout/error semantics và `grade.completed`.
 3. `backend_microservice_testbed_blueprint.md` — architecture, workload/fault/experiment boundary và năm fault canonical.
 4. `analysis-anomaly-rca-blueprint.md` — service-level RCA, feature/evidence và dynamic graph.
-5. `../direction/project-scope-v1.md` — MVP/Target/Stretch đã freeze.
-6. `../direction/research-questions-and-metrics-v1.md` — RQ1–RQ5, detection/RCA metric và robustness requirement.
+5. `telemetry-and-ground-truth-schema-v0.md` — `RunGroundTruth`, telemetry artifact lineage, quality/missingness và ranh giới W4-T4/W4-T5.
+6. `../direction/project-scope-v1.md` — MVP/Target/Stretch đã freeze.
+7. `../direction/research-questions-and-metrics-v1.md` — RQ1–RQ5, detection/RCA metric và robustness requirement.
 
-W4-T4 (`telemetry-and-ground-truth-schema-v0`) chưa final tại thời điểm draft này. Vì vậy artifact này chốt **ngữ nghĩa ground truth/evidence bắt buộc**, nhưng không tự ý khóa schema telemetry chi tiết thuộc T4.
+W4-T3 chốt **ownership, dependency strategy và fault semantics**; W4-T4 đã canonicalize immutable execution/control/fault truth, telemetry schema, lineage và quality semantics. Artifact này dùng đúng vocabulary T4, không định nghĩa cạnh tranh schema telemetry/ground truth.
 
 ## 1.1. Không thuộc W4-T3
 
@@ -197,52 +198,88 @@ Quy tắc bắt buộc:
 8. Nếu hook activation/reset thất bại hoặc state sau reset không đạt verification, run phải được đánh dấu invalid/failed.
 9. Intensity cụ thể được pilot rồi freeze trước final test campaign; không tune intensity trên final test để làm model đẹp hơn.
 
-## 5.2. Ground-truth semantics tối thiểu cần T4 biểu diễn
+## 5.2. Ground-truth semantics canonical
 
-Tên field cuối cùng thuộc W4-T4, nhưng mỗi fault run phải biểu diễn được tối thiểu các logical value sau:
+Mỗi fault run dùng cùng `RunGroundTruth` immutable của W4-T4; đây là execution/control/fault truth, không phải experiment/evaluation manifest và không sở hữu telemetry artifact pointer.
 
 ```text
-experiment_id
+ground_truth_schema_version
+
+# execution identity
 scenario_id
 run_id
 repeat_index
+run_status
+run_start
+run_end
+
+# workload/execution
 workload_profile
 workload_seed
+workload_parameters
+workload_start
+workload_end
 
+# fault truth
+fault_id
 fault_type
 fault_target
-fault_parameters / fault_intensity
+fault_target_kind
+fault_intensity
+fault_parameters
 fault_start
 fault_end
 
+# RCA truth and expected propagation
 root_cause_service
 root_cause_component
 expected_symptom
+expected_propagation_path
+expected_evidence
 
+# control/reset/verification
 activation_result
+activation_details
+deactivation_result
+deactivation_details
+reset_start
+reset_end
 reset_result
 verification_result
+verification_checks
 
+# execution provenance
 code_commit
 service_versions
-environment_profile / environment_config_version
-telemetry_schema_version
-telemetry_artifact
+environment_profile
+environment_config_version
 ```
 
-T4 cần bổ sung/canonicalize correlation, coverage/missingness, exact serialization/versioning và các field provenance còn lại theo AI/RCA blueprint.
+`run_status` chỉ phản ánh execution validity: `valid | invalid | failed`. Activation/deactivation/reset/verification failure có thể làm execution `invalid` hoặc `failed`; telemetry coverage, missingness và data quality được đánh giá riêng trên từng artifact qua `TelemetryQualityReport` và không mutate `RunGroundTruth`. Vì vậy baseline execution có thể giữ `run_status=valid` trong khi một derived trace-drop/missing-modality artifact có `overall_status=partial` hoặc `fail` theo quality rule.
+
+Campaign/experiment identity, split, modality/full-degraded selection, selected telemetry artifact, feature/detector/RCA/evaluation configuration hoặc output thuộc experiment/evaluation manifest W4-T5. Một fault matrix chỉ yêu cầu telemetry evidence được audit qua `RunGroundTruth` + `TelemetryArtifactManifest` + `TelemetryQualityReport` theo từng `artifact_id`.
 
 ---
 
 # 6. Fault matrix MVP — summary
 
-| ID | Scenario / category | Root-cause service | Component evidence / target | Injector / hook draft | Workload context chính | Expected symptom / propagation | Reset / verification |
+| ID | Scenario / category | Root-cause service | Component evidence / target | Injector / hook | Workload context chính | Expected symptom / propagation | Reset / verification |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | **F1** | Course / Redis latency — Cache | `course` | `course-redis` | dependency-latency injector tại Redis adapter/path của Course | normal mixed, ưu tiên W2/W3/W4 read path; cache được pre-warm | Redis dependency latency tăng -> Course latency tăng -> symptom tại Gateway và caller như Enrollment/Submission tùy flow | disable latency; verify Redis path latency + Course p95 về baseline, health/readiness OK |
 | **F2** | Submission -> Storage latency — Downstream dependency | `submission` | `submission-storage` | deterministic latency control tại external Storage Mock | submission peak hoặc W4-focused | Storage PUT chậm/quá timeout -> Submission timeout/error + latency -> Gateway symptom; storage dependency span là evidence chính | clear Storage Mock fault; verify PUT latency bình thường, no stuck state, Submission flow success |
 | **F3** | Submission service error — Service error | `submission` | `submission-service` | application fault hook tại create-submission path, trước irreversible side effect | W4-focused / submission peak | Submission trả controlled internal error -> Gateway error; downstream calls sau hook không thực hiện nếu hook đặt trước side effect | disable hook; verify create submission success và không còn injected error |
 | **F4** | Notification consumer slowdown / RabbitMQ backlog — Async queue | `notification` | `notification-consumer` | deterministic processing-delay hook trong Notification consumer trước ack | W5 grading burst, publish rate đủ tạo backlog khi slowed | consumer processing latency/lag tăng, queue depth/backlog tăng; Grading HTTP/publish có thể vẫn khỏe | disable delay; drain/clear backlog theo protocol; verify queue/lag về baseline và consumer throughput hồi phục |
 | **F5** | Submission CPU pressure — Resource | `submission` | `submission-instance` | resource/CPU injector colocated với Submission runtime; không crash/restart | submission peak hoặc mixed W4+W5 | Submission CPU/event-loop/latency tăng -> request timeout/error có thể tăng -> Gateway và Grading caller có symptom | stop CPU injector; verify CPU/event-loop/latency về baseline, readiness OK, no restart required |
+
+Mỗi dòng dùng cùng shape T4: fault identity/target/kind, service-level root cause, component evidence, workload, actual injection interval/parameters, `expected_symptom`, `expected_propagation_path`, `expected_evidence`, activation/deactivation, reset/verification và execution provenance. `expected_symptom` mô tả outcome semantic; `expected_propagation_path` là path service/edge/dependency có thứ tự để audit propagation; `expected_evidence` là expectation observable qua metrics/traces/logs/control. Cả ba là truth/control metadata, không phải detection/RCA feature.
+
+| Fault | `expected_propagation_path` canonical (phụ thuộc workload) |
+| --- | --- |
+| F1 | `course-redis -> course -> gateway`; W3/W4 có thể lần lượt qua `enrollment` hoặc `submission` trước Gateway |
+| F2 | `submission-storage -> submission -> gateway` |
+| F3 | `submission -> gateway` |
+| F4 | `grading -> RabbitMQ -> notification`; Grading/Gateway HTTP vẫn có thể healthy |
+| F5 | `submission -> gateway`; workload W5 có thể quan sát thêm `submission -> grading` |
 
 ---
 
@@ -257,13 +294,15 @@ Tạo fault cache dependency có controlled latency nhưng vẫn giữ `course` 
 ### Target và hook
 
 ```text
+fault_id: F1
 fault_type: dependency_latency
 fault_target: course-redis
+fault_target_kind: dependency
 root_cause_service: course
 root_cause_component: course-redis
 ```
 
-Hook draft:
+Hook:
 
 - fault injector nằm ở **Redis dependency boundary của Course**, trong adapter/injector layer dành cho experiment;
 - delay được áp deterministic cho operation Redis được chọn;
@@ -291,7 +330,7 @@ fault_start
 fault_end
 ```
 
-Intensity số cụ thể chưa freeze trong draft. Sau pilot, chọn mức đủ làm Course latency khác baseline rõ nhưng ưu tiên **latency-dominant** thay vì biến toàn bộ scenario thành Redis availability failure; giá trị phải được freeze trước campaign.
+Intensity số cụ thể chưa freeze. Sau pilot, chọn mức đủ làm Course latency khác baseline rõ nhưng ưu tiên **latency-dominant** thay vì biến toàn bộ scenario thành Redis availability failure; giá trị phải được freeze trước final campaign trong execution/fault config.
 
 ### Expected symptom / propagation
 
@@ -337,8 +376,10 @@ Tạo downstream external-dependency fault rõ ràng tại W4, có correlation t
 ### Target và hook
 
 ```text
+fault_id: F2
 fault_type: dependency_latency
 fault_target: submission-storage
+fault_target_kind: dependency
 root_cause_service: submission
 root_cause_component: submission-storage
 ```
@@ -363,13 +404,13 @@ Storage Mock phải hỗ trợ control plane riêng cho experiment để:
 ```text
 operation = PUT
 injected_delay_ms
-submission_storage_timeout_ms   # provenance/config reference khi T4/T5 freeze
+submission_storage_timeout_ms   # runtime/execution configuration reference
 activation_mode = interval
 fault_start
 fault_end
 ```
 
-Định hướng canonical cho final scenario: sau khi timeout runtime được freeze, chọn `injected_delay_ms` lớn hơn storage timeout với margin ổn định để tạo `DEPENDENCY_TIMEOUT` có chủ đích. Exact millisecond phải được pilot/freeze, không chốt ngẫu nhiên trong W4-T3 draft.
+`submission_storage_timeout_ms` là runtime/execution configuration, không phải field T4 hoặc experiment/evaluation configuration. Exact timeout được pilot, implementation/protocol freeze trước final campaign; execution phải lưu đủ fault parameter và provenance để tái lập. Định hướng final scenario là chọn `injected_delay_ms` lớn hơn storage timeout với margin ổn định để tạo `DEPENDENCY_TIMEOUT` có chủ đích, nhưng W4-T3 không chốt numeric millisecond.
 
 ### Expected symptom / propagation
 
@@ -409,13 +450,15 @@ Tạo application/service fault riêng biệt với dependency latency/resource 
 ### Target và hook
 
 ```text
+fault_id: F3
 fault_type: service_error
 fault_target: submission-service
+fault_target_kind: service
 root_cause_service: submission
 root_cause_component: submission-service
 ```
 
-Hook draft:
+Hook:
 
 - controlled application fault hook trong Submission create path;
 - activation theo experiment state + interval, không theo random ad-hoc logic;
@@ -438,12 +481,12 @@ POST /api/v1/submissions
 ```text
 operation = POST /api/v1/submissions
 injected_error_code = INTERNAL_ERROR   # logical semantic; exact injector exception private
-injected_error_rate = 1.0 during active interval
+injected_error_rate = <FROM_VERSIONED_EXECUTION_FAULT_CONFIG>
 fault_start
 fault_end
 ```
 
-Dùng 100% targeted requests trong active interval giúp ground truth deterministic; nếu sau pilot cần tỷ lệ thấp hơn phải freeze bằng config/seed và không thay đổi giữa final repetitions.
+100% targeted-request failure trong active interval là candidate/default ưu tiên vì deterministic và ground truth rõ, nhưng chỉ freeze `1.0` sau pilot nếu phù hợp. Nếu chọn rate nhỏ hơn `1.0`, execution/fault config phải có deterministic seed và giữ cố định giữa final repetitions; final rate không được tune theo kết quả model.
 
 ### Expected symptom / propagation
 
@@ -478,13 +521,15 @@ Tạo async fault mà root cause nằm ở Notification, trong khi Grading produ
 ### Target và hook
 
 ```text
+fault_id: F4
 fault_type: consumer_slowdown
 fault_target: notification-consumer
+fault_target_kind: consumer
 root_cause_service: notification
 root_cause_component: notification-consumer
 ```
 
-Hook draft:
+Hook:
 
 - deterministic processing delay trong Notification consumer **sau message receive/extract context và trước completion/ack**;
 - không ack message ngay rồi mới sleep, vì như vậy broker backlog sẽ không phản ánh slowdown thực;
@@ -556,8 +601,10 @@ Tạo resource fault tại Submission nhưng service vẫn sống, để quan s�
 ### Target và hook
 
 ```text
+fault_id: F5
 fault_type: cpu_pressure
 fault_target: submission-instance
+fault_target_kind: resource
 root_cause_service: submission
 root_cause_component: submission-instance
 ```
@@ -587,7 +634,7 @@ fault_start
 fault_end
 ```
 
-Không coi observed CPU% là ground-truth activation parameter duy nhất vì observed value phụ thuộc host contention. T4/protocol cần giữ cả configured intensity và observed telemetry riêng.
+Không coi observed CPU% là ground-truth activation parameter duy nhất vì observed value phụ thuộc host contention. `RunGroundTruth` giữ configured intensity/fault parameters cần tái lập execution; observed CPU là telemetry evidence riêng.
 
 ### Expected symptom / propagation
 
@@ -635,9 +682,9 @@ Quy tắc evaluation:
 
 ---
 
-# 9. Evidence requirement cho W4-T4
+# 9. Evidence requirement đồng bộ với W4-T4
 
-W4-T4 cần thiết kế telemetry/ground-truth schema sao cho từ mỗi run có thể kiểm tra tối thiểu:
+Với schema W4-T4 đã canonicalize, từ mỗi run fault phải kiểm tra tối thiểu:
 
 | Requirement | F1 | F2 | F3 | F4 | F5 |
 | --- | :---: | :---: | :---: | :---: | :---: |
@@ -655,15 +702,33 @@ W4-T4 cần thiết kế telemetry/ground-truth schema sao cho từ mỗi run c�
 
 `optional symptom` nghĩa là không được tạo log artificial chỉ để tăng chất lượng RCA. Log feature phải đến từ operational logging hợp lý của hệ thống.
 
+Một `run_id` có thể có nhiều raw, normalized hoặc derived telemetry artifact. `TelemetryArtifactManifest` giữ `artifact_id` bất biến; derived/degraded artifact phải trỏ `source_artifact_id` và lưu transformation config/seed/parameters. Mỗi artifact có `TelemetryQualityReport` riêng. Full và degraded artifact có thể dùng cùng immutable `RunGroundTruth`; ground truth không sở hữu artifact pointer.
+
+RQ4 dùng strict paired comparison sau:
+
+```text
+same execution
+same run_id
+same immutable RunGroundTruth
+same baseline telemetry lineage
+
+full artifact A
+degraded artifact B -> source_artifact_id = A
+transformation config/seed recorded
+own TelemetryQualityReport
+```
+
+Degradation không mutate `RunGroundTruth`, `run_status` hoặc baseline artifact; fault matrix không tạo ground truth riêng cho degraded condition.
+
 ---
 
 # 10. Ground-truth leakage guard
 
-Để evaluation hợp lệ:
+**Ground-truth/control metadata MUST NOT be consumed as detection/RCA features unless một oracle upper-bound experiment được thiết kế có chủ đích, version hóa và khai báo riêng trong W4-T5 experiment/evaluation manifest.** Observable evidence cho detector/RCA phải đến từ telemetry thực tế.
 
-- `root_cause_service`, `root_cause_component`, `fault_type`, `fault_target`, `fault_start`, `fault_end` là **truth/control metadata**.
-- Các label trên không được nhét vào request/event business payload rồi vô tình trở thành trace/log/model feature.
-- Nếu T4 chọn propagate `run_id` để correlation, phải tách rõ `run_id` là experiment identity, không phải root-cause label; Analysis phải kiểm soát việc dùng field này như feature.
+- `fault_id`, `fault_type`, `fault_target`, `fault_target_kind`, `fault_intensity`, `fault_parameters`, `fault_start`, `fault_end`, `root_cause_service`, `root_cause_component`, `expected_symptom`, `expected_propagation_path`, `expected_evidence`, activation/deactivation và reset/verification truth là **truth/control metadata**.
+- Các field trên không được nhét vào request/event business payload rồi vô tình trở thành trace/log/model feature.
+- `run_id` là execution/artifact/evaluation correlation identity, không phải business HTTP/event field, không thay W3C Trace Context và không dùng làm Prometheus label. Với F4, W3C Trace Context trong RabbitMQ headers/properties vẫn là runtime correlation chính; `event_id` chỉ là fallback correlation/dedup identity khi async trace thiếu hoặc degraded.
 - Fault control endpoint/config không được expose như public business API qua Gateway.
 - Telemetry có thể phản ánh **hậu quả tự nhiên** của fault (latency, error, queue depth, CPU, timeout log), không được emit trực tiếp “F2 active/root cause=submission” vào feature stream.
 
@@ -694,9 +759,9 @@ Exact tolerance/time window thuộc evaluation protocol W4-T5.
 
 ---
 
-# 12. Điểm đã freeze và điểm cố ý để T4/T5/implementation chốt
+# 12. Điểm đã freeze và ranh giới W4-T3/T4/T5
 
-## 12.1. Đã freeze trong W4-T3 draft
+## 12.1. Đã freeze trong W4-T3
 
 - PostgreSQL logical DB owner theo service; không cross-service DB access.
 - Redis semantic owner = Course.
@@ -707,16 +772,13 @@ Exact tolerance/time window thuộc evaluation protocol W4-T5.
 - Fault category, logical target, hook boundary, workload intent, expected propagation/evidence và reset semantics.
 - Single-fault controlled run, clear start/end, deterministic config, no truth-label leakage.
 
-## 12.2. W4-T4 phải canonicalize
+## 12.2. W4-T4 đã canonicalize
 
-- exact telemetry field/schema cho metrics/traces/logs;
-- resource attributes và dependency attribute naming;
-- exact ground-truth schema/serialization/version;
-- run/fault correlation convention, bao gồm quyết định về `run_id` propagation nếu có;
-- coverage/missingness/data-quality representation;
-- event/trace/log correlation fields phục vụ async F4;
-- reset/verification metadata representation;
-- mapping schema tới service/edge features trong Analysis blueprint.
+- `RunGroundTruth` immutable, execution validity và fault/control/reset/verification truth;
+- normalized telemetry schema cho metrics/traces/logs, correlation và missingness;
+- `TelemetryArtifactManifest`, immutable artifact lineage và artifact-specific `TelemetryQualityReport`;
+- W3C Trace Context là runtime correlation chính; F4 dùng `event_id` fallback khi async trace thiếu/degraded;
+- guard chống ground-truth leakage và mapping observable telemetry sang service/edge feature.
 
 ## 12.3. W4-T5/implementation phải freeze sau pilot
 
@@ -727,11 +789,13 @@ Exact tolerance/time window thuộc evaluation protocol W4-T5.
 - repetitions/split/protocol chi tiết ngoài floor đã có;
 - Redis key/TTL, RabbitMQ exchange/queue name và implementation detail không làm thay đổi semantic contract.
 
+Execution/fault parameter cần tái lập chính execution được lưu trong `RunGroundTruth.fault_parameters`, `fault_intensity`, workload/execution provenance hoặc versioned execution configuration phù hợp. Campaign identity, split, modality/analysis variant, selected telemetry artifact và feature/detector/RCA/evaluation configuration/output thuộc experiment/evaluation manifest W4-T5. Telemetry transformation config thuộc `TelemetryArtifactManifest`; không nhét mọi config vào ground truth.
+
 ---
 
-# 13. Draft handoff sang W4-T4
+# 13. Cross-check tương thích W4-T3/W4-T4/W4-T5
 
-W4-T4 có thể dùng artifact này làm input với các invariant sau:
+W4-T3, W4-T4 và W4-T5 dùng cùng invariant sau:
 
 ```text
 F1 -> root service course       -> component course-redis
@@ -741,7 +805,9 @@ F4 -> root service notification -> component notification-consumer
 F5 -> root service submission   -> component submission-instance
 ```
 
-Telemetry/ground-truth schema cần cho phép chứng minh đồng thời:
+W4-T3 sở hữu data ownership, dependency access strategy, fault category/target/kind, service-level root cause, component evidence, hook/injector boundary, workload intent, expected symptom/propagation/evidence, reset semantics và fault-side requirements để tạo execution truth hợp lệ. W4-T4 sở hữu `RunGroundTruth`, normalized telemetry schema, `TelemetryArtifactManifest`, `TelemetryQualityReport` cùng correlation/missingness/lineage semantics. W4-T5 sở hữu experiment/evaluation manifest, campaign identity, split, modality/analysis variant, selected telemetry artifacts, feature/detector/RCA/evaluation configuration/output và experiment-specific provenance.
+
+Mỗi F1–F5 phải chứng minh đồng thời:
 
 1. **fault nào được kích hoạt, ở đâu, khi nào, bằng config nào**;
 2. **service nào là label RCA chính thức**;
@@ -749,19 +815,21 @@ Telemetry/ground-truth schema cần cho phép chứng minh đồng thời:
 4. **symptom xuất hiện ở service/edge nào và theo thứ tự thời gian nào**;
 5. **modality nào có/thiếu dữ liệu**;
 6. **run đã reset/verify hợp lệ hay chưa**;
-7. **mọi evidence có thể truy ngược về cùng run/artifact mà không dùng truth label làm model feature**.
+7. **mọi evidence có thể truy ngược về cùng run/artifact mà không dùng truth label làm model feature**;
+8. **full/degraded variant cùng `run_id` và immutable ground truth, nhưng có lineage/quality theo từng artifact**.
 
-Nếu T4 không biểu diễn được một trong các invariant trên, schema cần sửa; không nên thay fault matrix chỉ để vừa với schema telemetry.
+Không có special-case truth schema cho một fault riêng. W4-T5 chỉ tham chiếu truth/artifact bất biến, không mutate ngược W4-T4; W4-T3 không thay đổi topology hay F1–F5 chỉ để vừa với schema telemetry.
 
 ---
 
-# 14. Draft DoD checkpoint — W4-T3 lượt 1
+# 14. DoD checkpoint — W4-T3 final cross-check
 
-| DoD W4-T3 | Trạng thái draft | Bằng chứng |
+| DoD W4-T3 | Trạng thái | Bằng chứng |
 | --- | --- | --- |
-| Ownership cho PostgreSQL logical DB, Redis, RabbitMQ, Storage Mock; không cross-service DB access | **Đạt ở mức draft** | Mục 2–4 |
-| ≥5 scenario gồm target, injector/hook, workload, ground truth, symptom/propagation, reset/verification | **Đạt ở mức draft** | Mục 6–7 |
-| Mỗi fault map được tới service-level RCA và không vượt MVP | **Đạt ở mức draft** | Mục 8 |
-| Đức review ground-truth/evidence; unresolved risk ghi rõ | **Chưa thực hiện** | Chờ sau khi W4-T4 canonicalize schema và quay lại finalize W4-T3 |
+| Ownership cho PostgreSQL logical DB, Redis, RabbitMQ, Storage Mock; không cross-service DB access | **Đạt** | Mục 2–4 |
+| ≥5 scenario gồm target, injector/hook, workload, ground truth, symptom/propagation, reset/verification | **Đạt** | Mục 5–7 |
+| Mỗi fault map được tới service-level RCA và không vượt MVP | **Đạt** | Mục 6–8 |
+| Cross-check `RunGroundTruth`, quality/lineage, RQ4 và guard chống leakage với W4-T4 | **Đạt** | Mục 5.2, 9–10, 12–13 |
+| Artifact sẵn sàng cho review PR theo workflow | **Đạt** | Không còn vocabulary/schema stale; verdict GitHub được ghi nhận ngoài artifact |
 
-Artifact này vì vậy **đủ làm input cho W4-T4**, nhưng chưa nên chuyển W4-T3 sang `Chờ review` hoặc coi là final trước vòng đối chiếu lại với telemetry/ground-truth schema v0.
+Artifact này là **W4-T3 final đã cross-check với W4-T4 final**, sẵn sàng review/merge theo workflow task mà không thay đổi task metadata trong artifact này.
