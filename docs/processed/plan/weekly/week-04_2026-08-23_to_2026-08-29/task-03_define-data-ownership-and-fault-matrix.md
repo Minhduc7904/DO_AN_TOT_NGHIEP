@@ -6,9 +6,9 @@
 | --- | --- |
 | Mã task | `task-03_define-data-ownership-and-fault-matrix` |
 | Tuần | `week-04_2026-08-23_to_2026-08-29` |
-| Trạng thái | Đã giao |
-| Người phụ trách | Đức |
-| Collaborator | Bách review ground truth, symptom và evidence cần cho RCA |
+| Trạng thái | Đang thực hiện |
+| Người phụ trách | Bách |
+| Collaborator | Đức review ground truth, symptom và evidence cần cho RCA |
 | Ưu tiên | Cao |
 | Hạn dự kiến | 28/08/2026 |
 | Nhánh thực hiện | `docs/week-04/task-03-define-data-ownership-and-fault-matrix` |
@@ -28,7 +28,7 @@ Chốt database/cache/queue/storage ownership theo service và fault matrix MVP.
 ## Đầu vào và phụ thuộc
 
 - Tài liệu/task cần có trước: task-01, task-02, backend blueprint và input telemetry/ground truth từ task-04.
-- Người hoặc phần việc cần phối hợp: Bách kiểm tra mỗi fault có label ground truth và evidence đủ cho RCA/evaluation.
+- Người hoặc phần việc cần phối hợp: Đức kiểm tra mỗi fault có label ground truth và evidence đủ cho RCA/evaluation.
 - Rủi ro/giả định: fault phải controllable, quan sát được và có thời điểm bắt đầu/kết thúc rõ ràng.
 
 ## Sản phẩm kỳ vọng
@@ -42,16 +42,16 @@ Chốt database/cache/queue/storage ownership theo service và fault matrix MVP.
 - [ ] Có bảng ownership cho PostgreSQL logical database, Redis, RabbitMQ và storage mock; không có database access chéo.
 - [ ] Fault matrix có tối thiểu năm scenario MVP, mỗi scenario gồm target, injector/hook, workload, ground truth, symptom/propagation và reset/verification.
 - [ ] Mỗi fault có thể ánh xạ tới service-level RCA evaluation và không vượt scope MVP.
-- [ ] Bách review label ground truth/evidence; các rủi ro chưa giải quyết được ghi rõ.
+- [ ] Đức review label ground truth/evidence; các rủi ro chưa giải quyết được ghi rõ.
 
 ## Liên kết hồ sơ thực hiện
 
-- Input workspace: Chưa tạo.
-- Output workspace: Chưa tạo.
+- Input workspace: [`task-input.md`](../../../../../workspace/bach/week-04_2026-08-23_to_2026-08-29/task-03_define-data-ownership-and-fault-matrix/input/task-input.md).
+- Output workspace: [`task-output.md`](../../../../../workspace/bach/week-04_2026-08-23_to_2026-08-29/task-03_define-data-ownership-and-fault-matrix/output/task-output.md).
 - Pull request: Chưa tạo.
 - Kết quả review: Chưa review.
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 23/08/2026 — task được phân công.
+- Cập nhật gần nhất: 28/08/2026 — Bách nhận task thay cho Đức; đã tạo branch và hồ sơ workspace, chưa bắt đầu triển khai sản phẩm chính.
 - Ghi chú/tồn đọng: phụ thuộc topology và contract v1.
