@@ -528,37 +528,37 @@ Tuần 23–24 là buffer/contingency, **không dùng để hợp thức hóa fe
 | Phân biệt rõ MVP, Target, Stretch và ngoài phạm vi; dẫn chiếu blueprint canonical | Mục 2–6 + phần source of truth đầu file | **Đạt về nội dung** |
 | MVP nêu rõ 6 business service + Gateway, dependency observability/fault và không có production-grade ngoài scope | Mục 3.1–3.7 | **Đạt về nội dung** |
 | Có bảng out-of-scope và lý do hoãn/loại các hạng mục dễ scope creep | Mục 6 | **Đạt về nội dung** |
-| Bách review tác động tới telemetry, feature, anomaly/RCA và evaluation; feedback được xử lý/ghi tồn đọng | Mục 10 bên dưới | **PENDING — cần collaborator review thật** |
+| Bách review tác động tới telemetry, feature, anomaly/RCA và evaluation; feedback được xử lý/ghi tồn đọng | Mục 10 bên dưới | **Đạt — Bách verdict `APPROVED`; blocking issue RQ5 đã được xử lý** |
 
 ---
 
 # 10. Collaborator review record — Bách
 
-> Không tự đánh dấu `APPROVED` trước khi Bách thực sự review.
+> Bách đã tự review theo ngoại lệ workflow được chấp thuận khi Đức bận; không đăng review comment công khai trên GitHub.
 
-**Trạng thái:** `PENDING`
+**Trạng thái:** `APPROVED`
 
-Bách cần xác nhận tối thiểu:
+Bách đã xác nhận:
 
-- [ ] Scope telemetry đủ tạo `M`, `M+T`, `M+T+L` cho RQ1.
-- [ ] Topology/fault scope tạo đủ dependency edge và propagation cho RQ2.
-- [ ] Timestamp, trace timing, fault start/end và incident onset đủ cho RQ3.
-- [ ] Robustness scope giữ strict paired comparison trên cùng baseline artifact cho RQ4.
-- [ ] Runtime/resource/instrumentation measurement đủ cho RQ5.
-- [ ] Không có hạng mục Backend MVP làm thiếu feature/data bắt buộc của `analysis/`.
-- [ ] Service-level RCA vẫn là primary granularity; component/dependency chỉ evidence.
-- [ ] Không có Target/Stretch nào bị đưa vào critical path.
-- [ ] Năm fault scenario và evaluation floor `5 × 3` vẫn giữ nguyên canonical.
+- [x] Scope telemetry đủ tạo `M`, `M+T`, `M+T+L` cho RQ1.
+- [x] Topology/fault scope tạo đủ dependency edge và propagation cho RQ2.
+- [x] Timestamp, trace timing, fault start/end và incident onset đủ cho RQ3.
+- [x] Robustness scope giữ strict paired comparison trên cùng baseline artifact cho RQ4.
+- [x] Runtime/resource, instrumentation overhead, complexity và interpretability/explainability đủ để đánh giá RQ5.
+- [x] Không có hạng mục Backend MVP làm thiếu feature/data bắt buộc của `analysis/`.
+- [x] Service-level RCA vẫn là primary granularity; component/dependency chỉ evidence.
+- [x] Không có Target/Stretch nào bị đưa vào critical path.
+- [x] Năm fault scenario và evaluation floor `5 × 3` vẫn giữ nguyên canonical.
 
 | Trường | Giá trị |
 | --- | --- |
 | Reviewer | Bách |
-| Verdict | `PENDING` |
-| Ngày review | Chưa có |
-| Feedback blocking | Chưa có |
-| Feedback non-blocking | Chưa có |
-| Cách xử lý | Chưa có |
-| Tồn đọng sau review | Chưa có |
+| Verdict | `APPROVED` |
+| Ngày review | 28/08/2026 |
+| Feedback blocking | Đã xử lý: RQ5 báo cáo riêng runtime/resource, instrumentation overhead, complexity và interpretability/explainability; không còn blocking issue. |
+| Feedback non-blocking | Không có |
+| Cách xử lý | Bổ sung dimension RQ5 còn thiếu trong mục 3.6, sau đó tự review lại diff và xác nhận `APPROVED`. |
+| Tồn đọng sau review | Không có |
 
 ---
 

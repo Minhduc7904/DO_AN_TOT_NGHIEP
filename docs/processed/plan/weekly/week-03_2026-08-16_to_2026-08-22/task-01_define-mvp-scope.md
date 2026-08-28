@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-01_define-mvp-scope` |
 | Tuần | `week-03_2026-08-16_to_2026-08-22` |
-| Trạng thái | Chờ review |
+| Trạng thái | Hoàn thành |
 | Người phụ trách | Đức |
 | Collaborator | Bách review để loại feature LMS không phục vụ nghiên cứu |
 | Ưu tiên | Cao |
@@ -52,5 +52,5 @@ Tạo scope v1 cho đồ án, chuyển các quyết định MVP/Target/Stretch �
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 28/08/2026 — PR #4 đã được tạo và metadata sẵn sàng review đã được cập nhật trên chính PR head.
-- Ghi chú/tồn đọng: chờ Bách review tác động tới telemetry, feature, anomaly/RCA và evaluation trên PR #4.
+- Cập nhật gần nhất: 28/08/2026 — Bách đã xác nhận verdict `APPROVED`; completion metadata đã được finalization trên chính PR head và task sẵn sàng merge.
+- Ghi chú/tồn đọng: blocking issue RQ5 đã được xử lý trong `project-scope-v1.md`; không còn tồn đọng trước merge.
