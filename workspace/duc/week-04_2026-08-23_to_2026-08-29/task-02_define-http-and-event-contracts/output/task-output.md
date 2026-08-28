@@ -6,13 +6,13 @@
 | --- | --- |
 | Mã task | `task-02_define-http-and-event-contracts` |
 | Người phụ trách | Đức |
-| Trạng thái | Chờ review |
+| Trạng thái | Hoàn thành |
 | Bắt đầu thực tế | Chưa được Đức cung cấp; hồ sơ được tạo hồi tố ngày 27/08/2026 |
-| Hoàn thành thực tế | Chưa ghi — chờ Bách `APPROVED` và Đức finalization |
+| Hoàn thành thực tế | 28/08/2026 — finalization trên nhánh task sau approval |
 | Tổng thời lượng | Chưa được Đức cung cấp |
 | Pull request | [PR #7](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/7) |
 | Người review | Bách |
-| Kết quả review | Chưa review |
+| Kết quả review | `APPROVED` bởi Bách trên PR #7 |
 
 ## Báo cáo công việc đã làm
 
@@ -20,6 +20,7 @@
 - Chốt common error envelope, versioning, timeout/retry và trace/correlation convention.
 - Thiết kế event `grade.completed` v1 với producer, consumer, envelope, payload, compatibility và duplicate/failure expectation.
 - Lập traceability từ contract sang topology, telemetry/evaluation requirement và contract tests tuần 5.
+- Làm rõ trust boundary/principal context HTTP và RabbitMQ headers/properties là W3C trace carrier chính theo feedback review.
 
 ## Sản phẩm thực tế
 
@@ -34,15 +35,15 @@
 | Contract đủ workflow, request/response/error và ownership | Đạt về nội dung | Mục 3–10 và 16 của artifact |
 | Event đủ schema/correlation/failure/retry expectation | Đạt về nội dung | Mục 11–13 của artifact |
 | Không vi phạm cross-service source/data ownership | Đạt về nội dung | Mục 15 của artifact và kết quả đối chiếu backend blueprint |
-| Bách review HTTP flow và async event | Chưa đạt | Mục 21 đang ghi `PENDING`; cần review thật trên PR |
+| Bách review HTTP flow và async event | Đạt | Mục 21 của artifact và verdict `APPROVED` của Bách trên PR #7 |
 | Artifact nằm đúng vị trí và mở được | Đạt trên nhánh task | Link sản phẩm ở trên |
 | URL PR và `Chờ review` có trên PR head | Đạt | PR #7 và metadata được commit/push trên nhánh task |
-| Approval và finalization trước merge | Chưa đạt | Chờ Bách `APPROVED` trên GitHub |
+| Approval và finalization trước merge | Đạt trên nhánh task | `APPROVED` của Bách trên PR #7 và completion metadata trong commit này |
 
 ## Thay đổi, tồn đọng và bước tiếp theo
 
 - Thay đổi so với input: không mở rộng scope; artifact được đưa từ thư mục gốc vào `docs/processed/architecture/`.
-- Việc chưa hoàn thành hoặc trở ngại: chưa có review/approval của Bách; task-01/topology v1 cần được merge trước hoặc cùng thứ tự dependency; thời gian bắt đầu và tổng thời lượng chưa được Đức cung cấp.
-- Bước tiếp theo: Bách review W4 Submit và event `grade.completed`, sau đó gửi verdict trên GitHub.
+- Việc chưa hoàn thành hoặc trở ngại: không còn blocking feedback; thời gian bắt đầu và tổng thời lượng chưa được Đức cung cấp.
+- Bước tiếp theo: giữ PR #7 chờ người phụ trách merge vào `main`.
 
 > `Hoàn thành thực tế` chỉ được ghi sau khi có `APPROVED` hợp lệ và Đức thực hiện finalization. Task chỉ canonically hoàn thành sau khi Đức merge PR vào `main`.

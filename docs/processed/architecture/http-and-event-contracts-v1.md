@@ -974,47 +974,47 @@ Không để open point trên làm thay đổi topology/service ownership đã f
 | Contract cho workflow MVP, request/response/error tối thiểu và service ownership | Mục 3–10, 16 | **Đạt về nội dung** |
 | `grade.completed` có producer, consumer, payload/schema version, correlation identity và failure/retry expectation | Mục 11–13 | **Đạt về nội dung** |
 | Không vi phạm cross-service source import/data ownership | Mục 15 | **Đạt về nội dung** |
-| Bách review một HTTP flow + async event; telemetry/evaluation requirement được phản ánh/tồn đọng | Mục 21 | **PENDING — cần review thật** |
+| Bách review một HTTP flow + async event; telemetry/evaluation requirement được phản ánh/tồn đọng | Mục 21 | **Đạt — Bách `APPROVED` trên PR #7** |
 
 ---
 
 # 21. Collaborator review record — Bách
 
-> Task card yêu cầu Bách tham gia review ít nhất một HTTP flow và event `grade.completed`. Không tự ghi `APPROVED`.
+> Task card yêu cầu Bách tham gia review ít nhất một HTTP flow và event `grade.completed`.
 
-**Review status:** `PENDING`
+**Review status:** `APPROVED` — Bách đã gửi verdict trên PR #7 sau khi kiểm tra phần sửa blocking issue.
 
 ## HTTP flow đề nghị Bách review: W4 Submit
 
-- [ ] `Submission -> Course` tạo edge service-level cần cho graph.
-- [ ] `Submission -> Enrollment` tạo edge service-level cần cho graph.
-- [ ] `Submission -> Storage Mock` có stable dependency identity cho F2.
-- [ ] Timeout/error contract đủ map metric/trace/log evidence.
-- [ ] `principal_id`, `course_id`, `submission_id` đủ cho downstream RCA/evidence nhưng không đưa PII không cần thiết.
-- [ ] Không có cross-service DB access.
-- [ ] External principal headers không spoof được; internal calls chỉ propagate principal context khi contract cần.
-- [ ] `GET /api/v1/enrollments/check` vẫn là internal contract của Submission, không thành public client route trong MVP.
+- [x] `Submission -> Course` tạo edge service-level cần cho graph.
+- [x] `Submission -> Enrollment` tạo edge service-level cần cho graph.
+- [x] `Submission -> Storage Mock` có stable dependency identity cho F2.
+- [x] Timeout/error contract đủ map metric/trace/log evidence.
+- [x] `principal_id`, `course_id`, `submission_id` đủ cho downstream RCA/evidence nhưng không đưa PII không cần thiết.
+- [x] Không có cross-service DB access.
+- [x] External principal headers không spoof được; internal calls chỉ propagate principal context khi contract cần.
+- [x] `GET /api/v1/enrollments/check` vẫn là internal contract của Submission, không thành public client route trong MVP.
 
 ## Async flow đề nghị Bách review: W5 `grade.completed`
 
-- [ ] Envelope có đủ `event_id`, name, schema version, occurred time, producer.
-- [ ] RabbitMQ transport headers/properties là carrier primary để nối publish/consume; envelope correlation không thay carrier này.
-- [ ] Payload đủ để Notification không query DB service khác.
-- [ ] `event_id` hỗ trợ fallback correlation/dedup.
-- [ ] Retry/DLQ chưa freeze không làm sai semantics hoặc che F4.
-- [ ] Async edge có thể biểu diễn thành `grading -> notification` trong dynamic graph.
-- [ ] Contract không nhét `root_cause_service`/fault ground truth vào business event.
+- [x] Envelope có đủ `event_id`, name, schema version, occurred time, producer.
+- [x] RabbitMQ transport headers/properties là carrier primary để nối publish/consume; envelope correlation không thay carrier này.
+- [x] Payload đủ để Notification không query DB service khác.
+- [x] `event_id` hỗ trợ fallback correlation/dedup.
+- [x] Retry/DLQ chưa freeze không làm sai semantics hoặc che F4.
+- [x] Async edge có thể biểu diễn thành `grading -> notification` trong dynamic graph.
+- [x] Contract không nhét `root_cause_service`/fault ground truth vào business event.
 
 | Trường | Giá trị |
 | --- | --- |
 | Reviewer | Bách |
-| HTTP flow reviewed | `PENDING` — đề nghị W4 |
-| Async event reviewed | `PENDING` — `grade.completed` |
-| Verdict | `PENDING` |
-| Blocking feedback | Chưa có |
+| HTTP flow reviewed | W4 Submit |
+| Async event reviewed | `grade.completed` |
+| Verdict | `APPROVED` trên PR #7 |
+| Blocking feedback | Đã xử lý trust boundary/principal context HTTP và W3C trace carrier RabbitMQ |
 | Non-blocking feedback | Chưa có |
-| Resolution | Chưa có |
-| Tồn đọng | Chưa có |
+| Resolution | Làm rõ tại mục 2.3–2.4, 7, 9, 11.3, 12, 17 và 18; không mở rộng scope MVP |
+| Tồn đọng | Không còn blocking feedback; PR chờ merge vào `main` |
 
 ---
 

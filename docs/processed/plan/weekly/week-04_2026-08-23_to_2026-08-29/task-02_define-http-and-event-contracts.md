@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-02_define-http-and-event-contracts` |
 | Tuần | `week-04_2026-08-23_to_2026-08-29` |
-| Trạng thái | Chờ review |
+| Trạng thái | Hoàn thành |
 | Người phụ trách | Đức |
 | Collaborator | Bách review một HTTP flow và event field phục vụ telemetry/evaluation |
 | Ưu tiên | Cao |
@@ -42,16 +42,16 @@ Thiết kế contract v1 cho HTTP flow MVP và event bất đồng bộ `grade.c
 - [x] Có contract cho các workflow MVP cần thiết, gồm request/response/error tối thiểu và service ownership.
 - [x] Event `grade.completed` có producer, consumer, payload/schema version, correlation identity và failure/retry expectation.
 - [x] Contract không vi phạm rule cross-service source import hoặc data ownership của blueprint.
-- [ ] Bách review một HTTP flow và event async; các yêu cầu telemetry/evaluation được phản ánh hoặc ghi tồn đọng.
+- [x] Bách review một HTTP flow và event async; các yêu cầu telemetry/evaluation đã được phản ánh.
 
 ## Liên kết hồ sơ thực hiện
 
 - Input workspace: [task-input.md](../../../../../workspace/duc/week-04_2026-08-23_to_2026-08-29/task-02_define-http-and-event-contracts/input/task-input.md).
 - Output workspace: [task-output.md](../../../../../workspace/duc/week-04_2026-08-23_to_2026-08-29/task-02_define-http-and-event-contracts/output/task-output.md).
 - Pull request: [PR #7](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/7).
-- Kết quả review: Chưa review.
+- Kết quả review: Bách `APPROVED` trên PR #7 sau khi kiểm tra HTTP flow W4 Submit và event `grade.completed`.
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 27/08/2026 — đã tạo PR #7, ghi nhận đủ bằng chứng nội dung và chuyển sang `Chờ review`.
-- Ghi chú/tồn đọng: phụ thuộc topology v1 của task-01; còn chờ Bách review W4 Submit và event `grade.completed` rồi gửi verdict trên GitHub.
+- Cập nhật gần nhất: 28/08/2026 — Bách đã `APPROVED` PR #7; completion metadata đã hoàn tất trên nhánh task, PR chờ merge vào `main`.
+- Ghi chú/tồn đọng: không còn blocking feedback; task chỉ canonically hoàn thành sau khi PR được merge vào `main`.
