@@ -53,5 +53,5 @@ Chốt database/cache/queue/storage ownership theo service và fault matrix MVP.
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 28/08/2026 — Bách nhận task thay cho Đức; đã tạo branch và hồ sơ workspace, chưa bắt đầu triển khai sản phẩm chính.
+- Cập nhật gần nhất: 28/08/2026 — Bách đã bổ sung bản draft artifact tại vị trí canonical; task vẫn đang thực hiện và chưa sẵn sàng review.
 - Ghi chú/tồn đọng: phụ thuộc topology và contract v1.
