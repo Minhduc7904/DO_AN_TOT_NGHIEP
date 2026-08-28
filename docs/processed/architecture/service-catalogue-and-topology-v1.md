@@ -2,7 +2,7 @@
 
 > **Task:** `task-01_define-service-topology`
 >
-> **Status:** Review-ready — nội dung kỹ thuật đã chốt theo source canonical; collaborator review vẫn `PENDING`.
+> **Trạng thái:** Đã finalization trên branch task — nội dung kỹ thuật đã chốt theo source canonical; Bách đã gửi verdict `APPROVED` trên GitHub.
 >
 > **Vị trí canonical khi đưa vào repository:** `docs/processed/architecture/service-catalogue-and-topology-v1.md`
 >
@@ -471,36 +471,36 @@ Thay đổi loại này phải:
 | Catalogue nêu trách nhiệm, owner dữ liệu và inbound/outbound dependency cho 6 business service + Gateway | Mục 4 | **Đạt về nội dung** |
 | Diagram thể hiện HTTP flow, `Grading -> grade.completed -> Notification` và PostgreSQL/Redis/RabbitMQ/Storage Mock | Mục 3, 7 | **Đạt về nội dung** |
 | Scope MVP/Target/Stretch nhất quán Backend blueprint | Mục 10 | **Đạt về nội dung** |
-| Bách review node/edge cần quan sát và phản hồi được ghi | Mục 13 | **PENDING — cần review thật** |
+| Bách review node/edge cần quan sát và phản hồi được ghi | Mục 13 | **Đạt — Bách verdict `APPROVED` trên GitHub** |
 
 ---
 
 # 13. Collaborator review record — Bách
 
-> Task card yêu cầu Bách review boundary phục vụ telemetry, graph và RCA. Không tự ghi `APPROVED`.
+> Bách đã review boundary phục vụ telemetry, graph và RCA, đồng thời gửi verdict trên GitHub.
 
-**Review status:** `PENDING`
+**Review status:** `APPROVED`
 
-Bách cần kiểm tra:
+Bách đã xác nhận:
 
-- [ ] `service.name` và dependency identity đủ ổn định cho telemetry/feature.
-- [ ] Service-level edge `e02–e12` đủ để dựng dynamic graph cho W1–W5.
-- [ ] `grading -> notification` có thể nối bằng RabbitMQ trace context/event identity.
-- [ ] Component dependency không bị trộn vào service-level candidate set.
-- [ ] Gateway được xem là symptom mặc định, không tự động là candidate khi không có gateway fault.
-- [ ] Topology đủ cho RQ2/RQ3 và fault F1–F5.
-- [ ] Không thiếu edge cần cho feature `caller -> callee`, latency/error propagation hoặc evidence.
-- [ ] Không có Target/Stretch bị đưa vào MVP.
+- [x] `service.name` và dependency identity đủ ổn định cho telemetry/feature.
+- [x] Service-level edge `e02–e12` đủ để dựng dynamic graph cho W1–W5.
+- [x] `grading -> notification` có thể nối bằng RabbitMQ trace context/event identity.
+- [x] Component dependency không bị trộn vào service-level candidate set.
+- [x] Gateway được xem là symptom mặc định, không tự động là candidate khi không có gateway fault.
+- [x] Topology đủ cho RQ2/RQ3 và fault F1–F5.
+- [x] Không thiếu edge cần cho feature `caller -> callee`, latency/error propagation hoặc evidence.
+- [x] Không có Target/Stretch bị đưa vào MVP.
 
 | Trường | Giá trị |
 | --- | --- |
-| Reviewer | Bách |
-| Verdict | `PENDING` |
-| Ngày review | Chưa có |
-| Blocking feedback | Chưa có |
-| Non-blocking feedback | Chưa có |
-| Resolution | Chưa có |
-| Tồn đọng | Chưa có |
+| Reviewer | Bách (`bachmk`) |
+| Verdict | `APPROVED` |
+| Ngày review | 28/08/2026 |
+| Blocking feedback | Không có |
+| Non-blocking feedback | Không có |
+| Resolution | Không cần sửa substantive artifact. |
+| Tồn đọng | Không có |
 
 ---
 
