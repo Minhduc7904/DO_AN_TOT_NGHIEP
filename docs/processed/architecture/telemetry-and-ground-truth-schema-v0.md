@@ -16,7 +16,7 @@ Artifact này phải nhất quán với các tài liệu đã chốt trước:
 2. `http-and-event-contracts-v1.md` — HTTP boundary, error semantics, W3C trace propagation và event `grade.completed`.
 3. `backend_microservice_testbed_blueprint.md` — testbed, observability stack, experiment/fault boundary và provenance tối thiểu.
 4. `analysis-anomaly-rca-blueprint.md` — telemetry contract, feature schema, dynamic graph, incident/RCA/evaluation.
-5. `data-ownership-and-fault-matrix-v1.md` — **W4-T3 draft input**, ownership và fault semantics F1–F5.
+5. `data-ownership-and-fault-matrix-v1.md` — fault matrix W4-T3, ownership và fault semantics F1–F5.
 6. `../direction/project-scope-v1.md` — MVP/Target/Stretch đã freeze.
 7. `../direction/research-questions-and-metrics-v1.md` — RQ1–RQ5, split, ablation, robustness và provenance.
 
@@ -448,17 +448,19 @@ Raw `message` không được đưa trực tiếp vào model MVP. Normalize thà
 
 # 6. Telemetry artifact manifest và lineage
 
-Mỗi artifact export được đăng ký bằng `TelemetryArtifactManifest`:
+Mỗi telemetry artifact có identity riêng và được đăng ký bằng `TelemetryArtifactManifest`. `RunGroundTruth` không sở hữu artifact pointer; cùng một execution có thể có nhiều raw, normalized hoặc derived artifact mà vẫn dùng một truth record bất biến.
 
 ```text
 TelemetryArtifactManifest
 - artifact_manifest_version
 - artifact_id
 - run_id
+- artifact_kind              # raw | normalized | derived
 - modality                  # metrics | traces | logs | multimodal
+- modality_availability     # trạng thái availability của từng modality
 - telemetry_schema_version
 - variant_kind              # full | degraded
-- source_artifact_id        # null cho full baseline; required cho degraded
+- source_artifact_id        # null cho artifact gốc; required cho derived/degraded
 - format                    # jsonl | parquet | prometheus-export | ...
 - location                  # repo-relative path/URI do runner quản lý
 - sha256                    # integrity/provenance khi artifact là file immutable
@@ -467,19 +469,20 @@ TelemetryArtifactManifest
 - time_end
 - record_count
 - source_systems
-- degradation_type          # nullable
-- degradation_config_version# nullable
-- degradation_seed          # nullable
-- degradation_parameters    # nullable
+- transformation_type       # nullable; normalize | trace-drop | missing-modality | ...
+- transformation_config_version # nullable; required cho derived/degraded
+- transformation_seed       # nullable; required khi transform stochastic/deterministic cần seed
+- transformation_parameters # nullable; required cho derived/degraded
+- quality_report_id         # nullable reference tới report đánh giá chính artifact này
 ```
 
 ## 6.1. RQ4 degraded telemetry rule
 
-Degraded condition **không tạo một experiment ground truth mới**. Nó là derived telemetry variant của cùng baseline run:
+Degraded condition **không tạo ground truth mới và không thay đổi execution validity**. Nó là derived telemetry variant của cùng baseline run:
 
 ```text
 same run_id
-same ground truth
+same immutable `RunGroundTruth`
 same workload/fault interval
 full artifact -> deterministic degradation transform -> degraded artifact
 ```
@@ -488,10 +491,10 @@ Khi `variant_kind=degraded`, bắt buộc có:
 
 ```text
 source_artifact_id
-degradation_type
-degradation_config_version
-degradation_seed
-degradation_parameters
+transformation_type
+transformation_config_version
+transformation_seed
+transformation_parameters
 ```
 
 Ví dụ degradation hợp lệ:
@@ -501,7 +504,7 @@ controlled trace dropping/sampling simulation
 missing-modality transform
 ```
 
-Không overwrite baseline artifact. Full/degraded pair phải giữ lineage để RQ4 làm strict paired comparison.
+Không overwrite baseline artifact. Full/degraded pair phải giữ lineage để RQ4 làm strict paired comparison; mỗi artifact có `artifact_id`, `run_id` và `TelemetryQualityReport` riêng.
 
 ---
 
@@ -531,8 +534,12 @@ Raw artifact không cần tạo placeholder record cho mọi missing point. Qual
 ```text
 TelemetryQualityReport
 - telemetry_quality_version
+- quality_report_id
 - run_id
-- artifact_ids
+- artifact_id
+- artifact_manifest_version
+- artifact_kind
+- variant_kind
 - generated_at
 - overall_status            # pass | partial | fail
 - reasons                   # array<string>
@@ -643,19 +650,23 @@ duplicate_log_record_count
 
 Duplicate definition phải dựa trên identity/timestamp/source phù hợp từng modality, không dedup bằng message text chung chung.
 
-## 7.3. Run validity interaction
+## 7.3. Tách execution validity khỏi telemetry quality
 
-- `overall_status=pass`: telemetry đạt data-quality gate của protocol.
-- `partial`: run hoàn tất nhưng một phần telemetry thiếu/không đạt non-fatal criterion; chỉ dùng evaluation nào protocol cho phép.
-- `fail`: violation làm mất khả năng xác định run/fault/correlation chính; run phải thành `invalid` hoặc rerun cho primary evaluation.
+`TelemetryQualityReport` chỉ đánh giá **một artifact cụ thể** qua cặp `run_id` + `artifact_id`. `overall_status=pass | partial | fail` là trạng thái chất lượng/coverage của artifact đó, không phải mutation của `RunGroundTruth.run_status`.
 
-Không âm thầm drop run khỏi ledger.
+- `pass`: artifact đạt data-quality gate được manifest/protocol áp dụng cho variant này.
+- `partial`: artifact có thiếu hụt non-fatal; experiment/evaluation manifest W4-T5 quyết định variant nào còn đủ điều kiện dùng.
+- `fail`: artifact không đạt gate cho mục đích đã khai báo; artifact và quality report vẫn được giữ để audit hoặc rerun.
+
+Ví dụ RQ4: baseline execution có thể giữ `run_status=valid`; artifact trace-drop derived có thể `overall_status=partial` hoặc `fail` theo quality rule mà không làm execution truth trở thành `invalid`. `run_status` chỉ thay đổi vì workload/fault/reset/verification hoặc execution infrastructure thực sự không hợp lệ.
+
+Không âm thầm drop execution, artifact hoặc quality report khỏi ledger.
 
 ---
 
 # 8. Ground-truth schema v0
 
-Ground truth là **experiment/control-plane manifest**, không phải telemetry feature stream.
+`RunGroundTruth` là **immutable execution/control/fault truth** của một run, không phải telemetry feature stream và không phải experiment/evaluation manifest. Nó ghi những gì thực sự đã chạy; T5 có thể tạo nhiều analysis/evaluation variant cùng tham chiếu truth này mà không clone hoặc mutate record.
 
 ## 8.1. `RunGroundTruth`
 
@@ -663,8 +674,7 @@ Ground truth là **experiment/control-plane manifest**, không phải telemetry 
 RunGroundTruth
 - ground_truth_schema_version
 
-# identity
-- experiment_id
+# execution identity
 - scenario_id
 - run_id
 - repeat_index
@@ -672,7 +682,7 @@ RunGroundTruth
 - run_start
 - run_end
 
-# workload
+# workload/execution
 - workload_profile
 - workload_seed
 - workload_parameters
@@ -689,10 +699,11 @@ RunGroundTruth
 - fault_start
 - fault_end
 
-# RCA truth
+# RCA truth and expected propagation
 - root_cause_service
 - root_cause_component
 - expected_symptom
+- expected_propagation_path
 - expected_evidence
 
 # control-plane result
@@ -706,64 +717,44 @@ RunGroundTruth
 - verification_result
 - verification_checks
 
-# code/environment provenance
+# code/environment provenance needed to reproduce this execution
 - code_commit
 - service_versions
 - environment_profile
 - environment_config_version
-
-# pipeline/config provenance
-- telemetry_schema_version
-- experiment_config_version
-- feature_schema_version
-- feature_config_version
-- detector_config_version
-- incident_config_version
-- rca_config_version
-- evaluation_config_version
-
-# artifact lineage
-- telemetry_artifact          # canonical ledger/manifest anchor compatible với ExperimentContext
-- telemetry_artifacts         # optional per-modality/detail refs
-- telemetry_quality_artifact
-- feature_artifact
-- detector_output_artifact
-- incident_artifact
-- rca_artifact
-- prediction_artifact         # final prediction/RCA anchor khi pipeline đã chạy
-- evaluation_artifact
 
 # operational notes
 - invalid_reasons
 - notes
 ```
 
+`RunGroundTruth` không chứa artifact pointer, telemetry schema version, split, feature configuration/output, detector/RCA configuration/output, evaluation configuration/output hoặc modality/full-degraded selection. Các concern này thuộc experiment/evaluation manifest của W4-T5, manifest đó tham chiếu `run_id` và các `artifact_id` bất biến.
+
 ## 8.2. Field semantics và requiredness
 
-### Identity/run
+### Execution identity
 
 | Field | Required | Rule |
 | --- | :---: | --- |
 | `ground_truth_schema_version` | ✓ | `ground-truth.v0` |
-| `experiment_id` | ✓ | Nhóm experiment/campaign logical |
-| `scenario_id` | ✓ | Scenario config identity; F1–F5 hoặc healthy scenario |
+| `scenario_id` | ✓ | Scenario execution identity; F1–F5 hoặc healthy scenario |
 | `run_id` | ✓ | Unique immutable identity cho một execution |
-| `repeat_index` | ✓ | Repetition index trong cùng scenario/config |
-| `run_status` | ✓ | `valid | partial | invalid | failed` |
+| `repeat_index` | ✓ | Repetition index trong cùng scenario/workload configuration |
+| `run_status` | ✓ | `valid | invalid | failed`; chỉ phản ánh execution validity |
 | `run_start`, `run_end` | ✓ | UTC actual execution boundary |
 
-`run_id` không tái sử dụng cho rerun. Một rerun là run mới, có thể tham chiếu run cũ qua `notes`/runner ledger nếu cần.
+`run_id` không tái sử dụng cho rerun. Một rerun là run mới, có thể tham chiếu run cũ qua `notes`/runner ledger nếu cần. Campaign identity, split và evaluation variant không thuộc truth record này.
 
 ### Workload
 
 | Field | Required | Rule |
 | --- | :---: | --- |
-| `workload_profile` | ✓ | Versioned profile name/config reference |
+| `workload_profile` | ✓ | Versioned profile name/config reference cần để tái lập execution |
 | `workload_seed` | ✓ | Seed để tái lập data/order khi workload hỗ trợ |
 | `workload_parameters` | ✓ | Object chứa rate/stage/duration/data-set ref cần tái lập |
 | `workload_start`, `workload_end` | ✓ | UTC actual traffic interval |
 
-Healthy run có các field workload giống fault run để matched comparison không lệch provenance.
+Healthy run có các field workload giống fault run để matched comparison không lệch execution provenance.
 
 ### Fault truth
 
@@ -777,16 +768,17 @@ Healthy run có các field workload giống fault run để matched comparison k
 | `fault_parameters` | ✓ | `{}` | Full structured config cần tái lập |
 | `fault_start`, `fault_end` | ✓ | null | **Actual** successful active interval từ control plane |
 
-`fault_start` không được suy ra từ first anomaly. Nếu activation thất bại thì không giả lập `fault_start`; run phải invalid/failed theo runner semantics.
+`fault_start` không được suy ra từ first anomaly. Nếu activation thất bại thì không giả lập `fault_start`; execution phải `invalid` hoặc `failed` theo runner semantics.
 
-### RCA truth
+### RCA truth and expected propagation
 
 | Field | Fault run | Healthy run | Rule |
 | --- | :---: | :---: | --- |
 | `root_cause_service` | ✓ | null | Primary service-level label |
 | `root_cause_component` | ✓ | null | Evidence label; không trộn vào primary candidate list |
 | `expected_symptom` | ✓ | healthy expectation | Human-readable summary ngắn |
-| `expected_evidence` | ✓ | expected healthy evidence | Structured expectation để validation, không phải model input |
+| `expected_propagation_path` | ✓ | expected healthy path | Ordered service/edge/dependency expectation để audit propagation, không phải model input |
+| `expected_evidence` | ✓ | expected healthy evidence | Structured expectation để verification/evidence audit, không phải model input |
 
 `expected_evidence` item logical schema:
 
@@ -799,7 +791,7 @@ Healthy run có các field workload giống fault run để matched comparison k
 - required             # true | false
 ```
 
-Các expectation này dùng experiment verification/evidence auditing, **không được join vào feature vector**.
+Các expectation này dùng execution verification/evidence auditing, **không được join vào feature vector**.
 
 ### Activation/deactivation/reset
 
@@ -823,11 +815,9 @@ not_applicable
 - checked_at
 ```
 
-Exact baseline tolerance/check duration được lấy từ versioned experiment/evaluation config; manifest chỉ lưu result + observed evidence cần tái lập audit.
+Exact baseline tolerance/check duration được version hóa ở experiment/evaluation manifest W4-T5; truth record chỉ lưu actual result và observed evidence cần tái lập audit.
 
-### Provenance
-
-Các version field theo từng stage là **độc lập**; không thay bằng một `config_version` chung.
+### Execution provenance
 
 `service_versions` là map canonical:
 
@@ -843,27 +833,29 @@ Các version field theo từng stage là **độc lập**; không thay bằng m�
 }
 ```
 
-Nếu cùng commit/version dùng cho nhiều service vẫn lưu mapping rõ để artifact không phụ thuộc giả định monorepo mãi mãi.
+`code_commit`, service/environment version là provenance của execution. Version/config của feature, detector, RCA, split, evaluation hoặc artifact transform không thuộc `RunGroundTruth`.
 
 ## 8.3. `run_status` semantics
 
 ```text
 valid
-  run hoàn tất; fault/control/reset hợp lệ; telemetry quality đạt primary gate
-
-partial
-  run hoàn tất và ground truth hợp lệ nhưng telemetry thiếu một phần;
-  chỉ dùng evaluation được protocol cho phép
+  workload và fault/control/reset/verification của execution hoàn tất hợp lệ
 
 invalid
-  execution hoàn tất nhưng activation/reset/ground truth/data-quality gate bị vi phạm;
-  không dùng primary final metric
+  execution hoàn tất nhưng activation, deactivation, reset, verification hoặc execution ground truth bị vi phạm;
+  không dùng làm primary execution sample
 
 failed
-  runner/workload/system không hoàn tất run đủ để tạo experiment hợp lệ
+  runner, workload hoặc infrastructure không hoàn tất run đủ để tạo execution truth hợp lệ
 ```
 
-Không xóa artifact của invalid/failed run; giữ ledger để audit và tránh survivorship bias.
+Telemetry coverage/quality của raw, normalized hoặc degraded artifact không đổi `run_status`. Quality của từng artifact được ghi riêng bằng `TelemetryQualityReport`; execution valid vẫn có thể có artifact quality `partial`/`fail` cho một variant.
+
+## 8.4. Immutability và reuse
+
+Một `RunGroundTruth` được freeze theo `run_id` sau khi execution ledger đóng. RQ1 có thể reuse nó cho M, M+T và M+T+L; RQ2 có thể reuse cho severity-only và graph-aware; RQ4 có thể reuse cho full/degraded artifact cùng run. Mọi selection artifact, split, feature/detector/RCA/evaluation config và output được owned bởi experiment/evaluation manifest W4-T5, không được ghi ngược vào truth record.
+
+Không xóa execution, artifact hoặc quality report của run `invalid`/`failed`; giữ ledger để audit và tránh survivorship bias.
 
 ---
 
@@ -878,6 +870,8 @@ Không xóa artifact của invalid/failed run; giữ ledger để audit và trá
 | **F5** Submission CPU pressure | `cpu_pressure` | `submission-instance` | `resource` | `submission` | `submission-instance` | injector mode, worker/duty-cycle/target CPU config, interval |
 
 Exact numeric intensity được pilot/freeze ngoài schema; sau freeze nó phải xuất hiện trong `fault_intensity`/`fault_parameters` và versioned experiment config.
+
+Mỗi F1–F5 dùng cùng `RunGroundTruth` shape: fault identity/target/kind, service-level root cause, component evidence, actual injection interval/parameters, workload identity, expected symptom/propagation, verification/reset và execution provenance. Không có field special-case chỉ dành cho một fault; khác biệt scenario nằm trong `fault_parameters`, `expected_propagation_path` và `expected_evidence`.
 
 ---
 
@@ -990,6 +984,8 @@ injector config + actual interval
 
 # 11. Mapping sang Analysis feature schema
 
+Analysis chỉ nhận observable telemetry artifact và tham chiếu `run_id` để join immutable truth khi cần evaluation. `ExperimentEvaluationManifest` của W4-T5 sẽ chọn tập artifact, split, modality variant và analysis configuration; nó không thay đổi `RunGroundTruth` hay `TelemetryArtifactManifest` đã freeze.
+
 ## 11.1. `ServiceWindowFeature`
 
 Telemetry v0 cung cấp trực tiếp/derive được:
@@ -1071,6 +1067,8 @@ root_cause_component  # ground-truth side only for evaluation
 ---
 
 # 12. Ground-truth leakage guard
+
+**Ground-truth/control metadata MUST NOT be consumed as detection/RCA features unless một experiment oracle upper bound được thiết kế có chủ đích, version hóa và ghi rõ riêng trong experiment/evaluation manifest.** Observable evidence cho detector/RCA vẫn phải đến từ metrics, traces và logs thực tế.
 
 Các field sau là **truth/control metadata** và bị cấm làm detector/RCA feature trực tiếp:
 
@@ -1183,14 +1181,34 @@ Tăng khi field manifest/semantics thay đổi không backward-compatible. Thay 
 
 ---
 
-# 15. Example — F2 ground truth projection
+# 15. Ranh giới trách nhiệm W4-T4 và W4-T5
+
+## 15.1. W4-T4 sở hữu
+
+- Runtime telemetry schema và normalized metrics/traces/logs schema.
+- Correlation fields, identity vocabulary và guard chống truth leakage.
+- `TelemetryArtifactManifest`, artifact lineage, quality/coverage/missingness của từng artifact.
+- Immutable `RunGroundTruth`, fault truth, execution validity, expected evidence/propagation và reset/verification.
+
+## 15.2. W4-T5 sẽ canonicalize
+
+- Experiment/evaluation manifest, campaign identity và train/dev/test hoặc experiment split.
+- Feature schema/config selection; detector và RCA algorithm configuration/version.
+- Analysis variant M, M+T, M+T+L, severity-only, graph-aware, full/degraded.
+- References tới selected telemetry artifact, feature artifact, detector/RCA output, prediction và evaluation output.
+- Experiment-specific provenance cho các lựa chọn trên.
+
+W4-T5 chỉ tham chiếu `run_id`, `RunGroundTruth` và `artifact_id` bất biến; không có ownership overlap hoặc mutation ngược vào schema T4.
+
+---
+
+# 16. Example — F2 ground truth projection
 
 Ví dụ minh họa semantics, **không freeze numeric intensity**:
 
 ```json
 {
   "ground_truth_schema_version": "ground-truth.v0",
-  "experiment_id": "exp-w4-storage-latency",
   "scenario_id": "F2",
   "run_id": "run-f2-r01",
   "repeat_index": 1,
@@ -1222,6 +1240,11 @@ Ví dụ minh họa semantics, **không freeze numeric intensity**:
   "root_cause_service": "submission",
   "root_cause_component": "submission-storage",
   "expected_symptom": "Storage latency/timeout degrades Submission and propagates to Gateway.",
+  "expected_propagation_path": [
+    "submission-storage",
+    "submission",
+    "gateway"
+  ],
   "expected_evidence": [
     {
       "entity_type": "dependency",
@@ -1258,24 +1281,6 @@ Ví dụ minh họa semantics, **không freeze numeric intensity**:
   },
   "environment_profile": "compose-mvp",
   "environment_config_version": "<version>",
-  "telemetry_schema_version": "telemetry.v0",
-  "experiment_config_version": "<version>",
-  "feature_schema_version": "<version>",
-  "feature_config_version": "<version>",
-  "detector_config_version": "<version>",
-  "incident_config_version": "<version>",
-  "rca_config_version": "<version>",
-  "evaluation_config_version": "<version>",
-
-  "telemetry_artifact": "<multimodal-or-ledger-artifact-id>",
-  "telemetry_artifacts": ["<metrics-artifact-id>", "<traces-artifact-id>", "<logs-artifact-id>"],
-  "telemetry_quality_artifact": "<artifact-id>",
-  "feature_artifact": null,
-  "detector_output_artifact": null,
-  "incident_artifact": null,
-  "rca_artifact": null,
-  "prediction_artifact": null,
-  "evaluation_artifact": null,
   "invalid_reasons": [],
   "notes": null
 }
@@ -1285,13 +1290,13 @@ Timestamps ở ví dụ chỉ minh họa format/schema, không phải protocol d
 
 ---
 
-# 16. Handoff để finalize W4-T3
+# 17. Cross-check tương thích với W4-T3
 
-W4-T3 có thể quay lại finalization với các field/semantics đã canonicalize sau:
+W4-T4 và fault matrix W4-T3 dùng chung compatibility contract sau:
 
 ```text
 run identity:
-  experiment_id / scenario_id / run_id / repeat_index
+  scenario_id / run_id / repeat_index
 
 fault truth:
   fault_id / fault_type / fault_target / fault_target_kind
@@ -1312,14 +1317,14 @@ telemetry evidence:
   coverage/missingness through TelemetryQualityReport
 
 artifact lineage:
-  TelemetryArtifactManifest + immutable artifact_id
+  TelemetryArtifactManifest + immutable artifact_id + artifact-specific TelemetryQualityReport
 ```
 
-W4-T3 **không cần đổi** năm fault category, root-cause service/component mapping, topology, ownership hoặc reset semantics để phù hợp T4. Chỉ cần thay các tên ground-truth/evidence provisional bằng vocabulary/schema v0 này và rà từng F1–F5 có đủ required evidence.
+T4 không đổi năm fault category, root-cause service/component mapping, topology, ownership hoặc reset semantics của W4-T3. Cross-check chỉ xác nhận mỗi F1–F5 có thể biểu diễn bằng cùng vocabulary truth/evidence, không biến component/dependency thành primary RCA candidate.
 
 ---
 
-# 17. DoD checkpoint — W4-T4
+# 18. DoD checkpoint — W4-T4
 
 | Definition of Done | Trạng thái | Bằng chứng |
 | --- | --- | --- |
@@ -1330,9 +1335,18 @@ W4-T3 **không cần đổi** năm fault category, root-cause service/component 
 | Async F4 có trace context + `event_id` fallback | **Đạt** | Mục 4.3, 5.3, 10.4 |
 | Không leak truth label vào feature telemetry | **Đạt** | Mục 12 |
 | Field/resource signal có đường instrument/export khả thi; signal optional được ghi rõ | **Đạt ở mức kiến trúc/schema** | Mục 13 |
-| Không phá topology/HTTP/event/fault semantics đã merge | **Đạt** | Mục 1–4, 16 |
+| Không phá topology/HTTP/event/fault semantics đã merge | **Đạt** | Mục 1–4, 17 |
 
-## 17.1. Những giá trị cố ý chưa freeze ở T4
+## 18.1. RQ compatibility checklist
+
+| Research question | Compatibility contract |
+| --- | --- |
+| RQ1 | Một `RunGroundTruth` immutable có thể được W4-T5 reuse cho M, M+T và M+T+L; modality/feature selection nằm ngoài truth record. |
+| RQ2 | Cùng telemetry artifact + ground truth pair có thể được severity-only và graph-aware RCA reuse; algorithm/config/output không mutate truth. |
+| RQ3 | F1–F5 có reproducible run/workload/fault truth, expected propagation/evidence và telemetry artifact lineage để so sánh detection/RCA. |
+| RQ4 | Full và degraded giữ cùng `run_id` + `RunGroundTruth`; derived artifact trỏ `source_artifact_id`, lưu transform config/seed, có quality riêng và không đổi `run_status`. |
+
+## 18.2. Những giá trị cố ý chưa freeze ở T4
 
 Đây không phải thiếu schema; chúng thuộc T5/pilot/implementation config:
 
@@ -1346,4 +1360,4 @@ W4-T3 **không cần đổi** năm fault category, root-cause service/component 
 - exact instrumentation package/library version;
 - exact feature window/threshold/detector/RCA config.
 
-Mọi giá trị trên khi được chọn phải nằm trong versioned config/provenance đã có field tham chiếu trong `RunGroundTruth`; không cần sửa schema chỉ để thay một numeric config.
+Mọi giá trị trên khi được chọn phải nằm trong versioned experiment/evaluation manifest hoặc execution configuration phù hợp; không cần sửa `RunGroundTruth` chỉ để thay một numeric config.
