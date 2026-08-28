@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-04_define-telemetry-and-ground-truth-schema` |
 | Tuần | `week-04_2026-08-23_to_2026-08-29` |
-| Trạng thái | Đang thực hiện |
+| Trạng thái | Chờ review |
 | Người phụ trách | Bách |
 | Collaborator | Đức kiểm tra khả năng instrument/export từ testbed |
 | Ưu tiên | Cao |
@@ -39,19 +39,19 @@ Chốt schema telemetry v0 cho metrics, traces và logs, cùng ground-truth sche
 
 ## Definition of Done
 
-- [ ] Schema nêu identity, UTC time, trace/log/metric correlation, resource attributes và coverage/data-quality cho mỗi modality.
-- [ ] Ground truth có run ID, fault target/type, start/end, parameters, expected symptom và reset/verification metadata.
-- [ ] Schema ánh xạ được tới service/edge feature và service-level RCA trong AI/RCA blueprint.
+- [x] Schema nêu identity, UTC time, trace/log/metric correlation, resource attributes và coverage/data-quality cho mỗi modality.
+- [x] Ground truth có run ID, fault target/type, start/end, parameters, expected symptom và reset/verification metadata.
+- [x] Schema ánh xạ được tới service/edge feature và service-level RCA trong AI/RCA blueprint.
 - [ ] Đức review khả năng instrument/export; field không thể thu được đã được loại hoặc ghi rõ giải pháp.
 
 ## Liên kết hồ sơ thực hiện
 
 - Input workspace: [`task-input.md`](../../../../../workspace/bach/week-04_2026-08-23_to_2026-08-29/task-04_define-telemetry-and-ground-truth-schema/input/task-input.md).
 - Output workspace: [`task-output.md`](../../../../../workspace/bach/week-04_2026-08-23_to_2026-08-29/task-04_define-telemetry-and-ground-truth-schema/output/task-output.md).
-- Pull request: Chưa tạo.
+- Pull request: [PR #10](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/10).
 - Kết quả review: Chưa review.
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 28/08/2026 — Bách nhận task; đã tạo branch và hồ sơ workspace, chưa bắt đầu triển khai sản phẩm chính.
+- Cập nhật gần nhất: 28/08/2026 — Bách đã hoàn thiện artifact, tạo PR #10 và chuyển task sang `Chờ review`.
 - Ghi chú/tồn đọng: là đầu vào của task-02, task-03 và task-05.

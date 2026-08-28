@@ -16,7 +16,7 @@
 | [task-01_define-service-topology](task-01_define-service-topology.md) | Chốt service catalogue, dependency graph và architecture diagram v1 | Đức | Bách | Cao | Hoàn thành |
 | [task-02_define-http-and-event-contracts](task-02_define-http-and-event-contracts.md) | Thiết kế HTTP contract và event `grade.completed` v1 | Đức | Bách | Cao | Hoàn thành |
 | [task-03_define-data-ownership-and-fault-matrix](task-03_define-data-ownership-and-fault-matrix.md) | Chốt data ownership, dependency strategy và fault matrix MVP | Đức | Bách | Cao | Đã giao |
-| [task-04_define-telemetry-and-ground-truth-schema](task-04_define-telemetry-and-ground-truth-schema.md) | Chốt telemetry schema và ground-truth schema v0 | Bách | Đức | Cao | Đang thực hiện |
+| [task-04_define-telemetry-and-ground-truth-schema](task-04_define-telemetry-and-ground-truth-schema.md) | Chốt telemetry schema và ground-truth schema v0 | Bách | Đức | Cao | Chờ review |
 | [task-05_define-evaluation-protocol](task-05_define-evaluation-protocol.md) | Chốt experiment metadata, dataset split và evaluation protocol v0 | Bách | Đức | Cao | Đã giao |
 
 ## Phụ thuộc, rủi ro và quyết định
