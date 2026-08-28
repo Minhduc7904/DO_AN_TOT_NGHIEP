@@ -18,6 +18,7 @@
 | [task-03_define-data-ownership-and-fault-matrix](task-03_define-data-ownership-and-fault-matrix.md) | Chốt data ownership, dependency strategy và fault matrix MVP | Đức | Bách | Cao | Đã giao |
 | [task-04_define-telemetry-and-ground-truth-schema](task-04_define-telemetry-and-ground-truth-schema.md) | Chốt telemetry schema và ground-truth schema v0 | Bách | Đức | Cao | Đã giao |
 | [task-05_define-evaluation-protocol](task-05_define-evaluation-protocol.md) | Chốt experiment metadata, dataset split và evaluation protocol v0 | Bách | Đức | Cao | Đã giao |
+| [task-06_correct-w3-task-metadata](task-06_correct-w3-task-metadata.md) | Sửa metadata hậu-merge W3-T1 | Bách | Đức (bận; Bách tự review theo ngoại lệ) | Trung bình | Đang thực hiện |
 
 ## Phụ thuộc, rủi ro và quyết định
 
