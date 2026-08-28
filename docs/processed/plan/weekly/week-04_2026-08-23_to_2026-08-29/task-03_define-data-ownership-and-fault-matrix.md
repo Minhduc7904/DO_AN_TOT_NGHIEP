@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-03_define-data-ownership-and-fault-matrix` |
 | Tuần | `week-04_2026-08-23_to_2026-08-29` |
-| Trạng thái | Chờ review |
+| Trạng thái | Hoàn thành |
 | Người phụ trách | Bách |
 | Collaborator | Đức review ground truth, symptom và evidence cần cho RCA |
 | Ưu tiên | Cao |
@@ -42,16 +42,16 @@ Chốt database/cache/queue/storage ownership theo service và fault matrix MVP.
 - [x] Có bảng ownership cho PostgreSQL logical database, Redis, RabbitMQ và storage mock; không có database access chéo.
 - [x] Fault matrix có tối thiểu năm scenario MVP, mỗi scenario gồm target, injector/hook, workload, ground truth, symptom/propagation và reset/verification.
 - [x] Mỗi fault có thể ánh xạ tới service-level RCA evaluation và không vượt scope MVP.
-- [ ] Đức review label ground truth/evidence; các rủi ro chưa giải quyết được ghi rõ.
+- [x] Bách đã self-review bằng AI theo ngoại lệ workflow được xác nhận; label ground truth/evidence và các rủi ro đã được rà soát trong artifact.
 
 ## Liên kết hồ sơ thực hiện
 
 - Input workspace: [`task-input.md`](../../../../../workspace/bach/week-04_2026-08-23_to_2026-08-29/task-03_define-data-ownership-and-fault-matrix/input/task-input.md).
 - Output workspace: [`task-output.md`](../../../../../workspace/bach/week-04_2026-08-23_to_2026-08-29/task-03_define-data-ownership-and-fault-matrix/output/task-output.md).
 - Pull request: [PR #11](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/11).
-- Kết quả review: Chờ ghi nhận finalization sau AI self-review do Bách xác nhận.
+- Kết quả review: `APPROVED` theo ngoại lệ self-review AI do Bách xác nhận; không có review submission trên GitHub từ Đức.
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 28/08/2026 — Bách đã hoàn thiện artifact, tạo PR #11 và chuyển task sang `Chờ review`.
-- Ghi chú/tồn đọng: artifact đã cross-check với topology, HTTP/event contract và telemetry/ground-truth schema v0.
+- Cập nhật gần nhất: 28/08/2026 — Bách đã xác nhận `APPROVED` theo self-review AI và finalization metadata trên PR #11.
+- Ghi chú/tồn đọng: artifact đã cross-check với topology, HTTP/event contract và telemetry/ground-truth schema v0; PR #11 chưa merge vào `main`.
