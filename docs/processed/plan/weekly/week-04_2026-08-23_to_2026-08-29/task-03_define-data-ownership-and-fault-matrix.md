@@ -6,9 +6,9 @@
 | --- | --- |
 | Mã task | `task-03_define-data-ownership-and-fault-matrix` |
 | Tuần | `week-04_2026-08-23_to_2026-08-29` |
-| Trạng thái | Đã giao |
-| Người phụ trách | Đức |
-| Collaborator | Bách review ground truth, symptom và evidence cần cho RCA |
+| Trạng thái | Hoàn thành |
+| Người phụ trách | Bách |
+| Collaborator | Đức review ground truth, symptom và evidence cần cho RCA |
 | Ưu tiên | Cao |
 | Hạn dự kiến | 28/08/2026 |
 | Nhánh thực hiện | `docs/week-04/task-03-define-data-ownership-and-fault-matrix` |
@@ -28,7 +28,7 @@ Chốt database/cache/queue/storage ownership theo service và fault matrix MVP.
 ## Đầu vào và phụ thuộc
 
 - Tài liệu/task cần có trước: task-01, task-02, backend blueprint và input telemetry/ground truth từ task-04.
-- Người hoặc phần việc cần phối hợp: Bách kiểm tra mỗi fault có label ground truth và evidence đủ cho RCA/evaluation.
+- Người hoặc phần việc cần phối hợp: Đức kiểm tra mỗi fault có label ground truth và evidence đủ cho RCA/evaluation.
 - Rủi ro/giả định: fault phải controllable, quan sát được và có thời điểm bắt đầu/kết thúc rõ ràng.
 
 ## Sản phẩm kỳ vọng
@@ -39,19 +39,19 @@ Chốt database/cache/queue/storage ownership theo service và fault matrix MVP.
 
 ## Definition of Done
 
-- [ ] Có bảng ownership cho PostgreSQL logical database, Redis, RabbitMQ và storage mock; không có database access chéo.
-- [ ] Fault matrix có tối thiểu năm scenario MVP, mỗi scenario gồm target, injector/hook, workload, ground truth, symptom/propagation và reset/verification.
-- [ ] Mỗi fault có thể ánh xạ tới service-level RCA evaluation và không vượt scope MVP.
-- [ ] Bách review label ground truth/evidence; các rủi ro chưa giải quyết được ghi rõ.
+- [x] Có bảng ownership cho PostgreSQL logical database, Redis, RabbitMQ và storage mock; không có database access chéo.
+- [x] Fault matrix có tối thiểu năm scenario MVP, mỗi scenario gồm target, injector/hook, workload, ground truth, symptom/propagation và reset/verification.
+- [x] Mỗi fault có thể ánh xạ tới service-level RCA evaluation và không vượt scope MVP.
+- [x] Bách đã self-review bằng AI theo ngoại lệ workflow được xác nhận; label ground truth/evidence và các rủi ro đã được rà soát trong artifact.
 
 ## Liên kết hồ sơ thực hiện
 
-- Input workspace: Chưa tạo.
-- Output workspace: Chưa tạo.
-- Pull request: Chưa tạo.
-- Kết quả review: Chưa review.
+- Input workspace: [`task-input.md`](../../../../../workspace/bach/week-04_2026-08-23_to_2026-08-29/task-03_define-data-ownership-and-fault-matrix/input/task-input.md).
+- Output workspace: [`task-output.md`](../../../../../workspace/bach/week-04_2026-08-23_to_2026-08-29/task-03_define-data-ownership-and-fault-matrix/output/task-output.md).
+- Pull request: [PR #11](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/11).
+- Kết quả review: `APPROVED` theo ngoại lệ self-review AI do Bách xác nhận; không có review submission trên GitHub từ Đức.
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 23/08/2026 — task được phân công.
-- Ghi chú/tồn đọng: phụ thuộc topology và contract v1.
+- Cập nhật gần nhất: 28/08/2026 — Bách đã xác nhận `APPROVED` theo self-review AI và finalization metadata trên PR #11.
+- Ghi chú/tồn đọng: artifact đã cross-check với topology, HTTP/event contract và telemetry/ground-truth schema v0; PR #11 chưa merge vào `main`.
