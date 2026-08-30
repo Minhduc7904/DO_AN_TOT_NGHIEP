@@ -13,16 +13,17 @@
 Tài liệu này phải được đọc cùng các artifact canonical sau:
 
 1. `../direction/research-questions-and-metrics-v1.md` — RQ1–RQ5, phép so sánh và metric canonical.
-2. `analysis-anomaly-rca-blueprint.md` — Analysis pipeline, baseline detector/RCA, feature/windowing và evaluation direction.
-3. `data-ownership-and-fault-matrix-v1.md` — F1–F5, root-cause service/component, workload/fault/reset semantics.
-4. `telemetry-and-ground-truth-schema-v0.md` — normalized telemetry, `TelemetryArtifactManifest`, `TelemetryQualityReport`, immutable `RunGroundTruth` và lineage full/degraded.
-5. `service-catalogue-and-topology-v1.md` — service identity và topology canonical.
+2. `backend_microservice_testbed_blueprint.md` — execution/orchestration manifest, `experiment_id`, `run_id`, scenario và reproducibility boundary canonical.
+3. `analysis-anomaly-rca-blueprint.md` — Analysis pipeline, baseline detector/RCA, feature/windowing và evaluation direction.
+4. `data-ownership-and-fault-matrix-v1.md` — F1–F5, root-cause service/component, workload/fault/reset semantics.
+5. `telemetry-and-ground-truth-schema-v0.md` — normalized telemetry, `TelemetryArtifactManifest`, `TelemetryQualityReport`, immutable `RunGroundTruth` và lineage full/degraded.
+6. `service-catalogue-and-topology-v1.md` — service identity và topology canonical.
 
-Khi có khác biệt về concern đã thuộc ownership của artifact trước, artifact trước có authority. W4-T5 chỉ sở hữu concern evaluation được W4-T4 giao lại.
+Khi có khác biệt về concern đã thuộc ownership của artifact trước, artifact trước có authority. Đặc biệt, Backend blueprint sở hữu semantic execution/orchestration của `experiment_id`, `run_id`, `scenario_id` và `repeat_index`; W4-T5 chỉ reference/bổ sung các identity đó cho evaluation.
 
 ### 1.1. W4-T5 sở hữu
 
-- `ExperimentEvaluationManifest` và campaign identity.
+- `EvaluationInstanceManifest`, campaign identity và provenance của evaluation instance.
 - Assignment `train | validation | test` theo `run_id`.
 - Candidate set service-level cho RCA evaluation.
 - Quy tắc chọn/freeze feature, detector, incident, RCA và evaluation configuration.
@@ -65,52 +66,60 @@ Mọi experiment/evaluation implementation phải giữ các invariant sau:
 
 ---
 
-## 3. Identity model và `ExperimentEvaluationManifest`
+## 3. Identity model và `EvaluationInstanceManifest`
 
 ### 3.1. Identity
 
-Ba identity không được trộn semantic:
+Các identity sau không được trộn semantic:
 
 ```text
-campaign_id   = một campaign có split/config/freeze policy chung
-run_id        = một execution duy nhất của workload/fault/healthy run
-experiment_id = một analysis/evaluation variant cụ thể chạy trên một run
+experiment_id          = experiment/execution family theo Backend blueprint
+run_id                 = một concrete execution duy nhất của family đó
+scenario_id            = scenario canonical từ RunGroundTruth; F1–F5 hoặc healthy scenario ID
+repeat_index           = repetition canonical từ RunGroundTruth trong scenario/workload tương ứng
+analysis_variant_id    = điều kiện evaluation/ablation, ví dụ rq1-m, rq2-graph, rq4-trace50
+evaluation_instance_id = một evaluation instance duy nhất của một analysis variant trên một run
+campaign_id            = logical evaluation campaign có split/config/freeze policy chung
 ```
 
-Một `run_id` có thể được reuse bởi nhiều `experiment_id`, ví dụ:
+`experiment_id`, `run_id`, `scenario_id` và `repeat_index` giữ nguyên semantic canonical của Backend blueprint và `RunGroundTruth`. Một `run_id` có thể được reuse bởi nhiều `evaluation_instance_id`, ví dụ:
 
 ```text
-run-f2-r02
-  -> exp-rq1-m-f2-r02
-  -> exp-rq1-mt-f2-r02
-  -> exp-rq1-mtl-f2-r02
-  -> exp-rq2-severity-f2-r02
-  -> exp-rq2-graph-f2-r02
-  -> exp-rq4-full-f2-r02
-  -> exp-rq4-trace50-f2-r02
+experiment_id = exp-course-redis-latency
+run_id        = exp-course-redis-latency-r03
+
+run_id
+  -> evaluation_instance_id cho analysis_variant_id=rq1-m
+  -> evaluation_instance_id cho analysis_variant_id=rq1-mt
+  -> evaluation_instance_id cho analysis_variant_id=rq1-mtl
+  -> evaluation_instance_id cho analysis_variant_id=rq2-severity
+  -> evaluation_instance_id cho analysis_variant_id=rq2-graph
+  -> evaluation_instance_id cho analysis_variant_id=rq4-full
+  -> evaluation_instance_id cho analysis_variant_id=rq4-trace50
 ```
 
-Việc reuse trên không tạo execution truth mới.
+Việc reuse trên không tạo execution truth mới và không redefine execution/orchestration manifest.
 
 ### 3.2. Logical schema
 
-`ExperimentEvaluationManifest` v0 dùng logical fields sau. Physical representation có thể là YAML/JSON nhưng semantics phải giữ nguyên.
+`EvaluationInstanceManifest` v0 reference/bổ sung execution/orchestration manifest hiện có; nó không thay thế và không redefine semantic của `experiment_id`, `run_id`, `scenario_id` hoặc `repeat_index`. Physical representation có thể là YAML/JSON nhưng semantics phải giữ nguyên.
 
 ```text
-ExperimentEvaluationManifest
-- manifest_schema_version          # experiment-evaluation.v0
+EvaluationInstanceManifest
+- manifest_schema_version          # evaluation-instance.v0
 - protocol_version                 # evaluation-protocol.v0
-- experiment_id
+- evaluation_instance_id
+- experiment_id                    # reference execution family canonical
 - campaign_id
 - campaign_manifest_version
 - created_at
-- frozen_at                        # required với final-test experiment
+- frozen_at                        # required với final-test evaluation instance
 
 # run/split provenance
-- run_id
-- scenario_id                      # F1..F5 hoặc null với healthy run
-- repeat_index                     # theo RunGroundTruth khi có
-- run_kind                         # healthy | fault
+- run_id                           # reference concrete execution canonical
+- scenario_id                      # required; projection từ RunGroundTruth: F1..F5 hoặc healthy scenario ID
+- repeat_index                     # required; projection từ RunGroundTruth
+- run_kind                         # healthy | fault; derived/projection, không thay scenario_id
 - split                            # train | validation | test
 - run_ground_truth_ref             # ref tới immutable RunGroundTruth
 
@@ -161,7 +170,7 @@ ExperimentEvaluationManifest
 
 ### 3.3. Truth leakage boundary
 
-`run_ground_truth_ref`, `scenario_id` và `repeat_index` được phép dùng cho split/provenance/evaluation stratification. Detector/RCA feature input **không được nhận**:
+`EvaluationInstanceManifest` chỉ bổ sung evaluation provenance trên execution/orchestration manifest và immutable `RunGroundTruth`; nó không tạo identity execution thay thế. `run_ground_truth_ref`, `scenario_id` và `repeat_index` được phép dùng cho split/provenance/evaluation stratification. Detector/RCA feature input **không được nhận**:
 
 ```text
 fault_type
@@ -309,7 +318,7 @@ Final-test healthy run phải dùng `run_id` và workload seed chưa xuất hi�
 
 - `run_id` không reuse.
 - Workload seed của final test không reuse từ train/validation.
-- Random seed của detector/degradation được lưu theo experiment.
+- Random seed của detector/degradation được lưu theo evaluation instance hoặc versioned config tham chiếu.
 - Cùng comparison pair/ablation dùng cùng input run set và cùng seed khi randomness không phải biến đang kiểm tra.
 
 ---
@@ -327,7 +336,7 @@ Pilot được phép dùng để chốt các numeric/config placeholder mà W4-T
 - window size/step;
 - incident persistence;
 - data-quality threshold;
-- trace-drop implementation sanity.
+- trace-drop implementation sanity, lineage, missingness và reproducibility; không dùng pilot performance để đổi `drop_ratio` 50%.
 
 Pilot run **không** được đưa vào final metric nếu đã dùng để chọn các giá trị trên.
 
@@ -342,7 +351,7 @@ Validation được phép dùng để:
 - tune fusion weight hoặc dùng equal weight baseline;
 - tune RCA weights;
 - chọn deterministic tie/fallback behavior nếu chưa freeze;
-- xác nhận focused degradation condition;
+- xác nhận implementation correctness, artifact lineage, missingness calculation, reproducibility và feasibility/quality gate của focused RQ4 degradation condition; không tune `drop_ratio` theo validation performance;
 - xác nhận data-quality gate khả thi.
 
 Mọi lựa chọn phải được ghi bằng versioned config; không chọn bằng cảm tính rồi chỉ lưu kết quả cuối.
@@ -508,7 +517,7 @@ Các giá trị sau được chọn trên validation hoặc theo deterministic b
 - RCA weights;
 - tie/fallback rule;
 - data-quality threshold;
-- RQ4 degradation config.
+- RQ4 degradation implementation/lineage/quality-gate behavior; `drop_ratio=0.50` không phải hyperparameter để chọn theo validation performance.
 
 ### 9.3. Test-only reporting
 
@@ -555,7 +564,8 @@ Nếu feature dimension buộc detector config khác giữa modality variants, m
 Mỗi modality variant báo:
 
 - Detection Precision/Recall/F1/FPR/Delay.
-- RCA Top-1/Top-3/MRR; Average Rank bổ sung.
+- RCA conditional Top-1/Top-3/MRR; Average Rank và `rca_coverage`.
+- RCA end-to-end Top-1/Top-3/MRR trên toàn bộ eligible fault runs của mỗi variant; đây là reporting bắt buộc cho RQ1 cross-condition comparison.
 - Feature extraction, detector, incident, RCA runtime và artifact size khi khác biệt đáng kể.
 - Eligibility/coverage count để không che việc richer modality bị mất dữ liệu nhiều hơn.
 
@@ -637,6 +647,8 @@ granularity: whole_trace
 
 Đây là **một focused condition** cho RQ4, không mở rộng thành nhiều sampling level × modality matrix.
 
+`drop_ratio=0.50` là phần đã freeze của comparison design, không phải tham số được tune theo detection/RCA performance. Validation chỉ kiểm tra implementation correctness, source/derived artifact lineage, missingness calculation, reproducibility và feasibility/quality gate của pipeline whole-trace drop. Nếu pilot chứng minh 50% không khả thi về mặt kỹ thuật hoặc không qua quality gate, phải bump protocol/config version, ghi rationale và freeze lại trước final test; không silently đổi ratio theo metric.
+
 ### 13.2. Transformation semantics
 
 - Source phải là full/baseline telemetry artifact của cùng `run_id`.
@@ -678,6 +690,8 @@ Detection: Precision, Recall, F1, FPR, Detection Delay
 RCA:       Top-1, Top-3, MRR, Average Rank
 System:    runtime/artifact size khi khác đáng kể
 ```
+
+Với RQ4, Top-1, Top-3 và MRR phải có paired **end-to-end** outcome trên mọi eligible same-run pair. Nếu full hoặc degraded không tạo matched incident/RCA output, pair vẫn ở denominator với Top-1/Top-3 là miss và reciprocal rank bằng 0; Average Rank giữ là conditional metric trên ranking đã tạo và báo `rca_coverage` riêng.
 
 Với metric `higher is better`:
 
@@ -875,9 +889,9 @@ Tie-break order chỉ bảo đảm determinism, không mang semantic ưu tiên r
 
 Candidate không được xóa khỏi list do missing modality. Nếu variant không tính được score cho candidate, fallback/missing-score policy phải được freeze trong `rca_config_version`; missing candidate không được tự nhiên biến candidate universe nhỏ hơn.
 
-### 16.3. Canonical RCA metrics
+### 16.3. Conditional RCA quality
 
-Trên RCA-evaluable matched incidents:
+Trên incident đã được detect/matched **và** có RCA ranking output, báo conditional RCA quality:
 
 ```text
 Top-1 Accuracy = mean(root_cause_service ở rank 1)
@@ -888,28 +902,35 @@ Average Rank   = mean(rank(root_cause_service))
 
 `root_cause_component` không tham gia primary Top-K/MRR.
 
-### 16.4. RCA evaluability/coverage
+### 16.4. Limitation của Top-3 với fault catalogue F1–F5
+
+Candidate universe vẫn là 6 business services canonical. Tuy nhiên F1–F5 chỉ có 3 distinct `root_cause_service`: `course`, `submission` và `notification`. Vì vậy một constant ranking đặt ba service này ở Top-3 có thể đạt Top-3 rất cao, thậm chí 100%, mà không cần dùng telemetry; đây là **structural saturation risk** của catalogue hiện tại.
+
+Top-3 vẫn là metric canonical và phải được báo cáo, nhưng không được dùng độc lập để kết luận một method RCA tốt hơn. Mọi kết luận RCA phải đọc cùng Top-1, Top-3, MRR, Average Rank và kết quả theo từng scenario. Constant-ranking sanity check được phép xuất hiện như diagnostic reference, không phải core baseline mới và không thay metric/RQ/fault catalogue canonical.
+
+### 16.5. RCA evaluability/coverage
 
 Final report bắt buộc báo:
 
 ```text
-valid_fault_runs
+eligible_fault_runs
 matched_detected_runs
 rca_output_runs
 rca_evaluable_runs
-rca_coverage = rca_evaluable_runs / valid_fault_runs
+rca_coverage = rca_evaluable_runs / eligible_fault_runs
 ```
 
-Điều này tránh một RCA variant trông tốt chỉ vì bỏ các incident khó.
+`rca_coverage` phân biệt conditional ranking quality với số eligible fault run thật sự đi tới RCA output; nó không được dùng để drop silent các incident khó.
 
-### 16.5. End-to-end diagnostic
+### 16.6. End-to-end RCA effectiveness cho RQ1 và RQ4
 
-Ngoài canonical RCA ranking metric, được phép báo **end-to-end diagnostic** trên toàn bộ valid fault runs:
+Đối với RQ1 và RQ4 cross-condition comparison, end-to-end RCA reporting là **bắt buộc** trên toàn bộ `eligible_fault_runs` của split/campaign tương ứng, không chỉ trên matched/evaluable incidents:
 
 - no matched incident/no RCA output -> Top-1 miss, Top-3 miss, reciprocal rank = 0;
-- không gán fake finite rank cho Average Rank.
+- Average Rank là `null`/not available khi không có ranking; nếu aggregate Average Rank chỉ tính trên ranking đã tạo thì phải ghi rõ conditional denominator;
+- báo `rca_coverage` riêng, cùng denominator `eligible_fault_runs`.
 
-Diagnostic này không thay canonical Top-K/MRR; nó giúp phân biệt ranking quality với end-to-end pipeline failure.
+Với RQ4, full/degraded giữ same-run pairing. Mỗi eligible pair có một paired end-to-end outcome; pair không bị drop khi một condition không detect incident hoặc không tạo RCA output. Paired delta cho Top-1, Top-3 và MRR dùng semantic miss/0 ở trên; chỉ validity rule đã canonicalize mới được exclude pair.
 
 ---
 
@@ -981,10 +1002,10 @@ Báo:
 
 Báo:
 
-- Top-1, Top-3, MRR và Average Rank trên eligible RCA-evaluable final-test runs;
-- per-scenario result F1–F5;
+- conditional Top-1, Top-3, MRR và Average Rank trên eligible matched/evaluable final-test runs, kèm conditional denominator;
+- end-to-end Top-1, Top-3 và MRR trên toàn bộ eligible fault runs khi so sánh RQ1/RQ4;
+- per-scenario result F1–F5 với cả coverage và denominator tương ứng;
 - `rca_coverage`;
-- end-to-end diagnostic nếu dùng;
 - candidate rank raw per run.
 
 ### 18.4. RQ4 paired aggregation
@@ -993,8 +1014,10 @@ Mỗi row pair phải giữ:
 
 ```text
 run_id
-full_experiment_id
-degraded_experiment_id
+scenario_id
+repeat_index
+full_evaluation_instance_id
+degraded_evaluation_instance_id
 full_artifact_id
 degraded_artifact_id
 metric_full
@@ -1002,7 +1025,7 @@ metric_degraded
 delta
 ```
 
-Aggregate delta chỉ sau khi pair-level lineage hợp lệ. Không ghép full run A với degraded run B.
+Aggregate delta chỉ sau khi pair-level lineage hợp lệ. Không ghép full run A với degraded run B. Top-1, Top-3 và MRR bắt buộc aggregate paired end-to-end outcome trên mọi eligible pair; khi một bên không tạo incident/RCA ranking, pair vẫn dùng miss/0. Average Rank chỉ aggregate trên ranking produced và phải kèm conditional denominator cùng `rca_coverage`.
 
 ### 18.5. No hidden denominator
 
@@ -1031,7 +1054,7 @@ RunGroundTruth (immutable execution truth)
 TelemetryArtifactManifest + TelemetryQualityReport
         |
         v
-ExperimentEvaluationManifest
+EvaluationInstanceManifest
         |
         v
 Feature artifact
@@ -1069,7 +1092,7 @@ experiments/runs/<run-id>/
 └── evaluation.json
 ```
 
-Vì một run có nhiều variant, implementation được phép dùng variant-specific subpath/filename hoặc artifact registry, nhưng **không được overwrite** artifact đã được một `experiment_id`/evaluation tham chiếu. Physical layout là implementation detail; logical identity/lineage trong manifest là bắt buộc.
+Vì một run có nhiều variant, implementation được phép dùng variant-specific subpath/filename hoặc artifact registry, nhưng **không được overwrite** artifact đã được một `evaluation_instance_id` tham chiếu. Physical layout là implementation detail; logical identity/lineage trong manifest là bắt buộc.
 
 ### 19.3. Large artifact
 
@@ -1106,10 +1129,12 @@ EvaluationArtifact
 - protocol_version
 - campaign_id
 - campaign_manifest_version
-- experiment_id
+- evaluation_instance_id
+- experiment_id                    # execution family reference
 - run_id
 - split
 - scenario_id
+- repeat_index
 - analysis_variant_id
 - evaluation_config_version
 - generated_at
@@ -1132,9 +1157,13 @@ EvaluationArtifact
 # RCA
 - ground_truth_service          # evaluator output only
 - predicted_rank
-- top1_hit
-- top3_hit
-- reciprocal_rank
+- ranking_produced
+- conditional_top1_hit
+- conditional_top3_hit
+- conditional_reciprocal_rank
+- end_to_end_top1_hit           # false khi không có matched incident/RCA output
+- end_to_end_top3_hit           # false khi không có matched incident/RCA output
+- end_to_end_reciprocal_rank    # 0 khi không có matched incident/RCA output
 - rca_evaluable
 - rca_candidate_list_ref
 
@@ -1161,16 +1190,17 @@ EvaluationArtifact
 
 `ground_truth_service` xuất hiện trong **evaluation artifact**, không trong detector/RCA feature artifact.
 
-Campaign-level summary artifact phải reference các per-experiment evaluation artifact thay vì copy metric không có provenance.
+Campaign-level summary artifact phải reference các per-evaluation-instance artifact thay vì copy metric không có provenance.
 
 ---
 
 ## 21. Reproducibility contract
 
-Một experiment được coi reproducible ở protocol level khi có đủ:
+Một evaluation instance được coi reproducible ở protocol level khi có đủ:
 
 ```text
-run_id + immutable RunGroundTruth
+experiment_id + run_id + scenario_id + repeat_index theo canonical execution identity
+immutable RunGroundTruth reference
 selected telemetry artifact ID(s) + checksum/URI
 TelemetryQualityReport
 campaign/split assignment
@@ -1202,7 +1232,7 @@ Cùng immutable input + cùng config/seed phải tạo output tương đương d
 6. Freeze final-test campaign manifest
 7. Execute/select eligible final-test runs theo predeclared gate
 8. Run frozen analysis variants
-9. Produce immutable per-experiment evaluation artifacts
+9. Produce immutable per-evaluation-instance artifacts
 10. Aggregate RQ1–RQ5 từ final-test artifacts
 11. Preserve excluded/invalid run ledger và failure analysis
 ```
@@ -1217,7 +1247,7 @@ Artifact này không tự coi collaborator review là hoàn tất. Đức cần 
 
 | Concern | Điều cần xác nhận |
 | --- | --- |
-| Run identity/split | Runner sinh unique `run_id`, `repeat_index`, workload seed và giữ assignment validation/test ổn định được. |
+| Run identity/split | Runner giữ semantic canonical của `experiment_id`, sinh unique `run_id`, lấy `scenario_id` (kể cả healthy scenario) và `repeat_index` từ execution truth, rồi giữ assignment validation/test ổn định được. |
 | Ground truth | `fault_start/end`, activation/deactivation/reset/verification và root-cause truth được lưu trước evaluation, không phụ thuộc model output. |
 | Artifact lineage | Mỗi telemetry/derived artifact có immutable ID/location/checksum và quality report; một run có thể reference nhiều variant không overwrite nhau. |
 | Healthy runs | Có thể chạy dedicated healthy training/validation/test với seed tách biệt, gồm normal và healthy high-load tối thiểu. |
