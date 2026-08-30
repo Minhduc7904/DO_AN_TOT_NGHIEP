@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-05_define-evaluation-protocol` |
 | Tuần | `week-04_2026-08-23_to_2026-08-29` |
-| Trạng thái | Đang thực hiện |
+| Trạng thái | Chờ review |
 | Người phụ trách | Bách |
 | Collaborator | Đức review tính khả thi của run orchestration và artifact |
 | Ưu tiên | Cao |
@@ -48,10 +48,10 @@ Tạo evaluation protocol v0, gồm experiment metadata, đơn vị split theo e
 
 - Input workspace: [task-input.md](../../../../../workspace/bach/week-04_2026-08-23_to_2026-08-29/task-05_define-evaluation-protocol/input/task-input.md).
 - Output workspace: [task-output.md](../../../../../workspace/bach/week-04_2026-08-23_to_2026-08-29/task-05_define-evaluation-protocol/output/task-output.md).
-- Pull request: Chưa tạo.
+- Pull request: [PR #14](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/14).
 - Kết quả review: Chưa review.
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 30/08/2026 — Bách bắt đầu lại task, đã tạo branch và workspace mới; chưa triển khai artifact.
-- Ghi chú/tồn đọng: phụ thuộc telemetry/ground truth schema và fault matrix draft.
+- Cập nhật gần nhất: 30/08/2026 — Bách đã hoàn thiện artifact, tạo PR #14 và chuyển task sang `Chờ review` trên PR head.
+- Ghi chú/tồn đọng: Cần Đức review khả năng orchestration/lưu artifact trước khi finalization.
