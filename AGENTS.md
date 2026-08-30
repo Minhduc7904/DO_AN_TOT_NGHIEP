@@ -19,4 +19,6 @@ Trước khi tạo branch, vibe code, hard code hoặc mở pull request, bắt 
 
 Mỗi task phải có nhánh riêng và pull request trước khi chuyển sang `Chờ review`. URL/số PR và `Chờ review` phải được commit/push vào PR head trước review; reviewer lấy readiness từ PR head, không từ `main`. Vòng đời task canonical nằm tại `docs/processed/rules/git-and-pull-request-rules.md`: thành viên còn lại phải gửi `APPROVED` hợp lệ trên GitHub; sau đó người phụ trách finalization và là người duy nhất có quyền yêu cầu/thực hiện merge PR của task mình. Task chỉ canonically hoàn thành khi commit finalization vào nhánh canonical. Requirement commit/push/merge không tự cho phép agent chạy Git write hoặc merge khi người dùng chưa yêu cầu rõ. Pull request phải dùng template `.github/pull_request_template.md`.
 
+Thay đổi vận hành dùng chung không thuộc task cụ thể — như skill/rule/guide/template, break task tuần, timeline sinh từ thay đổi dùng chung và metadata quản trị repository — được phép commit/push trực tiếp lên `main` khi người dùng yêu cầu rõ Git write. Ngoại lệ không áp dụng cho code/artifact/DoD/lifecycle của task hoặc shared application code; diff trộn hai loại phải được tách theo `docs/processed/rules/git-and-pull-request-rules.md`.
+
 Không tự sửa, di chuyển hoặc xóa tài liệu trong `docs/raw/` hay công việc của thành viên còn lại nếu không có yêu cầu rõ ràng.

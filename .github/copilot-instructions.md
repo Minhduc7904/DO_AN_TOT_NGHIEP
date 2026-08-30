@@ -32,3 +32,4 @@ Tổng quan:
 - Không ép chuyển thuật ngữ kỹ thuật, tên riêng hoặc ngữ cảnh mà tiếng Anh rõ hơn sang tiếng Việt.
 - Không thêm tiêu đề, giải thích, tên người thực hiện, lời chào, nội dung PR hoặc Markdown fence vào message được sinh.
 - Không tạo commit nếu người dùng chưa yêu cầu rõ. Requirement workflow về commit/push không tự cấp quyền Git write; khi chưa được phép, chỉ chuẩn bị thay đổi và báo bước còn thiếu.
+- Skill/rule/guide/template, break task tuần, timeline sinh từ thay đổi dùng chung và metadata quản trị repository không thuộc task cụ thể có thể commit/push trực tiếp lên `main` khi người dùng yêu cầu rõ. Không áp dụng cho code/artifact/DoD/lifecycle task hoặc shared application code; diff trộn phải tách theo `docs/processed/rules/git-and-pull-request-rules.md`.

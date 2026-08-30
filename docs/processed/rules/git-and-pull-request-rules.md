@@ -6,7 +6,20 @@
 
 - Mỗi task được giao phải có một nhánh riêng trước khi bắt đầu thay đổi, theo [quy tắc đặt tên](naming-rules.md).
 - Card task chung phải ghi nhánh dự kiến; input task cá nhân phải ghi nhánh thực hiện.
-- Không commit trực tiếp lên `main`; không gộp thay đổi của nhiều task độc lập vào cùng nhánh.
+- Không commit trực tiếp lên `main` đối với code, artifact, hồ sơ hoặc lifecycle của một task cụ thể; không gộp thay đổi của nhiều task độc lập vào cùng nhánh.
+
+## Ngoại lệ cho thay đổi vận hành dùng chung
+
+Được phép commit/push trực tiếp lên `main` khi người dùng yêu cầu rõ Git write và toàn bộ diff chỉ gồm thay đổi vận hành dùng chung, không phải sản phẩm hoặc lifecycle của một task cụ thể. Phạm vi hợp lệ gồm:
+
+- skill, rule, guide, template và instruction dùng chung cho agent hoặc repository;
+- break task/lập bảng tuần trước khi bắt đầu triển khai task cụ thể;
+- timeline hoặc đầu ra sinh tự động chỉ phát sinh từ các thay đổi dùng chung hợp lệ;
+- metadata/cấu hình quản trị repository dùng chung không phải application code, shared application library hoặc artifact DoD của một task.
+
+Ngoại lệ không áp dụng cho code triển khai, test, contract, architecture artifact, shared application code, input/output cá nhân, cập nhật trạng thái task, URL PR, review/finalization metadata hoặc bất kỳ thay đổi nào dùng làm bằng chứng DoD của task. Nếu working tree trộn thay đổi dùng chung với thay đổi thuộc task cụ thể, phải tách commit; chỉ phần dùng chung mới được push trực tiếp lên `main`.
+
+Quyền commit/push trực tiếp không đồng nghĩa quyền merge PR, không bỏ qua yêu cầu xác minh diff và không tự cấp Git write khi người dùng chưa yêu cầu rõ.
 
 ## Commit message bắt buộc
 
@@ -55,7 +68,7 @@
 - Điều kiện này không tự cấp quyền cho agent chạy `git commit` hoặc `git push`. Agent chỉ trực tiếp thực hiện Git write khi yêu cầu hiện tại của người dùng cho phép rõ thao tác đó.
 - Nếu chưa có quyền Git write, agent được phép chuẩn bị/sửa metadata khi yêu cầu cho phép, nhưng phải báo rõ commit/push còn thiếu và không tuyên bố transition đã sẵn sàng trên remote.
 
-## Pull request bắt buộc
+## Pull request bắt buộc cho task cụ thể
 
 - Mỗi task phải có một pull request vào `main`, kể cả task chỉ thay đổi tài liệu.
 - Pull request phải gắn với đúng nhánh và card task; link PR phải được ghi trong output task và card task chung.

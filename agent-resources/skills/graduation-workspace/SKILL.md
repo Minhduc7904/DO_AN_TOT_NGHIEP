@@ -15,4 +15,4 @@ Khi yêu cầu là lập/tra cứu task tuần, ghi nhận hoàn thành hoặc r
 
 Markdown canonical trong `docs/processed/plan/` vẫn là nguồn sự thật. Sau mọi thay đổi làm ảnh hưởng đến plan, `weekly-overview.md` hoặc card `task-*.md`, bắt buộc chạy `tools/sync-plan-json-and-timeline.ps1` và xác minh script thành công. Không báo workflow hoàn tất, không commit/push trạng thái mới và không để JSON/timeline lệch với Markdown khi bước đồng bộ thất bại.
 
-JSON tại `docs/processed/plan/json/` và timeline tại `docs/processed/plan/timeline/` là đầu ra sinh tự động; không sửa trực tiếp. Skill chuyên biệt chịu trách nhiệm đặt bước đồng bộ đúng vị trí trong workflow của nó.
+JSON tại `docs/processed/plan/json/` và timeline tại `docs/processed/plan/timeline/` là đầu ra sinh tự động; không sửa trực tiếp. JSON được kiểm tra tại local và bị Git ignore, không force-add; timeline là đầu ra tracked phải đi cùng diff kế hoạch. Skill chuyên biệt chịu trách nhiệm đặt bước đồng bộ đúng vị trí trong workflow của nó.
