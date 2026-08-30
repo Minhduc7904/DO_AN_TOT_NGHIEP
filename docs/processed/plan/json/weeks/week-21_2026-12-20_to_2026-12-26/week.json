@@ -1,0 +1,76 @@
+{
+    "schemaVersion":  "1.0.0",
+    "generatedAt":  "2026-08-30T05:54:24Z",
+    "sourceDigest":  "aeb3bd1cc29dfb6822b8001b05acdbb852ffc1e8c3c4c09352bc207438ce67f8",
+    "id":  "week-21_2026-12-20_to_2026-12-26",
+    "number":  21,
+    "title":  "Hoàn thành campaign, ablation, robustness và analysis",
+    "startDate":  "2026-12-20",
+    "endDate":  "2026-12-26",
+    "status":  "Chưa bắt đầu",
+    "phase":  {
+                  "id":  "phase-05",
+                  "title":  "Experimental campaign, analysis và planned final release",
+                  "startWeek":  20,
+                  "endWeek":  22
+              },
+    "objective":  "Hoàn thành campaign, ablation, robustness và analysis",
+    "planGoals":  [
+
+                  ],
+    "workstreams":  [
+                        {
+                            "role":  "A",
+                            "owner":  "Đức",
+                            "title":  "Experiment/Systems primary",
+                            "items":  [
+                                          "rerun các experiment lỗi;",
+                                          "tối thiểu một robustness evaluation focused bằng controlled trace dropping/sampling simulation trên telemetry artifact hoặc missing-modality evaluation, tái sử dụng baseline 100% trace sampling; expanded matrix chỉ chạy nếu đạt Target;",
+                                          "runtime/resource benchmark;",
+                                          "kiểm tra fresh reproduction."
+                                      ]
+                        },
+                        {
+                            "role":  "B",
+                            "owner":  "Bách",
+                            "title":  "Evaluation/Analysis primary",
+                            "items":  [
+                                          "anomaly metrics;",
+                                          "service-level RCA Top-1/Top-3/MRR/Average Rank; component/dependency chỉ dùng làm evidence bổ sung;",
+                                          "modality ablation;",
+                                          "graph/temporal ablation;",
+                                          "error analysis, findings và limitations."
+                                      ]
+                        }
+                    ],
+    "deliverables":  [
+                         "evaluation dataset v1;",
+                         "bảng kết quả chính;",
+                         "plots/tables;",
+                         "ablation results và ít nhất một focused robustness result;",
+                         "findings + limitations."
+                     ],
+    "gate":  {
+                 "name":  "Gate M5",
+                 "description":  "Kết quả chính đủ để trả lời research questions mà không cần thêm feature mới."
+             },
+    "dependencies":  {
+
+                     },
+    "risks":  {
+
+              },
+    "decisions":  {
+
+                  },
+    "completionCriteria":  {
+
+                           },
+    "tasks":  [
+
+              ],
+    "sources":  {
+                    "canonicalPlan":  "docs/processed/plan/plan-v0.2-24-weeks.md",
+                    "weeklyOverview":  null
+                }
+}

@@ -1,0 +1,77 @@
+{
+    "schemaVersion":  "1.0.0",
+    "generatedAt":  "2026-08-30T05:54:24Z",
+    "sourceDigest":  "aeb3bd1cc29dfb6822b8001b05acdbb852ffc1e8c3c4c09352bc207438ce67f8",
+    "id":  "task-02_create-implementation-backlog",
+    "weekId":  "week-03_2026-08-16_to_2026-08-22",
+    "title":  "Lập backlog triển khai tuần 3–22",
+    "status":  "Đã giao",
+    "owner":  "Đức",
+    "collaborator":  "Bách bổ sung dependency của telemetry, feature, model và evaluation",
+    "priority":  "Cao",
+    "dueDate":  "2026-08-21",
+    "dueDateDisplay":  "21/08/2026",
+    "branch":  "docs/week-03/task-02-create-implementation-backlog",
+    "scope":  {
+                  "required":  "Tạo backlog triển khai có thứ tự cho tuần 3–22. Mỗi backlog item phải liên kết tới milestone trong plan v0.2, module canonical và có owner primary/collaborator, phụ thuộc, sản phẩm/tiêu chí nghiệm thu ngắn gọn.",
+                  "requiredItems":  [
+
+                                    ],
+                  "excluded":  "- Không viết lại timeline 24 tuần hoặc thay đổi milestone canonical. - Không phân rã thành issue/code task quá nhỏ của từng ngày. - Không đưa Target/Stretch vào critical path của MVP.",
+                  "excludedItems":  [
+                                        "Không viết lại timeline 24 tuần hoặc thay đổi milestone canonical.",
+                                        "Không phân rã thành issue/code task quá nhỏ của từng ngày.",
+                                        "Không đưa Target/Stretch vào critical path của MVP."
+                                    ]
+              },
+    "dependencies":  {
+                         "documents":  [
+                                           "plan v0.2, backend blueprint, AI/RCA blueprint và scope v1 từ task-01."
+                                       ],
+                         "coordination":  [
+                                              "Bách rà soát các dependency analysis/evaluation để chúng xuất hiện trước mốc cần dùng."
+                                          ],
+                         "risks":  [
+                                       "backlog phải ưu tiên testbed, observability, experiment và data quality trước model phức tạp."
+                                   ]
+                     },
+    "deliverables":  [
+                         {
+                             "name":  "Backlog triển khai v1",
+                             "type":  "Docs",
+                             "location":  "docs/processed/plan/implementation-backlog-v1.md"
+                         }
+                     ],
+    "definitionOfDone":  [
+                             {
+                                 "completed":  false,
+                                 "text":  "Backlog bao phủ tuần 3–22 và mọi milestone M1–M6; mỗi item có tuần/milestone, owner primary, collaborator, dependency và sản phẩm kiểm tra được."
+                             },
+                             {
+                                 "completed":  false,
+                                 "text":  "Các module services/, analysis/, load/, faults/, experiments/ và infrastructure/ xuất hiện theo thứ tự dependency của blueprint."
+                             },
+                             {
+                                 "completed":  false,
+                                 "text":  "Backlog làm rõ hạng mục MVP bắt buộc so với Target/Stretch, không đưa extension vào critical path."
+                             },
+                             {
+                                 "completed":  false,
+                                 "text":  "Bách đã review các dependency data/telemetry/feature/evaluation; các điểm chưa thống nhất được ghi rõ."
+                             }
+                         ],
+    "links":  {
+                  "input":  null,
+                  "output":  null,
+                  "pullRequest":  null,
+                  "review":  null,
+                  "all":  [
+
+                          ]
+              },
+    "progress":  {
+                     "updatedAt":  "16/08/2026 — task được phân công.",
+                     "notes":  "phụ thuộc kết quả task-01."
+                 },
+    "source":  "docs/processed/plan/weekly/week-03_2026-08-16_to_2026-08-22/task-02_create-implementation-backlog.md"
+}

@@ -1,0 +1,74 @@
+{
+    "schemaVersion":  "1.0.0",
+    "generatedAt":  "2026-08-30T05:54:24Z",
+    "sourceDigest":  "aeb3bd1cc29dfb6822b8001b05acdbb852ffc1e8c3c4c09352bc207438ce67f8",
+    "id":  "week-13_2026-10-25_to_2026-10-31",
+    "number":  13,
+    "title":  "Fault matrix MVP, repeatability và dataset v0",
+    "startDate":  "2026-10-25",
+    "endDate":  "2026-10-31",
+    "status":  "Chưa bắt đầu",
+    "phase":  {
+                  "id":  "phase-03",
+                  "title":  "Observability, experiment infrastructure và ground truth",
+                  "startWeek":  10,
+                  "endWeek":  13
+              },
+    "objective":  "Fault matrix MVP, repeatability và dataset v0",
+    "planGoals":  [
+
+                  ],
+    "workstreams":  [
+                        {
+                            "role":  "A",
+                            "owner":  "Đức",
+                            "title":  "Experiment primary",
+                            "items":  [
+                                          "hoàn thiện 5 scenario canonical: Course/Redis latency, Submission/storage latency, Submission service error, Notification consumer slowdown/RabbitMQ backlog và Submission CPU pressure;",
+                                          "automated reset;",
+                                          "repeatability checks."
+                                      ]
+                        },
+                        {
+                            "role":  "B",
+                            "owner":  "Bách",
+                            "title":  "Data/Evaluation primary",
+                            "items":  [
+                                          "kiểm tra label/ground truth;",
+                                          "kiểm tra experiment_id, scenario_id, run_id, repeat_index, workload seed, code/service/config version và artifact link;",
+                                          "tạo dataset v0 từ healthy/fault runs;",
+                                          "cập nhật evaluation protocol từ kinh nghiệm pilot nhưng chưa dùng test result để tune model."
+                                      ]
+                        }
+                    ],
+    "deliverables":  [
+                         "tối thiểu 5 fault scenario tái lập được;",
+                         "healthy runs và fault runs mẫu;",
+                         "dataset v0;",
+                         "ground-truth schema ổn định;",
+                         "experiment runbook."
+                     ],
+    "gate":  {
+                 "name":  "Gate M3",
+                 "description":  "Hai thành viên đổi fault cho nhau và đều có thể chạy, reset, export telemetry và xác nhận ground truth độc lập."
+             },
+    "dependencies":  {
+
+                     },
+    "risks":  {
+
+              },
+    "decisions":  {
+
+                  },
+    "completionCriteria":  {
+
+                           },
+    "tasks":  [
+
+              ],
+    "sources":  {
+                    "canonicalPlan":  "docs/processed/plan/plan-v0.2-24-weeks.md",
+                    "weeklyOverview":  null
+                }
+}

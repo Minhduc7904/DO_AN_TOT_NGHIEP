@@ -1,0 +1,77 @@
+{
+    "schemaVersion":  "1.0.0",
+    "generatedAt":  "2026-08-30T05:54:24Z",
+    "sourceDigest":  "aeb3bd1cc29dfb6822b8001b05acdbb852ffc1e8c3c4c09352bc207438ce67f8",
+    "id":  "week-10_2026-10-04_to_2026-10-10",
+    "number":  10,
+    "title":  "Hoàn thiện observability stack",
+    "startDate":  "2026-10-04",
+    "endDate":  "2026-10-10",
+    "status":  "Chưa bắt đầu",
+    "phase":  {
+                  "id":  "phase-03",
+                  "title":  "Observability, experiment infrastructure và ground truth",
+                  "startWeek":  10,
+                  "endWeek":  13
+              },
+    "objective":  "Hoàn thiện observability stack",
+    "planGoals":  [
+
+                  ],
+    "workstreams":  [
+                        {
+                            "role":  "A",
+                            "owner":  "Đức",
+                            "title":  "Platform primary",
+                            "items":  [
+                                          "OTel Collector;",
+                                          "Prometheus;",
+                                          "Tempo;",
+                                          "Loki;",
+                                          "Grafana;",
+                                          "hoàn thiện inbound/outbound HTTP, PostgreSQL, Redis, storage và RabbitMQ spans;",
+                                          "kiểm tra service.name, service.version, service.instance.id và 100% trace sampling cho controlled baseline."
+                                      ]
+                        },
+                        {
+                            "role":  "B",
+                            "owner":  "Bách",
+                            "title":  "Data/Diagnosis primary",
+                            "items":  [
+                                          "structured logs;",
+                                          "trace_id/span_id correlation;",
+                                          "Loki/query validation;",
+                                          "xác minh error status, HTTP status, error type, dependency identity và timeout semantics;",
+                                          "dashboard/query phục vụ anomaly/RCA."
+                                      ]
+                        }
+                    ],
+    "deliverables":  [
+                         "một request có trace xuyên service;",
+                         "trace context xuyên RabbitMQ;",
+                         "metrics service-level;",
+                         "structured logs truy theo trace;",
+                         "timestamp UTC ISO-8601;",
+                         "dashboard service overview."
+                     ],
+    "gate":  null,
+    "dependencies":  {
+
+                     },
+    "risks":  {
+
+              },
+    "decisions":  {
+
+                  },
+    "completionCriteria":  {
+
+                           },
+    "tasks":  [
+
+              ],
+    "sources":  {
+                    "canonicalPlan":  "docs/processed/plan/plan-v0.2-24-weeks.md",
+                    "weeklyOverview":  null
+                }
+}

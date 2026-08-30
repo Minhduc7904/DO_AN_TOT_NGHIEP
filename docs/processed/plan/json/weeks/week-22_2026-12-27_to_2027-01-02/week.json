@@ -1,0 +1,79 @@
+{
+    "schemaVersion":  "1.0.0",
+    "generatedAt":  "2026-08-30T05:54:24Z",
+    "sourceDigest":  "aeb3bd1cc29dfb6822b8001b05acdbb852ffc1e8c3c4c09352bc207438ce67f8",
+    "id":  "week-22_2026-12-27_to_2027-01-02",
+    "number":  22,
+    "title":  "Freeze hệ thống và planned final release",
+    "startDate":  "2026-12-27",
+    "endDate":  "2027-01-02",
+    "status":  "Chưa bắt đầu",
+    "phase":  {
+                  "id":  "phase-05",
+                  "title":  "Experimental campaign, analysis và planned final release",
+                  "startWeek":  20,
+                  "endWeek":  22
+              },
+    "objective":  "Freeze hệ thống và planned final release",
+    "planGoals":  [
+
+                  ],
+    "workstreams":  [
+                        {
+                            "role":  "A",
+                            "owner":  "Đức",
+                            "title":  "System/reproducibility lead",
+                            "items":  [
+                                          "freeze code/config;",
+                                          "clean-machine setup;",
+                                          "demo script;",
+                                          "architecture/observability/experiment documentation;",
+                                          "backup demo recording nếu phù hợp."
+                                      ]
+                        },
+                        {
+                            "role":  "B",
+                            "owner":  "Bách",
+                            "title":  "Evaluation/report lead",
+                            "items":  [
+                                          "freeze figures/tables;",
+                                          "AI/RCA methodology;",
+                                          "experiment/result/limitation sections;",
+                                          "kiểm tra citation và consistency số liệu."
+                                      ]
+                        }
+                    ],
+    "deliverables":  [
+                         "Planned Final Release v1.0;",
+                         "source + Compose/config;",
+                         "dataset/experiment manifest;",
+                         "reproducibility/runbook;",
+                         "report;",
+                         "slide;",
+                         "demo script/recording;",
+                         "final results package."
+                     ],
+    "gate":  {
+                 "name":  "Gate M6",
+                 "description":  "Một thành viên thực hiện fresh setup/demo theo tài liệu; thành viên còn lại đóng vai hội đồng kiểm tra claim, số liệu và reproducibility."
+             },
+    "dependencies":  {
+
+                     },
+    "risks":  {
+
+              },
+    "decisions":  {
+
+                  },
+    "completionCriteria":  {
+
+                           },
+    "tasks":  [
+
+              ],
+    "sources":  {
+                    "canonicalPlan":  "docs/processed/plan/plan-v0.2-24-weeks.md",
+                    "weeklyOverview":  null
+                }
+}

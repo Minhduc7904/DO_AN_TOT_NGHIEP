@@ -1,0 +1,71 @@
+{
+    "schemaVersion":  "1.0.0",
+    "generatedAt":  "2026-08-30T05:54:24Z",
+    "sourceDigest":  "aeb3bd1cc29dfb6822b8001b05acdbb852ffc1e8c3c4c09352bc207438ce67f8",
+    "id":  "week-20_2026-12-13_to_2026-12-19",
+    "number":  20,
+    "title":  "Freeze experimental protocol và chạy campaign đợt 1",
+    "startDate":  "2026-12-13",
+    "endDate":  "2026-12-19",
+    "status":  "Chưa bắt đầu",
+    "phase":  {
+                  "id":  "phase-05",
+                  "title":  "Experimental campaign, analysis và planned final release",
+                  "startWeek":  20,
+                  "endWeek":  22
+              },
+    "objective":  "Freeze experimental protocol và chạy campaign đợt 1",
+    "planGoals":  [
+
+                  ],
+    "workstreams":  [
+                        {
+                            "role":  "A",
+                            "owner":  "Đức",
+                            "title":  "Experiment primary",
+                            "items":  [
+                                          "automation nhiều run;",
+                                          "environment/resource monitoring;",
+                                          "reproducibility checks;",
+                                          "lưu đầy đủ manifest/config/artifact."
+                                      ]
+                        },
+                        {
+                            "role":  "B",
+                            "owner":  "Bách",
+                            "title":  "Evaluation primary",
+                            "items":  [
+                                          "metric calculation;",
+                                          "sanity check ground truth;",
+                                          "theo dõi data quality;",
+                                          "kiểm tra không có leakage hoặc run bị lỗi."
+                                      ]
+                        }
+                    ],
+    "deliverables":  [
+                         "protocol v1 frozen;",
+                         "campaign batch 1;",
+                         "experiment ledger;",
+                         "issue list cho run lỗi."
+                     ],
+    "gate":  null,
+    "dependencies":  {
+
+                     },
+    "risks":  {
+
+              },
+    "decisions":  {
+
+                  },
+    "completionCriteria":  {
+
+                           },
+    "tasks":  [
+
+              ],
+    "sources":  {
+                    "canonicalPlan":  "docs/processed/plan/plan-v0.2-24-weeks.md",
+                    "weeklyOverview":  null
+                }
+}

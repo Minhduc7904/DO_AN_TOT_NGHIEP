@@ -1,0 +1,88 @@
+{
+    "schemaVersion":  "1.0.0",
+    "generatedAt":  "2026-08-30T05:54:24Z",
+    "sourceDigest":  "aeb3bd1cc29dfb6822b8001b05acdbb852ffc1e8c3c4c09352bc207438ce67f8",
+    "id":  "task-01_define-mvp-scope",
+    "weekId":  "week-03_2026-08-16_to_2026-08-22",
+    "title":  "Chốt scope và out-of-scope MVP",
+    "status":  "Hoàn thành",
+    "owner":  "Đức",
+    "collaborator":  "Bách review để loại feature LMS không phục vụ nghiên cứu",
+    "priority":  "Cao",
+    "dueDate":  "2026-08-18",
+    "dueDateDisplay":  "18/08/2026",
+    "branch":  "docs/week-03/task-01-define-mvp-scope",
+    "scope":  {
+                  "required":  "Tạo scope v1 cho đồ án, chuyển các quyết định MVP/Target/Stretch đã có trong blueprint thành danh sách rõ ràng: phần bắt buộc, phần hoãn và phần không làm. Scope phải giải thích vì sao mỗi hạng mục MVP phục vụ dependency, fault propagation, telemetry, ground truth hoặc evaluation.",
+                  "requiredItems":  [
+
+                                    ],
+                  "excluded":  "- Không thay đổi topology canonical 6 business service + API Gateway. - Không thêm feature LMS, Kubernetes, service mesh, deep learning hoặc LLM reasoning vào MVP. - Không scaffold mã nguồn Backend hoặc Python trong task này.",
+                  "excludedItems":  [
+                                        "Không thay đổi topology canonical 6 business service + API Gateway.",
+                                        "Không thêm feature LMS, Kubernetes, service mesh, deep learning hoặc LLM reasoning vào MVP.",
+                                        "Không scaffold mã nguồn Backend hoặc Python trong task này."
+                                    ]
+              },
+    "dependencies":  {
+                         "documents":  [
+                                           "định hướng tổng thể, backend blueprint và AI/RCA blueprint."
+                                       ],
+                         "coordination":  [
+                                              "Bách review để bảo đảm scope Backend không loại bỏ dữ liệu/telemetry cần cho analysis và không tăng scope vô ích."
+                                          ],
+                         "risks":  [
+                                       "scope phải đủ nhỏ cho hai người hoàn thành trước mốc tuần 22."
+                                   ]
+                     },
+    "deliverables":  [
+                         {
+                             "name":  "Scope/out-of-scope v1",
+                             "type":  "Docs",
+                             "location":  "docs/processed/direction/project-scope-v1.md"
+                         }
+                     ],
+    "definitionOfDone":  [
+                             {
+                                 "completed":  true,
+                                 "text":  ""
+                             },
+                             {
+                                 "completed":  true,
+                                 "text":  ""
+                             },
+                             {
+                                 "completed":  true,
+                                 "text":  ""
+                             },
+                             {
+                                 "completed":  true,
+                                 "text":  ""
+                             }
+                         ],
+    "links":  {
+                  "input":  "workspace/duc/week-03_2026-08-16_to_2026-08-22/task-01_define-mvp-scope/input/task-input.md",
+                  "output":  "workspace/duc/week-03_2026-08-16_to_2026-08-22/task-01_define-mvp-scope/output/task-output.md",
+                  "pullRequest":  "https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/4",
+                  "review":  null,
+                  "all":  [
+                              {
+                                  "label":  "`workspace/duc/week-03_2026-08-16_to_2026-08-22/task-01_define-mvp-scope/input/task-input.md`",
+                                  "target":  "../../../../../workspace/duc/week-03_2026-08-16_to_2026-08-22/task-01_define-mvp-scope/input/task-input.md"
+                              },
+                              {
+                                  "label":  "`workspace/duc/week-03_2026-08-16_to_2026-08-22/task-01_define-mvp-scope/output/task-output.md`",
+                                  "target":  "../../../../../workspace/duc/week-03_2026-08-16_to_2026-08-22/task-01_define-mvp-scope/output/task-output.md"
+                              },
+                              {
+                                  "label":  "#4",
+                                  "target":  "https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/4"
+                              }
+                          ]
+              },
+    "progress":  {
+                     "updatedAt":  "28/08/2026 — metadata được đồng bộ với verdict APPROVED và completion record đã có.",
+                     "notes":  "blocking issue RQ5 đã được xử lý trong project-scope-v1.md; không còn tồn đọng thuộc W3-T1."
+                 },
+    "source":  "docs/processed/plan/weekly/week-03_2026-08-16_to_2026-08-22/task-01_define-mvp-scope.md"
+}

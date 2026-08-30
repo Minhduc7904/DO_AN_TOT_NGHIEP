@@ -1,0 +1,70 @@
+{
+    "schemaVersion":  "1.0.0",
+    "generatedAt":  "2026-08-30T05:54:24Z",
+    "sourceDigest":  "aeb3bd1cc29dfb6822b8001b05acdbb852ffc1e8c3c4c09352bc207438ce67f8",
+    "id":  "week-11_2026-10-11_to_2026-10-17",
+    "number":  11,
+    "title":  "Telemetry export/query layer và data contract",
+    "startDate":  "2026-10-11",
+    "endDate":  "2026-10-17",
+    "status":  "Chưa bắt đầu",
+    "phase":  {
+                  "id":  "phase-03",
+                  "title":  "Observability, experiment infrastructure và ground truth",
+                  "startWeek":  10,
+                  "endWeek":  13
+              },
+    "objective":  "Telemetry export/query layer và data contract",
+    "planGoals":  [
+
+                  ],
+    "workstreams":  [
+                        {
+                            "role":  "A",
+                            "owner":  "Đức",
+                            "title":  "Platform primary",
+                            "items":  [
+                                          "exporter/query adapters cho metrics/traces/logs;",
+                                          "script lấy dữ liệu theo experiment/time window;",
+                                          "kiểm tra timestamp/timezone và resource identity."
+                                      ]
+                        },
+                        {
+                            "role":  "B",
+                            "owner":  "Bách",
+                            "title":  "AI/Data primary",
+                            "items":  [
+                                          "data dictionary;",
+                                          "telemetry normalization schema;",
+                                          "data-quality checks;",
+                                          "prototype window alignment giữa metrics/traces/logs."
+                                      ]
+                        }
+                    ],
+    "deliverables":  [
+                         "telemetry-schema.md;",
+                         "query/export pipeline tối thiểu;",
+                         "dataset mẫu có metrics/traces/logs;",
+                         "data quality report mẫu."
+                     ],
+    "gate":  null,
+    "dependencies":  {
+
+                     },
+    "risks":  {
+
+              },
+    "decisions":  {
+
+                  },
+    "completionCriteria":  {
+
+                           },
+    "tasks":  [
+
+              ],
+    "sources":  {
+                    "canonicalPlan":  "docs/processed/plan/plan-v0.2-24-weeks.md",
+                    "weeklyOverview":  null
+                }
+}

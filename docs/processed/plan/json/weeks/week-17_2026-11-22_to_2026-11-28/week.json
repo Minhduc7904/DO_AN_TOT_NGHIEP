@@ -1,0 +1,69 @@
+{
+    "schemaVersion":  "1.0.0",
+    "generatedAt":  "2026-08-30T05:54:24Z",
+    "sourceDigest":  "aeb3bd1cc29dfb6822b8001b05acdbb852ffc1e8c3c4c09352bc207438ce67f8",
+    "id":  "week-17_2026-11-22_to_2026-11-28",
+    "number":  17,
+    "title":  "Multi-source fusion và modality ablation",
+    "startDate":  "2026-11-22",
+    "endDate":  "2026-11-28",
+    "status":  "Chưa bắt đầu",
+    "phase":  {
+                  "id":  "phase-04",
+                  "title":  "Data, anomaly detection và RCA",
+                  "startWeek":  14,
+                  "endWeek":  19
+              },
+    "objective":  "Multi-source fusion và modality ablation",
+    "planGoals":  [
+
+                  ],
+    "workstreams":  [
+                        {
+                            "role":  "A",
+                            "owner":  "Đức",
+                            "title":  "Collaborator",
+                            "items":  [
+                                          "feature extraction/aggregation cho một modality;",
+                                          "automation ablation runs;",
+                                          "kiểm tra missing modality và fallback behavior."
+                                      ]
+                        },
+                        {
+                            "role":  "B",
+                            "owner":  "Bách",
+                            "title":  "AI/RCA primary",
+                            "items":  [
+                                          "service anomaly profile;",
+                                          "kết hợp metrics + traces + logs;",
+                                          "modality fusion strategy;",
+                                          "so sánh M, M+T, M+T+L."
+                                      ]
+                        }
+                    ],
+    "deliverables":  [
+                         "multi-source pipeline v1;",
+                         "modality ablation v1;",
+                         "bảng so sánh detector/RCA theo nguồn dữ liệu."
+                     ],
+    "gate":  null,
+    "dependencies":  {
+
+                     },
+    "risks":  {
+
+              },
+    "decisions":  {
+
+                  },
+    "completionCriteria":  {
+
+                           },
+    "tasks":  [
+
+              ],
+    "sources":  {
+                    "canonicalPlan":  "docs/processed/plan/plan-v0.2-24-weeks.md",
+                    "weeklyOverview":  null
+                }
+}

@@ -1,0 +1,510 @@
+{
+    "schemaVersion":  "1.0.0",
+    "generatedAt":  "2026-08-30T05:54:24Z",
+    "sourceDigest":  "aeb3bd1cc29dfb6822b8001b05acdbb852ffc1e8c3c4c09352bc207438ce67f8",
+    "id":  "week-04_2026-08-23_to_2026-08-29",
+    "number":  4,
+    "title":  "Topology, contracts, telemetry requirement và evaluation protocol v0",
+    "startDate":  "2026-08-23",
+    "endDate":  "2026-08-29",
+    "status":  "Đang thực hiện",
+    "phase":  {
+                  "id":  "phase-01",
+                  "title":  "Scope, architecture và nền tảng tái lập",
+                  "startWeek":  3,
+                  "endWeek":  5
+              },
+    "objective":  "Chốt topology, contract, dữ liệu/telemetry, fault và evaluation protocol để tuần 5 có thể scaffold repository và Compose mà không phải thay đổi thiết kế nền.",
+    "planGoals":  [
+                      "chốt service topology;",
+                      "chốt API/event contracts;",
+                      "chốt telemetry requirement trước khi implementation mở rộng;",
+                      "chốt fault matrix MVP;",
+                      "viết evaluation protocol v0 trước khi phát triển detector/RCA để tránh thiết kế đánh giá theo kết quả model."
+                  ],
+    "workstreams":  [
+                        {
+                            "role":  "A",
+                            "owner":  "Đức",
+                            "title":  "Backend/Platform primary",
+                            "items":  [
+                                          "service catalogue và dependency graph;",
+                                          "OpenAPI/event contract v1;",
+                                          "data ownership và DB/cache/queue strategy;",
+                                          "thiết kế fault hook ở mức application/platform."
+                                      ]
+                        },
+                        {
+                            "role":  "B",
+                            "owner":  "Bách",
+                            "title":  "AI/RCA primary",
+                            "items":  [
+                                          "telemetry schema phục vụ feature/RCA;",
+                                          "ground-truth schema;",
+                                          "experiment metadata;",
+                                          "draft dataset split và evaluation metric."
+                                      ]
+                        }
+                    ],
+    "deliverables":  [
+                         "architecture diagram v1;",
+                         "ADR/service catalogue;",
+                         "OpenAPI và event schema grade.completed v1;",
+                         "fault matrix MVP;",
+                         "telemetry schema v0;",
+                         "evaluation protocol v0."
+                     ],
+    "gate":  null,
+    "dependencies":  "scope/backlog/RQ-metrics của tuần 3; backend blueprint và AI/RCA blueprint là source of truth kỹ thuật.",
+    "risks":  "contract hoặc telemetry bị thiết kế tách rời; fault matrix không tạo được ground truth/evidence; thêm service/feature ngoài MVP.",
+    "decisions":  "6 business service + Gateway, HTTP/async flow tối thiểu, schema phục vụ analysis và protocol đánh giá phải thống nhất trước tuần 5.",
+    "completionCriteria":  [
+                               {
+                                   "completed":  false,
+                                   "text":  "Có architecture diagram/service catalogue, contract HTTP/event, fault matrix, telemetry/ground-truth schema và evaluation protocol có link mở được."
+                               },
+                               {
+                                   "completed":  false,
+                                   "text":  "Mỗi artifact dùng đúng scope MVP, có owner/reviewer và không mâu thuẫn blueprint canonical."
+                               },
+                               {
+                                   "completed":  false,
+                                   "text":  "Đức và Bách đã review chéo HTTP flow, async flow, telemetry export và khả năng evaluation trước khi scaffold code."
+                               }
+                           ],
+    "tasks":  [
+                  {
+                      "schemaVersion":  "1.0.0",
+                      "generatedAt":  "2026-08-30T05:54:24Z",
+                      "sourceDigest":  "aeb3bd1cc29dfb6822b8001b05acdbb852ffc1e8c3c4c09352bc207438ce67f8",
+                      "id":  "task-01_define-service-topology",
+                      "weekId":  "week-04_2026-08-23_to_2026-08-29",
+                      "title":  "Chốt service catalogue, dependency graph và architecture diagram v1",
+                      "status":  "Hoàn thành",
+                      "owner":  "Đức",
+                      "collaborator":  "Bách review boundary phục vụ telemetry, graph và RCA",
+                      "priority":  "Cao",
+                      "dueDate":  "2026-08-25",
+                      "dueDateDisplay":  "25/08/2026",
+                      "branch":  "docs/week-04/task-01-define-service-topology",
+                      "scope":  {
+                                    "required":  "Chuẩn hóa service catalogue và dependency graph MVP, đồng thời tạo architecture diagram v1. Mô tả Gateway, Auth, Course, Enrollment, Submission, Grading, Notification; các dependency PostgreSQL/Redis/RabbitMQ/storage mock và synchronous/asynchronous flow.",
+                                    "requiredItems":  [
+
+                                                      ],
+                                    "excluded":  "- Không thêm Assignment, MinIO, Kubernetes hoặc service mesh vào MVP. - Không scaffold service NestJS hay Docker Compose. - Không thay đổi topology canonical khi chưa có ADR.",
+                                    "excludedItems":  [
+                                                          "Không thêm Assignment, MinIO, Kubernetes hoặc service mesh vào MVP.",
+                                                          "Không scaffold service NestJS hay Docker Compose.",
+                                                          "Không thay đổi topology canonical khi chưa có ADR."
+                                                      ]
+                                },
+                      "dependencies":  {
+                                           "documents":  [
+                                                             "scope v1, backend blueprint và RQ/metrics v1."
+                                                         ],
+                                           "coordination":  [
+                                                                "Bách kiểm tra dependency graph có đủ identity/edge cho telemetry và RCA service-level."
+                                                            ],
+                                           "risks":  [
+                                                         "dịch vụ chỉ tồn tại khi tạo dependency hoặc failure mode có giá trị thực nghiệm."
+                                                     ]
+                                       },
+                      "deliverables":  [
+                                           {
+                                               "name":  "Service catalogue và architecture diagram v1",
+                                               "type":  "Docs",
+                                               "location":  "docs/processed/architecture/service-catalogue-and-topology-v1.md"
+                                           }
+                                       ],
+                      "definitionOfDone":  [
+                                               {
+                                                   "completed":  true,
+                                                   "text":  ""
+                                               },
+                                               {
+                                                   "completed":  true,
+                                                   "text":  ""
+                                               },
+                                               {
+                                                   "completed":  true,
+                                                   "text":  ""
+                                               },
+                                               {
+                                                   "completed":  true,
+                                                   "text":  ""
+                                               }
+                                           ],
+                      "links":  {
+                                    "input":  "workspace/duc/week-04_2026-08-23_to_2026-08-29/task-01_define-service-topology/input/task-input.md",
+                                    "output":  "workspace/duc/week-04_2026-08-23_to_2026-08-29/task-01_define-service-topology/output/task-output.md",
+                                    "pullRequest":  "https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/6",
+                                    "review":  "APPROVED — Bách (bachmk).",
+                                    "all":  [
+                                                {
+                                                    "label":  "task-input.md",
+                                                    "target":  "../../../../../workspace/duc/week-04_2026-08-23_to_2026-08-29/task-01_define-service-topology/input/task-input.md"
+                                                },
+                                                {
+                                                    "label":  "task-output.md",
+                                                    "target":  "../../../../../workspace/duc/week-04_2026-08-23_to_2026-08-29/task-01_define-service-topology/output/task-output.md"
+                                                },
+                                                {
+                                                    "label":  "PR #6",
+                                                    "target":  "https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/6"
+                                                }
+                                            ]
+                                },
+                      "progress":  {
+                                       "updatedAt":  "28/08/2026 — Bách đã gửi verdict APPROVED; completion metadata đã được finalization trên chính PR head và task sẵn sàng merge.",
+                                       "notes":  "là đầu vào cho task-02, task-03 và task-04; không còn tồn đọng blocking trước merge."
+                                   },
+                      "source":  "docs/processed/plan/weekly/week-04_2026-08-23_to_2026-08-29/task-01_define-service-topology.md"
+                  },
+                  {
+                      "schemaVersion":  "1.0.0",
+                      "generatedAt":  "2026-08-30T05:54:24Z",
+                      "sourceDigest":  "aeb3bd1cc29dfb6822b8001b05acdbb852ffc1e8c3c4c09352bc207438ce67f8",
+                      "id":  "task-02_define-http-and-event-contracts",
+                      "weekId":  "week-04_2026-08-23_to_2026-08-29",
+                      "title":  "Thiết kế HTTP contract và event grade.completed v1",
+                      "status":  "Hoàn thành",
+                      "owner":  "Đức",
+                      "collaborator":  "Bách review một HTTP flow và event field phục vụ telemetry/evaluation",
+                      "priority":  "Cao",
+                      "dueDate":  "2026-08-27",
+                      "dueDateDisplay":  "27/08/2026",
+                      "branch":  "docs/week-04/task-02-define-http-and-event-contracts",
+                      "scope":  {
+                                    "required":  "Thiết kế contract v1 cho HTTP flow MVP và event bất đồng bộ grade.completed. Xác định request/response, ownership, versioning/error tối thiểu, correlation/identity field và quy tắc tương thích để tuần 5 có thể scaffold contracts.",
+                                    "requiredItems":  [
+
+                                                      ],
+                                    "excluded":  "- Không triển khai endpoint/controller hoặc RabbitMQ producer/consumer. - Không tạo event khác nếu chưa có consumer và failure mode có giá trị. - Không để service import controller, entity hoặc repository của service khác.",
+                                    "excludedItems":  [
+                                                          "Không triển khai endpoint/controller hoặc RabbitMQ producer/consumer.",
+                                                          "Không tạo event khác nếu chưa có consumer và failure mode có giá trị.",
+                                                          "Không để service import controller, entity hoặc repository của service khác."
+                                                      ]
+                                },
+                      "dependencies":  {
+                                           "documents":  [
+                                                             "task-01, backend blueprint và telemetry schema draft từ task-04 khi có."
+                                                         ],
+                                           "coordination":  [
+                                                                "Bách tham gia review ít nhất một HTTP flow và event grade.completed."
+                                                            ],
+                                           "risks":  [
+                                                         "correlation ID/trace context và resource identity phải có đường đi rõ qua contract."
+                                                     ]
+                                       },
+                      "deliverables":  [
+                                           {
+                                               "name":  "HTTP contract và event schema v1",
+                                               "type":  "Docs",
+                                               "location":  "docs/processed/architecture/http-and-event-contracts-v1.md"
+                                           }
+                                       ],
+                      "definitionOfDone":  [
+                                               {
+                                                   "completed":  true,
+                                                   "text":  ""
+                                               },
+                                               {
+                                                   "completed":  true,
+                                                   "text":  ""
+                                               },
+                                               {
+                                                   "completed":  true,
+                                                   "text":  ""
+                                               },
+                                               {
+                                                   "completed":  true,
+                                                   "text":  ""
+                                               }
+                                           ],
+                      "links":  {
+                                    "input":  "workspace/duc/week-04_2026-08-23_to_2026-08-29/task-02_define-http-and-event-contracts/input/task-input.md",
+                                    "output":  "workspace/duc/week-04_2026-08-23_to_2026-08-29/task-02_define-http-and-event-contracts/output/task-output.md",
+                                    "pullRequest":  "https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/7",
+                                    "review":  "Bách APPROVED trên PR #7 sau khi kiểm tra HTTP flow W4 Submit và event grade.completed.",
+                                    "all":  [
+                                                {
+                                                    "label":  "task-input.md",
+                                                    "target":  "../../../../../workspace/duc/week-04_2026-08-23_to_2026-08-29/task-02_define-http-and-event-contracts/input/task-input.md"
+                                                },
+                                                {
+                                                    "label":  "task-output.md",
+                                                    "target":  "../../../../../workspace/duc/week-04_2026-08-23_to_2026-08-29/task-02_define-http-and-event-contracts/output/task-output.md"
+                                                },
+                                                {
+                                                    "label":  "PR #7",
+                                                    "target":  "https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/7"
+                                                }
+                                            ]
+                                },
+                      "progress":  {
+                                       "updatedAt":  "28/08/2026 — Bách đã APPROVED PR #7; completion metadata đã hoàn tất trên nhánh task, PR chờ merge vào main.",
+                                       "notes":  "không còn blocking feedback; task chỉ canonically hoàn thành sau khi PR được merge vào main."
+                                   },
+                      "source":  "docs/processed/plan/weekly/week-04_2026-08-23_to_2026-08-29/task-02_define-http-and-event-contracts.md"
+                  },
+                  {
+                      "schemaVersion":  "1.0.0",
+                      "generatedAt":  "2026-08-30T05:54:24Z",
+                      "sourceDigest":  "aeb3bd1cc29dfb6822b8001b05acdbb852ffc1e8c3c4c09352bc207438ce67f8",
+                      "id":  "task-03_define-data-ownership-and-fault-matrix",
+                      "weekId":  "week-04_2026-08-23_to_2026-08-29",
+                      "title":  "Chốt data ownership, dependency strategy và fault matrix MVP",
+                      "status":  "Hoàn thành",
+                      "owner":  "Bách",
+                      "collaborator":  "Đức review ground truth, symptom và evidence cần cho RCA",
+                      "priority":  "Cao",
+                      "dueDate":  "2026-08-28",
+                      "dueDateDisplay":  "28/08/2026",
+                      "branch":  "docs/week-04/task-03-define-data-ownership-and-fault-matrix",
+                      "scope":  {
+                                    "required":  "Chốt database/cache/queue/storage ownership theo service và fault matrix MVP. Matrix phải xác định target, injector/hook, workload context, expected symptom/propagation, ground truth và cách reset cho từng fault scenario.",
+                                    "requiredItems":  [
+
+                                                      ],
+                                    "excluded":  "- Không triển khai injector, Chaos Mesh hoặc fault platform. - Không thêm multi-fault, component-level RCA hoặc resilience scenario Stretch. - Không cho phép truy cập database chéo giữa các service.",
+                                    "excludedItems":  [
+                                                          "Không triển khai injector, Chaos Mesh hoặc fault platform.",
+                                                          "Không thêm multi-fault, component-level RCA hoặc resilience scenario Stretch.",
+                                                          "Không cho phép truy cập database chéo giữa các service."
+                                                      ]
+                                },
+                      "dependencies":  {
+                                           "documents":  [
+                                                             "task-01, task-02, backend blueprint và input telemetry/ground truth từ task-04."
+                                                         ],
+                                           "coordination":  [
+                                                                "Đức kiểm tra mỗi fault có label ground truth và evidence đủ cho RCA/evaluation."
+                                                            ],
+                                           "risks":  [
+                                                         "fault phải controllable, quan sát được và có thời điểm bắt đầu/kết thúc rõ ràng."
+                                                     ]
+                                       },
+                      "deliverables":  [
+                                           {
+                                               "name":  "Data ownership và fault matrix MVP",
+                                               "type":  "Docs",
+                                               "location":  "docs/processed/architecture/data-ownership-and-fault-matrix-v1.md"
+                                           }
+                                       ],
+                      "definitionOfDone":  [
+                                               {
+                                                   "completed":  true,
+                                                   "text":  ""
+                                               },
+                                               {
+                                                   "completed":  true,
+                                                   "text":  ""
+                                               },
+                                               {
+                                                   "completed":  true,
+                                                   "text":  ""
+                                               },
+                                               {
+                                                   "completed":  true,
+                                                   "text":  ""
+                                               }
+                                           ],
+                      "links":  {
+                                    "input":  "workspace/bach/week-04_2026-08-23_to_2026-08-29/task-03_define-data-ownership-and-fault-matrix/input/task-input.md",
+                                    "output":  "workspace/bach/week-04_2026-08-23_to_2026-08-29/task-03_define-data-ownership-and-fault-matrix/output/task-output.md",
+                                    "pullRequest":  "https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/11",
+                                    "review":  "APPROVED theo ngoại lệ self-review AI do Bách xác nhận; không có review submission trên GitHub từ Đức.",
+                                    "all":  [
+                                                {
+                                                    "label":  "`task-input.md`",
+                                                    "target":  "../../../../../workspace/bach/week-04_2026-08-23_to_2026-08-29/task-03_define-data-ownership-and-fault-matrix/input/task-input.md"
+                                                },
+                                                {
+                                                    "label":  "`task-output.md`",
+                                                    "target":  "../../../../../workspace/bach/week-04_2026-08-23_to_2026-08-29/task-03_define-data-ownership-and-fault-matrix/output/task-output.md"
+                                                },
+                                                {
+                                                    "label":  "PR #11",
+                                                    "target":  "https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/11"
+                                                }
+                                            ]
+                                },
+                      "progress":  {
+                                       "updatedAt":  "28/08/2026 — Bách đã xác nhận APPROVED theo self-review AI và finalization metadata trên PR #11.",
+                                       "notes":  "artifact đã cross-check với topology, HTTP/event contract và telemetry/ground-truth schema v0; PR #11 chưa merge vào main."
+                                   },
+                      "source":  "docs/processed/plan/weekly/week-04_2026-08-23_to_2026-08-29/task-03_define-data-ownership-and-fault-matrix.md"
+                  },
+                  {
+                      "schemaVersion":  "1.0.0",
+                      "generatedAt":  "2026-08-30T05:54:24Z",
+                      "sourceDigest":  "aeb3bd1cc29dfb6822b8001b05acdbb852ffc1e8c3c4c09352bc207438ce67f8",
+                      "id":  "task-04_define-telemetry-and-ground-truth-schema",
+                      "weekId":  "week-04_2026-08-23_to_2026-08-29",
+                      "title":  "Chốt telemetry schema và ground-truth schema v0",
+                      "status":  "Hoàn thành",
+                      "owner":  "Bách",
+                      "collaborator":  "Đức kiểm tra khả năng instrument/export từ testbed",
+                      "priority":  "Cao",
+                      "dueDate":  "2026-08-27",
+                      "dueDateDisplay":  "27/08/2026",
+                      "branch":  "docs/week-04/task-04-define-telemetry-and-ground-truth-schema",
+                      "scope":  {
+                                    "required":  "Chốt schema telemetry v0 cho metrics, traces và logs, cùng ground-truth schema cho run/fault. Schema cần có identity, UTC time, correlation, coverage/data-quality field và mapping đủ cho feature/RCA sau này.",
+                                    "requiredItems":  [
+
+                                                      ],
+                                    "excluded":  "- Không viết collector, instrument code hoặc feature pipeline. - Không chốt model/detector cuối cùng. - Không yêu cầu observability modality ngoài MVP nếu không có giá trị evaluation rõ.",
+                                    "excludedItems":  [
+                                                          "Không viết collector, instrument code hoặc feature pipeline.",
+                                                          "Không chốt model/detector cuối cùng.",
+                                                          "Không yêu cầu observability modality ngoài MVP nếu không có giá trị evaluation rõ."
+                                                      ]
+                                },
+                      "dependencies":  {
+                                           "documents":  [
+                                                             "AI/RCA blueprint, task-01 và task-03 draft."
+                                                         ],
+                                           "coordination":  [
+                                                                "Đức xác thực các field/resource attribute thực sự có thể export từ service/dependency, workload và fault hook."
+                                                            ],
+                                           "risks":  [
+                                                         "missing telemetry phải biểu diễn rõ, không thay bằng giá trị 0 máy móc."
+                                                     ]
+                                       },
+                      "deliverables":  [
+                                           {
+                                               "name":  "Telemetry và ground-truth schema v0",
+                                               "type":  "Docs",
+                                               "location":  "docs/processed/architecture/telemetry-and-ground-truth-schema-v0.md"
+                                           }
+                                       ],
+                      "definitionOfDone":  [
+                                               {
+                                                   "completed":  true,
+                                                   "text":  ""
+                                               },
+                                               {
+                                                   "completed":  true,
+                                                   "text":  ""
+                                               },
+                                               {
+                                                   "completed":  true,
+                                                   "text":  ""
+                                               },
+                                               {
+                                                   "completed":  true,
+                                                   "text":  ""
+                                               }
+                                           ],
+                      "links":  {
+                                    "input":  "workspace/bach/week-04_2026-08-23_to_2026-08-29/task-04_define-telemetry-and-ground-truth-schema/input/task-input.md",
+                                    "output":  "workspace/bach/week-04_2026-08-23_to_2026-08-29/task-04_define-telemetry-and-ground-truth-schema/output/task-output.md",
+                                    "pullRequest":  "https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/10",
+                                    "review":  "APPROVED theo ngoại lệ self-review AI do Bách xác nhận; không có review submission trên GitHub từ Đức.",
+                                    "all":  [
+                                                {
+                                                    "label":  "`task-input.md`",
+                                                    "target":  "../../../../../workspace/bach/week-04_2026-08-23_to_2026-08-29/task-04_define-telemetry-and-ground-truth-schema/input/task-input.md"
+                                                },
+                                                {
+                                                    "label":  "`task-output.md`",
+                                                    "target":  "../../../../../workspace/bach/week-04_2026-08-23_to_2026-08-29/task-04_define-telemetry-and-ground-truth-schema/output/task-output.md"
+                                                },
+                                                {
+                                                    "label":  "PR #10",
+                                                    "target":  "https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/10"
+                                                }
+                                            ]
+                                },
+                      "progress":  {
+                                       "updatedAt":  "28/08/2026 — Bách đã self-review bằng AI, xác nhận APPROVED theo ngoại lệ workflow và finalization metadata trên PR #10.",
+                                       "notes":  "artifact là đầu vào của task-02, task-03 và task-05; PR #10 chưa merge vào main."
+                                   },
+                      "source":  "docs/processed/plan/weekly/week-04_2026-08-23_to_2026-08-29/task-04_define-telemetry-and-ground-truth-schema.md"
+                  },
+                  {
+                      "schemaVersion":  "1.0.0",
+                      "generatedAt":  "2026-08-30T05:54:24Z",
+                      "sourceDigest":  "aeb3bd1cc29dfb6822b8001b05acdbb852ffc1e8c3c4c09352bc207438ce67f8",
+                      "id":  "task-05_define-evaluation-protocol",
+                      "weekId":  "week-04_2026-08-23_to_2026-08-29",
+                      "title":  "Chốt experiment metadata, dataset split và evaluation protocol v0",
+                      "status":  "Đã giao",
+                      "owner":  "Bách",
+                      "collaborator":  "Đức review tính khả thi của run orchestration và artifact",
+                      "priority":  "Cao",
+                      "dueDate":  "2026-08-29",
+                      "dueDateDisplay":  "29/08/2026",
+                      "branch":  "docs/week-04/task-05-define-evaluation-protocol",
+                      "scope":  {
+                                    "required":  "Tạo evaluation protocol v0, gồm experiment metadata, đơn vị split theo experiment run, train/validation/test boundary, metric detection/RCA/system và cách lưu artifact. Protocol phải được chốt trước khi phát triển detector/RCA.",
+                                    "requiredItems":  [
+
+                                                      ],
+                                    "excluded":  "- Không train/tune model trên test campaign. - Không triển khai experiment runner hoặc dashboard. - Không thêm benchmark/dataset bên ngoài vào critical path MVP.",
+                                    "excludedItems":  [
+                                                          "Không train/tune model trên test campaign.",
+                                                          "Không triển khai experiment runner hoặc dashboard.",
+                                                          "Không thêm benchmark/dataset bên ngoài vào critical path MVP."
+                                                      ]
+                                },
+                      "dependencies":  {
+                                           "documents":  [
+                                                             "RQ/metrics v1, AI/RCA blueprint, task-04 và fault matrix draft từ task-03."
+                                                         ],
+                                           "coordination":  [
+                                                                "Đức kiểm tra mỗi metadata/artifact có thể sinh/lưu được từ Compose, workload, fault và runner dự kiến."
+                                                            ],
+                                           "risks":  [
+                                                         "test manifest phải freeze trước final campaign để chống leakage/tuning theo kết quả test."
+                                                     ]
+                                       },
+                      "deliverables":  [
+                                           {
+                                               "name":  "Evaluation protocol v0",
+                                               "type":  "Docs",
+                                               "location":  "docs/processed/architecture/evaluation-protocol-v0.md"
+                                           }
+                                       ],
+                      "definitionOfDone":  [
+                                               {
+                                                   "completed":  false,
+                                                   "text":  "Protocol định nghĩa experiment manifest/metadata, run artifact, cách split theo run và quy tắc freeze test campaign."
+                                               },
+                                               {
+                                                   "completed":  false,
+                                                   "text":  "Có metric detection, RCA service-level và system phù hợp RQ/AI-RCA blueprint, cùng cách xử lý baseline/ablation/robustness MVP."
+                                               },
+                                               {
+                                                   "completed":  false,
+                                                   "text":  "Protocol nêu rõ đầu vào ground truth, thiếu dữ liệu/missing modality và điều kiện tái lập."
+                                               },
+                                               {
+                                                   "completed":  false,
+                                                   "text":  "Đức review khả năng orchestration/lưu artifact; các requirement không khả thi được ghi rõ trước tuần 5."
+                                               }
+                                           ],
+                      "links":  {
+                                    "input":  null,
+                                    "output":  null,
+                                    "pullRequest":  null,
+                                    "review":  "Chưa review.",
+                                    "all":  [
+
+                                            ]
+                                },
+                      "progress":  {
+                                       "updatedAt":  "23/08/2026 — task được phân công.",
+                                       "notes":  "phụ thuộc telemetry/ground truth schema và fault matrix draft."
+                                   },
+                      "source":  "docs/processed/plan/weekly/week-04_2026-08-23_to_2026-08-29/task-05_define-evaluation-protocol.md"
+                  }
+              ],
+    "sources":  {
+                    "canonicalPlan":  "docs/processed/plan/plan-v0.2-24-weeks.md",
+                    "weeklyOverview":  "docs/processed/plan/weekly/week-04_2026-08-23_to_2026-08-29/weekly-overview.md"
+                }
+}

@@ -1,0 +1,77 @@
+{
+    "schemaVersion":  "1.0.0",
+    "generatedAt":  "2026-08-30T05:54:24Z",
+    "sourceDigest":  "aeb3bd1cc29dfb6822b8001b05acdbb852ffc1e8c3c4c09352bc207438ce67f8",
+    "id":  "task-05_define-evaluation-protocol",
+    "weekId":  "week-04_2026-08-23_to_2026-08-29",
+    "title":  "Chốt experiment metadata, dataset split và evaluation protocol v0",
+    "status":  "Đã giao",
+    "owner":  "Bách",
+    "collaborator":  "Đức review tính khả thi của run orchestration và artifact",
+    "priority":  "Cao",
+    "dueDate":  "2026-08-29",
+    "dueDateDisplay":  "29/08/2026",
+    "branch":  "docs/week-04/task-05-define-evaluation-protocol",
+    "scope":  {
+                  "required":  "Tạo evaluation protocol v0, gồm experiment metadata, đơn vị split theo experiment run, train/validation/test boundary, metric detection/RCA/system và cách lưu artifact. Protocol phải được chốt trước khi phát triển detector/RCA.",
+                  "requiredItems":  [
+
+                                    ],
+                  "excluded":  "- Không train/tune model trên test campaign. - Không triển khai experiment runner hoặc dashboard. - Không thêm benchmark/dataset bên ngoài vào critical path MVP.",
+                  "excludedItems":  [
+                                        "Không train/tune model trên test campaign.",
+                                        "Không triển khai experiment runner hoặc dashboard.",
+                                        "Không thêm benchmark/dataset bên ngoài vào critical path MVP."
+                                    ]
+              },
+    "dependencies":  {
+                         "documents":  [
+                                           "RQ/metrics v1, AI/RCA blueprint, task-04 và fault matrix draft từ task-03."
+                                       ],
+                         "coordination":  [
+                                              "Đức kiểm tra mỗi metadata/artifact có thể sinh/lưu được từ Compose, workload, fault và runner dự kiến."
+                                          ],
+                         "risks":  [
+                                       "test manifest phải freeze trước final campaign để chống leakage/tuning theo kết quả test."
+                                   ]
+                     },
+    "deliverables":  [
+                         {
+                             "name":  "Evaluation protocol v0",
+                             "type":  "Docs",
+                             "location":  "docs/processed/architecture/evaluation-protocol-v0.md"
+                         }
+                     ],
+    "definitionOfDone":  [
+                             {
+                                 "completed":  false,
+                                 "text":  "Protocol định nghĩa experiment manifest/metadata, run artifact, cách split theo run và quy tắc freeze test campaign."
+                             },
+                             {
+                                 "completed":  false,
+                                 "text":  "Có metric detection, RCA service-level và system phù hợp RQ/AI-RCA blueprint, cùng cách xử lý baseline/ablation/robustness MVP."
+                             },
+                             {
+                                 "completed":  false,
+                                 "text":  "Protocol nêu rõ đầu vào ground truth, thiếu dữ liệu/missing modality và điều kiện tái lập."
+                             },
+                             {
+                                 "completed":  false,
+                                 "text":  "Đức review khả năng orchestration/lưu artifact; các requirement không khả thi được ghi rõ trước tuần 5."
+                             }
+                         ],
+    "links":  {
+                  "input":  null,
+                  "output":  null,
+                  "pullRequest":  null,
+                  "review":  "Chưa review.",
+                  "all":  [
+
+                          ]
+              },
+    "progress":  {
+                     "updatedAt":  "23/08/2026 — task được phân công.",
+                     "notes":  "phụ thuộc telemetry/ground truth schema và fault matrix draft."
+                 },
+    "source":  "docs/processed/plan/weekly/week-04_2026-08-23_to_2026-08-29/task-05_define-evaluation-protocol.md"
+}

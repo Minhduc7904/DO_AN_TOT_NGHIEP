@@ -17,6 +17,7 @@
 - Phân công cân bằng theo vai trò primary/collaborator, độ phức tạp, phụ thuộc và khả năng review chéo. Không gán trái plan canonical hoặc phân công người dùng đã nêu. Nếu chưa đủ dữ kiện, để `Chưa phân công` và hỏi lại.
 - Cập nhật bảng overview khớp với mọi file task. Chỉ dùng trạng thái: `Chưa phân công`, `Đã giao`, `Đang thực hiện`, `Chờ xử lý`, `Chờ review`, `Hoàn thành`.
 - Không đánh dấu hoàn thành chỉ vì plan nói cần làm. Chỉ người phụ trách, qua `task-completion-recording` sau khi xác minh `APPROVED` hợp lệ từ thành viên còn lại, mới finalization trạng thái trên branch/PR và tự merge; `main` sau merge là nguồn trạng thái project-wide canonical.
+- Sau khi tạo/cập nhật `weekly-overview.md` hoặc card task, chạy `powershell -NoProfile -ExecutionPolicy Bypass -File .\tools\sync-plan-json-and-timeline.ps1` từ repository root. Kiểm tra script exit thành công, đủ 24 tuần và không có lỗi schema/liên kết trước khi báo hoàn tất hoặc commit/push. JSON và timeline sinh ra phải đi cùng diff của thay đổi tuần; nếu đồng bộ lỗi, giữ workflow chưa hoàn tất và sửa nguồn Markdown hoặc script, không chỉnh tay đầu ra.
 
 ## Trả lời “tuần này tôi phải làm gì?”
 

@@ -1,0 +1,88 @@
+{
+    "schemaVersion":  "1.0.0",
+    "generatedAt":  "2026-08-30T05:54:24Z",
+    "sourceDigest":  "aeb3bd1cc29dfb6822b8001b05acdbb852ffc1e8c3c4c09352bc207438ce67f8",
+    "id":  "task-03_define-research-questions-and-metrics",
+    "weekId":  "week-03_2026-08-16_to_2026-08-22",
+    "title":  "Chốt research questions và metric đánh giá",
+    "status":  "Hoàn thành",
+    "owner":  "Bách",
+    "collaborator":  "Đức kiểm tra tính khả thi của telemetry, fault và experiment",
+    "priority":  "Cao",
+    "dueDate":  "2026-08-20",
+    "dueDateDisplay":  "20/08/2026",
+    "branch":  "docs/week-03/task-03-define-research-questions-and-metrics",
+    "scope":  {
+                  "required":  "Chốt tập RQ và metric v1 phục vụ anomaly detection, incident detection, RCA, cost hệ thống và robustness. Mỗi RQ phải có giả thuyết hoặc phép so sánh, input telemetry/ground truth cần thiết, phương pháp/baseline và metric đánh giá tương ứng.",
+                  "requiredItems":  [
+
+                                    ],
+                  "excluded":  "- Không chọn hoặc huấn luyện model cuối cùng. - Không thay đổi telemetry contract hay evaluation protocol chi tiết của tuần 4. - Không thêm RQ tùy chọn nếu chưa chứng minh đủ nguồn lực để đánh giá.",
+                  "excludedItems":  [
+                                        "Không chọn hoặc huấn luyện model cuối cùng.",
+                                        "Không thay đổi telemetry contract hay evaluation protocol chi tiết của tuần 4.",
+                                        "Không thêm RQ tùy chọn nếu chưa chứng minh đủ nguồn lực để đánh giá."
+                                    ]
+              },
+    "dependencies":  {
+                         "documents":  [
+                                           "định hướng tổng thể (RQ1–RQ5), AI/RCA blueprint và backend blueprint."
+                                       ],
+                         "coordination":  [
+                                              "Đức xác nhận mỗi metric có thể thu được từ testbed, workload, fault và ground truth dự kiến."
+                                          ],
+                         "risks":  [
+                                       "metric phải phù hợp granularity service-level MVP và tách training/validation/test theo experiment run."
+                                   ]
+                     },
+    "deliverables":  [
+                         {
+                             "name":  "Research questions và metrics v1",
+                             "type":  "Docs",
+                             "location":  "docs/processed/direction/research-questions-and-metrics-v1.md"
+                         }
+                     ],
+    "definitionOfDone":  [
+                             {
+                                 "completed":  true,
+                                 "text":  ""
+                             },
+                             {
+                                 "completed":  true,
+                                 "text":  ""
+                             },
+                             {
+                                 "completed":  true,
+                                 "text":  ""
+                             },
+                             {
+                                 "completed":  true,
+                                 "text":  ""
+                             }
+                         ],
+    "links":  {
+                  "input":  "workspace/bach/week-03_2026-08-16_to_2026-08-22/task-03_define-research-questions-and-metrics/input/task-input.md",
+                  "output":  "workspace/bach/week-03_2026-08-16_to_2026-08-22/task-03_define-research-questions-and-metrics/output/task-output.md",
+                  "pullRequest":  "https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/2",
+                  "review":  null,
+                  "all":  [
+                              {
+                                  "label":  "`workspace/bach/week-03_2026-08-16_to_2026-08-22/task-03_define-research-questions-and-metrics/input/task-input.md`",
+                                  "target":  "../../../../../workspace/bach/week-03_2026-08-16_to_2026-08-22/task-03_define-research-questions-and-metrics/input/task-input.md"
+                              },
+                              {
+                                  "label":  "`workspace/bach/week-03_2026-08-16_to_2026-08-22/task-03_define-research-questions-and-metrics/output/task-output.md`",
+                                  "target":  "../../../../../workspace/bach/week-03_2026-08-16_to_2026-08-22/task-03_define-research-questions-and-metrics/output/task-output.md"
+                              },
+                              {
+                                  "label":  "PR #2",
+                                  "target":  "https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/2"
+                              }
+                          ]
+              },
+    "progress":  {
+                     "updatedAt":  "27/08/2026 — Đức đã đưa verdict APPROVED sau khi Bách xử lý blocking feedback trong commit 317d01a. Việc đồng bộ card này diễn ra sau khi PR #2 đã merge theo workflow cũ và là correction/migration một lần; không phải tiền lệ cho lifecycle canonical hiện hành.",
+                     "notes":  "là đầu vào cho task-04 và task-05."
+                 },
+    "source":  "docs/processed/plan/weekly/week-03_2026-08-16_to_2026-08-22/task-03_define-research-questions-and-metrics.md"
+}

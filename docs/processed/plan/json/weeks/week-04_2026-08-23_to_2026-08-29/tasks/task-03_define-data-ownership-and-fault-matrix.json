@@ -1,0 +1,88 @@
+{
+    "schemaVersion":  "1.0.0",
+    "generatedAt":  "2026-08-30T05:54:24Z",
+    "sourceDigest":  "aeb3bd1cc29dfb6822b8001b05acdbb852ffc1e8c3c4c09352bc207438ce67f8",
+    "id":  "task-03_define-data-ownership-and-fault-matrix",
+    "weekId":  "week-04_2026-08-23_to_2026-08-29",
+    "title":  "Chốt data ownership, dependency strategy và fault matrix MVP",
+    "status":  "Hoàn thành",
+    "owner":  "Bách",
+    "collaborator":  "Đức review ground truth, symptom và evidence cần cho RCA",
+    "priority":  "Cao",
+    "dueDate":  "2026-08-28",
+    "dueDateDisplay":  "28/08/2026",
+    "branch":  "docs/week-04/task-03-define-data-ownership-and-fault-matrix",
+    "scope":  {
+                  "required":  "Chốt database/cache/queue/storage ownership theo service và fault matrix MVP. Matrix phải xác định target, injector/hook, workload context, expected symptom/propagation, ground truth và cách reset cho từng fault scenario.",
+                  "requiredItems":  [
+
+                                    ],
+                  "excluded":  "- Không triển khai injector, Chaos Mesh hoặc fault platform. - Không thêm multi-fault, component-level RCA hoặc resilience scenario Stretch. - Không cho phép truy cập database chéo giữa các service.",
+                  "excludedItems":  [
+                                        "Không triển khai injector, Chaos Mesh hoặc fault platform.",
+                                        "Không thêm multi-fault, component-level RCA hoặc resilience scenario Stretch.",
+                                        "Không cho phép truy cập database chéo giữa các service."
+                                    ]
+              },
+    "dependencies":  {
+                         "documents":  [
+                                           "task-01, task-02, backend blueprint và input telemetry/ground truth từ task-04."
+                                       ],
+                         "coordination":  [
+                                              "Đức kiểm tra mỗi fault có label ground truth và evidence đủ cho RCA/evaluation."
+                                          ],
+                         "risks":  [
+                                       "fault phải controllable, quan sát được và có thời điểm bắt đầu/kết thúc rõ ràng."
+                                   ]
+                     },
+    "deliverables":  [
+                         {
+                             "name":  "Data ownership và fault matrix MVP",
+                             "type":  "Docs",
+                             "location":  "docs/processed/architecture/data-ownership-and-fault-matrix-v1.md"
+                         }
+                     ],
+    "definitionOfDone":  [
+                             {
+                                 "completed":  true,
+                                 "text":  ""
+                             },
+                             {
+                                 "completed":  true,
+                                 "text":  ""
+                             },
+                             {
+                                 "completed":  true,
+                                 "text":  ""
+                             },
+                             {
+                                 "completed":  true,
+                                 "text":  ""
+                             }
+                         ],
+    "links":  {
+                  "input":  "workspace/bach/week-04_2026-08-23_to_2026-08-29/task-03_define-data-ownership-and-fault-matrix/input/task-input.md",
+                  "output":  "workspace/bach/week-04_2026-08-23_to_2026-08-29/task-03_define-data-ownership-and-fault-matrix/output/task-output.md",
+                  "pullRequest":  "https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/11",
+                  "review":  "APPROVED theo ngoại lệ self-review AI do Bách xác nhận; không có review submission trên GitHub từ Đức.",
+                  "all":  [
+                              {
+                                  "label":  "`task-input.md`",
+                                  "target":  "../../../../../workspace/bach/week-04_2026-08-23_to_2026-08-29/task-03_define-data-ownership-and-fault-matrix/input/task-input.md"
+                              },
+                              {
+                                  "label":  "`task-output.md`",
+                                  "target":  "../../../../../workspace/bach/week-04_2026-08-23_to_2026-08-29/task-03_define-data-ownership-and-fault-matrix/output/task-output.md"
+                              },
+                              {
+                                  "label":  "PR #11",
+                                  "target":  "https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/11"
+                              }
+                          ]
+              },
+    "progress":  {
+                     "updatedAt":  "28/08/2026 — Bách đã xác nhận APPROVED theo self-review AI và finalization metadata trên PR #11.",
+                     "notes":  "artifact đã cross-check với topology, HTTP/event contract và telemetry/ground-truth schema v0; PR #11 chưa merge vào main."
+                 },
+    "source":  "docs/processed/plan/weekly/week-04_2026-08-23_to_2026-08-29/task-03_define-data-ownership-and-fault-matrix.md"
+}

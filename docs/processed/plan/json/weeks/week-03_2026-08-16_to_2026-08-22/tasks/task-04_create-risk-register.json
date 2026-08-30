@@ -1,0 +1,77 @@
+{
+    "schemaVersion":  "1.0.0",
+    "generatedAt":  "2026-08-30T05:54:24Z",
+    "sourceDigest":  "aeb3bd1cc29dfb6822b8001b05acdbb852ffc1e8c3c4c09352bc207438ce67f8",
+    "id":  "task-04_create-risk-register",
+    "weekId":  "week-03_2026-08-16_to_2026-08-22",
+    "title":  "Lập risk register và quy tắc giảm scope",
+    "status":  "Đã giao",
+    "owner":  "Bách",
+    "collaborator":  "Đức review rủi ro platform, observability và reproducibility",
+    "priority":  "Trung bình",
+    "dueDate":  "2026-08-21",
+    "dueDateDisplay":  "21/08/2026",
+    "branch":  "docs/week-03/task-04-create-risk-register",
+    "scope":  {
+                  "required":  "Tạo risk register v1 cho các rủi ro scope, testbed, observability, telemetry/data quality, fault reproducibility, data leakage, model/RCA, evaluation và tiến độ. Mỗi rủi ro có tín hiệu sớm, mức độ, người theo dõi, biện pháp giảm thiểu và quy tắc cắt scope.",
+                  "requiredItems":  [
+
+                                    ],
+                  "excluded":  "- Không tạo risk register cấp vận hành/production không liên quan đồ án. - Không thay thế quy tắc chống scope creep trong plan canonical. - Không đánh dấu rủi ro đã đóng nếu chưa có bằng chứng.",
+                  "excludedItems":  [
+                                        "Không tạo risk register cấp vận hành/production không liên quan đồ án.",
+                                        "Không thay thế quy tắc chống scope creep trong plan canonical.",
+                                        "Không đánh dấu rủi ro đã đóng nếu chưa có bằng chứng."
+                                    ]
+              },
+    "dependencies":  {
+                         "documents":  [
+                                           "plan v0.2, hai blueprint và scope/RQ v1 khi có."
+                                       ],
+                         "coordination":  [
+                                              "Đức review rủi ro ở Compose, instrumentation, fault, workload và experiment runner."
+                                          ],
+                         "risks":  [
+                                       "register phải đủ ngắn để được rà soát mỗi tuần."
+                                   ]
+                     },
+    "deliverables":  [
+                         {
+                             "name":  "Risk register v1",
+                             "type":  "Docs",
+                             "location":  "docs/processed/plan/risk-register-v1.md"
+                         }
+                     ],
+    "definitionOfDone":  [
+                             {
+                                 "completed":  false,
+                                 "text":  "Register bao phủ tối thiểu scope, testbed, observability, telemetry/data quality, reproducibility, data leakage, evaluation và tiến độ."
+                             },
+                             {
+                                 "completed":  false,
+                                 "text":  "Mỗi rủi ro có tín hiệu sớm, mức độ ưu tiên, owner, mitigation và quy tắc giảm/cắt scope cụ thể."
+                             },
+                             {
+                                 "completed":  false,
+                                 "text":  "Các rủi ro đã có trong plan/blueprint được giữ nhất quán; không tạo quyết định kiến trúc cạnh tranh."
+                             },
+                             {
+                                 "completed":  false,
+                                 "text":  "Đức đã review nhóm rủi ro platform/experiment; các hành động tuần 4 được liên kết hoặc ghi rõ là tồn đọng."
+                             }
+                         ],
+    "links":  {
+                  "input":  null,
+                  "output":  null,
+                  "pullRequest":  null,
+                  "review":  null,
+                  "all":  [
+
+                          ]
+              },
+    "progress":  {
+                     "updatedAt":  "16/08/2026 — task được phân công.",
+                     "notes":  "chờ scope/RQ v1 để chốt mức ưu tiên."
+                 },
+    "source":  "docs/processed/plan/weekly/week-03_2026-08-16_to_2026-08-22/task-04_create-risk-register.md"
+}

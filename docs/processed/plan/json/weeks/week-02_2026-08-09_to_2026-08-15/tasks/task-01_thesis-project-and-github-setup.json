@@ -1,0 +1,98 @@
+{
+    "schemaVersion":  "1.0.0",
+    "generatedAt":  "2026-08-30T05:54:24Z",
+    "sourceDigest":  "aeb3bd1cc29dfb6822b8001b05acdbb852ffc1e8c3c4c09352bc207438ce67f8",
+    "id":  "task-01_thesis-project-and-github-setup",
+    "weekId":  "week-02_2026-08-09_to_2026-08-15",
+    "title":  "Chuẩn bị đồ án, dự án và tổ chức GitHub",
+    "status":  "Hoàn thành",
+    "owner":  "Đức",
+    "collaborator":  "Bách sử dụng workspace sau khi thiết lập",
+    "priority":  "Cao",
+    "dueDate":  "2026-08-12",
+    "dueDateDisplay":  "12/08/2026",
+    "branch":  "",
+    "scope":  {
+                  "required":  "Chuẩn bị nền tảng làm việc cho đồ án: tổ chức repository GitHub, chuẩn hóa README và thư mục tài liệu, tạo workspace chia việc cho Đức/Bách, đồng thời viết skill và rule để AI agent tuân thủ cách làm việc của nhóm.",
+                  "requiredItems":  [
+
+                                    ],
+                  "excluded":  "- Không triển khai chức năng chuyên môn của hệ thống AIOps/RCA. - Không viết chi tiết các task chuyên môn tiếp theo của Bách hoặc Đức. - Không thay đổi nội dung gốc của tài liệu trong docs/raw/.",
+                  "excludedItems":  [
+                                        "Không triển khai chức năng chuyên môn của hệ thống AIOps/RCA.",
+                                        "Không viết chi tiết các task chuyên môn tiếp theo của Bách hoặc Đức.",
+                                        "Không thay đổi nội dung gốc của tài liệu trong docs/raw/."
+                                    ]
+              },
+    "dependencies":  {
+                         "documents":  [
+                                           "mô tả đồ án, kế hoạch ban đầu và các tài liệu học phần hiện có trong repository."
+                                       ],
+                         "coordination":  [
+                                              "Bách sử dụng workspace riêng sau khi cấu trúc được tạo."
+                                          ],
+                         "risks":  [
+                                       "thành viên và AI agent phải đọc chỉ dẫn trước khi thay đổi dự án."
+                                   ]
+                     },
+    "deliverables":  [
+                         {
+                             "name":  "Repository đồ án trên GitHub",
+                             "type":  "Code",
+                             "location":  "https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP"
+                         },
+                         {
+                             "name":  "Cấu trúc tài liệu và workspace chia việc",
+                             "type":  "Docs",
+                             "location":  "workspace/ và docs/"
+                         },
+                         {
+                             "name":  "Skill và rule cho AI agent",
+                             "type":  "Docs",
+                             "location":  "agent-resources/skills/graduation-workspace/"
+                         }
+                     ],
+    "definitionOfDone":  [
+                             {
+                                 "completed":  true,
+                                 "text":  ""
+                             },
+                             {
+                                 "completed":  true,
+                                 "text":  ""
+                             },
+                             {
+                                 "completed":  true,
+                                 "text":  ""
+                             },
+                             {
+                                 "completed":  true,
+                                 "text":  ""
+                             },
+                             {
+                                 "completed":  true,
+                                 "text":  ""
+                             }
+                         ],
+    "links":  {
+                  "input":  "workspace/duc/week-02_2026-08-09_to_2026-08-15/task-01_thesis-project-and-github-setup/input/task-input.md",
+                  "output":  "workspace/duc/week-02_2026-08-09_to_2026-08-15/task-01_thesis-project-and-github-setup/output/task-output.md",
+                  "pullRequest":  null,
+                  "review":  null,
+                  "all":  [
+                              {
+                                  "label":  "task-input",
+                                  "target":  "../../../../../workspace/duc/week-02_2026-08-09_to_2026-08-15/task-01_thesis-project-and-github-setup/input/task-input.md"
+                              },
+                              {
+                                  "label":  "task-output",
+                                  "target":  "../../../../../workspace/duc/week-02_2026-08-09_to_2026-08-15/task-01_thesis-project-and-github-setup/output/task-output.md"
+                              }
+                          ]
+              },
+    "progress":  {
+                     "updatedAt":  "12/08/2026 — hoàn thành; xem bằng chứng trong output workspace.",
+                     "notes":  "không có."
+                 },
+    "source":  "docs/processed/plan/weekly/week-02_2026-08-09_to_2026-08-15/task-01_thesis-project-and-github-setup.md"
+}

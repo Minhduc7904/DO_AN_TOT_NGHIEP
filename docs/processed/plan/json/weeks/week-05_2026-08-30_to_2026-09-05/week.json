@@ -1,0 +1,78 @@
+{
+    "schemaVersion":  "1.0.0",
+    "generatedAt":  "2026-08-30T05:54:24Z",
+    "sourceDigest":  "aeb3bd1cc29dfb6822b8001b05acdbb852ffc1e8c3c4c09352bc207438ce67f8",
+    "id":  "week-05_2026-08-30_to_2026-09-05",
+    "number":  5,
+    "title":  "Repository, Compose, CI và service template",
+    "startDate":  "2026-08-30",
+    "endDate":  "2026-09-05",
+    "status":  "Chưa bắt đầu",
+    "phase":  {
+                  "id":  "phase-01",
+                  "title":  "Scope, architecture và nền tảng tái lập",
+                  "startWeek":  3,
+                  "endWeek":  5
+              },
+    "objective":  "dựng repository code chạy được từ máy sạch; tạo Docker Compose skeleton; dựng CI/lint/test baseline; đưa OpenTelemetry bootstrap vào service template ngay từ đầu.",
+    "planGoals":  [
+                      "dựng repository code chạy được từ máy sạch;",
+                      "tạo Docker Compose skeleton;",
+                      "dựng CI/lint/test baseline;",
+                      "đưa OpenTelemetry bootstrap vào service template ngay từ đầu."
+                  ],
+    "workstreams":  [
+                        {
+                            "role":  "A",
+                            "owner":  "Đức",
+                            "title":  "Backend/Platform primary",
+                            "items":  [
+                                          "repository/module structure theo backend blueprint canonical;",
+                                          "service template;",
+                                          "Compose cho PostgreSQL/Redis/RabbitMQ và service mẫu;",
+                                          "lint/unit test/CI."
+                                      ]
+                        },
+                        {
+                            "role":  "B",
+                            "owner":  "Bách",
+                            "title":  "AI/RCA collaborator + telemetry owner",
+                            "items":  [
+                                          "service/resource naming convention;",
+                                          "OTel bootstrap/resource attributes;",
+                                          "kiểm tra trace context/error attributes trên service mẫu;",
+                                          "chạy fresh setup độc lập và sửa tài liệu Quick Start."
+                                      ]
+                        }
+                    ],
+    "deliverables":  [
+                         "docker compose up chạy được;",
+                         "một service mẫu có /health;",
+                         "CI pass;",
+                         "OTel bootstrap hoạt động ở mức tối thiểu;",
+                         "Quick Start chạy lại được trên máy người còn lại."
+                     ],
+    "gate":  {
+                 "name":  "Gate M1",
+                 "description":  "Hai thành viên cùng clone từ đầu và dựng stack mà không cần thao tác thủ công ngoài tài liệu."
+             },
+    "dependencies":  {
+
+                     },
+    "risks":  {
+
+              },
+    "decisions":  {
+
+                  },
+    "completionCriteria":  {
+
+                           },
+    "tasks":  [
+
+              ],
+    "sources":  {
+                    "canonicalPlan":  "docs/processed/plan/plan-v0.2-24-weeks.md",
+                    "weeklyOverview":  null
+                }
+}

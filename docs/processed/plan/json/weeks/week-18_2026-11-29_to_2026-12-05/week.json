@@ -1,0 +1,72 @@
+{
+    "schemaVersion":  "1.0.0",
+    "generatedAt":  "2026-08-30T05:54:24Z",
+    "sourceDigest":  "aeb3bd1cc29dfb6822b8001b05acdbb852ffc1e8c3c4c09352bc207438ce67f8",
+    "id":  "week-18_2026-11-29_to_2026-12-05",
+    "number":  18,
+    "title":  "Graph/temporal RCA và evidence",
+    "startDate":  "2026-11-29",
+    "endDate":  "2026-12-05",
+    "status":  "Chưa bắt đầu",
+    "phase":  {
+                  "id":  "phase-04",
+                  "title":  "Data, anomaly detection và RCA",
+                  "startWeek":  14,
+                  "endWeek":  19
+              },
+    "objective":  "Graph/temporal RCA và evidence",
+    "planGoals":  [
+
+                  ],
+    "workstreams":  [
+                        {
+                            "role":  "A",
+                            "owner":  "Đức",
+                            "title":  "RCA collaborator",
+                            "items":  [
+                                          "implement một thành phần score hoặc validation module;",
+                                          "parameter sensitivity harness;",
+                                          "kiểm tra ranking với fault ground truth;",
+                                          "runtime profiling."
+                                      ]
+                        },
+                        {
+                            "role":  "B",
+                            "owner":  "Bách",
+                            "title":  "RCA primary",
+                            "items":  [
+                                          "temporal precedence;",
+                                          "propagation/dependency score;",
+                                          "edge degradation;",
+                                          "evidence aggregation;",
+                                          "root-cause ranking score."
+                                      ]
+                        }
+                    ],
+    "deliverables":  [
+                         "proposed RCA method v1;",
+                         "rca-result.json hoặc schema tương đương;",
+                         "Top-K + evidence + timeline;",
+                         "parameter sensitivity sơ bộ."
+                     ],
+    "gate":  null,
+    "dependencies":  {
+
+                     },
+    "risks":  {
+
+              },
+    "decisions":  {
+
+                  },
+    "completionCriteria":  {
+
+                           },
+    "tasks":  [
+
+              ],
+    "sources":  {
+                    "canonicalPlan":  "docs/processed/plan/plan-v0.2-24-weeks.md",
+                    "weeklyOverview":  null
+                }
+}

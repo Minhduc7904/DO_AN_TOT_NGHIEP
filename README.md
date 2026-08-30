@@ -86,6 +86,24 @@ Repository chỉ scaffold các module khi bắt đầu triển khai. Cây source
 - Nguyễn Minh Đức — [Minhduc7904](https://github.com/Minhduc7904)
 - Mai Khoa Bách — [b4schh](https://github.com/b4schh)
 
+## Timeline kế hoạch dự án
+
+Timeline trực quan hiển thị toàn bộ lộ trình 24 tuần, các task đã được break, người phụ trách, trạng thái, phụ thuộc, sản phẩm và Definition of Done. Markdown trong `docs/processed/plan/` vẫn là nguồn canonical; dữ liệu trong `docs/processed/plan/json/` và HTML timeline được sinh tự động, không chỉnh sửa trực tiếp.
+
+Đồng bộ lại JSON và timeline sau khi thay đổi kế hoạch hoặc task:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\tools\sync-plan-json-and-timeline.ps1
+```
+
+Đồng bộ rồi mở timeline bằng trình duyệt mặc định:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\tools\open-project-timeline.ps1
+```
+
+Có thể mở trực tiếp `docs/processed/plan/timeline/project-timeline.html` mà không cần web server hoặc kết nối mạng. Các skill lập task tuần và finalization task bắt buộc chạy bước đồng bộ trước khi workflow được coi là hoàn tất.
+
 ## Lưu ý
 
 Dự án phục vụ mục đích học thuật. Kết luận chỉ được đưa ra từ experiment có manifest, ground truth và artifact đủ để kiểm tra/tái lập.

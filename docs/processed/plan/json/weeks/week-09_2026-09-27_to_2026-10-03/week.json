@@ -1,0 +1,74 @@
+{
+    "schemaVersion":  "1.0.0",
+    "generatedAt":  "2026-08-30T05:54:24Z",
+    "sourceDigest":  "aeb3bd1cc29dfb6822b8001b05acdbb852ffc1e8c3c4c09352bc207438ce67f8",
+    "id":  "week-09_2026-09-27_to_2026-10-03",
+    "number":  9,
+    "title":  "Hardening Testbed MVP",
+    "startDate":  "2026-09-27",
+    "endDate":  "2026-10-03",
+    "status":  "Chưa bắt đầu",
+    "phase":  {
+                  "id":  "phase-02",
+                  "title":  "LMS microservice testbed + observability-by-design",
+                  "startWeek":  6,
+                  "endWeek":  9
+              },
+    "objective":  "Hardening Testbed MVP",
+    "planGoals":  [
+
+                  ],
+    "workstreams":  [
+                        {
+                            "role":  "A",
+                            "owner":  "Đức",
+                            "title":  "Backend/Platform primary",
+                            "items":  [
+                                          "kiểm tra publisher/consumer idempotency và failure handling ở mức MVP;",
+                                          "timeout/retry/error handling thống nhất;",
+                                          "reset/seed command."
+                                      ]
+                        },
+                        {
+                            "role":  "B",
+                            "owner":  "Bách",
+                            "title":  "Backend collaborator",
+                            "items":  [
+                                          "E2E regression suite;",
+                                          "kiểm tra error/latency propagation;",
+                                          "bổ sung telemetry assertions cho test quan trọng;",
+                                          "chạy full flow từ máy độc lập."
+                                      ]
+                        }
+                    ],
+    "deliverables":  [
+                         "Testbed MVP v0.1;",
+                         "6 business service + Gateway theo topology MVP canonical;",
+                         "PostgreSQL + Redis + RabbitMQ;",
+                         "E2E suite;",
+                         "reset/seed command."
+                     ],
+    "gate":  {
+                 "name":  "Gate M2",
+                 "description":  "Cả hai đều tự vận hành và giải thích được ít nhất hai workflow xuyên nhiều service."
+             },
+    "dependencies":  {
+
+                     },
+    "risks":  {
+
+              },
+    "decisions":  {
+
+                  },
+    "completionCriteria":  {
+
+                           },
+    "tasks":  [
+
+              ],
+    "sources":  {
+                    "canonicalPlan":  "docs/processed/plan/plan-v0.2-24-weeks.md",
+                    "weeklyOverview":  null
+                }
+}
