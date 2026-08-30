@@ -179,14 +179,28 @@ DO_AN_TOT_NGHIEP/
 ├── AGENTS.md
 ├── CLAUDE.md
 │
-├── services/
-├── packages/
-│   ├── observability/
-│   └── testing/
-│
-├── contracts/
-│   ├── http/
-│   └── events/
+├── lms/
+│   ├── services/
+│   ├── packages/
+│   │   ├── observability/
+│   │   └── testing/
+│   ├── contracts/
+│   │   ├── http/
+│   │   └── events/
+│   └── infrastructure/
+│       ├── compose/
+│       ├── postgres/
+│       ├── redis/
+│       ├── rabbitmq/
+│       ├── storage/
+│       │   ├── mock/
+│       │   └── minio/
+│       └── observability/
+│           ├── otel-collector/
+│           ├── prometheus/
+│           ├── tempo/
+│           ├── loki/
+│           └── grafana/
 │
 ├── analysis/
 │   ├── telemetry/
@@ -197,21 +211,6 @@ DO_AN_TOT_NGHIEP/
 │   ├── rca/
 │   ├── evidence/
 │   └── evaluation/
-│
-├── infrastructure/
-│   ├── compose/
-│   ├── postgres/
-│   ├── redis/
-│   ├── rabbitmq/
-│   ├── storage/
-│   │   ├── mock/
-│   │   └── minio/
-│   └── observability/
-│       ├── otel-collector/
-│       ├── prometheus/
-│       ├── tempo/
-│       ├── loki/
-│       └── grafana/
 │
 ├── load/
 │   ├── scenarios/
@@ -248,19 +247,21 @@ DO_AN_TOT_NGHIEP/
 
 ### 4.1. Ý nghĩa các ranh giới quan trọng
 
-`services/` chứa Gateway và LMS business services. Mỗi service deploy độc lập nhưng cùng dùng convention kỹ thuật của monorepo.
+`lms/` là backend workspace canonical của LMS testbed. Toolchain Node/pnpm, business services, shared technical packages, published contracts và runtime infrastructure của LMS đều nằm dưới root này.
 
-`packages/observability/` chứa shared application instrumentation như bootstrap OpenTelemetry, logger correlation và helper metric. Nó **không** chứa Collector, Prometheus, Tempo, Loki hoặc Grafana.
+`lms/services/` chứa Gateway và LMS business services. Mỗi service deploy độc lập nhưng cùng dùng convention kỹ thuật của monorepo.
 
-`infrastructure/observability/` chứa runtime/configuration của observability stack. Đây là vị trí duy nhất cho Collector, Prometheus, Tempo, Loki và Grafana.
+`lms/packages/observability/` chứa shared application instrumentation như bootstrap OpenTelemetry, logger correlation và helper metric. Nó **không** chứa Collector, Prometheus, Tempo, Loki hoặc Grafana.
 
-`packages/testing/` chứa test utility kỹ thuật; không chứa business model dùng chung.
+`lms/infrastructure/observability/` chứa runtime/configuration của observability stack. Đây là vị trí duy nhất cho Collector, Prometheus, Tempo, Loki và Grafana.
 
-`contracts/http/` và `contracts/events/` chứa published contract. Service không import controller, repository hoặc entity của service khác.
+`lms/packages/testing/` chứa test utility kỹ thuật; không chứa business model dùng chung.
+
+`lms/contracts/http/` và `lms/contracts/events/` chứa published contract. Service không import controller, repository hoặc entity của service khác.
 
 `analysis/` chứa code Python có thể test và tái sử dụng. Notebook khám phá, nếu có, không được thay thế implementation chính trong các module này.
 
-Không tạo các root cạnh tranh như `platform/`, `backend/`, `testbed/`, `dashboard/`, `agents/` hoặc `docs/architecture/`. Tài nguyên cho AI agent đặt dưới `agent-resources/`; tài liệu kiến trúc đã xử lý đặt dưới `docs/processed/architecture/`.
+Không tạo các root cạnh tranh với `lms/` như `platform/`, `backend/`, `testbed/` hoặc `dashboard/`; không tạo `agents/` hay `docs/architecture/`. Tài nguyên cho AI agent đặt dưới `agent-resources/`; tài liệu kiến trúc đã xử lý đặt dưới `docs/processed/architecture/`.
 
 ## 5. Trách nhiệm workload, fault, experiment và evaluation
 
@@ -420,14 +421,14 @@ adapters
 
 ### 7.2. Shared packages
 
-Shared package chỉ chứa technical primitives. Không đặt `User`, `Course`, `Enrollment`, `Submission` hoặc business repository base class dùng chung trong `packages/`.
+Shared package chỉ chứa technical primitives. Không đặt `User`, `Course`, `Enrollment`, `Submission` hoặc business repository base class dùng chung trong `lms/packages/`.
 
 ## 8. Contract và integration conventions
 
 ### 8.1. HTTP
 
 - Public endpoint dùng prefix `/api/v1`.
-- OpenAPI contract đặt trong `contracts/http/<service>/` khi được publish cho service khác hoặc client.
+- OpenAPI contract đặt trong `lms/contracts/http/<service>/` khi được publish cho service khác hoặc client.
 - Mọi outbound HTTP call có timeout rõ ràng.
 - Retry tắt mặc định trong MVP; chỉ bật có chủ đích cho scenario được kiểm thử.
 - Error response có code ổn định, timestamp UTC ISO-8601 và `trace_id`.
@@ -461,7 +462,7 @@ grade.completed
 Contract đặt tại:
 
 ```text
-contracts/events/grade-completed/
+lms/contracts/events/grade-completed/
 ```
 
 Envelope tối thiểu phải có event ID, event name, schema version, occurred time, producer, payload và trace context. Publisher/consumer phải có cơ chế chống xử lý lặp phù hợp với scope MVP.

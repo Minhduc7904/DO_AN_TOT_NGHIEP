@@ -1,0 +1,39 @@
+{
+  "name": "aiops-lms-workspace",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@11.19.0",
+  "engines": {
+    "node": "22.13.1",
+    "pnpm": "11.19.0"
+  },
+  "scripts": {
+    "build": "pnpm --filter @aiops-lms/course build",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "lint": "eslint \"services/course/**/*.ts\" --max-warnings=0",
+    "start:course": "pnpm --filter @aiops-lms/course build && pnpm --filter @aiops-lms/course start",
+    "test": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config services/course/jest.config.ts",
+    "test:e2e": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config services/course/jest-e2e.config.ts"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@nestjs/cli": "12.0.0",
+    "@nestjs/schematics": "12.0.0",
+    "@nestjs/testing": "12.0.1",
+    "@types/jest": "30.0.0",
+    "@types/node": "22.20.1",
+    "@types/supertest": "7.2.1",
+    "eslint": "10.9.1",
+    "eslint-config-prettier": "10.1.8",
+    "globals": "17.11.0",
+    "jest": "30.5.0",
+    "prettier": "3.9.6",
+    "supertest": "7.2.2",
+    "ts-jest": "29.4.12",
+    "ts-node": "10.9.2",
+    "tsconfig-paths": "4.2.0",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.68.0"
+  }
+}

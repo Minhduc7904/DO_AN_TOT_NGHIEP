@@ -36,7 +36,7 @@ Dựng Docker Compose skeleton cho service mẫu cùng PostgreSQL, Redis và Rab
 
 | Sản phẩm | Loại | Vị trí hoặc link dự kiến |
 | --- | --- | --- |
-| Docker Compose baseline và cấu hình hạ tầng | Code | `infrastructure/compose/` và các thư mục dependency liên quan trong `infrastructure/` |
+| Docker Compose baseline và cấu hình hạ tầng | Code | `lms/infrastructure/compose/` và các thư mục dependency liên quan trong `lms/infrastructure/` |
 | Hướng dẫn Quick Start | Docs | `README.md` hoặc tài liệu hướng dẫn canonical được liên kết từ README |
 
 ## Definition of Done

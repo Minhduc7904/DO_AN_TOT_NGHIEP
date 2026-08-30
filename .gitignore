@@ -1,2 +1,10 @@
 # Dữ liệu JSON được sinh từ kế hoạch Markdown canonical.
 docs/processed/plan/json/
+
+# Dependency, build output và cấu hình local của LMS workspace.
+lms/node_modules/
+lms/**/node_modules/
+lms/**/dist/
+lms/**/coverage/
+lms/**/.env
+!lms/**/.env.example
