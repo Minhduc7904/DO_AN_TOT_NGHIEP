@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-05_define-evaluation-protocol` |
 | Tuần | `week-04_2026-08-23_to_2026-08-29` |
-| Trạng thái | Chờ review |
+| Trạng thái | Hoàn thành |
 | Người phụ trách | Bách |
 | Collaborator | Đức review tính khả thi của run orchestration và artifact |
 | Ưu tiên | Cao |
@@ -39,19 +39,19 @@ Tạo evaluation protocol v0, gồm experiment metadata, đơn vị split theo e
 
 ## Definition of Done
 
-- [ ] Protocol định nghĩa experiment manifest/metadata, run artifact, cách split theo run và quy tắc freeze test campaign.
-- [ ] Có metric detection, RCA service-level và system phù hợp RQ/AI-RCA blueprint, cùng cách xử lý baseline/ablation/robustness MVP.
-- [ ] Protocol nêu rõ đầu vào ground truth, thiếu dữ liệu/missing modality và điều kiện tái lập.
-- [ ] Đức review khả năng orchestration/lưu artifact; các requirement không khả thi được ghi rõ trước tuần 5.
+- [x] Protocol định nghĩa experiment manifest/metadata, run artifact, cách split theo run và quy tắc freeze test campaign.
+- [x] Có metric detection, RCA service-level và system phù hợp RQ/AI-RCA blueprint, cùng cách xử lý baseline/ablation/robustness MVP.
+- [x] Protocol nêu rõ đầu vào ground truth, thiếu dữ liệu/missing modality và điều kiện tái lập.
+- [x] Đức review khả năng orchestration/lưu artifact; các requirement không khả thi được ghi rõ trước tuần 5.
 
 ## Liên kết hồ sơ thực hiện
 
 - Input workspace: [task-input.md](../../../../../workspace/bach/week-04_2026-08-23_to_2026-08-29/task-05_define-evaluation-protocol/input/task-input.md).
 - Output workspace: [task-output.md](../../../../../workspace/bach/week-04_2026-08-23_to_2026-08-29/task-05_define-evaluation-protocol/output/task-output.md).
 - Pull request: [PR #14](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/14).
-- Kết quả review: Chưa review.
+- Kết quả review: `APPROVED` — Đức trên [PR #14](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/14).
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 30/08/2026 — Bách đã hoàn thiện artifact, tạo PR #14 và chuyển task sang `Chờ review` trên PR head.
-- Ghi chú/tồn đọng: Cần Đức review khả năng orchestration/lưu artifact trước khi finalization.
+- Cập nhật gần nhất: 30/08/2026 — Đức đã `APPROVED` PR #14; Bách hoàn tất completion record trên PR head.
+- Ghi chú/tồn đọng: Không có feedback blocking.
