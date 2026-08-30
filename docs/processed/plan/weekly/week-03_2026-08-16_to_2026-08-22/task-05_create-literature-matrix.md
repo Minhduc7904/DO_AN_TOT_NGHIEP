@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-05_create-literature-matrix` |
 | Tuần | `week-03_2026-08-16_to_2026-08-22` |
-| Trạng thái | Đã giao |
+| Trạng thái | Đang thực hiện |
 | Người phụ trách | Bách |
 | Collaborator | Đức review tính phù hợp với testbed, telemetry và fault có thể tạo |
 | Ưu tiên | Trung bình |
@@ -46,8 +46,8 @@ Lập literature matrix v0 cho các baseline và hướng phương pháp cần t
 
 ## Liên kết hồ sơ thực hiện
 
-- Input workspace: Chưa tạo.
-- Output workspace: Chưa tạo.
+- Input workspace: [`workspace/bach/week-03_2026-08-16_to_2026-08-22/task-05_create-literature-matrix/input/task-input.md`](../../../../workspace/bach/week-03_2026-08-16_to_2026-08-22/task-05_create-literature-matrix/input/task-input.md).
+- Output workspace: [`workspace/bach/week-03_2026-08-16_to_2026-08-22/task-05_create-literature-matrix/output/task-output.md`](../../../../workspace/bach/week-03_2026-08-16_to_2026-08-22/task-05_create-literature-matrix/output/task-output.md).
 - Pull request: Chưa tạo.
 
 ## Cập nhật tiến độ
