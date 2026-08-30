@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-05_create-literature-matrix` |
 | Tuần | `week-03_2026-08-16_to_2026-08-22` |
-| Trạng thái | Đã giao |
+| Trạng thái | Hoàn thành |
 | Người phụ trách | Bách |
 | Collaborator | Đức review tính phù hợp với testbed, telemetry và fault có thể tạo |
 | Ưu tiên | Trung bình |
@@ -39,18 +39,18 @@ Lập literature matrix v0 cho các baseline và hướng phương pháp cần t
 
 ## Definition of Done
 
-- [ ] Matrix có tối thiểu 8 nguồn truy xuất được và metadata tối thiểu: tác giả/năm, link hoặc DOI, bài toán, telemetry/input, phương pháp, metric và giới hạn.
-- [ ] Matrix có các nhóm baseline cần cho MVP: threshold/z-score hoặc robust z-score, Isolation Forest, RCA dựa dependency/temporal và evaluation phù hợp.
-- [ ] Mỗi baseline được gắn với RQ/metric v1 và nhận xét tính khả thi trong testbed hiện tại.
-- [ ] Đức đã review tính khả thi của data, fault scenario và telemetry cần cho các baseline ưu tiên.
+- [x] Matrix có tối thiểu 8 nguồn truy xuất được và metadata tối thiểu: tác giả/năm, link hoặc DOI, bài toán, telemetry/input, phương pháp, metric và giới hạn.
+- [x] Matrix có các nhóm baseline cần cho MVP: threshold/z-score hoặc robust z-score, Isolation Forest, RCA dựa dependency/temporal và evaluation phù hợp.
+- [x] Mỗi baseline được gắn với RQ/metric v1 và nhận xét tính khả thi trong testbed hiện tại.
+- [x] Đức đã review tính khả thi của data, fault scenario và telemetry cần cho các baseline ưu tiên.
 
 ## Liên kết hồ sơ thực hiện
 
-- Input workspace: Chưa tạo.
-- Output workspace: Chưa tạo.
-- Pull request: Chưa tạo.
+- Input workspace: [`workspace/bach/week-03_2026-08-16_to_2026-08-22/task-05_create-literature-matrix/input/task-input.md`](../../../../workspace/bach/week-03_2026-08-16_to_2026-08-22/task-05_create-literature-matrix/input/task-input.md).
+- Output workspace: [`workspace/bach/week-03_2026-08-16_to_2026-08-22/task-05_create-literature-matrix/output/task-output.md`](../../../../workspace/bach/week-03_2026-08-16_to_2026-08-22/task-05_create-literature-matrix/output/task-output.md).
+- Pull request: [PR #12](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/12).
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 16/08/2026 — task được phân công.
-- Ghi chú/tồn đọng: chờ RQ/metrics v1 để chốt ưu tiên đọc tài liệu.
+- Cập nhật gần nhất: 30/08/2026 — Đức (`Minhduc7904`) đã gửi `APPROVED` trên PR #12; Bách finalization metadata trên chính PR head. Task ở trạng thái `Hoàn thành` trên branch và sẵn sàng merge, chưa canonically hoàn thành cho đến khi PR merge vào `main`.
+- Ghi chú/tồn đọng: không có feedback blocking; Bách cần kiểm tra approval/branch protection còn hiệu lực trước khi merge PR #12.

@@ -17,7 +17,7 @@
 | [task-02_create-implementation-backlog](task-02_create-implementation-backlog.md) | Lập backlog triển khai tuần 3–22 | Đức | Bách | Cao | Đã giao |
 | [task-03_define-research-questions-and-metrics](task-03_define-research-questions-and-metrics.md) | Chốt research questions và metric đánh giá | Bách | Đức | Cao | Hoàn thành |
 | [task-04_create-risk-register](task-04_create-risk-register.md) | Lập risk register và quy tắc giảm scope | Bách | Đức | Trung bình | Đã giao |
-| [task-05_create-literature-matrix](task-05_create-literature-matrix.md) | Tổng hợp literature matrix cho baseline/phương pháp | Bách | Đức | Trung bình | Đã giao |
+| [task-05_create-literature-matrix](task-05_create-literature-matrix.md) | Tổng hợp literature matrix cho baseline/phương pháp | Bách | Đức | Trung bình | Hoàn thành |
 
 ## Phụ thuộc, rủi ro và quyết định
 
