@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-05_create-literature-matrix` |
 | Tuần | `week-03_2026-08-16_to_2026-08-22` |
-| Trạng thái | Đang thực hiện |
+| Trạng thái | Chờ review |
 | Người phụ trách | Bách |
 | Collaborator | Đức review tính phù hợp với testbed, telemetry và fault có thể tạo |
 | Ưu tiên | Trung bình |
@@ -48,9 +48,9 @@ Lập literature matrix v0 cho các baseline và hướng phương pháp cần t
 
 - Input workspace: [`workspace/bach/week-03_2026-08-16_to_2026-08-22/task-05_create-literature-matrix/input/task-input.md`](../../../../workspace/bach/week-03_2026-08-16_to_2026-08-22/task-05_create-literature-matrix/input/task-input.md).
 - Output workspace: [`workspace/bach/week-03_2026-08-16_to_2026-08-22/task-05_create-literature-matrix/output/task-output.md`](../../../../workspace/bach/week-03_2026-08-16_to_2026-08-22/task-05_create-literature-matrix/output/task-output.md).
-- Pull request: Chưa tạo.
+- Pull request: [PR #12](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/12).
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 16/08/2026 — task được phân công.
-- Ghi chú/tồn đọng: chờ RQ/metrics v1 để chốt ưu tiên đọc tài liệu.
+- Cập nhật gần nhất: 30/08/2026 — literature matrix v0 đã được commit/push và PR #12 đang chờ Đức review.
+- Ghi chú/tồn đọng: cần Đức xác nhận tính khả thi của data, fault scenario và telemetry cho các baseline ưu tiên trên PR #12.

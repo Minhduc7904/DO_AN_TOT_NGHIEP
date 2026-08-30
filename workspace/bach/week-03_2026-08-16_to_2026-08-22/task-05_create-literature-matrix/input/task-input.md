@@ -12,7 +12,7 @@
 | Ngày tạo | 30/08/2026 |
 | Thời gian dự kiến | Làm bù sau tuần 3; thời lượng cụ thể sẽ chốt trước khi thực hiện substantive work |
 | Nhánh thực hiện | `docs/week-03/task-05-create-literature-matrix` |
-| Pull request dự kiến | Chưa tạo; sẽ cập nhật sau khi hoàn thiện substantive work |
+| Pull request dự kiến | [PR #12](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/12) |
 
 ## Mục tiêu và phạm vi
 
