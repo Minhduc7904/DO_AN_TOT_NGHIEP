@@ -6,11 +6,11 @@
 | --- | --- |
 | Mã task | `task-05_define-evaluation-protocol` |
 | Người phụ trách | Bách |
-| Trạng thái | Đang thực hiện |
+| Trạng thái | Chờ review |
 | Bắt đầu thực tế | 30/08/2026 — setup workspace và nhánh task |
 | Hoàn thành thực tế | Chưa hoàn thành |
 | Tổng thời lượng | Chưa tổng hợp; chờ review và finalization để chốt. |
-| Pull request | Chưa tạo |
+| Pull request | [PR #13](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/13) |
 | Người review | Đức |
 | Kết quả review | Chưa review |
 
@@ -36,11 +36,14 @@
 | Có metric detection, RCA service-level và system phù hợp RQ/AI-RCA blueprint, cùng cách xử lý baseline/ablation/robustness MVP. | Đạt | `evaluation-protocol-v0.md`, mục 10–18 và 20. |
 | Protocol nêu rõ đầu vào ground truth, thiếu dữ liệu/missing modality và điều kiện tái lập. | Đạt | `evaluation-protocol-v0.md`, mục 3, 8, 9, 13 và 19–21. |
 | Đức review khả năng orchestration/lưu artifact; các requirement không khả thi được ghi rõ trước tuần 5. | Chưa đạt | Chờ Đức review mục 23 của artifact trên pull request. |
+| Sản phẩm đã được lưu/đẩy lên vị trí dự kiến và có thể truy cập. | Đạt | Artifact ở `docs/processed/architecture/evaluation-protocol-v0.md` đã được push trong commit `e0086d5`. |
+| URL/số PR và trạng thái `Chờ review` đã được commit/push vào PR head trước khi reviewer bắt đầu review. | Đạt | PR #13; commit lifecycle này ghi URL và trạng thái trên nhánh PR. |
+| Pull request có verdict `APPROVED` hợp lệ từ thành viên còn lại và completion metadata trước merge. | Chưa đạt | Chưa có review `APPROVED`; chưa finalization. |
 
 ## Thay đổi, tồn đọng và bước tiếp theo
 
 - Thay đổi so với input: Chưa có.
 - Việc chưa hoàn thành hoặc trở ngại: Chưa có review của Đức về tính khả thi orchestration/lưu artifact.
-- Bước tiếp theo: Push artifact, mở pull request và ghi trạng thái `Chờ review` cùng URL PR vào chính PR head.
+- Bước tiếp theo: Đức review PR #13; sau `APPROVED` hợp lệ, Bách finalization metadata trên chính PR trước khi merge.
 
 > `Hoàn thành thực tế` là thời điểm người phụ trách đã hoàn tất work, DoD, nhận `APPROVED` hợp lệ từ thành viên còn lại và finalization; không ghi merge time. URL/số PR cùng trạng thái **Chờ review** phải được commit/push vào PR head trước review. Sau approval, người phụ trách dùng `task-completion-recording` để cập nhật hồ sơ và chuyển **Hoàn thành** trên chính branch/PR trước khi tự merge. Task chỉ canonically hoàn thành khi commit đó vào nhánh canonical. `Chờ xử lý` chỉ dùng cho blocker/dependency thực sự, không dùng chỉ vì PR đang chờ merge.
