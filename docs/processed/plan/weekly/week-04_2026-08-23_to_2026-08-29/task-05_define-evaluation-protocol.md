@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-05_define-evaluation-protocol` |
 | Tuần | `week-04_2026-08-23_to_2026-08-29` |
-| Trạng thái | Đã giao |
+| Trạng thái | Đang thực hiện |
 | Người phụ trách | Bách |
 | Collaborator | Đức review tính khả thi của run orchestration và artifact |
 | Ưu tiên | Cao |
@@ -46,12 +46,12 @@ Tạo evaluation protocol v0, gồm experiment metadata, đơn vị split theo e
 
 ## Liên kết hồ sơ thực hiện
 
-- Input workspace: Chưa tạo.
-- Output workspace: Chưa tạo.
+- Input workspace: [task-input.md](../../../../../workspace/bach/week-04_2026-08-23_to_2026-08-29/task-05_define-evaluation-protocol/input/task-input.md).
+- Output workspace: [task-output.md](../../../../../workspace/bach/week-04_2026-08-23_to_2026-08-29/task-05_define-evaluation-protocol/output/task-output.md).
 - Pull request: Chưa tạo.
 - Kết quả review: Chưa review.
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 23/08/2026 — task được phân công.
+- Cập nhật gần nhất: 30/08/2026 — Bách bắt đầu lại task, đã tạo branch và workspace mới; chưa triển khai artifact.
 - Ghi chú/tồn đọng: phụ thuộc telemetry/ground truth schema và fault matrix draft.
