@@ -2,7 +2,7 @@
 
 > **Trạng thái:** Review-ready artifact cho `task-05_create-literature-matrix`.
 >
-> **Vai trò:** Tổng hợp nguồn và chốt shortlist baseline/phương pháp khả thi cho MVP anomaly detection, incident detection, service-level RCA và evaluation. Đây **không phải** literature review hoàn chỉnh và không tạo kiến trúc/phương pháp cạnh tranh với các tài liệu canonical hiện có.
+> **Vai trò:** Tổng hợp evidence từ literature cho các baseline/phương pháp đã có hướng trong artifact canonical của anomaly detection, incident detection, service-level RCA và evaluation. Matrix này **không phải** literature review hoàn chỉnh, không chốt implementation priority và không tạo source of truth cạnh tranh với các tài liệu canonical hiện có.
 >
 > **Nguồn canonical phải tuân thủ:**
 >
@@ -31,7 +31,7 @@ Nguyên tắc lựa chọn:
 
 ---
 
-# 2. Literature matrix
+## 2. Literature matrix
 
 | ID | Nguồn | Bài toán | Telemetry / input | Phương pháp chính | Metric / cách đánh giá trong nguồn | Giới hạn / lưu ý khi áp dụng | Liên hệ với đồ án |
 | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -46,34 +46,37 @@ Nguyên tắc lựa chọn:
 | **L9** | **Tatbul, Lee, Zdonik, Alam, Gottschlich (2018)** — *Precision and Recall for Time Series*. NeurIPS. [arXiv:1803.03639](https://arxiv.org/abs/1803.03639) | Đánh giá anomaly xảy ra theo **range/interval**, không chỉ independent points | Ground-truth anomaly ranges + predicted anomaly ranges | Range-based precision/recall có positional/cardinality/domain preferences | Range-based Precision/Recall và các biến thể | Metric framework linh hoạt nhưng nhiều option có thể gây subjective configuration; không trực tiếp giải quyết RCA | Reference để tránh đánh giá detector chỉ ở point level. Dự án vẫn giữ **incident/fault-run level Precision/Recall/F1/FPR/Delay** theo RQ v1; nguồn này hỗ trợ lý do thiết kế tolerance/windowing của evaluation. |
 | **L10** | **Lavin, Ahmad (2015)** — *Evaluating Real-Time Anomaly Detection Algorithms — The Numenta Anomaly Benchmark*. IEEE ICMLA. DOI: [10.1109/ICMLA.2015.141](https://doi.org/10.1109/ICMLA.2015.141) | Đánh giá real-time/streaming anomaly detector có xét thời điểm phát hiện và false alarms | Labeled time-series streams + anomaly windows | Reproducible benchmark và time-sensitive anomaly scoring | NAB score cân nhắc detection timeliness, FP/FN | NAB score là domain-specific composite score; không phù hợp để thay metric canonical của đồ án | Hỗ trợ quyết định phải báo **Detection Delay** bên cạnh Precision/Recall/F1/FPR. Không dùng NAB composite score làm primary metric. Liên quan **RQ1, RQ4, RQ5**. |
 | **L11** | **Schmidl, Wenig, Papenbrock (2022)** — *Anomaly Detection in Time Series: A Comprehensive Evaluation*. PVLDB. DOI: [10.14778/3538598.3538602](https://doi.org/10.14778/3538598.3538602) | So sánh rộng nhiều thuật toán và metric time-series anomaly detection | Nhiều benchmark time series và anomaly labels | Reproducible benchmarking across algorithms/datasets/metrics | AUC-ROC, AUC-PR và range-aware metrics cùng nhiều case analysis | Kết quả phụ thuộc dataset/metric; threshold-agnostic AUC không phản ánh đầy đủ incident operation của project | Reference cho **evaluation hygiene**, sensitivity theo metric và reproducibility. Project vẫn dùng metric canonical RQ v1 thay vì đổi sang AUC làm primary. Hỗ trợ **RQ5** và protocol design. |
+| **L12** | **Yu, Zhao, Li, Li, Wang, Zhang, Sui, Pei (2024)** — *A Survey on Intelligent Management of Alerts and Incidents in IT Services*. Journal of Network and Computer Applications, 224, 103842. DOI: [10.1016/j.jnca.2024.103842](https://doi.org/10.1016/j.jnca.2024.103842) | Alert và incident management trong IT services, đặc biệt correlation, lifecycle và xử lý failure | Alert/incident records và observability data của IT service; survey định vị metrics/logs/traces là dữ liệu vận hành liên quan | Taxonomy và integrated architecture cho alert management, incident management và các kỹ thuật AIM | Survey/taxonomy, không đề xuất một benchmark hoặc metric đánh giá chung duy nhất | Phạm vi ITSM rộng; nhiều kỹ thuật AIM và automation được khảo sát vượt scope MVP, không phải hướng dẫn xây một alert-management subsystem | Bổ sung bằng chứng học thuật cho việc diễn giải anomaly signal ở mức incident và lifecycle/correlation hiện có. Hỗ trợ **RQ1, RQ5**; không thêm component hay subsystem mới cho MVP. |
 
 ---
 
-# 3. Shortlist baseline/phương pháp cho MVP
+## 3. Phân loại baseline/reference có hỗ trợ từ literature
 
-Bảng dưới đây là quyết định sử dụng literature **trong hệ thống hiện tại**. Nó không thay đổi baseline đã ghi trong AI/RCA blueprint; mục đích là làm rõ baseline nào phải có, baseline nào chỉ là reference.
+Bảng dưới đây chỉ phân loại evidence từ literature theo authority đã có. Nhãn **Canonical requirement** chỉ mô tả requirement đã tồn tại trong tài liệu canonical; matrix không tự tạo requirement, không chốt implementation order và không thay đổi baseline trong AI/RCA blueprint.
 
-| Nhóm | Variant / baseline | Quyết định v0 | RQ chính | Input canonical | Metric canonical | Tính khả thi trên testbed hiện tại |
+> Đánh giá tính khả thi trong bảng là đánh giá sơ bộ của artifact để hỗ trợ lựa chọn baseline/reference. Collaborator review vẫn là bước xác nhận riêng theo workflow của task.
+
+| Nhóm | Variant / baseline | Phân loại theo authority | RQ chính | Input canonical | Metric canonical | Tính khả thi trên testbed hiện tại |
 | --- | --- | --- | --- | --- | --- | --- |
-| Anomaly detection | **Static threshold** trên error rate / latency / resource signal | **Bắt buộc — minimum baseline** | RQ1, RQ5 | Service metrics theo `service-window`; threshold versioned/tune ngoài final test | Precision, Recall, F1, FPR, Detection Delay | **Cao.** RED/resource metrics đã nằm trong telemetry requirement; dễ giải thích và tái lập. |
-| Anomaly detection | **Classical z-score** | **Baseline phụ / diagnostic** | RQ1, RQ5 | Một hoặc vài feature đã normalize theo healthy baseline | Cùng detection metrics | **Cao**, nhưng nhạy outlier/distribution lệch nên không phải statistical baseline ưu tiên. |
-| Anomaly detection | **Robust z-score (median + MAD)** | **Bắt buộc — statistical baseline ưu tiên** | RQ1, RQ4, RQ5 | Healthy baseline + service-window feature series | Cùng detection metrics | **Cao.** Hợp với telemetry có spike; implementation nhỏ, deterministic, explainable. |
-| Anomaly detection | **Isolation Forest** | **Bắt buộc — ML baseline** | RQ1, RQ4, RQ5 | Vector `service-window` gồm RED/resource + trace/log features theo selected modality | Cùng detection metrics + inference/runtime | **Cao**, nếu split/tuning được freeze đúng. Không cần label fault khi fit trên healthy data nhưng threshold phải chọn trên validation. |
-| Multi-source fusion | **Normalized score + equal-weight fusion** | **Bắt buộc làm fusion baseline** | RQ1, RQ4, RQ5 | `A_metrics`, `A_traces`, `A_logs` + missing-modality flags | Detection metrics + RCA metrics khi dùng chung downstream logic | **Cao.** Khớp trực tiếp blueprint; weight equal là điểm xuất phát, chỉ tune trên validation nếu cần. Không cần neural fusion. |
-| Incident detection | **Threshold + persistence + merge/recovery rule** | **Bắt buộc** | RQ1, RQ4, RQ5 | Fused/service anomaly scores theo time window | Incident-level Precision/Recall/F1/FPR + Detection Delay | **Cao.** Fault có `fault_start/fault_end`; rule/config phải versioned. Không mở incident từ một isolated high score. |
-| RCA | **Max anomaly** | **Bắt buộc — naive RCA baseline** | RQ2, RQ5 | Per-service anomaly score trong incident | Top-1, Top-3, MRR, Average Rank | **Rất cao.** Không cần graph; giúp định lượng failure mode “symptom upstream có severity lớn hơn root cause”. |
-| RCA temporal | **Earliest anomaly / earliest reliable evidence** | **Bắt buộc — temporal baseline** | RQ3, RQ5 | UTC-aligned service/evidence onset + fault interval chỉ dùng cho evaluation | Top-1, Top-3, MRR, Average Rank | **Cao.** Trace timestamp, telemetry timestamp và control-plane `fault_start/end` đã có schema; cần tolerance do windowing. |
-| RCA dependency | **Graph-aware simple**: anomaly + dependency relation / simple propagation rule | **Bắt buộc — graph baseline** | RQ2, RQ5 | Dynamic service graph từ spans + anomaly score; component edge evidence khi có | Top-1, Top-3, MRR, Average Rank + runtime | **Cao.** Service topology/traces đã chốt; F1/F2/F5 có propagation synchronous rõ, F4 cần async semantics riêng. |
-| RCA proposed | **Anomaly + temporal + propagation + edge + evidence score** theo blueprint | **Primary method candidate của MVP; không phải literature reproduction** | RQ2, RQ3, RQ5 | Multi-source service evidence + dynamic graph + timestamps | Top-1, Top-3, MRR, Average Rank + explainability/runtime | **Khả thi có điều kiện.** Chỉ triển khai sau khi ba RCA baseline trên ổn định; weight tune trên validation hoặc sensitivity analysis, không tune trên final test. |
-| Robustness | **Full telemetry vs một controlled degraded condition trên cùng baseline artifact** | **Bắt buộc** | RQ4 | Cùng `run_id`, immutable ground truth; derived trace-drop **hoặc** missing-modality artifact | Absolute + delta detection/RCA metrics | **Cao theo schema W4-T4.** Derived artifact có lineage/config/seed riêng; không chạy hai workload/fault execution độc lập cho một pair. |
+| Anomaly detection | **Static threshold** trên error rate / latency / resource signal | **Canonical requirement; literature-supported baseline** | RQ1, RQ5 | Service metrics theo `service-window`; threshold versioned/tune ngoài final test | Precision, Recall, F1, FPR, Detection Delay | **Đánh giá sơ bộ: Cao.** RED/resource metrics đã nằm trong telemetry requirement; dễ giải thích và tái lập. |
+| Anomaly detection | **Classical z-score** | **Recommended baseline/reference** | RQ1, RQ5 | Một hoặc vài feature đã normalize theo healthy baseline | Cùng detection metrics | **Đánh giá sơ bộ: Cao**, nhưng nhạy outlier/distribution lệch nên không phải statistical baseline ưu tiên. |
+| Anomaly detection | **Robust z-score (median + MAD)** | **Canonical requirement; literature-supported baseline** | RQ1, RQ4, RQ5 | Healthy baseline + service-window feature series | Cùng detection metrics | **Đánh giá sơ bộ: Cao.** Hợp với telemetry có spike; implementation nhỏ, deterministic, explainable. |
+| Anomaly detection | **Isolation Forest** | **Canonical requirement; literature-supported baseline** | RQ1, RQ4, RQ5 | Vector `service-window` gồm RED/resource + trace/log features theo selected modality | Cùng detection metrics + inference/runtime | **Đánh giá sơ bộ: Cao**, nếu split/tuning được freeze đúng. Không cần label fault khi fit trên healthy data nhưng threshold phải chọn trên validation. |
+| Multi-source fusion | **Normalized score + equal-weight fusion** | **Literature-supported baseline/reference; cấu hình weight theo canonical** | RQ1, RQ4, RQ5 | `A_metrics`, `A_traces`, `A_logs` + missing-modality flags | Detection metrics + RCA metrics khi dùng chung downstream logic | **Đánh giá sơ bộ: Cao.** Equal-weight fusion là baseline đơn giản, reproducible và phù hợp để so sánh trước khi cân nhắc weight tuning trên validation. Không cần neural fusion. |
+| Incident detection | **Threshold + persistence + merge/recovery rule** | **Canonical requirement; literature-supported implementation reference** | RQ1, RQ4, RQ5 | Fused/service anomaly scores theo time window | Incident-level Precision/Recall/F1/FPR + Detection Delay | **Đánh giá sơ bộ: Cao.** Fault có `fault_start/fault_end`; rule/config phải versioned. Không mở incident từ một isolated high score. |
+| RCA | **Max anomaly** | **Canonical requirement; literature-supported baseline** | RQ2, RQ5 | Per-service anomaly score trong incident | Top-1, Top-3, MRR, Average Rank | **Đánh giá sơ bộ: Rất cao.** Không cần graph; giúp định lượng failure mode “symptom upstream có severity lớn hơn root cause”. |
+| RCA temporal | **Earliest anomaly / earliest reliable evidence** | **Canonical requirement; literature-supported baseline** | RQ3, RQ5 | UTC-aligned service/evidence onset + fault interval chỉ dùng cho evaluation | Top-1, Top-3, MRR, Average Rank | **Đánh giá sơ bộ: Cao.** Trace timestamp, telemetry timestamp và control-plane `fault_start/end` đã có schema; cần tolerance do windowing. |
+| RCA dependency | **Graph-aware simple**: anomaly + dependency relation / simple propagation rule | **Canonical requirement; literature-supported baseline** | RQ2, RQ5 | Dynamic service graph từ spans + anomaly score; component edge evidence khi có | Top-1, Top-3, MRR, Average Rank + runtime | **Đánh giá sơ bộ: Cao.** Service topology/traces đã chốt; F1/F2/F5 có propagation synchronous rõ, F4 cần async semantics riêng. |
+| RCA proposed | **Anomaly + temporal + propagation + edge + evidence score** theo blueprint | **Canonical method direction; literature contextualizes, không tạo priority mới** | RQ2, RQ3, RQ5 | Multi-source service evidence + dynamic graph + timestamps | Top-1, Top-3, MRR, Average Rank + explainability/runtime | **Đánh giá sơ bộ: Khả thi có điều kiện.** Weight tune trên validation hoặc sensitivity analysis, không tune trên final test. |
+| Robustness | **Full telemetry vs một controlled degraded condition trên cùng baseline artifact** | **Canonical requirement; literature-supported evaluation reference** | RQ4 | Cùng `run_id`, immutable ground truth; derived trace-drop **hoặc** missing-modality artifact | Absolute + delta detection/RCA metrics | **Đánh giá sơ bộ: Cao theo schema W4-T4.** Derived artifact có lineage/config/seed riêng; không chạy hai workload/fault execution độc lập cho một pair. |
 
 ---
 
-# 4. Ánh xạ literature → RQ/metric v1
+## 4. Ánh xạ literature → RQ/metric v1
 
 | RQ | Literature hỗ trợ | Kết luận sử dụng cho MVP | Metric giữ theo canonical |
 | --- | --- | --- | --- |
-| **RQ1 — Multi-source telemetry** | L1, L2, L3, L4, L8 | So sánh detector đơn giản trên `M`, `M+T`, `M+T+L`; dùng score-level fusion dễ giải thích. Eadro chỉ chứng minh hướng multi-source/ablation có ý nghĩa, **không** kéo neural fusion vào MVP. | Detection Precision/Recall/F1/FPR/Delay; RCA Top-1/Top-3/MRR khi cùng downstream RCA logic. |
+| **RQ1 — Multi-source telemetry** | L1, L2, L3, L4, L8, L12 | So sánh detector đơn giản trên `M`, `M+T`, `M+T+L`; dùng score-level fusion dễ giải thích. Eadro chỉ chứng minh hướng multi-source/ablation có ý nghĩa, **không** kéo neural fusion vào MVP. L12 hỗ trợ framing alert/incident correlation và incident-level interpretation đã có, không thêm subsystem mới. | Detection Precision/Recall/F1/FPR/Delay; RCA Top-1/Top-3/MRR khi cùng downstream RCA logic. |
 | **RQ2 — Dependency graph** | L4, L6, L7 | So sánh severity-only với graph-aware simple; graph lấy từ observed traces theo run/window, topology static chỉ dùng validation. | Top-1, Top-3, MRR; Average Rank bổ sung. |
 | **RQ3 — Temporal information** | L4, L5, L7 | So sánh no-temporal với earliest-anomaly rồi temporal-aware ranking. `fault_start` là truth để đánh giá, không được dùng làm feature dự đoán. | Top-1, Top-3, MRR; Average Rank bổ sung. |
 | **RQ4 — Robustness** | L2, L3, L4, L9, L10 | So sánh full với **một** degraded telemetry condition derived từ cùng baseline artifact; robust z-score là baseline đáng giữ do robustness với outlier, nhưng robustness RQ4 chủ yếu đo missing/degraded telemetry chứ không phải outlier robustness. | Absolute + delta detection metrics; absolute + delta RCA metrics. |
@@ -81,9 +84,9 @@ Bảng dưới đây là quyết định sử dụng literature **trong hệ th�
 
 ---
 
-# 5. Feasibility đối với fault/telemetry canonical hiện tại
+## 5. Feasibility đối với fault/telemetry canonical hiện tại
 
-## 5.1. Mapping fault scenario → baseline có thể kiểm tra
+### 5.1. Mapping fault scenario → baseline có thể kiểm tra
 
 | Fault | Signal/evidence chính đã chốt | Baseline phù hợp để kiểm tra | Giá trị cho RCA |
 | --- | --- | --- | --- |
@@ -93,7 +96,7 @@ Bảng dưới đây là quyết định sử dụng literature **trong hệ th�
 | **F4 — Notification consumer slowdown / RabbitMQ backlog** | queue depth/lag, consumer processing latency, async trace/event correlation khi có | Threshold/robust z/Isolation Forest; temporal baseline; graph-aware với async rule riêng | Kiểm tra graph/temporal logic không giả định mọi propagation là synchronous caller->callee latency. |
 | **F5 — Submission CPU pressure** | CPU/resource + Submission latency/error + Gateway/Grading symptom tùy workload | Threshold/robust z/Isolation Forest; max anomaly; graph-aware | Kiểm tra multi-source/resource evidence và khả năng phân biệt service root cause với upstream symptom. |
 
-## 5.2. Data/telemetry feasibility
+### 5.2. Data/telemetry feasibility
 
 | Requirement của baseline | Nguồn dữ liệu hiện tại | Đánh giá |
 | --- | --- | --- |
@@ -108,39 +111,32 @@ Bảng dưới đây là quyết định sử dụng literature **trong hệ th�
 
 ---
 
-# 6. Baseline priority order
+## 6. Hướng dẫn mức độ sẵn sàng từ literature
 
-Để tránh triển khai phức tạp trước khi pipeline/evaluation ổn định, thứ tự ưu tiên nên giữ như sau:
+Các nhóm dưới đây chỉ phản ánh mức độ đơn giản, reproducibility và giá trị so sánh theo literature. Chúng không thay thế implementation order, task priority hoặc bất kỳ quyết định nào trong plan/blueprint canonical.
 
-```text
-P0 — phải có trước
-1. Static threshold
-2. Robust z-score
-3. Incident persistence/merge/recovery rule
-4. Max-anomaly RCA
-5. Earliest-anomaly RCA
+### 6.1. Minimum reproducible baselines
 
-P1 — baseline đánh giá chính
-6. Isolation Forest
-7. Equal-weight multi-source score fusion
-8. Graph-aware simple RCA
+- Static threshold và robust z-score là baseline đơn giản, tái lập và giải thích được.
+- Incident persistence/merge/recovery rule diễn giải anomaly ở mức incident theo contract canonical.
+- Max-anomaly và earliest-anomaly là baseline RCA đơn giản để so sánh với contribution graph/temporal.
 
-P2 — primary method sau khi baseline ổn
-9. Anomaly + temporal + propagation + edge + evidence ranker
+### 6.2. Comparative baselines/references
 
-Không thuộc core MVP v0
-- neural/deep multi-source fusion kiểu Eadro
-- LLM-based RCA
-- causal discovery
-- component-level primary RCA
-- broad external benchmark campaign thay cho controlled testbed
-```
+- Isolation Forest và graph-aware simple là các baseline/variant so sánh có hỗ trợ từ literature và đã có hướng canonical.
+- Equal-weight multi-source score fusion là baseline đơn giản, reproducible để so sánh trước khi cân nhắc tune weight trên validation; equal weight không phải requirement riêng của matrix.
 
-Thứ tự này phù hợp với nguyên tắc của AI/RCA blueprint: **baseline, ablation và failure analysis phải có trước khi model/phương pháp phức tạp được xem là có giá trị**.
+### 6.3. Candidate methods sau khi baseline ổn định
+
+- Anomaly + temporal + propagation + edge + evidence ranker là hướng phương pháp đã nêu trong blueprint; literature chỉ cung cấp ngữ cảnh/evidence, không tạo thứ tự triển khai mới.
+
+### 6.4. Optional/non-core references và future research
+
+- Neural/deep multi-source fusion kiểu Eadro, LLM-based RCA, causal discovery, component-level primary RCA và broad external benchmark campaign là reference/future direction, không phải core MVP từ matrix này.
 
 ---
 
-# 7. Quy tắc evaluation rút ra từ literature nhưng không vượt scope W3-T5
+## 7. Quy tắc evaluation rút ra từ literature nhưng không vượt scope W3-T5
 
 Matrix chỉ ghi các invariant cần giữ; chi tiết experiment/evaluation manifest, split, tolerance và campaign protocol thuộc W4-T5.
 
@@ -154,14 +150,14 @@ Matrix chỉ ghi các invariant cần giữ; chi tiết experiment/evaluation ma
 
 ---
 
-# 8. Kết luận v0
+## 8. Kết luận v0
 
 Literature hiện tại đủ cơ sở để giữ architecture/phương pháp đã chốt, **không yêu cầu sửa các artifact canonical trước đó**.
 
-Shortlist MVP được giữ:
+Literature hỗ trợ các hướng baseline/phương pháp đã được canonical docs định nghĩa:
 
 - anomaly: **static threshold + robust z-score + Isolation Forest**;
-- fusion: **normalized score-level fusion**, equal-weight làm baseline;
+- fusion: **normalized score-level fusion**; equal-weight có thể dùng làm baseline trước khi cân nhắc tune weight trên validation;
 - incident: threshold/persistence/merge/recovery rule có version;
 - RCA: **max anomaly + earliest anomaly + graph-aware simple**, sau đó mới đánh giá ranker kết hợp anomaly/temporal/propagation/edge/evidence;
 - evaluation: incident/fault-run detection metrics + service-level Top-K/MRR + runtime/overhead, có strict paired robustness comparison cho RQ4.
@@ -170,7 +166,7 @@ Các nguồn deep/multi-task như Eadro được giữ để hỗ trợ luận �
 
 ---
 
-# 9. Điểm cần collaborator review trước khi task được hoàn thành
+## 9. Điểm cần collaborator review trước khi task được hoàn thành
 
 Artifact này **chưa tự coi collaborator review là hoàn tất**. Đức cần xác nhận các điểm sau trên PR/task workflow hiện hành:
 
