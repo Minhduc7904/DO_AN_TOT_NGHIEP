@@ -8,6 +8,7 @@
   const nodeLayer = document.getElementById('node-layer');
   const connectorLayer = document.getElementById('connector-layer');
   const detailCard = document.getElementById('detail-card');
+  const detailBridge = document.getElementById('detail-bridge');
   const minimap = document.getElementById('minimap');
   const minimapTrack = document.getElementById('minimap-track');
   const minimapWindow = document.getElementById('minimap-window');
@@ -29,10 +30,10 @@
 
   const config = {
     sidePadding: 230,
-    weekWidth: parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--week-width')) || 330,
     axisY: parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--axis-y')) || 390,
-    taskStep: 82,
-    taskSpread: 104
+    endpointGap: 250,
+    baseWeekGap: 270,
+    taskGap: 145
   };
   const statusColors = {
     'Chưa bắt đầu': '#71869f',
@@ -45,21 +46,45 @@
   };
   const phaseColors = ['#4ee3ff', '#5d8dff', '#7e75ff', '#ae70ff', '#e56ac1', '#ff9770', '#ffd06d'];
   const nodeElements = new Map();
-  const connectorElements = new Map();
+  const layout = { weekX: new Map(), taskX: new Map(), tasksByWeek: new Map(), startX: 0, finishX: 0, canvasWidth: 0 };
   let pinnedNode = null;
   let hoveredNode = null;
+  let hideDetailTimer = null;
   let dragState = null;
   let momentumFrame = null;
 
   const fmtDate = (iso) => new Intl.DateTimeFormat('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date(`${iso}T00:00:00`));
   const escapeHtml = (value = '') => String(value).replace(/[&<>'"]/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[char]));
   const colorFor = (status) => statusColors[status] || '#71869f';
+  const memberFor = (owner = '') => project.project.members.find((member) => owner.includes(member.shortName));
+  const avatarFor = (owner) => {
+    const member = memberFor(owner);
+    return member?.avatar ? `../../../../${member.avatar}` : null;
+  };
 
   document.getElementById('project-summary').textContent = project.project.description;
   document.getElementById('generated-at').textContent = `Đồng bộ ${new Date(project.generatedAt).toLocaleString('vi-VN')}`;
 
+  function prepareLayout() {
+    layout.startX = config.sidePadding;
+    let cursor = layout.startX + config.endpointGap;
+    project.weeks.forEach((week) => {
+      const orderedTasks = [...week.tasks].sort((left, right) => {
+        const leftDeadline = left.dueDate || '9999-12-31';
+        const rightDeadline = right.dueDate || '9999-12-31';
+        return leftDeadline.localeCompare(rightDeadline) || left.id.localeCompare(right.id);
+      });
+      layout.weekX.set(week.number, cursor);
+      layout.tasksByWeek.set(week.number, orderedTasks);
+      orderedTasks.forEach((task, index) => layout.taskX.set(`${week.id}:${task.id}`, cursor + config.taskGap * (index + 1)));
+      cursor += config.baseWeekGap + orderedTasks.length * config.taskGap;
+    });
+    layout.finishX = cursor - config.baseWeekGap + config.endpointGap;
+    layout.canvasWidth = layout.finishX + config.sidePadding;
+  }
+
   function weekX(number) {
-    return config.sidePadding + config.weekWidth + (number - 1) * config.weekWidth;
+    return layout.weekX.get(number);
   }
 
   function createButton(className, x, y, label, data, nodeId) {
@@ -80,8 +105,9 @@
     project.phases.forEach((phase, index) => {
       const band = document.createElement('div');
       band.className = 'phase-band';
-      const left = weekX(phase.startWeek) - config.weekWidth / 2;
-      const width = (phase.endWeek - phase.startWeek + 1) * config.weekWidth;
+      const left = phase.startWeek === 1 ? layout.startX + 100 : (weekX(phase.startWeek - 1) + weekX(phase.startWeek)) / 2;
+      const right = phase.endWeek === 24 ? layout.finishX - 100 : (weekX(phase.endWeek) + weekX(phase.endWeek + 1)) / 2;
+      const width = right - left;
       band.style.left = `${left}px`;
       band.style.width = `${width}px`;
       band.style.setProperty('--phase-color', `${phaseColors[index]}12`);
@@ -93,7 +119,7 @@
 
       const segment = document.createElement('span');
       segment.className = 'minimap-segment';
-      segment.style.flex = String(phase.endWeek - phase.startWeek + 1);
+      segment.style.flex = String(width);
       segment.style.background = phaseColors[index];
       segment.title = phase.title;
       minimapTrack.appendChild(segment);
@@ -129,29 +155,22 @@
       <span class="week-caption">${escapeHtml(week.title)}<span class="week-date">${fmtDate(week.startDate)} — ${fmtDate(week.endDate)}</span></span>`;
     nodeLayer.appendChild(weekNode);
 
-    week.tasks.forEach((task, index) => {
+    layout.tasksByWeek.get(week.number).forEach((task, index) => {
       const above = index % 2 === 0;
-      const lane = Math.floor(index / 2);
-      const offsetX = (lane - (Math.max(0, Math.ceil(week.tasks.length / 2) - 1) / 2)) * config.taskStep;
-      const taskX = x + offsetX;
-      const taskY = config.axisY + (above ? -1 : 1) * (config.taskSpread + lane * 9);
       const nodeId = `${week.id}:${task.id}`;
-      const taskNode = createButton(`task-node ${above ? 'is-above' : 'is-below'}`, taskX, taskY, `${task.id}: ${task.title}`, { ...task, type: 'task', week }, nodeId);
-      taskNode.innerHTML = `<span class="node-orb"></span><span class="task-caption">${escapeHtml(task.title)}</span>`;
+      const taskX = layout.taskX.get(nodeId);
+      const avatar = avatarFor(task.owner);
+      const ownerFallback = escapeHtml((task.owner || '?').trim().slice(0, 1).toUpperCase());
+      const deadline = task.dueDate ? fmtDate(task.dueDate) : (task.dueDateDisplay || 'Chưa có hạn');
+      const taskNode = createButton(`task-node ${above ? 'is-above' : 'is-below'}`, taskX, config.axisY, `${task.id}: ${task.title}`, { ...task, type: 'task', week }, nodeId);
+      taskNode.innerHTML = `
+        <span class="node-orb">
+          ${avatar ? `<img class="task-owner-avatar" src="${escapeHtml(avatar)}" alt="${escapeHtml(task.owner)}">` : `<span class="task-owner-fallback">${ownerFallback}</span>`}
+          <span class="task-status-ring"></span>
+        </span>
+        <span class="task-caption">${escapeHtml(task.title)}<span class="task-deadline">${escapeHtml(deadline)} · ${escapeHtml(task.owner)}</span></span>`;
       nodeLayer.appendChild(taskNode);
-      createConnector(nodeId, x, config.axisY, taskX, taskY, above);
     });
-  }
-
-  function createConnector(nodeId, sourceX, sourceY, targetX, targetY, above) {
-    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-    const curve = Math.abs(targetY - sourceY) * .52;
-    const d = `M ${sourceX} ${sourceY} C ${sourceX} ${sourceY + (above ? -curve : curve)}, ${targetX} ${targetY + (above ? curve : -curve)}, ${targetX} ${targetY}`;
-    path.setAttribute('d', d);
-    path.setAttribute('class', 'connector');
-    path.dataset.nodeId = nodeId;
-    connectorLayer.appendChild(path);
-    connectorElements.set(nodeId, path);
   }
 
   function detailSections(data) {
@@ -188,6 +207,7 @@
   }
 
   function renderDetail(node, pinned) {
+    cancelScheduledHide();
     const data = node._timelineData;
     const typeLabel = data.type === 'week' ? `Tuần ${String(data.number).padStart(2, '0')}` : data.type === 'task' ? data.id : 'Hành trình';
     const meta = [];
@@ -210,7 +230,10 @@
   }
 
   function positionDetail(node) {
-    if (window.innerWidth <= 780) return;
+    if (window.innerWidth <= 780) {
+      detailBridge.hidden = true;
+      return;
+    }
     const rect = node.getBoundingClientRect();
     const cardRect = detailCard.getBoundingClientRect();
     let left = rect.right + 18;
@@ -219,47 +242,81 @@
     top = Math.max(14, Math.min(top, window.innerHeight - cardRect.height - 14));
     detailCard.style.left = `${left}px`;
     detailCard.style.top = `${top}px`;
+    updateDetailBridge(node);
   }
 
-  function setActive(node, active) {
-    const id = node.dataset.nodeId;
-    connectorElements.get(id)?.classList.toggle('is-active', active);
+  function updateDetailBridge(node) {
+    const nodeRect = node.getBoundingClientRect();
+    const cardRect = detailCard.getBoundingClientRect();
+    const startX = nodeRect.left + nodeRect.width / 2;
+    const startY = nodeRect.top + nodeRect.height / 2;
+    const cardIsRight = cardRect.left >= nodeRect.right;
+    const endX = cardIsRight ? cardRect.left + 2 : cardRect.right - 2;
+    const endY = Math.max(cardRect.top + 26, Math.min(startY, cardRect.bottom - 26));
+    const deltaX = endX - startX;
+    const deltaY = endY - startY;
+    const distance = Math.hypot(deltaX, deltaY);
+    detailBridge.style.left = `${startX}px`;
+    detailBridge.style.top = `${startY - 26}px`;
+    detailBridge.style.width = `${distance}px`;
+    detailBridge.style.transform = `rotate(${Math.atan2(deltaY, deltaX)}rad)`;
+    detailBridge.hidden = false;
+  }
+
+  function cancelScheduledHide() {
+    if (hideDetailTimer) clearTimeout(hideDetailTimer);
+    hideDetailTimer = null;
+  }
+
+  function scheduleDetailHide() {
+    if (pinnedNode) return;
+    cancelScheduledHide();
+    hideDetailTimer = setTimeout(() => {
+      hoveredNode = null;
+      detailCard.classList.remove('is-visible');
+      detailBridge.hidden = true;
+      setTimeout(() => {
+        if (!hoveredNode && !pinnedNode) detailCard.hidden = true;
+      }, 180);
+    }, 110);
+  }
+
+  function belongsToHoverCluster(target) {
+    return Boolean(target && (detailCard.contains(target) || detailBridge.contains(target) || target.closest?.('.timeline-node')));
   }
 
   function unpinDetail() {
+    cancelScheduledHide();
     if (pinnedNode) pinnedNode.classList.remove('is-pinned');
     pinnedNode = null;
     detailCard.classList.remove('is-pinned', 'is-visible');
+    detailBridge.hidden = true;
     setTimeout(() => { if (!hoveredNode && !pinnedNode) detailCard.hidden = true; }, 180);
   }
 
   nodeLayer.addEventListener('pointerover', (event) => {
     const node = event.target.closest('.timeline-node');
     if (!node || pinnedNode) return;
+    cancelScheduledHide();
     hoveredNode = node;
-    setActive(node, true);
     renderDetail(node, false);
   });
   nodeLayer.addEventListener('pointerout', (event) => {
     const node = event.target.closest('.timeline-node');
-    if (!node || pinnedNode || node.contains(event.relatedTarget)) return;
-    hoveredNode = null;
-    setActive(node, false);
-    detailCard.classList.remove('is-visible');
-    setTimeout(() => { if (!hoveredNode && !pinnedNode) detailCard.hidden = true; }, 180);
+    if (!node || pinnedNode || node.contains(event.relatedTarget) || belongsToHoverCluster(event.relatedTarget)) return;
+    scheduleDetailHide();
   });
   nodeLayer.addEventListener('focusin', (event) => {
     const node = event.target.closest('.timeline-node');
     if (!node || pinnedNode) return;
+    cancelScheduledHide();
     hoveredNode = node;
-    setActive(node, true);
     renderDetail(node, false);
   });
   nodeLayer.addEventListener('focusout', (event) => {
     const node = event.target.closest('.timeline-node');
     if (!node || pinnedNode) return;
-    hoveredNode = null;
-    setActive(node, false);
+    if (!belongsToHoverCluster(event.relatedTarget)) scheduleDetailHide();
   });
   nodeLayer.addEventListener('click', (event) => {
     const node = event.target.closest('.timeline-node');
@@ -270,22 +327,33 @@
     node.classList.add('is-pinned');
     renderDetail(node, true);
   });
+  detailBridge.addEventListener('pointerenter', cancelScheduledHide);
+  detailBridge.addEventListener('pointerleave', (event) => {
+    if (!belongsToHoverCluster(event.relatedTarget)) scheduleDetailHide();
+  });
+  detailCard.addEventListener('pointerenter', cancelScheduledHide);
+  detailCard.addEventListener('pointerleave', (event) => {
+    if (!belongsToHoverCluster(event.relatedTarget)) scheduleDetailHide();
+  });
   document.addEventListener('click', (event) => {
     if (pinnedNode && !detailCard.contains(event.target) && !event.target.closest('.timeline-node')) unpinDetail();
   });
 
   function updateMinimap() {
-    const maxScroll = Math.max(1, viewport.scrollWidth - viewport.clientWidth);
     const ratio = viewport.clientWidth / viewport.scrollWidth;
     const leftRatio = viewport.scrollLeft / viewport.scrollWidth;
     minimapWindow.style.width = `${Math.max(4, ratio * 100)}%`;
     minimapWindow.style.left = `${leftRatio * 100}%`;
     const center = viewport.scrollLeft + viewport.clientWidth / 2;
-    const week = Math.max(1, Math.min(24, Math.round((center - config.sidePadding - config.weekWidth) / config.weekWidth) + 1));
-    positionLabel.textContent = center < weekX(1) - config.weekWidth / 2 ? 'Bắt đầu' : center > weekX(24) + config.weekWidth / 2 ? 'Kết thúc' : `Tuần ${String(week).padStart(2, '0')}`;
+    const nearestWeek = project.weeks.reduce((nearest, week) => Math.abs(weekX(week.number) - center) < Math.abs(weekX(nearest.number) - center) ? week : nearest, project.weeks[0]);
+    positionLabel.textContent = center < (layout.startX + weekX(1)) / 2 ? 'Bắt đầu' : center > (weekX(24) + layout.finishX) / 2 ? 'Kết thúc' : `Tuần ${String(nearestWeek.number).padStart(2, '0')}`;
   }
 
-  viewport.addEventListener('scroll', updateMinimap, { passive: true });
+  viewport.addEventListener('scroll', () => {
+    updateMinimap();
+    const activeNode = pinnedNode || hoveredNode;
+    if (activeNode && !detailCard.hidden) positionDetail(activeNode);
+  }, { passive: true });
   minimap.addEventListener('click', (event) => {
     const rect = minimap.getBoundingClientRect();
     const ratio = (event.clientX - rect.left) / rect.width;
@@ -336,7 +404,7 @@
   viewport.addEventListener('keydown', (event) => {
     if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') {
       event.preventDefault();
-      viewport.scrollBy({ left: event.key === 'ArrowRight' ? config.weekWidth : -config.weekWidth, behavior: reduceMotion ? 'auto' : 'smooth' });
+      viewport.scrollBy({ left: event.key === 'ArrowRight' ? config.baseWeekGap : -config.baseWeekGap, behavior: reduceMotion ? 'auto' : 'smooth' });
     }
     if (event.key === 'Home') viewport.scrollTo({ left: 0, behavior: reduceMotion ? 'auto' : 'smooth' });
     if (event.key === 'End') viewport.scrollTo({ left: viewport.scrollWidth, behavior: reduceMotion ? 'auto' : 'smooth' });
@@ -352,13 +420,13 @@
     scrollToWeek(week.number);
   });
 
-  const canvasWidth = config.sidePadding * 2 + config.weekWidth * 26;
-  canvas.style.width = `${canvasWidth}px`;
-  connectorLayer.setAttribute('viewBox', `0 0 ${canvasWidth} ${Math.max(610, viewport.clientHeight)}`);
+  prepareLayout();
+  canvas.style.width = `${layout.canvasWidth}px`;
+  connectorLayer.setAttribute('viewBox', `0 0 ${layout.canvasWidth} ${Math.max(610, viewport.clientHeight)}`);
   renderPhases();
-  renderEndpoint('start', config.sidePadding);
+  renderEndpoint('start', layout.startX);
   project.weeks.forEach(renderWeek);
-  renderEndpoint('finish', weekX(24) + config.weekWidth);
+  renderEndpoint('finish', layout.finishX);
   updateMinimap();
 
   requestAnimationFrame(() => {

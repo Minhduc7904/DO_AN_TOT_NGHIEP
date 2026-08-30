@@ -449,8 +449,8 @@ $project = [ordered]@{
         description = 'Phát hiện bất thường và hỗ trợ phân tích nguyên nhân sự cố từ observability telemetry.'
         repository = 'https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP'
         members = @(
-            [ordered]@{ name = 'Nguyễn Minh Đức'; shortName = 'Đức'; role = 'Backend / Platform primary' },
-            [ordered]@{ name = 'Mai Khoa Bách'; shortName = 'Bách'; role = 'AI / Diagnosis primary' }
+            [ordered]@{ name = 'Nguyễn Minh Đức'; shortName = 'Đức'; role = 'Backend / Platform primary'; github = 'https://github.com/Minhduc7904'; avatar = 'docs/processed/plan/timeline/assets/avatar-duc.png' },
+            [ordered]@{ name = 'Mai Khoa Bách'; shortName = 'Bách'; role = 'AI / Diagnosis primary'; github = 'https://github.com/b4schh'; avatar = 'docs/processed/plan/timeline/assets/avatar-bach.png' }
         )
     }
     schedule = [ordered]@{ startDate = '2026-08-02'; endDate = '2027-01-16'; totalWeeks = 24 }
