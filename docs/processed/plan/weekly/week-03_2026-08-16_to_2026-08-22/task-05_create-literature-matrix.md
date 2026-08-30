@@ -46,8 +46,8 @@ Lập literature matrix v0 cho các baseline và hướng phương pháp cần t
 
 ## Liên kết hồ sơ thực hiện
 
-- Input workspace: [`workspace/bach/week-03_2026-08-16_to_2026-08-22/task-05_create-literature-matrix/input/task-input.md`](../../../../workspace/bach/week-03_2026-08-16_to_2026-08-22/task-05_create-literature-matrix/input/task-input.md).
-- Output workspace: [`workspace/bach/week-03_2026-08-16_to_2026-08-22/task-05_create-literature-matrix/output/task-output.md`](../../../../workspace/bach/week-03_2026-08-16_to_2026-08-22/task-05_create-literature-matrix/output/task-output.md).
+- Input workspace: [`workspace/bach/week-03_2026-08-16_to_2026-08-22/task-05_create-literature-matrix/input/task-input.md`](../../../../../workspace/bach/week-03_2026-08-16_to_2026-08-22/task-05_create-literature-matrix/input/task-input.md).
+- Output workspace: [`workspace/bach/week-03_2026-08-16_to_2026-08-22/task-05_create-literature-matrix/output/task-output.md`](../../../../../workspace/bach/week-03_2026-08-16_to_2026-08-22/task-05_create-literature-matrix/output/task-output.md).
 - Pull request: [PR #12](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/12).
 
 ## Cập nhật tiến độ
