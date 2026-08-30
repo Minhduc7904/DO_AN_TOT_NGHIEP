@@ -126,7 +126,7 @@ Các nhóm dưới đây chỉ phản ánh mức độ đơn giản, reproducibi
 - Isolation Forest và graph-aware simple là các baseline/variant so sánh có hỗ trợ từ literature và đã có hướng canonical.
 - Equal-weight multi-source score fusion là baseline đơn giản, reproducible để so sánh trước khi cân nhắc tune weight trên validation; equal weight không phải requirement riêng của matrix.
 
-### 6.3. Candidate methods sau khi baseline ổn định
+### 6.3. Canonical method direction
 
 - Anomaly + temporal + propagation + edge + evidence ranker là hướng phương pháp đã nêu trong blueprint; literature chỉ cung cấp ngữ cảnh/evidence, không tạo thứ tự triển khai mới.
 
@@ -159,7 +159,7 @@ Literature hỗ trợ các hướng baseline/phương pháp đã được canoni
 - anomaly: **static threshold + robust z-score + Isolation Forest**;
 - fusion: **normalized score-level fusion**; equal-weight có thể dùng làm baseline trước khi cân nhắc tune weight trên validation;
 - incident: threshold/persistence/merge/recovery rule có version;
-- RCA: **max anomaly + earliest anomaly + graph-aware simple**, sau đó mới đánh giá ranker kết hợp anomaly/temporal/propagation/edge/evidence;
+- RCA: **max anomaly + earliest anomaly + graph-aware simple** và ranker kết hợp anomaly/temporal/propagation/edge/evidence theo hướng canonical;
 - evaluation: incident/fault-run detection metrics + service-level Top-K/MRR + runtime/overhead, có strict paired robustness comparison cho RQ4.
 
 Các nguồn deep/multi-task như Eadro được giữ để hỗ trợ luận điểm multi-source và ablation, nhưng **không trở thành core implementation requirement**. Không có literature nào trong matrix này tạo nhu cầu đổi service topology, fault catalogue F1–F5, telemetry schema, ground-truth granularity hoặc RQ/metric đã chốt.
