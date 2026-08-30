@@ -1,3 +1,4 @@
+powershell -NoProfile -ExecutionPolicy Bypass -File .\tools\sync-plan-json-and-timeline.ps1
 # Input task
 
 ## Thông tin chung
