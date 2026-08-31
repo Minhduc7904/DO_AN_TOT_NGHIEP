@@ -2,9 +2,13 @@
 docs/processed/plan/json/
 
 # Dependency, build output và cấu hình local của LMS workspace.
-lms/node_modules/
 lms/**/node_modules/
+lms/**/.pnpm-store/
 lms/**/dist/
 lms/**/coverage/
+lms/**/*.tsbuildinfo
 lms/**/.env
+lms/**/.env.*
 !lms/**/.env.example
+lms/**/*.log
+lms/**/.eslintcache
