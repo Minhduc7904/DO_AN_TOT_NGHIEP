@@ -61,12 +61,18 @@ Target có thể thêm Assignment, MinIO và expanded robustness evaluation vớ
 - `lms/packages/observability/`: shared application instrumentation.
 - `lms/contracts/`: published HTTP/event contracts của LMS.
 - `lms/infrastructure/observability/`: Collector, Prometheus, Tempo, Loki và Grafana runtime/config.
+- `docker-compose/`: Compose manifest root để khởi động LMS service và dependency cục bộ.
 - `load/`: workload implementation.
 - `faults/`: reusable fault mechanisms.
 - `experiments/`: protocol, scenario orchestration, runner và run artifacts.
 - `analysis/evaluation/`: prediction + ground truth → metrics.
 
 Repository chỉ scaffold các module khi bắt đầu triển khai. Cây source code đầy đủ và convention kỹ thuật nằm trong backend blueprint.
+
+## Quick Start Docker Compose
+
+Baseline hiện tại khởi động Course service, PostgreSQL, Redis và RabbitMQ. Xem quy trình
+validate, start, verify, logs và reset tại [docker-compose/README.md](docker-compose/README.md).
 
 ## Tài liệu canonical
 

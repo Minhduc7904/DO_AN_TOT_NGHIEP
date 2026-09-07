@@ -48,4 +48,5 @@ docker rm -f aiops-lms-course-check
 
 Lệnh `id -u` phải trả về UID khác `0`; health endpoint phải trả `status=ok` trên port đã cấu hình.
 
-Compose, OpenTelemetry và CI được triển khai trong các task tiếp theo.
+Docker Compose baseline được hướng dẫn tại [`../docker-compose/README.md`](../docker-compose/README.md).
+OpenTelemetry và CI được triển khai trong các task tiếp theo.

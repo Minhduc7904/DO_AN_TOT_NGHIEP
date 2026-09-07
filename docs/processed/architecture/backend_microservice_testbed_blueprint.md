@@ -188,7 +188,6 @@ DO_AN_TOT_NGHIEP/
 │   │   ├── http/
 │   │   └── events/
 │   └── infrastructure/
-│       ├── compose/
 │       ├── postgres/
 │       ├── redis/
 │       ├── rabbitmq/
@@ -201,6 +200,11 @@ DO_AN_TOT_NGHIEP/
 │           ├── tempo/
 │           ├── loki/
 │           └── grafana/
+│
+├── docker-compose/
+│   ├── compose.yaml
+│   ├── .env.example
+│   └── README.md
 │
 ├── analysis/
 │   ├── telemetry/
@@ -254,6 +258,8 @@ DO_AN_TOT_NGHIEP/
 `lms/packages/observability/` chứa shared application instrumentation như bootstrap OpenTelemetry, logger correlation và helper metric. Nó **không** chứa Collector, Prometheus, Tempo, Loki hoặc Grafana.
 
 `lms/infrastructure/observability/` chứa runtime/configuration của observability stack. Đây là vị trí duy nhất cho Collector, Prometheus, Tempo, Loki và Grafana.
+
+`docker-compose/` nằm cùng cấp với `lms/` và chứa manifest orchestration root cho toàn bộ testbed. Cấu hình riêng của từng dependency vẫn đặt dưới `lms/infrastructure/` và được Compose tham chiếu khi xuất hiện.
 
 `lms/packages/testing/` chứa test utility kỹ thuật; không chứa business model dùng chung.
 

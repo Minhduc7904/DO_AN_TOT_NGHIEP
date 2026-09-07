@@ -12,3 +12,8 @@ lms/**/.env.*
 !lms/**/.env.example
 lms/**/*.log
 lms/**/.eslintcache
+
+# Cấu hình local của Docker Compose root.
+docker-compose/.env
+docker-compose/.env.*
+!docker-compose/.env.example

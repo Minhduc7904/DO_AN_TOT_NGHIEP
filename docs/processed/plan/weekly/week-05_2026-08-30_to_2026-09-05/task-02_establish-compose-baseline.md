@@ -2,16 +2,16 @@
 
 ## Thông tin chung
 
-| Trường | Nội dung |
-| --- | --- |
-| Mã task | `task-02_establish-compose-baseline` |
-| Tuần | `week-05_2026-08-30_to_2026-09-05` |
-| Trạng thái | Đã giao |
-| Người phụ trách | Đức |
-| Collaborator | Bách chạy fresh setup độc lập và phản hồi Quick Start |
-| Ưu tiên | Cao |
-| Hạn dự kiến | 03/09/2026 |
-| Nhánh thực hiện | `feat/week-05/task-02-establish-compose-baseline` |
+| Trường          | Nội dung                                              |
+| --------------- | ----------------------------------------------------- |
+| Mã task         | `task-02_establish-compose-baseline`                  |
+| Tuần            | `week-05_2026-08-30_to_2026-09-05`                    |
+| Trạng thái      | Đang thực hiện                                        |
+| Người phụ trách | Đức                                                   |
+| Collaborator    | Bách chạy fresh setup độc lập và phản hồi Quick Start |
+| Ưu tiên         | Cao                                                   |
+| Hạn dự kiến     | 03/09/2026                                            |
+| Nhánh thực hiện | `feat/week-05/task-02-establish-compose-baseline`     |
 
 ## Yêu cầu và phạm vi
 
@@ -34,23 +34,23 @@ Dựng Docker Compose skeleton cho service mẫu cùng PostgreSQL, Redis và Rab
 
 ## Sản phẩm kỳ vọng
 
-| Sản phẩm | Loại | Vị trí hoặc link dự kiến |
-| --- | --- | --- |
-| Docker Compose baseline và cấu hình hạ tầng | Code | `lms/infrastructure/compose/` và các thư mục dependency liên quan trong `lms/infrastructure/` |
-| Hướng dẫn Quick Start | Docs | `README.md` hoặc tài liệu hướng dẫn canonical được liên kết từ README |
+| Sản phẩm                                    | Loại | Vị trí hoặc link dự kiến                                                                                     |
+| ------------------------------------------- | ---- | ------------------------------------------------------------------------------------------------------------ |
+| Docker Compose baseline và cấu hình hạ tầng | Code | `docker-compose/` cùng cấp với `lms/`; cấu hình dependency riêng khi cần vẫn nằm trong `lms/infrastructure/` |
+| Hướng dẫn Quick Start                       | Docs | `README.md` hoặc tài liệu hướng dẫn canonical được liên kết từ README                                        |
 
 ## Definition of Done
 
-- [ ] `docker compose config` hợp lệ và `docker compose up` khởi động được service mẫu, PostgreSQL, Redis và RabbitMQ bằng cấu hình được commit.
-- [ ] Health check chứng minh các dependency chính sẵn sàng và `GET /health` của service truy cập được từ host.
-- [ ] Biến môi trường mẫu không chứa secret thật; image/runtime version cần thiết được pin hoặc ghi rõ để chạy lại ổn định.
-- [ ] Quick Start mô tả từ clean clone đến start, verify và stop/reset stack; không cần bước thủ công ngoài tài liệu.
+- [x] `docker compose config` hợp lệ và `docker compose up` khởi động được service mẫu, PostgreSQL, Redis và RabbitMQ bằng cấu hình được commit.
+- [x] Health check chứng minh các dependency chính sẵn sàng và `GET /health` của service truy cập được từ host.
+- [x] Biến môi trường mẫu không chứa secret thật; image/runtime version cần thiết được pin hoặc ghi rõ để chạy lại ổn định.
+- [x] Quick Start mô tả từ clean clone đến start, verify và stop/reset stack; không cần bước thủ công ngoài tài liệu.
 - [ ] Bách chạy fresh setup độc lập thành công và bằng chứng command/output được ghi trong PR hoặc output task.
 
 ## Liên kết hồ sơ thực hiện
 
-- Input workspace: Chưa tạo.
-- Output workspace: Chưa tạo.
+- Input workspace: [task-input.md](../../../../../workspace/duc/week-05_2026-08-30_to_2026-09-05/task-02_establish-compose-baseline/input/task-input.md).
+- Output workspace: [task-output.md](../../../../../workspace/duc/week-05_2026-08-30_to_2026-09-05/task-02_establish-compose-baseline/output/task-output.md).
 - Pull request: Chưa tạo.
 - Kết quả review: Chưa review.
 
@@ -58,5 +58,6 @@ Dựng Docker Compose skeleton cho service mẫu cùng PostgreSQL, Redis và Rab
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 30/08/2026 — task được phân rã và giao theo plan tuần 5.
-- Ghi chú/tồn đọng: phụ thuộc task-01; Bách cần giữ lại bằng chứng fresh setup để đóng gate M1.
+- Cập nhật gần nhất: 07/09/2026 — Đức hoàn tất Compose baseline tại `docker-compose/` cùng cấp với `lms/` và kiểm chứng stack từ bản sao sạch.
+- Cập nhật kỹ thuật: Compose config hợp lệ; Course, PostgreSQL, Redis và RabbitMQ đều healthy; `/health`, ba readiness probe và reset/restart đều đạt với port host cấu hình riêng.
+- Ghi chú/tồn đọng: nhánh task-02 được tạo từ HEAD task-01 theo yêu cầu; chỉ mở PR task-02 vào `main` sau khi PR #15 merge và nhánh được đồng bộ lại. Còn cần Bách chạy fresh setup độc lập và lưu bằng chứng.

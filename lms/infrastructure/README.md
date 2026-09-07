@@ -2,7 +2,7 @@
 
 ## Trách nhiệm
 
-Chứa Docker Compose và cấu hình runtime cho PostgreSQL, Redis, RabbitMQ, storage mock và observability backend.
+Chứa cấu hình runtime riêng cho PostgreSQL, Redis, RabbitMQ, storage mock và observability backend. Manifest orchestration root đặt tại `docker-compose/` cùng cấp với `lms/`.
 
 ## Quy tắc dependency
 
@@ -11,4 +11,4 @@ Chứa Docker Compose và cấu hình runtime cho PostgreSQL, Redis, RabbitMQ, s
 
 ## Task triển khai
 
-Task 02 tuần 5 sẽ tạo Compose và dependency subtree khi có cấu hình chạy được; task 03 chỉ tạo application instrumentation trong `lms/packages/observability/`.
+Task 02 tuần 5 tạo manifest trong `docker-compose/` và chỉ thêm dependency subtree tại đây khi có cấu hình riêng cần được Compose tham chiếu; task 03 chỉ tạo application instrumentation trong `lms/packages/observability/`.

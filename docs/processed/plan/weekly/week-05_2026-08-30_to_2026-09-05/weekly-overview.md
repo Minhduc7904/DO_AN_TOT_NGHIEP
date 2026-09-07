@@ -14,7 +14,7 @@
 | Mã task | Task | Người phụ trách | Collaborator | Ưu tiên | Trạng thái |
 | --- | --- | --- | --- | --- | --- |
 | [task-01_scaffold-repository-and-service-template](task-01_scaffold-repository-and-service-template.md) | Khởi tạo cấu trúc repository và service template chạy được | Đức | Bách | Cao | Chờ review |
-| [task-02_establish-compose-baseline](task-02_establish-compose-baseline.md) | Dựng Docker Compose baseline và Quick Start | Đức | Bách | Cao | Đã giao |
+| [task-02_establish-compose-baseline](task-02_establish-compose-baseline.md) | Dựng Docker Compose baseline và Quick Start | Đức | Bách | Cao | Đang thực hiện |
 | [task-03_bootstrap-opentelemetry](task-03_bootstrap-opentelemetry.md) | Tích hợp OpenTelemetry bootstrap và resource identity | Bách | Đức | Cao | Đã giao |
 | [task-04_establish-ci-and-fresh-setup-gate](task-04_establish-ci-and-fresh-setup-gate.md) | Thiết lập CI baseline và kiểm chứng fresh setup | Đức | Bách | Cao | Đã giao |
 
