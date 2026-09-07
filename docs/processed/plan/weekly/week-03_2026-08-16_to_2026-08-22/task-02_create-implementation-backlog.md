@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-02_create-implementation-backlog` |
 | Tuần | `week-03_2026-08-16_to_2026-08-22` |
-| Trạng thái | Đã giao |
+| Trạng thái | Chờ review |
 | Người phụ trách | Đức |
 | Collaborator | Bách bổ sung dependency của telemetry, feature, model và evaluation |
 | Ưu tiên | Cao |
@@ -46,11 +46,11 @@ Tạo backlog triển khai có thứ tự cho tuần 3–22. Mỗi backlog item 
 
 ## Liên kết hồ sơ thực hiện
 
-- Input workspace: Chưa tạo.
-- Output workspace: Chưa tạo.
-- Pull request: Chưa tạo.
+- Input workspace: [`workspace/duc/week-03_2026-08-16_to_2026-08-22/task-02_create-implementation-backlog/input/task-input.md`](../../../../../workspace/duc/week-03_2026-08-16_to_2026-08-22/task-02_create-implementation-backlog/input/task-input.md).
+- Output workspace: [`workspace/duc/week-03_2026-08-16_to_2026-08-22/task-02_create-implementation-backlog/output/task-output.md`](../../../../../workspace/duc/week-03_2026-08-16_to_2026-08-22/task-02_create-implementation-backlog/output/task-output.md).
+- Pull request: [#5](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/5).
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 16/08/2026 — task được phân công.
-- Ghi chú/tồn đọng: phụ thuộc kết quả task-01.
+- Cập nhật gần nhất: 28/08/2026 — PR #5 đã được tạo và metadata sẵn sàng review đã được cập nhật trên chính PR head.
+- Ghi chú/tồn đọng: chờ Bách review dependency data/telemetry/feature/evaluation trên PR #5; scope v1 liên quan nằm tại PR #4, có thể review song song nhưng PR #4 cần được merge trước PR #5.
