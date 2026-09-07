@@ -17,7 +17,7 @@
 | [task-02_define-http-and-event-contracts](task-02_define-http-and-event-contracts.md) | Thiết kế HTTP contract và event `grade.completed` v1 | Đức | Bách | Cao | Hoàn thành |
 | [task-03_define-data-ownership-and-fault-matrix](task-03_define-data-ownership-and-fault-matrix.md) | Chốt data ownership, dependency strategy và fault matrix MVP | Bách | Đức | Cao | Hoàn thành |
 | [task-04_define-telemetry-and-ground-truth-schema](task-04_define-telemetry-and-ground-truth-schema.md) | Chốt telemetry schema và ground-truth schema v0 | Bách | Đức | Cao | Hoàn thành |
-| [task-05_define-evaluation-protocol](task-05_define-evaluation-protocol.md) | Chốt experiment metadata, dataset split và evaluation protocol v0 | Bách | Đức | Cao | Đã giao |
+| [task-05_define-evaluation-protocol](task-05_define-evaluation-protocol.md) · [PR #14](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/14) | Chốt experiment metadata, dataset split và evaluation protocol v0 | Bách | Đức | Cao | Hoàn thành |
 
 ## Phụ thuộc, rủi ro và quyết định
 
