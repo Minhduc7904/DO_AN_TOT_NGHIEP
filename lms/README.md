@@ -13,6 +13,7 @@
 Chạy từ repository root:
 
 ```powershell
+npm install --global corepack@0.34.0
 corepack enable
 corepack prepare pnpm@11.19.0 --activate
 pnpm --dir lms install --frozen-lockfile
@@ -22,6 +23,9 @@ pnpm --dir lms test
 pnpm --dir lms test:e2e
 pnpm --dir lms build
 ```
+
+Corepack được pin ở `0.34.0` vì phiên bản đi kèm image Node `22.13.1-alpine`
+không nhận khóa chữ ký hiện tại của pnpm `11.19.0`.
 
 Khởi động Course service:
 

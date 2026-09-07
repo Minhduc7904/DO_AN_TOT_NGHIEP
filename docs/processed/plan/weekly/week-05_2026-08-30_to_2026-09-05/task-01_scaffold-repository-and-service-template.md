@@ -41,10 +41,10 @@ Khởi tạo backend workspace pnpm tại `lms/` theo backend blueprint và mộ
 
 ## Definition of Done
 
-- [ ] Cài dependency cho `lms/` từ môi trường sạch thành công bằng đúng một quy trình được tài liệu hóa.
-- [ ] Service `course` build và khởi động độc lập; `GET /health` trả kết quả thành công có thể kiểm chứng.
-- [ ] Cấu trúc service tuân thủ lightweight hexagonal boundary, không cross-service import; mọi boundary placeholder có README và không chứa abstraction/code giả.
-- [ ] Root scripts có lệnh nhất quán để build, lint và test service; version runtime/package manager được khóa hoặc kiểm tra rõ.
+- [x] Cài dependency cho `lms/` từ môi trường sạch thành công bằng đúng một quy trình được tài liệu hóa.
+- [x] Service `course` build và khởi động độc lập; `GET /health` trả kết quả thành công có thể kiểm chứng.
+- [x] Cấu trúc service tuân thủ lightweight hexagonal boundary, không cross-service import; mọi boundary placeholder có README và không chứa abstraction/code giả.
+- [x] Root scripts có lệnh nhất quán để build, lint và test service; version runtime/package manager được khóa hoặc kiểm tra rõ.
 - [ ] Bách review điểm gắn OpenTelemetry và xác nhận task-03 có thể tích hợp mà không đổi cấu trúc nền.
 
 ## Liên kết hồ sơ thực hiện
@@ -58,6 +58,6 @@ Khởi tạo backend workspace pnpm tại `lms/` theo backend blueprint và mộ
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 30/08/2026 — Đức bắt đầu triển khai backend workspace `lms/` và service template Course.
-- Cập nhật kỹ thuật: frozen install, lint, format check, 6 unit test, 2 E2E test, build, start và health probe đã đạt cục bộ; fresh setup trong bản sao sạch cũng đạt.
-- Ghi chú/tồn đọng: Docker daemon chưa chạy nên chưa có runtime evidence cho image/non-root/health; chưa có PR và review của Bách.
+- Cập nhật gần nhất: 07/09/2026 — Đức hoàn tất các quality gate kỹ thuật bằng đúng Node `22.13.1` và pnpm `11.19.0`.
+- Cập nhật kỹ thuật: frozen install, lint, format check, 6 unit test, 2 E2E test và build đạt trong bản sao sạch; Docker image build thành công, container chạy UID `1000`, `/health` trả `status=ok` và route chưa triển khai trả `404`.
+- Ghi chú/tồn đọng: còn tạo PR, ghi URL/trạng thái `Chờ review` trên PR head và chờ Bách review điểm gắn OpenTelemetry cùng khả năng tái sử dụng template.
