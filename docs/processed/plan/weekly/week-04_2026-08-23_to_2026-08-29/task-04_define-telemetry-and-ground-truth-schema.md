@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-04_define-telemetry-and-ground-truth-schema` |
 | Tuần | `week-04_2026-08-23_to_2026-08-29` |
-| Trạng thái | Đã giao |
+| Trạng thái | Hoàn thành |
 | Người phụ trách | Bách |
 | Collaborator | Đức kiểm tra khả năng instrument/export từ testbed |
 | Ưu tiên | Cao |
@@ -39,19 +39,19 @@ Chốt schema telemetry v0 cho metrics, traces và logs, cùng ground-truth sche
 
 ## Definition of Done
 
-- [ ] Schema nêu identity, UTC time, trace/log/metric correlation, resource attributes và coverage/data-quality cho mỗi modality.
-- [ ] Ground truth có run ID, fault target/type, start/end, parameters, expected symptom và reset/verification metadata.
-- [ ] Schema ánh xạ được tới service/edge feature và service-level RCA trong AI/RCA blueprint.
-- [ ] Đức review khả năng instrument/export; field không thể thu được đã được loại hoặc ghi rõ giải pháp.
+- [x] Schema nêu identity, UTC time, trace/log/metric correlation, resource attributes và coverage/data-quality cho mỗi modality.
+- [x] Ground truth có run ID, fault target/type, start/end, parameters, expected symptom và reset/verification metadata.
+- [x] Schema ánh xạ được tới service/edge feature và service-level RCA trong AI/RCA blueprint.
+- [x] Bách đã self-review bằng AI theo ngoại lệ workflow được xác nhận; khả năng instrument/export và các field chưa khả thi đã được rà soát trong artifact.
 
 ## Liên kết hồ sơ thực hiện
 
-- Input workspace: Chưa tạo.
-- Output workspace: Chưa tạo.
-- Pull request: Chưa tạo.
-- Kết quả review: Chưa review.
+- Input workspace: [`task-input.md`](../../../../../workspace/bach/week-04_2026-08-23_to_2026-08-29/task-04_define-telemetry-and-ground-truth-schema/input/task-input.md).
+- Output workspace: [`task-output.md`](../../../../../workspace/bach/week-04_2026-08-23_to_2026-08-29/task-04_define-telemetry-and-ground-truth-schema/output/task-output.md).
+- Pull request: [PR #10](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/10).
+- Kết quả review: `APPROVED` theo ngoại lệ self-review AI do Bách xác nhận; không có review submission trên GitHub từ Đức.
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 23/08/2026 — task được phân công.
-- Ghi chú/tồn đọng: là đầu vào của task-02, task-03 và task-05.
+- Cập nhật gần nhất: 28/08/2026 — Bách đã self-review bằng AI, xác nhận `APPROVED` theo ngoại lệ workflow và finalization metadata trên PR #10.
+- Ghi chú/tồn đọng: artifact là đầu vào của task-02, task-03 và task-05; PR #10 chưa merge vào `main`.

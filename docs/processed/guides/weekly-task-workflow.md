@@ -6,9 +6,11 @@
 
 ```text
 Giao task → Nhận task → Làm trên branch riêng → PR + DoD
-→ Chờ review → Review → (xử lý feedback và review lại nếu cần)
-→ APPROVED → Finalization trên branch/PR → Hoàn thành đã chuẩn bị
-→ Merge vào nhánh canonical → Hoàn thành canonical
+→ Chờ review → Một vòng review đầy đủ
+→ (nếu có feedback: người phụ trách sửa → reviewer kiểm tra phần sửa)
+→ APPROVED từ thành viên còn lại
+→ Finalization trên branch/PR → Hoàn thành đã chuẩn bị
+→ Người phụ trách merge vào nhánh canonical → Hoàn thành canonical
 ```
 
 Không bỏ qua hoặc đảo thứ tự các trạng thái trên.
@@ -61,11 +63,11 @@ Reviewer nói với agent, ví dụ: “Review task-01 tuần 5.” Nếu chưa 
 1. Nếu user cung cấp PR URL/#, dùng trực tiếp. Nếu user chỉ nêu task, đọc card canonical để lấy nhánh thực hiện rồi tìm PR đang mở có head branch khớp; không tìm được hoặc có nhiều PR mơ hồ thì không bắt đầu review. Khi đã xác định PR, kiểm tra card ở **PR head/task branch trên remote** đang `Chờ review`, không kiểm tra readiness từ `main` hoặc working tree local.
 2. Đọc mô tả PR, các file/diff thay đổi, DoD và mục **Cần review**.
 3. Review đúng yêu cầu PR, đồng thời kiểm tra phạm vi, test, database/schema, contract và lỗi có thể chặn merge.
-4. Nếu có lỗi blocking, đưa verdict `CHANGES_REQUESTED`; task giữ **Chờ review** và người phụ trách dùng [skill xử lý phản hồi review](../../../agent-resources/skills/pr-review-response/SKILL.md) để sửa, kiểm chứng, push và reply thread trước khi review lại.
+4. Nếu có lỗi blocking, đưa verdict `CHANGES_REQUESTED`; task giữ **Chờ review** và người phụ trách dùng [skill xử lý phản hồi review](../../../agent-resources/skills/pr-review-response/SKILL.md) để sửa, kiểm chứng, push và reply thread. Reviewer sau đó chỉ kiểm tra tập trung phần đã sửa trước khi gửi `APPROVED`, không review lại toàn bộ PR.
 5. Nếu review đạt, đưa verdict `APPROVED`. Reviewer không sửa output/card/weekly overview và không chuyển task sang **Hoàn thành**.
 
 ## 6. Finalization và merge pull request
 
-Sau verdict `APPROVED`, người phụ trách dùng [skill ghi nhận hoàn thành](../../../agent-resources/skills/task-completion-recording/SKILL.md) để cập nhật output, card task, weekly overview, URL PR và verdict review, rồi chuyển task sang **Hoàn thành** trên chính branch/PR. Finalization metadata phải được commit/push vào PR và không được sửa substantive artifact/code. Agent chỉ thực hiện Git write khi user đã cho phép; nếu không, phải nêu rõ finalization còn ở local và chưa sẵn sàng merge.
+Chỉ sau khi GitHub ghi nhận `APPROVED` hợp lệ từ thành viên còn lại, người phụ trách dùng [skill ghi nhận hoàn thành](../../../agent-resources/skills/task-completion-recording/SKILL.md) để cập nhật output, card task, weekly overview, URL PR và reviewer/verdict, rồi chuyển task sang **Hoàn thành** trên chính branch/PR. Finalization metadata phải được commit/push vào PR và không được sửa substantive artifact/code. Agent chỉ thực hiện Git write khi user đã cho phép; nếu không, phải nêu rõ finalization còn ở local và chưa sẵn sàng merge.
 
-PR chỉ được merge sau khi finalization đã sẵn sàng và mọi yêu cầu review/branch protection còn hiệu lực đã đạt. Agent không tự merge; chỉ thực hiện merge khi người dùng yêu cầu rõ. Nếu finalization commit dismiss approval, reviewer chỉ kiểm tra diff metadata và re-approve. Khi PR merge vào nhánh canonical, task mới **Hoàn thành** theo trạng thái project-wide; không tạo bookkeeping commit hậu-merge cho merge SHA, merge timestamp, trạng thái PR hay việc đóng task.
+PR chỉ được **người phụ trách task** merge sau khi finalization đã sẵn sàng, không còn feedback blocking chưa xử lý, GitHub vẫn có `APPROVED` hợp lệ từ thành viên còn lại và branch protection cho phép. Reviewer không merge thay người phụ trách. Agent chỉ merge khi người dùng hiện tại nói rõ họ là đúng người phụ trách và yêu cầu merge. Nếu approval bị stale/dismissed sau commit mới, reviewer chỉ kiểm tra diff mới rồi re-approve; không review lại toàn bộ PR và không bypass branch protection. Khi PR merge vào nhánh canonical, task mới **Hoàn thành** theo trạng thái project-wide; không tạo bookkeeping commit hậu-merge cho merge SHA, merge timestamp, trạng thái PR hay việc đóng task.

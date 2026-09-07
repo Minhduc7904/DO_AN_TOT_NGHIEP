@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-01_define-mvp-scope` |
 | Tuần | `week-03_2026-08-16_to_2026-08-22` |
-| Trạng thái | Đã giao |
+| Trạng thái | Hoàn thành |
 | Người phụ trách | Đức |
 | Collaborator | Bách review để loại feature LMS không phục vụ nghiên cứu |
 | Ưu tiên | Cao |
@@ -39,18 +39,18 @@ Tạo scope v1 cho đồ án, chuyển các quyết định MVP/Target/Stretch �
 
 ## Definition of Done
 
-- [ ] File scope phân biệt rõ MVP, Target, Stretch và ngoài phạm vi; mỗi nhóm dẫn chiếu blueprint canonical phù hợp.
-- [ ] MVP nêu rõ 6 business service + Gateway, dependency observability/fault cần thiết và không có hạng mục production-grade ngoài scope.
-- [ ] Có bảng out-of-scope nêu lý do hoãn/loại cho các hạng mục dễ gây scope creep.
-- [ ] Bách đã review và phản hồi về tác động tới telemetry, feature, anomaly/RCA và evaluation; phản hồi được xử lý hoặc ghi rõ tồn đọng.
+- [x] File scope phân biệt rõ MVP, Target, Stretch và ngoài phạm vi; mỗi nhóm dẫn chiếu blueprint canonical phù hợp.
+- [x] MVP nêu rõ 6 business service + Gateway, dependency observability/fault cần thiết và không có hạng mục production-grade ngoài scope.
+- [x] Có bảng out-of-scope nêu lý do hoãn/loại cho các hạng mục dễ gây scope creep.
+- [x] Bách đã review và phản hồi về tác động tới telemetry, feature, anomaly/RCA và evaluation; phản hồi đã được xử lý.
 
 ## Liên kết hồ sơ thực hiện
 
-- Input workspace: Chưa tạo.
-- Output workspace: Chưa tạo.
-- Pull request: Chưa tạo.
+- Input workspace: [`workspace/duc/week-03_2026-08-16_to_2026-08-22/task-01_define-mvp-scope/input/task-input.md`](../../../../../workspace/duc/week-03_2026-08-16_to_2026-08-22/task-01_define-mvp-scope/input/task-input.md).
+- Output workspace: [`workspace/duc/week-03_2026-08-16_to_2026-08-22/task-01_define-mvp-scope/output/task-output.md`](../../../../../workspace/duc/week-03_2026-08-16_to_2026-08-22/task-01_define-mvp-scope/output/task-output.md).
+- Pull request: [#4](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/4).
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 16/08/2026 — task được phân công.
-- Ghi chú/tồn đọng: chưa có.
+- Cập nhật gần nhất: 28/08/2026 — metadata được đồng bộ với verdict `APPROVED` và completion record đã có.
+- Ghi chú/tồn đọng: blocking issue RQ5 đã được xử lý trong `project-scope-v1.md`; không còn tồn đọng thuộc W3-T1.

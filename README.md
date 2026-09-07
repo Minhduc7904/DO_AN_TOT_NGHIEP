@@ -83,8 +83,42 @@ Repository chỉ scaffold các module khi bắt đầu triển khai. Cây source
 
 ## Nhóm thực hiện
 
-- Nguyễn Minh Đức — [Minhduc7904](https://github.com/Minhduc7904)
-- Mai Khoa Bách — [b4schh](https://github.com/b4schh)
+<table>
+  <tr>
+    <td align="center">
+      <a href="https://github.com/Minhduc7904">
+        <img src="https://github.com/Minhduc7904.png?size=160" width="100" alt="Avatar Nguyễn Minh Đức"><br>
+        <strong>Nguyễn Minh Đức</strong><br>
+        <sub>@Minhduc7904</sub>
+      </a>
+    </td>
+    <td align="center">
+      <a href="https://github.com/b4schh">
+        <img src="https://github.com/b4schh.png?size=160" width="100" alt="Avatar Mai Khoa Bách"><br>
+        <strong>Mai Khoa Bách</strong><br>
+        <sub>@b4schh</sub>
+      </a>
+    </td>
+  </tr>
+</table>
+
+## Timeline kế hoạch dự án
+
+Timeline trực quan hiển thị toàn bộ lộ trình 24 tuần, các task đã được break, người phụ trách, trạng thái, phụ thuộc, sản phẩm và Definition of Done. Markdown trong `docs/processed/plan/` vẫn là nguồn canonical; dữ liệu trong `docs/processed/plan/json/` và HTML timeline được sinh tự động, không chỉnh sửa trực tiếp.
+
+Đồng bộ lại JSON và timeline sau khi thay đổi kế hoạch hoặc task:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\tools\sync-plan-json-and-timeline.ps1
+```
+
+Đồng bộ rồi mở timeline bằng trình duyệt mặc định:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\tools\open-project-timeline.ps1
+```
+
+Có thể mở trực tiếp `docs/processed/plan/timeline/project-timeline.html` mà không cần web server hoặc kết nối mạng. Các skill lập task tuần và finalization task bắt buộc chạy bước đồng bộ trước khi workflow được coi là hoàn tất.
 
 ## Lưu ý
 

@@ -47,7 +47,7 @@
 - Pull request: Chưa tạo.
 - Kết quả review: Chưa review / `APPROVED` / `CHANGES_REQUESTED`.
 
-> URL/số PR và `Chờ review` phải được commit/push vào PR head trước review. Sau `APPROVED`, người phụ trách finalization metadata và ghi `Hoàn thành` trên chính branch/PR trước merge. Card chỉ canonically hoàn thành khi commit đó vào nhánh canonical; xem [vòng đời task canonical](../../../rules/git-and-pull-request-rules.md#vòng-đời-task-canonical).
+> URL/số PR và `Chờ review` phải được commit/push vào PR head trước review. Thành viên còn lại phải gửi `APPROVED` hợp lệ trên GitHub; sau đó người phụ trách finalization metadata, ghi `Hoàn thành` trên chính branch/PR và tự merge task của mình. Card chỉ canonically hoàn thành khi commit đó vào nhánh canonical; xem [vòng đời task canonical](../../../rules/git-and-pull-request-rules.md#vòng-đời-task-canonical).
 
 ## Cập nhật tiến độ
 
