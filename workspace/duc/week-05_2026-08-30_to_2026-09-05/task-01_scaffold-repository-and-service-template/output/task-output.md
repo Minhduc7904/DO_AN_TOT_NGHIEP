@@ -6,10 +6,10 @@
 | --- | --- |
 | Mã task | `task-01_scaffold-repository-and-service-template` |
 | Người phụ trách | Đức |
-| Trạng thái | Đang thực hiện — phần kỹ thuật đã qua quality gate, còn quy trình PR/review |
+| Trạng thái | Chờ review — phần kỹ thuật đã qua quality gate và PR #15 đã sẵn sàng review |
 | Bắt đầu thực tế | 30/08/2026 |
 | Cập nhật gần nhất | 07/09/2026 |
-| Pull request | Chưa tạo |
+| Pull request | [#15](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/15) |
 | Người review | Bách — chưa review |
 
 ## Báo cáo công việc đã làm
@@ -38,8 +38,8 @@
 | Docker image chạy non-root và health hoạt động | Đạt | Image `aiops-lms-course:task01-check` build thành công từ context `lms/`; container chạy UID `1000` và health endpoint hoạt động trên `PORT=3102` |
 | Dependency direction và placeholder README | Đạt | ESLint exit code `0`; domain/application import restriction được cấu hình; các boundary chưa triển khai chỉ có README |
 | Fresh setup từ bản sao sạch | Đạt | Bản sao chỉ đọc được chép vào container Node `22.13.1`, cài frozen lockfile rồi chạy toàn bộ quality gate thành công |
-| Sản phẩm được lưu/đẩy và truy cập | Đang hoàn tất | File nằm đúng vị trí trên nhánh task; commit/push substantive work được thực hiện trước khi tạo PR |
-| PR head có URL và trạng thái `Chờ review` | Chưa đạt | Chưa tạo PR |
+| Sản phẩm được lưu/đẩy và truy cập | Đạt | Sản phẩm đã được commit/push trên nhánh task và có thể kiểm tra qua PR [#15](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/15) |
+| PR head có URL và trạng thái `Chờ review` | Đạt | URL PR #15 và trạng thái `Chờ review` được ghi trong readiness transition trên chính nhánh task |
 | Approval và completion metadata trước merge | Chưa đạt | Chưa có review GitHub từ Bách |
 
 ## Thay đổi, tồn đọng và bước tiếp theo
@@ -47,6 +47,6 @@
 - Build script dùng `tsc -p tsconfig.build.json` thay cho `nest build` vì Nest CLI 12 kéo Angular DevKit gặp vòng lặp ESM trên Node `22.13.1`; runtime service vẫn dùng NestJS 12.
 - Jest chạy ESM bằng `--experimental-vm-modules` để tương thích package ESM của NestJS 12.
 - Máy host chạy Node `24.19.0`; toàn bộ gate được chạy trong container sạch dùng đúng Node `22.13.1` để tránh sai lệch runtime.
-- Còn phải commit/push, tạo PR, cập nhật URL/trạng thái `Chờ review` trên PR head và nhờ Bách review theo workflow.
+- Còn chờ Bách review trên GitHub; nếu có feedback blocking, Đức xử lý trước khi xin `APPROVED` và finalization.
 
-> Task chưa được đánh dấu `Hoàn thành` vì chưa có PR head, GitHub `APPROVED` và completion finalization.
+> Task chưa được đánh dấu `Hoàn thành` vì chưa có GitHub `APPROVED` hợp lệ từ Bách và completion finalization.

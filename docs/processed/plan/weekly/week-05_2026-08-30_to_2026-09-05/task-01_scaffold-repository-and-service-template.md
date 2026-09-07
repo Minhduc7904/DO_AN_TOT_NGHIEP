@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-01_scaffold-repository-and-service-template` |
 | Tuần | `week-05_2026-08-30_to_2026-09-05` |
-| Trạng thái | Đang thực hiện |
+| Trạng thái | Chờ review |
 | Người phụ trách | Đức |
 | Collaborator | Bách review extension point cho telemetry và khả năng tái sử dụng template |
 | Ưu tiên | Cao |
@@ -51,13 +51,13 @@ Khởi tạo backend workspace pnpm tại `lms/` theo backend blueprint và mộ
 
 - Input workspace: [task-input.md](../../../../../workspace/duc/week-05_2026-08-30_to_2026-09-05/task-01_scaffold-repository-and-service-template/input/task-input.md).
 - Output workspace: [task-output.md](../../../../../workspace/duc/week-05_2026-08-30_to_2026-09-05/task-01_scaffold-repository-and-service-template/output/task-output.md).
-- Pull request: Chưa tạo.
+- Pull request: [#15](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/15).
 - Kết quả review: Chưa review.
 
 > URL/số PR và `Chờ review` phải được commit/push vào PR head trước review. Thành viên còn lại phải gửi `APPROVED` hợp lệ trên GitHub; sau đó người phụ trách finalization metadata, ghi `Hoàn thành` trên chính branch/PR và tự merge task của mình. Card chỉ canonically hoàn thành khi commit đó vào nhánh canonical; xem [vòng đời task canonical](../../../rules/git-and-pull-request-rules.md#vòng-đời-task-canonical).
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 07/09/2026 — Đức hoàn tất các quality gate kỹ thuật bằng đúng Node `22.13.1` và pnpm `11.19.0`.
+- Cập nhật gần nhất: 07/09/2026 — Đức hoàn tất các quality gate kỹ thuật và mở PR #15 để Bách review.
 - Cập nhật kỹ thuật: frozen install, lint, format check, 6 unit test, 2 E2E test và build đạt trong bản sao sạch; Docker image build thành công, container chạy UID `1000`, `/health` trả `status=ok` và route chưa triển khai trả `404`.
-- Ghi chú/tồn đọng: còn tạo PR, ghi URL/trạng thái `Chờ review` trên PR head và chờ Bách review điểm gắn OpenTelemetry cùng khả năng tái sử dụng template.
+- Ghi chú/tồn đọng: chờ Bách review điểm gắn OpenTelemetry, dependency direction, khả năng tái sử dụng template và bằng chứng Docker trên PR #15.
