@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-03_bootstrap-opentelemetry` |
 | Tuần | `week-05_2026-08-30_to_2026-09-05` |
-| Trạng thái | Đang thực hiện |
+| Trạng thái | Chờ review |
 | Người phụ trách | Bách |
 | Collaborator | Đức tích hợp bootstrap vào service mẫu và kiểm tra khả năng export khi chạy cục bộ |
 | Ưu tiên | Cao |
@@ -41,22 +41,22 @@ Tạo shared OpenTelemetry bootstrap cho ứng dụng NestJS và tích hợp và
 
 ## Definition of Done
 
-- [ ] Bootstrap gán đúng `service.name=course`, `service.version` và `service.instance.id` theo cấu hình; không dùng container/process name thay identity canonical.
-- [ ] Request tới `/health` sinh HTTP server span tối thiểu và giữ W3C trace context khi caller gửi context hợp lệ.
-- [ ] Một error path được kiểm tra có span status/error attributes phù hợp, không chứa secret, PII hoặc ground-truth label.
-- [ ] Bootstrap có thể bật/tắt hoặc đổi OTLP endpoint qua cấu hình; service không crash khi telemetry backend chưa sẵn sàng theo behavior đã tài liệu hóa.
-- [ ] Telemetry assertion tự động hoặc test exporter chứng minh các resource/span field trọng yếu, không chỉ dựa vào quan sát thủ công.
+- [x] Bootstrap gán đúng `service.name=course`, `service.version` và `service.instance.id` theo cấu hình; không dùng container/process name thay identity canonical.
+- [x] Request tới `/health` sinh HTTP server span tối thiểu và giữ W3C trace context khi caller gửi context hợp lệ.
+- [x] Một error path được kiểm tra có span status/error attributes phù hợp, không chứa secret, PII hoặc ground-truth label.
+- [x] Bootstrap có thể bật/tắt hoặc đổi OTLP endpoint qua cấu hình; service không crash khi telemetry backend chưa sẵn sàng theo behavior đã tài liệu hóa.
+- [x] Telemetry assertion tự động hoặc test exporter chứng minh các resource/span field trọng yếu, không chỉ dựa vào quan sát thủ công.
 
 ## Liên kết hồ sơ thực hiện
 
 - Input workspace: [task-input.md](../../../../../workspace/bach/week-05_2026-08-30_to_2026-09-05/task-03_bootstrap-opentelemetry/input/task-input.md).
 - Output workspace: [task-output.md](../../../../../workspace/bach/week-05_2026-08-30_to_2026-09-05/task-03_bootstrap-opentelemetry/output/task-output.md).
-- Pull request: Chưa tạo.
+- Pull request: [#17](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/17).
 - Kết quả review: Chưa review.
 
 > URL/số PR và `Chờ review` phải được commit/push vào PR head trước review. Thành viên còn lại phải gửi `APPROVED` hợp lệ trên GitHub; sau đó người phụ trách finalization metadata, ghi `Hoàn thành` trên chính branch/PR và tự merge task của mình. Card chỉ canonically hoàn thành khi commit đó vào nhánh canonical; xem [vòng đời task canonical](../../../rules/git-and-pull-request-rules.md#vòng-đời-task-canonical).
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 10/09/2026 — Bách bắt đầu thực hiện task trên nhánh riêng và khởi tạo hồ sơ workspace.
-- Ghi chú/tồn đọng: có thể làm song song task-02 sau khi task-01 cung cấp service mẫu chạy được.
+- Cập nhật gần nhất: 10/09/2026 — Bách hoàn tất implementation, tự verify, mở PR #17 và chuyển task sang `Chờ review` trên PR head.
+- Ghi chú/tồn đọng: chờ Đức review PR #17 và gửi verdict trên GitHub; chưa finalization hoặc merge.

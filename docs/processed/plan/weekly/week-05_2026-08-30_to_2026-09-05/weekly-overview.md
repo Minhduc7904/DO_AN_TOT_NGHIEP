@@ -15,7 +15,7 @@
 | --- | --- | --- | --- | --- | --- |
 | [task-01_scaffold-repository-and-service-template](task-01_scaffold-repository-and-service-template.md) | Khởi tạo cấu trúc repository và service template chạy được | Đức | Bách | Cao | Hoàn thành |
 | [task-02_establish-compose-baseline](task-02_establish-compose-baseline.md) | Dựng Docker Compose baseline và Quick Start | Đức | Bách | Cao | Hoàn thành |
-| [task-03_bootstrap-opentelemetry](task-03_bootstrap-opentelemetry.md) | Tích hợp OpenTelemetry bootstrap và resource identity | Bách | Đức | Cao | Đang thực hiện |
+| [task-03_bootstrap-opentelemetry](task-03_bootstrap-opentelemetry.md) | Tích hợp OpenTelemetry bootstrap và resource identity | Bách | Đức | Cao | Chờ review |
 | [task-04_establish-ci-and-fresh-setup-gate](task-04_establish-ci-and-fresh-setup-gate.md) | Thiết lập CI baseline và kiểm chứng fresh setup | Đức | Bách | Cao | Đã giao |
 
 > Khi đọc tiến độ project-wide, chỉ coi hàng có trạng thái `Hoàn thành` trên nhánh canonical là hoàn thành; trạng thái đã finalization trên task branch chưa thay thế nguồn này.
@@ -30,6 +30,6 @@
 
 - [x] Từ máy sạch có thể cài dependency và chạy service mẫu có `/health` theo Quick Start.
 - [x] `docker compose up` khởi động được service mẫu, PostgreSQL, Redis và RabbitMQ mà không cần bước thủ công ngoài tài liệu.
-- [ ] Service mẫu export được trace tối thiểu với resource identity canonical và có kiểm tra error attribute.
+- [x] Service mẫu export được trace tối thiểu với resource identity canonical và có kiểm tra error attribute.
 - [ ] CI chạy build, lint và test baseline thành công; hai thành viên đã thực hiện fresh setup độc lập.
 - [ ] Mỗi task có PR riêng, bằng chứng DoD và trạng thái đúng vòng đời review canonical.
