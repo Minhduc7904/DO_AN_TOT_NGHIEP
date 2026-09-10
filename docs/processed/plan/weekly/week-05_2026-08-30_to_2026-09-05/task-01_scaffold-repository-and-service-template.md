@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-01_scaffold-repository-and-service-template` |
 | Tuần | `week-05_2026-08-30_to_2026-09-05` |
-| Trạng thái | Chờ review |
+| Trạng thái | Hoàn thành |
 | Người phụ trách | Đức |
 | Collaborator | Bách review extension point cho telemetry và khả năng tái sử dụng template |
 | Ưu tiên | Cao |
@@ -45,19 +45,19 @@ Khởi tạo backend workspace pnpm tại `lms/` theo backend blueprint và mộ
 - [x] Service `course` build và khởi động độc lập; `GET /health` trả kết quả thành công có thể kiểm chứng.
 - [x] Cấu trúc service tuân thủ lightweight hexagonal boundary, không cross-service import; mọi boundary placeholder có README và không chứa abstraction/code giả.
 - [x] Root scripts có lệnh nhất quán để build, lint và test service; version runtime/package manager được khóa hoặc kiểm tra rõ.
-- [ ] Bách review điểm gắn OpenTelemetry và xác nhận task-03 có thể tích hợp mà không đổi cấu trúc nền.
+- [x] Bách review điểm gắn OpenTelemetry và xác nhận task-03 có thể tích hợp mà không đổi cấu trúc nền.
 
 ## Liên kết hồ sơ thực hiện
 
 - Input workspace: [task-input.md](../../../../../workspace/duc/week-05_2026-08-30_to_2026-09-05/task-01_scaffold-repository-and-service-template/input/task-input.md).
 - Output workspace: [task-output.md](../../../../../workspace/duc/week-05_2026-08-30_to_2026-09-05/task-01_scaffold-repository-and-service-template/output/task-output.md).
 - Pull request: [#15](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/15).
-- Kết quả review: Chưa review.
+- Kết quả review: Bách đã approval ngoài GitHub theo xác nhận trực tiếp của Đức ngày 10/09/2026; GitHub không ghi nhận verdict `APPROVED`.
 
-> URL/số PR và `Chờ review` phải được commit/push vào PR head trước review. Thành viên còn lại phải gửi `APPROVED` hợp lệ trên GitHub; sau đó người phụ trách finalization metadata, ghi `Hoàn thành` trên chính branch/PR và tự merge task của mình. Card chỉ canonically hoàn thành khi commit đó vào nhánh canonical; xem [vòng đời task canonical](../../../rules/git-and-pull-request-rules.md#vòng-đời-task-canonical).
+> Ghi nhận hậu kiểm theo ngoại lệ do người phụ trách xác nhận: PR đã merge trước finalization và không có GitHub `APPROVED`. Trạng thái này dùng approval ngoài GitHub do Đức xác nhận, theo [quy tắc ưu tiên chỉ thị trực tiếp](../../../rules/git-and-pull-request-rules.md#ưu-tiên-chỉ-thị-trực-tiếp-và-ghi-nhận-ngoại-lệ).
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 07/09/2026 — Đức hoàn tất các quality gate kỹ thuật và mở PR #15 để Bách review.
+- Cập nhật gần nhất: 10/09/2026 — Đức xác nhận task đã hoàn thành và yêu cầu correction trạng thái trên `main` sau khi PR #15 đã merge.
 - Cập nhật kỹ thuật: frozen install, lint, format check, 6 unit test, 2 E2E test và build đạt trong bản sao sạch; Docker image build thành công, container chạy UID `1000`, `/health` trả `status=ok` và route chưa triển khai trả `404`.
-- Ghi chú/tồn đọng: chờ Bách review điểm gắn OpenTelemetry, dependency direction, khả năng tái sử dụng template và bằng chứng Docker trên PR #15.
+- Ghi chú/tồn đọng: không còn tồn đọng theo xác nhận của Đức; approval của Bách diễn ra ngoài GitHub nên không có verdict `APPROVED` để đối chiếu trên PR.

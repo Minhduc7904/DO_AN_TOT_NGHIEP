@@ -6,13 +6,13 @@
 | ------------------ | ------------------------------------ |
 | Mã task            | `task-02_establish-compose-baseline` |
 | Người phụ trách    | Đức                                  |
-| Trạng thái         | Đang thực hiện                       |
+| Trạng thái         | Hoàn thành — ghi nhận hậu kiểm theo xác nhận của Đức |
 | Bắt đầu thực tế    | 07/09/2026                           |
-| Hoàn thành thực tế | Chưa hoàn thành                      |
+| Hoàn thành thực tế | 10/09/2026 — ngày ghi nhận hậu kiểm theo xác nhận của Đức |
 | Tổng thời lượng    | Chưa tổng hợp                        |
-| Pull request       | Chưa tạo                             |
-| Người review       | Bách — chưa review                   |
-| Kết quả review     | Chưa review                          |
+| Pull request       | [#16](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/16) |
+| Người review       | Bách                                 |
+| Kết quả review     | Approval ngoài GitHub theo xác nhận của Đức; GitHub không có verdict `APPROVED` |
 
 ## Báo cáo công việc đã làm
 
@@ -39,13 +39,13 @@
 | Image, environment, network và volume tái lập | Đạt cục bộ | Ba image dependency dùng tag cố định; stack dùng environment mẫu, network riêng, ba named volume và port host cấu hình được |
 | Quick Start và reset/restart                  | Đạt cục bộ | Lượt restart sau `down --volumes --remove-orphans` đạt healthy; cleanup không còn container hoặc volume của project test    |
 | Sản phẩm được lưu và đẩy lên nhánh task       | Đạt        | Compose manifest, environment mẫu, Quick Start và tài liệu liên quan được commit/push trên nhánh task-02                    |
-| Fresh setup độc lập của Bách                  | Chưa đạt   | Chưa review                                                                                                                 |
-| PR, approval và finalization                  | Chưa đạt   | Chưa tạo PR                                                                                                                 |
+| Fresh setup độc lập của Bách                  | Đạt theo ngoại lệ | Đức xác nhận Bách đã approval toàn bộ task ngoài GitHub; dùng làm bằng chứng thay thế cho gate fresh setup                 |
+| PR, approval và finalization                  | Đạt theo ngoại lệ | PR [#16](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/16) đã merge; approval ngoài GitHub theo xác nhận của Đức; completion metadata được correction trên `main` ngày 10/09/2026 |
 
 ## Thay đổi, tồn đọng và bước tiếp theo
 
 - Thay đổi so với input: theo yêu cầu của Đức, Compose root đặt tại `docker-compose/` cùng cấp với `lms/`; input và blueprint đã được cập nhật theo quyết định này.
-- Việc chưa hoàn thành hoặc trở ngại: Bách chưa chạy fresh setup độc lập; PR #15 của task-01 chưa merge và nhánh task-02 hiện xếp chồng trên task-01.
-- Bước tiếp theo: sau khi PR #15 merge, đồng bộ nhánh task-02 với `main`; Bách chạy Quick Start trên checkout sạch trước khi mở PR task-02.
+- Không còn việc chưa hoàn thành hoặc trở ngại theo xác nhận của Đức.
+- Sai lệch workflow: PR #16 không có GitHub review submission; Đức xác nhận Bách đã approval ngoài GitHub và yêu cầu ghi nhận hoàn thành.
 
-> `Hoàn thành thực tế` là thời điểm người phụ trách đã hoàn tất work, DoD, nhận `APPROVED` hợp lệ từ thành viên còn lại và finalization; không ghi merge time. URL/số PR cùng trạng thái **Chờ review** phải được commit/push vào PR head trước review. Sau approval, người phụ trách dùng `task-completion-recording` để cập nhật hồ sơ và chuyển **Hoàn thành** trên chính branch/PR trước khi tự merge. Task chỉ canonically hoàn thành khi commit đó vào nhánh canonical. `Chờ xử lý` chỉ dùng cho blocker/dependency thực sự, không dùng chỉ vì PR đang chờ merge.
+> Completion record này là correction hậu kiểm theo ngoại lệ do đúng người phụ trách yêu cầu; không được hiểu là GitHub đã ghi nhận verdict `APPROVED`.

@@ -6,7 +6,7 @@
 | --------------- | ----------------------------------------------------- |
 | Mã task         | `task-02_establish-compose-baseline`                  |
 | Tuần            | `week-05_2026-08-30_to_2026-09-05`                    |
-| Trạng thái      | Đang thực hiện                                        |
+| Trạng thái      | Hoàn thành                                            |
 | Người phụ trách | Đức                                                   |
 | Collaborator    | Bách chạy fresh setup độc lập và phản hồi Quick Start |
 | Ưu tiên         | Cao                                                   |
@@ -45,19 +45,19 @@ Dựng Docker Compose skeleton cho service mẫu cùng PostgreSQL, Redis và Rab
 - [x] Health check chứng minh các dependency chính sẵn sàng và `GET /health` của service truy cập được từ host.
 - [x] Biến môi trường mẫu không chứa secret thật; image/runtime version cần thiết được pin hoặc ghi rõ để chạy lại ổn định.
 - [x] Quick Start mô tả từ clean clone đến start, verify và stop/reset stack; không cần bước thủ công ngoài tài liệu.
-- [ ] Bách chạy fresh setup độc lập thành công và bằng chứng command/output được ghi trong PR hoặc output task.
+- [x] Bách chạy fresh setup độc lập thành công và bằng chứng command/output được ghi trong PR hoặc output task.
 
 ## Liên kết hồ sơ thực hiện
 
 - Input workspace: [task-input.md](../../../../../workspace/duc/week-05_2026-08-30_to_2026-09-05/task-02_establish-compose-baseline/input/task-input.md).
 - Output workspace: [task-output.md](../../../../../workspace/duc/week-05_2026-08-30_to_2026-09-05/task-02_establish-compose-baseline/output/task-output.md).
-- Pull request: Chưa tạo.
-- Kết quả review: Chưa review.
+- Pull request: [#16](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/16).
+- Kết quả review: Bách đã approval ngoài GitHub theo xác nhận trực tiếp của Đức ngày 10/09/2026; GitHub không ghi nhận verdict `APPROVED`.
 
-> URL/số PR và `Chờ review` phải được commit/push vào PR head trước review. Thành viên còn lại phải gửi `APPROVED` hợp lệ trên GitHub; sau đó người phụ trách finalization metadata, ghi `Hoàn thành` trên chính branch/PR và tự merge task của mình. Card chỉ canonically hoàn thành khi commit đó vào nhánh canonical; xem [vòng đời task canonical](../../../rules/git-and-pull-request-rules.md#vòng-đời-task-canonical).
+> Ghi nhận hậu kiểm theo ngoại lệ do người phụ trách xác nhận: PR đã merge trước finalization và không có GitHub `APPROVED`. Trạng thái này dùng approval ngoài GitHub do Đức xác nhận, theo [quy tắc ưu tiên chỉ thị trực tiếp](../../../rules/git-and-pull-request-rules.md#ưu-tiên-chỉ-thị-trực-tiếp-và-ghi-nhận-ngoại-lệ).
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 07/09/2026 — Đức hoàn tất Compose baseline tại `docker-compose/` cùng cấp với `lms/` và kiểm chứng stack từ bản sao sạch.
+- Cập nhật gần nhất: 10/09/2026 — Đức xác nhận task đã hoàn thành và yêu cầu correction trạng thái trên `main` sau khi PR #16 đã merge.
 - Cập nhật kỹ thuật: Compose config hợp lệ; Course, PostgreSQL, Redis và RabbitMQ đều healthy; `/health`, ba readiness probe và reset/restart đều đạt với port host cấu hình riêng.
-- Ghi chú/tồn đọng: nhánh task-02 được tạo từ HEAD task-01 theo yêu cầu; chỉ mở PR task-02 vào `main` sau khi PR #15 merge và nhánh được đồng bộ lại. Còn cần Bách chạy fresh setup độc lập và lưu bằng chứng.
+- Ghi chú/tồn đọng: không còn tồn đọng theo xác nhận của Đức; phần fresh setup và approval của Bách được xác nhận ngoài GitHub, không có verdict `APPROVED` trên PR.

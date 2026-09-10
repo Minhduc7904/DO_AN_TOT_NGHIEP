@@ -6,11 +6,13 @@
 | --- | --- |
 | Mã task | `task-01_scaffold-repository-and-service-template` |
 | Người phụ trách | Đức |
-| Trạng thái | Chờ review — phần kỹ thuật đã qua quality gate và PR #15 đã sẵn sàng review |
+| Trạng thái | Hoàn thành — ghi nhận hậu kiểm theo xác nhận của Đức |
 | Bắt đầu thực tế | 30/08/2026 |
-| Cập nhật gần nhất | 07/09/2026 |
+| Hoàn thành thực tế | 10/09/2026 — ngày ghi nhận hậu kiểm theo xác nhận của Đức |
+| Tổng thời lượng | Chưa tổng hợp |
+| Cập nhật gần nhất | 10/09/2026 |
 | Pull request | [#15](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/15) |
-| Người review | Bách — chưa review |
+| Người review | Bách — approval ngoài GitHub theo xác nhận của Đức; GitHub không có verdict `APPROVED` |
 
 ## Báo cáo công việc đã làm
 
@@ -40,13 +42,14 @@
 | Fresh setup từ bản sao sạch | Đạt | Bản sao chỉ đọc được chép vào container Node `22.13.1`, cài frozen lockfile rồi chạy toàn bộ quality gate thành công |
 | Sản phẩm được lưu/đẩy và truy cập | Đạt | Sản phẩm đã được commit/push trên nhánh task và có thể kiểm tra qua PR [#15](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/15) |
 | PR head có URL và trạng thái `Chờ review` | Đạt | URL PR #15 và trạng thái `Chờ review` được ghi trong readiness transition trên chính nhánh task |
-| Approval và completion metadata trước merge | Chưa đạt | Chưa có review GitHub từ Bách |
+| Approval và completion metadata trước merge | Đạt theo ngoại lệ | Đức xác nhận Bách đã approval ngoài GitHub; PR đã merge trước finalization nên completion metadata được correction trên `main` ngày 10/09/2026 |
 
 ## Thay đổi, tồn đọng và bước tiếp theo
 
 - Build script dùng `tsc -p tsconfig.build.json` thay cho `nest build` vì Nest CLI 12 kéo Angular DevKit gặp vòng lặp ESM trên Node `22.13.1`; runtime service vẫn dùng NestJS 12.
 - Jest chạy ESM bằng `--experimental-vm-modules` để tương thích package ESM của NestJS 12.
 - Máy host chạy Node `24.19.0`; toàn bộ gate được chạy trong container sạch dùng đúng Node `22.13.1` để tránh sai lệch runtime.
-- Còn chờ Bách review trên GitHub; nếu có feedback blocking, Đức xử lý trước khi xin `APPROVED` và finalization.
+- Không còn tồn đọng theo xác nhận của Đức.
+- Sai lệch workflow: GitHub ghi nhận `CHANGES_REQUESTED` trên commit cũ và không có verdict `APPROVED` sau bản sửa; Đức xác nhận Bách đã approval ngoài GitHub và yêu cầu ghi nhận hoàn thành.
 
-> Task chưa được đánh dấu `Hoàn thành` vì chưa có GitHub `APPROVED` hợp lệ từ Bách và completion finalization.
+> Completion record này là correction hậu kiểm theo ngoại lệ do đúng người phụ trách yêu cầu; không được hiểu là GitHub đã ghi nhận verdict `APPROVED`.
