@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-04_establish-ci-and-fresh-setup-gate` |
 | Tuần | `week-05_2026-08-30_to_2026-09-05` |
-| Trạng thái | Đã giao |
+| Trạng thái | Đang thực hiện |
 | Người phụ trách | Bách |
 | Collaborator | Đức chạy lại toàn bộ Quick Start và review telemetry assertion trong CI |
 | Ưu tiên | Cao |
@@ -50,7 +50,7 @@ Thiết lập CI baseline cho phần code tuần 5 và đóng gate M1 bằng m�
 
 ## Liên kết hồ sơ thực hiện
 
-- Input workspace: Chưa tạo.
+- Input workspace: [task-input.md](../../../../../workspace/bach/week-05_2026-08-30_to_2026-09-05/task-04_establish-ci-and-fresh-setup-gate/input/task-input.md).
 - Output workspace: Chưa tạo.
 - Pull request: Chưa tạo.
 - Kết quả review: Chưa review.
@@ -59,5 +59,5 @@ Thiết lập CI baseline cho phần code tuần 5 và đóng gate M1 bằng m�
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 10/09/2026 — phân công lại Bách phụ trách task; Đức phối hợp fresh setup độc lập và review telemetry assertion trong CI.
-- Ghi chú/tồn đọng: chỉ bắt đầu khi task-01, task-02 và task-03 có artifact sẵn sàng tích hợp; không dùng CI pass thay cho fresh setup của Đức.
+- Cập nhật gần nhất: 10/09/2026 — Bách tạo branch riêng, hoàn tất input và bắt đầu triển khai CI gate.
+- Ghi chú/tồn đọng: Task 4 được tách từ head PR #17 sau khi metadata phân công đã được cập nhật; chưa có PR Task 4. Không dùng CI pass thay cho fresh setup độc lập của Đức.

@@ -16,7 +16,7 @@
 | [task-01_scaffold-repository-and-service-template](task-01_scaffold-repository-and-service-template.md) | Khởi tạo cấu trúc repository và service template chạy được | Đức | Bách | Cao | Hoàn thành |
 | [task-02_establish-compose-baseline](task-02_establish-compose-baseline.md) | Dựng Docker Compose baseline và Quick Start | Đức | Bách | Cao | Hoàn thành |
 | [task-03_bootstrap-opentelemetry](task-03_bootstrap-opentelemetry.md) | Tích hợp OpenTelemetry bootstrap và resource identity | Bách | Đức | Cao | Hoàn thành |
-| [task-04_establish-ci-and-fresh-setup-gate](task-04_establish-ci-and-fresh-setup-gate.md) | Thiết lập CI baseline và kiểm chứng fresh setup | Bách | Đức | Cao | Đã giao |
+| [task-04_establish-ci-and-fresh-setup-gate](task-04_establish-ci-and-fresh-setup-gate.md) | Thiết lập CI baseline và kiểm chứng fresh setup | Bách | Đức | Cao | Đang thực hiện |
 
 > Khi đọc tiến độ project-wide, chỉ coi hàng có trạng thái `Hoàn thành` trên nhánh canonical là hoàn thành; trạng thái đã finalization trên task branch chưa thay thế nguồn này.
 
