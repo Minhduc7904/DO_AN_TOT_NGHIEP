@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-03_bootstrap-opentelemetry` |
 | Tuần | `week-05_2026-08-30_to_2026-09-05` |
-| Trạng thái | Chờ review |
+| Trạng thái | Hoàn thành |
 | Người phụ trách | Bách |
 | Collaborator | Đức tích hợp bootstrap vào service mẫu và kiểm tra khả năng export khi chạy cục bộ |
 | Ưu tiên | Cao |
@@ -52,11 +52,11 @@ Tạo shared OpenTelemetry bootstrap cho ứng dụng NestJS và tích hợp và
 - Input workspace: [task-input.md](../../../../../workspace/bach/week-05_2026-08-30_to_2026-09-05/task-03_bootstrap-opentelemetry/input/task-input.md).
 - Output workspace: [task-output.md](../../../../../workspace/bach/week-05_2026-08-30_to_2026-09-05/task-03_bootstrap-opentelemetry/output/task-output.md).
 - Pull request: [#17](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/17).
-- Kết quả review: Chưa review.
+- Kết quả review: Approval ngoài GitHub theo xác nhận trực tiếp của Bách ngày 10/09/2026: Đức xác nhận đã approve sau khi review; GitHub không có verdict `APPROVED` trên head `ba9bc4f`.
 
-> URL/số PR và `Chờ review` phải được commit/push vào PR head trước review. Thành viên còn lại phải gửi `APPROVED` hợp lệ trên GitHub; sau đó người phụ trách finalization metadata, ghi `Hoàn thành` trên chính branch/PR và tự merge task của mình. Card chỉ canonically hoàn thành khi commit đó vào nhánh canonical; xem [vòng đời task canonical](../../../rules/git-and-pull-request-rules.md#vòng-đời-task-canonical).
+> Finalization này dùng ngoại lệ theo xác nhận trực tiếp của Bách: GitHub không có verdict `APPROVED` trên head `ba9bc4f`, nhưng Bách xác nhận Đức đã approval sau review. Trạng thái `Hoàn thành` mới sẵn sàng merge trên branch/PR; chỉ canonically hoàn thành khi commit này vào nhánh canonical. Xem [quy tắc ưu tiên chỉ thị trực tiếp](../../../rules/git-and-pull-request-rules.md#ưu-tiên-chỉ-thị-trực-tiếp-và-ghi-nhận-ngoại-lệ).
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 10/09/2026 — Bách hoàn tất implementation, tự verify, mở PR #17 và chuyển task sang `Chờ review` trên PR head.
-- Ghi chú/tồn đọng: chờ Đức review PR #17 và gửi verdict trên GitHub; chưa finalization hoặc merge.
+- Cập nhật gần nhất: 10/09/2026 — Bách xử lý finding `http.route`, push commit `ba9bc4f` và finalization Task 3 theo approval ngoài GitHub do Bách xác nhận.
+- Ghi chú/tồn đọng: PR #17 đã sẵn sàng để Bách merge theo ngoại lệ đã xác nhận; chưa merge nên chưa canonically hoàn thành trên `main`.
