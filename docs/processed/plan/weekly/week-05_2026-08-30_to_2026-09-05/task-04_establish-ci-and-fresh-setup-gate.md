@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-04_establish-ci-and-fresh-setup-gate` |
 | Tuần | `week-05_2026-08-30_to_2026-09-05` |
-| Trạng thái | Đang thực hiện |
+| Trạng thái | Chờ xử lý |
 | Người phụ trách | Bách |
 | Collaborator | Đức chạy lại toàn bộ Quick Start và review telemetry assertion trong CI |
 | Ưu tiên | Cao |
@@ -42,8 +42,8 @@ Thiết lập CI baseline cho phần code tuần 5 và đóng gate M1 bằng m�
 
 ## Definition of Done
 
-- [ ] CI trên pull request chạy clean install, build, lint và unit/telemetry assertion test; workflow pass trên commit được review.
-- [ ] CI kiểm tra cấu hình Compose tối thiểu và không phụ thuộc secret thật hoặc file local không được commit.
+- [x] CI trên pull request chạy clean install, build, lint và unit/telemetry assertion test; workflow pass trên commit được review.
+- [x] CI kiểm tra cấu hình Compose tối thiểu và không phụ thuộc secret thật hoặc file local không được commit.
 - [ ] Đức chạy fresh setup từ checkout sạch, khởi động stack, gọi `/health` và xác minh bootstrap telemetry tối thiểu theo Quick Start.
 - [ ] Mọi bước thiếu hoặc lỗi tái lập phát hiện trong fresh setup đã được sửa trong code/tài liệu và chạy lại thành công.
 - [ ] Gate M1 có bằng chứng từ cả CI và fresh setup độc lập; các giới hạn chưa tự động hóa được ghi rõ, không bị mô tả như đã đạt.
@@ -51,13 +51,13 @@ Thiết lập CI baseline cho phần code tuần 5 và đóng gate M1 bằng m�
 ## Liên kết hồ sơ thực hiện
 
 - Input workspace: [task-input.md](../../../../../workspace/bach/week-05_2026-08-30_to_2026-09-05/task-04_establish-ci-and-fresh-setup-gate/input/task-input.md).
-- Output workspace: Chưa tạo.
-- Pull request: Chưa tạo.
+- Output workspace: [task-output.md](../../../../../workspace/bach/week-05_2026-08-30_to_2026-09-05/task-04_establish-ci-and-fresh-setup-gate/output/task-output.md).
+- Pull request: [#18](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/18).
 - Kết quả review: Chưa review.
 
 > URL/số PR và `Chờ review` phải được commit/push vào PR head trước review. Thành viên còn lại phải gửi `APPROVED` hợp lệ trên GitHub; sau đó người phụ trách finalization metadata, ghi `Hoàn thành` trên chính branch/PR và tự merge task của mình. Card chỉ canonically hoàn thành khi commit đó vào nhánh canonical; xem [vòng đời task canonical](../../../rules/git-and-pull-request-rules.md#vòng-đời-task-canonical).
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 10/09/2026 — Bách tạo branch riêng, hoàn tất input và bắt đầu triển khai CI gate.
-- Ghi chú/tồn đọng: Task 4 được tách từ head PR #17 sau khi metadata phân công đã được cập nhật; chưa có PR Task 4. Không dùng CI pass thay cho fresh setup độc lập của Đức.
+- Cập nhật gần nhất: 10/09/2026 — Bách tự verify và GitHub Actions pass trên PR #18; Đức đã được gán reviewer.
+- Ghi chú/tồn đọng: chờ PR #17 merge vào `main`, sau đó Đức thực hiện fresh setup độc lập và ghi nhận bằng chứng. PR #18 tạm chưa sẵn sàng review vì branch được tách từ head PR #17; không dùng CI pass thay cho fresh setup của Đức.

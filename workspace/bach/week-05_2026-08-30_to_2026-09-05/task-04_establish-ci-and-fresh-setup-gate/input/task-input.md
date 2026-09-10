@@ -8,11 +8,11 @@
 | Tên task | Thiết lập CI baseline và kiểm chứng fresh setup |
 | Người phụ trách | Bách |
 | Tuần thực hiện | `week-05_2026-08-30_to_2026-09-05` |
-| Trạng thái | Đang thực hiện |
+| Trạng thái | Chờ xử lý |
 | Ngày tạo | 10/09/2026 |
 | Thời gian dự kiến | 10/09/2026 — triển khai CI, tự kiểm chứng và chuẩn bị PR để Đức review |
 | Nhánh thực hiện | `chore/week-05/task-04-establish-ci-and-fresh-setup-gate` |
-| Pull request dự kiến | Tạo vào `main` sau khi có bằng chứng DoD |
+| Pull request dự kiến | [PR #18](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/18) vào `main`; chờ PR #17 merge trước khi Đức thực hiện fresh setup/review |
 
 ## Mục tiêu và phạm vi
 
