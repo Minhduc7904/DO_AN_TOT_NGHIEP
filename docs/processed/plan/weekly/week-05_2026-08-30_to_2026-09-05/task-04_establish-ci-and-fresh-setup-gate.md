@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-04_establish-ci-and-fresh-setup-gate` |
 | Tuần | `week-05_2026-08-30_to_2026-09-05` |
-| Trạng thái | Chờ xử lý |
+| Trạng thái | Chờ review |
 | Người phụ trách | Bách |
 | Collaborator | Đức chạy lại toàn bộ Quick Start và review telemetry assertion trong CI |
 | Ưu tiên | Cao |
@@ -59,5 +59,7 @@ Thiết lập CI baseline cho phần code tuần 5 và đóng gate M1 bằng m�
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 10/09/2026 — Bách tự verify và GitHub Actions pass trên PR #18; Đức đã được gán reviewer.
-- Ghi chú/tồn đọng: chờ PR #17 merge vào `main`, sau đó Đức thực hiện fresh setup độc lập và ghi nhận bằng chứng. PR #18 tạm chưa sẵn sàng review vì branch được tách từ head PR #17; không dùng CI pass thay cho fresh setup của Đức.
+- Cập nhật gần nhất: 10/09/2026 — PR #17 đã merge vào `main`; Bách đã rebase Task 4 lên `main`, tự verify lại CI/Compose và chuyển PR #18 sang `Chờ review`.
+- Ghi chú/tồn đọng: theo xác nhận trực tiếp của Bách ngày 10/09/2026, lượt fresh setup độc lập của Đức được hoãn để Đức có thể review CI trước. Đây là ngoại lệ quy trình: không thay thế hoặc xác nhận DoD fresh setup, không cho phép finalization/merge trước khi phần còn thiếu được xử lý.
+
+> Ngoại lệ được Bách xác nhận trực tiếp ngày 10/09/2026: PR #18 được đưa vào `Chờ review` khi fresh setup của Đức còn hoãn. Reviewer cần ghi nhận rõ giới hạn này; không được diễn giải trạng thái review là M1 hoặc toàn bộ DoD đã đạt.

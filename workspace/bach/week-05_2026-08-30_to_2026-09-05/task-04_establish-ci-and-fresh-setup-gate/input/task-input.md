@@ -8,11 +8,11 @@
 | Tên task | Thiết lập CI baseline và kiểm chứng fresh setup |
 | Người phụ trách | Bách |
 | Tuần thực hiện | `week-05_2026-08-30_to_2026-09-05` |
-| Trạng thái | Chờ xử lý |
+| Trạng thái | Chờ review |
 | Ngày tạo | 10/09/2026 |
 | Thời gian dự kiến | 10/09/2026 — triển khai CI, tự kiểm chứng và chuẩn bị PR để Đức review |
 | Nhánh thực hiện | `chore/week-05/task-04-establish-ci-and-fresh-setup-gate` |
-| Pull request dự kiến | [PR #18](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/18) vào `main`; chờ PR #17 merge trước khi Đức thực hiện fresh setup/review |
+| Pull request dự kiến | [PR #18](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/18) vào `main`; Task 3 đã merge, fresh setup của Đức được hoãn theo ngoại lệ Bách xác nhận ngày 10/09/2026 trước khi review CI |
 
 ## Mục tiêu và phạm vi
 
@@ -38,7 +38,7 @@ Thiết lập CI baseline cho repository và service `course`: CI phải thực 
 ## Đầu vào và phụ thuộc
 
 - Tài liệu, dữ liệu hoặc task cần có trước: artifact task-01, task-02 và head PR #17 của task-03; Quick Start tại `docker-compose/`.
-- Người cần phối hợp: Đức chạy fresh setup trên checkout sạch, kiểm tra `/health`, resource identity/trace tối thiểu và review telemetry assertion trong CI.
+- Người cần phối hợp: Đức review CI/telemetry assertion; lượt fresh setup trên checkout sạch, `/health` và telemetry bootstrap được hoãn theo ngoại lệ Bách xác nhận ngày 10/09/2026 và vẫn là DoD chưa đạt.
 - Rủi ro hoặc giả định: CI runner có thể không chạy full Compose ổn định; nếu CI chỉ dùng `docker compose config`, fresh setup độc lập của Đức vẫn là gate bắt buộc.
 
 ## Definition of Done
