@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-03_bootstrap-opentelemetry` |
 | Tuần | `week-05_2026-08-30_to_2026-09-05` |
-| Trạng thái | Đã giao |
+| Trạng thái | Đang thực hiện |
 | Người phụ trách | Bách |
 | Collaborator | Đức tích hợp bootstrap vào service mẫu và kiểm tra khả năng export khi chạy cục bộ |
 | Ưu tiên | Cao |
@@ -49,8 +49,8 @@ Tạo shared OpenTelemetry bootstrap cho ứng dụng NestJS và tích hợp và
 
 ## Liên kết hồ sơ thực hiện
 
-- Input workspace: Chưa tạo.
-- Output workspace: Chưa tạo.
+- Input workspace: [task-input.md](../../../../../workspace/bach/week-05_2026-08-30_to_2026-09-05/task-03_bootstrap-opentelemetry/input/task-input.md).
+- Output workspace: [task-output.md](../../../../../workspace/bach/week-05_2026-08-30_to_2026-09-05/task-03_bootstrap-opentelemetry/output/task-output.md).
 - Pull request: Chưa tạo.
 - Kết quả review: Chưa review.
 
@@ -58,5 +58,5 @@ Tạo shared OpenTelemetry bootstrap cho ứng dụng NestJS và tích hợp và
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 30/08/2026 — task được phân rã và giao theo vai trò telemetry owner của Bách.
+- Cập nhật gần nhất: 10/09/2026 — Bách bắt đầu thực hiện task trên nhánh riêng và khởi tạo hồ sơ workspace.
 - Ghi chú/tồn đọng: có thể làm song song task-02 sau khi task-01 cung cấp service mẫu chạy được.
