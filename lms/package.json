@@ -13,7 +13,8 @@
     "format:check": "prettier --check .",
     "lint": "eslint \"services/course/**/*.ts\" --max-warnings=0",
     "start:course": "pnpm --filter @aiops-lms/course build && pnpm --filter @aiops-lms/course start",
-    "test": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config services/course/jest.config.ts",
+    "test": "pnpm run test:architecture && node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config services/course/jest.config.ts",
+    "test:architecture": "node test/eslint-boundaries.test.mjs",
     "test:e2e": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config services/course/jest-e2e.config.ts"
   },
   "devDependencies": {
