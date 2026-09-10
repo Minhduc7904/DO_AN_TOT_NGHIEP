@@ -24,7 +24,7 @@ Tạo shared OpenTelemetry bootstrap cho ứng dụng NestJS và tích hợp và
 - Không dựng Collector, Prometheus, Tempo, Loki hoặc Grafana đầy đủ trong task này.
 - Không triển khai feature extraction, anomaly detection, RCA hoặc ground-truth pipeline.
 - Không đưa fault label hay business secret/PII vào telemetry.
-- Không tạo business library dùng chung trong `packages/observability/`.
+- Không tạo business library dùng chung trong `lms/packages/observability/`.
 
 ## Đầu vào và phụ thuộc
 
@@ -36,8 +36,8 @@ Tạo shared OpenTelemetry bootstrap cho ứng dụng NestJS và tích hợp và
 
 | Sản phẩm | Loại | Vị trí hoặc link dự kiến |
 | --- | --- | --- |
-| Shared OpenTelemetry bootstrap | Code | `packages/observability/` |
-| Tích hợp và telemetry assertion cho service mẫu | Code | `services/course/` |
+| Shared OpenTelemetry bootstrap | Code | `lms/packages/observability/` |
+| Tích hợp và telemetry assertion cho service mẫu | Code | `lms/services/course/` |
 
 ## Definition of Done
 

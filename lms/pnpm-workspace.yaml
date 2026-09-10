@@ -1,0 +1,8 @@
+packages:
+  - services/*
+  - packages/*
+allowBuilds:
+  '@parcel/watcher': false
+  unrs-resolver: false
+minimumReleaseAgeExclude:
+  - zod@4.5.4

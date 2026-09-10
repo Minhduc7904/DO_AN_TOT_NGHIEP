@@ -56,9 +56,11 @@ Target có thể thêm Assignment, MinIO và expanded robustness evaluation vớ
 
 ## Ranh giới module
 
-- `services/`: API Gateway và LMS business services.
-- `packages/observability/`: shared application instrumentation.
-- `infrastructure/observability/`: Collector, Prometheus, Tempo, Loki và Grafana runtime/config.
+- `lms/`: backend workspace canonical dùng pnpm cho LMS testbed.
+- `lms/services/`: API Gateway và LMS business services.
+- `lms/packages/observability/`: shared application instrumentation.
+- `lms/contracts/`: published HTTP/event contracts của LMS.
+- `lms/infrastructure/observability/`: Collector, Prometheus, Tempo, Loki và Grafana runtime/config.
 - `load/`: workload implementation.
 - `faults/`: reusable fault mechanisms.
 - `experiments/`: protocol, scenario orchestration, runner và run artifacts.

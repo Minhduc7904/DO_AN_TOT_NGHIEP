@@ -37,7 +37,7 @@ Thiết lập CI baseline cho phần code tuần 5 và đóng gate M1 bằng m�
 | Sản phẩm | Loại | Vị trí hoặc link dự kiến |
 | --- | --- | --- |
 | CI workflow baseline | Code | `.github/workflows/` |
-| Scripts/config lint và test | Code | Repository root và module liên quan |
+| Scripts/config lint và test | Code | `lms/` và module liên quan |
 | Bằng chứng fresh setup và Quick Start đã sửa | Docs / Khác | PR, output task và `README.md` hoặc guide được liên kết |
 
 ## Definition of Done
