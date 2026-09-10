@@ -23,6 +23,7 @@ pnpm --dir lms test
 pnpm --dir lms test:e2e
 pnpm --dir lms test:telemetry
 pnpm --dir lms build
+pnpm --dir lms ci:verify
 ```
 
 Corepack được pin ở `0.34.0` vì phiên bản đi kèm image Node `22.13.1-alpine`
@@ -50,4 +51,4 @@ docker rm -f aiops-lms-course-check
 Lệnh `id -u` phải trả về UID khác `0`; health endpoint phải trả `status=ok` trên port đã cấu hình.
 
 Docker Compose baseline được hướng dẫn tại [`../docker-compose/README.md`](../docker-compose/README.md).
-OpenTelemetry bootstrap và assertion được mô tả tại [`packages/observability/README.md`](packages/observability/README.md); CI được triển khai trong task tiếp theo.
+OpenTelemetry bootstrap và assertion được mô tả tại [`packages/observability/README.md`](packages/observability/README.md). CI baseline chạy clean install, format check, build, lint và test qua `pnpm --dir lms ci:verify`; workflow cũng kiểm tra Compose bằng [`../docker-compose/.env.example`](../docker-compose/.env.example), không dùng `.env` local hoặc secret thật.

@@ -12,6 +12,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "eslint \"{packages/observability,services/course}/**/*.ts\" --max-warnings=0",
+    "ci:verify": "pnpm run format:check && pnpm run build && pnpm run lint && pnpm run test",
     "start:course": "pnpm run build && pnpm --filter @aiops-lms/course start",
     "test": "pnpm run test:architecture && pnpm --filter @aiops-lms/observability test && node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config services/course/jest.config.ts && pnpm run test:telemetry",
     "test:architecture": "node test/eslint-boundaries.test.mjs",
