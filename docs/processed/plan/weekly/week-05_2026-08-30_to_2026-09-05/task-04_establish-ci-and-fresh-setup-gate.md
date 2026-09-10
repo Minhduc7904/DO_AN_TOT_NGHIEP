@@ -7,8 +7,8 @@
 | Mã task | `task-04_establish-ci-and-fresh-setup-gate` |
 | Tuần | `week-05_2026-08-30_to_2026-09-05` |
 | Trạng thái | Đã giao |
-| Người phụ trách | Đức |
-| Collaborator | Bách chạy lại toàn bộ Quick Start và review telemetry assertion trong CI |
+| Người phụ trách | Bách |
+| Collaborator | Đức chạy lại toàn bộ Quick Start và review telemetry assertion trong CI |
 | Ưu tiên | Cao |
 | Hạn dự kiến | 05/09/2026 |
 | Nhánh thực hiện | `chore/week-05/task-04-establish-ci-and-fresh-setup-gate` |
@@ -29,7 +29,7 @@ Thiết lập CI baseline cho phần code tuần 5 và đóng gate M1 bằng m�
 ## Đầu vào và phụ thuộc
 
 - Tài liệu/task cần có trước: task-01, task-02 và task-03 đã có artifact sẵn sàng tích hợp; Quick Start từ task-02.
-- Người hoặc phần việc cần phối hợp: Bách thực hiện fresh setup trên checkout sạch, kiểm tra `/health`, resource identity/trace tối thiểu và phản hồi các bước không tái lập.
+- Người hoặc phần việc cần phối hợp: Đức thực hiện fresh setup trên checkout sạch, kiểm tra `/health`, resource identity/trace tối thiểu và phản hồi các bước không tái lập.
 - Rủi ro/giả định: CI runner có thể không chạy full stack ổn định; nếu chỉ kiểm tra `docker compose config`, fresh setup local độc lập vẫn là gate bắt buộc và phải có bằng chứng.
 
 ## Sản phẩm kỳ vọng
@@ -44,7 +44,7 @@ Thiết lập CI baseline cho phần code tuần 5 và đóng gate M1 bằng m�
 
 - [ ] CI trên pull request chạy clean install, build, lint và unit/telemetry assertion test; workflow pass trên commit được review.
 - [ ] CI kiểm tra cấu hình Compose tối thiểu và không phụ thuộc secret thật hoặc file local không được commit.
-- [ ] Bách chạy fresh setup từ checkout sạch, khởi động stack, gọi `/health` và xác minh bootstrap telemetry tối thiểu theo Quick Start.
+- [ ] Đức chạy fresh setup từ checkout sạch, khởi động stack, gọi `/health` và xác minh bootstrap telemetry tối thiểu theo Quick Start.
 - [ ] Mọi bước thiếu hoặc lỗi tái lập phát hiện trong fresh setup đã được sửa trong code/tài liệu và chạy lại thành công.
 - [ ] Gate M1 có bằng chứng từ cả CI và fresh setup độc lập; các giới hạn chưa tự động hóa được ghi rõ, không bị mô tả như đã đạt.
 
@@ -59,5 +59,5 @@ Thiết lập CI baseline cho phần code tuần 5 và đóng gate M1 bằng m�
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 30/08/2026 — task được phân rã làm gate tích hợp cuối tuần 5.
-- Ghi chú/tồn đọng: chỉ bắt đầu khi task-01, task-02 và task-03 có artifact sẵn sàng tích hợp; không dùng CI pass thay cho fresh setup của Bách.
+- Cập nhật gần nhất: 10/09/2026 — phân công lại Bách phụ trách task; Đức phối hợp fresh setup độc lập và review telemetry assertion trong CI.
+- Ghi chú/tồn đọng: chỉ bắt đầu khi task-01, task-02 và task-03 có artifact sẵn sàng tích hợp; không dùng CI pass thay cho fresh setup của Đức.
