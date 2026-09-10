@@ -60,4 +60,4 @@ Trước khi commit trực tiếp, xác minh diff không chứa code/artifact/li
 
 ## Xử lý ngoại lệ
 
-Nếu không thể dùng PR do sự cố kỹ thuật, không tự bỏ qua quy trình. Ghi rõ trở ngại trong task và xin người dùng quyết định cách xử lý; không đánh dấu task hoàn thành cho đến khi có quyết định và bằng chứng thay thế.
+Nếu không thể tuân thủ quy trình chuẩn, cảnh báo rõ cổng bị thiếu và hệ quả. Khi đúng người phụ trách xác nhận tiếp tục, thực hiện theo chỉ thị, dùng bằng chứng thay thế họ cung cấp và ghi nguồn trung thực. Với PR đã merge trước finalization, có thể tạo commit correction trên `main`; không giả mạo GitHub approval hoặc kết quả kiểm tra.

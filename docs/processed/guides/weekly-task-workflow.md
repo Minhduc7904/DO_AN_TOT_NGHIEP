@@ -54,7 +54,7 @@ Người thực hiện chỉ làm thay đổi thuộc task trên branch riêng. 
 
 Khi work, DoD và PR đã sẵn sàng, người phụ trách cập nhật output/card/weekly overview với bằng chứng, URL/số PR và chuyển task sang **Chờ review**. Người phụ trách phải commit/push transition này vào PR head trước review; trạng thái chỉ ở working tree/local không đủ. Không dùng `task-completion-recording` ở bước này.
 
-Agent không được chuyển task sang **Hoàn thành** ở bước này.
+Agent không tự chuyển task sang **Hoàn thành** ở bước này. Nếu đúng người phụ trách yêu cầu ngoại lệ sau cảnh báo, thực hiện theo rule canonical và ghi rõ nguồn xác nhận.
 
 ## 5. Review task/PR
 
@@ -68,6 +68,6 @@ Reviewer nói với agent, ví dụ: “Review task-01 tuần 5.” Nếu chưa 
 
 ## 6. Finalization và merge pull request
 
-Chỉ sau khi GitHub ghi nhận `APPROVED` hợp lệ từ thành viên còn lại, người phụ trách dùng [skill ghi nhận hoàn thành](../../../agent-resources/skills/task-completion-recording/SKILL.md) để cập nhật output, card task, weekly overview, URL PR và reviewer/verdict, rồi chuyển task sang **Hoàn thành** trên chính branch/PR. Finalization metadata phải được commit/push vào PR và không được sửa substantive artifact/code. Agent chỉ thực hiện Git write khi user đã cho phép; nếu không, phải nêu rõ finalization còn ở local và chưa sẵn sàng merge.
+Quy trình chuẩn chờ GitHub `APPROVED` hợp lệ rồi dùng [skill ghi nhận hoàn thành](../../../agent-resources/skills/task-completion-recording/SKILL.md). Nếu đúng người phụ trách yêu cầu ngoại lệ sau cảnh báo, agent tiếp tục và ghi approval/DoD theo đúng nguồn xác nhận, không biến xác nhận ngoài GitHub thành verdict GitHub.
 
-PR chỉ được **người phụ trách task** merge sau khi finalization đã sẵn sàng, không còn feedback blocking chưa xử lý, GitHub vẫn có `APPROVED` hợp lệ từ thành viên còn lại và branch protection cho phép. Reviewer không merge thay người phụ trách. Agent chỉ merge khi người dùng hiện tại nói rõ họ là đúng người phụ trách và yêu cầu merge. Nếu approval bị stale/dismissed sau commit mới, reviewer chỉ kiểm tra diff mới rồi re-approve; không review lại toàn bộ PR và không bypass branch protection. Khi PR merge vào nhánh canonical, task mới **Hoàn thành** theo trạng thái project-wide; không tạo bookkeeping commit hậu-merge cho merge SHA, merge timestamp, trạng thái PR hay việc đóng task.
+Mặc định PR chỉ được **người phụ trách task** merge sau finalization và GitHub approval. Nếu người phụ trách xác nhận ngoại lệ, cảnh báo rồi tiếp tục trong giới hạn branch protection. PR đã merge thiếu finalization có thể được correction trên `main` khi người phụ trách yêu cầu rõ; hồ sơ phải ghi sai lệch workflow và không giả mạo review.
