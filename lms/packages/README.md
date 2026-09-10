@@ -9,6 +9,6 @@ Chứa technical primitive thực sự được nhiều service dùng, ví dụ 
 - Được phụ thuộc thư viện kỹ thuật cần thiết.
 - Không được chứa business entity, business repository base class hoặc source code của service.
 
-## Task triển khai
+## Package hiện có
 
-Task 03 tuần 5 sẽ tạo `observability/` khi có implementation thật. Không tạo package rỗng trước thời điểm đó.
+- [`observability/`](observability/README.md): OpenTelemetry bootstrap, resource identity và HTTP instrumentation dùng chung.

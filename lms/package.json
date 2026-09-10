@@ -8,14 +8,15 @@
     "pnpm": "11.19.0"
   },
   "scripts": {
-    "build": "pnpm --filter @aiops-lms/course build",
+    "build": "pnpm --filter @aiops-lms/observability build && pnpm --filter @aiops-lms/course build",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "lint": "eslint \"services/course/**/*.ts\" --max-warnings=0",
-    "start:course": "pnpm --filter @aiops-lms/course build && pnpm --filter @aiops-lms/course start",
-    "test": "pnpm run test:architecture && node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config services/course/jest.config.ts",
+    "lint": "eslint \"{packages/observability,services/course}/**/*.ts\" --max-warnings=0",
+    "start:course": "pnpm run build && pnpm --filter @aiops-lms/course start",
+    "test": "pnpm run test:architecture && pnpm --filter @aiops-lms/observability test && node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config services/course/jest.config.ts && pnpm run test:telemetry",
     "test:architecture": "node test/eslint-boundaries.test.mjs",
-    "test:e2e": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config services/course/jest-e2e.config.ts"
+    "test:e2e": "pnpm run build && node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config services/course/jest-e2e.config.ts && node services/course/test/telemetry/http.telemetry-test.mjs",
+    "test:telemetry": "pnpm run build && node services/course/test/telemetry/http.telemetry-test.mjs"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",

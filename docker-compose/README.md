@@ -24,6 +24,8 @@ Copy-Item docker-compose/.env.example docker-compose/.env
 
 Các credential trong `.env.example` chỉ dùng cho local development, không phải secret production. File `.env` được Git ignore.
 
+Course bật OpenTelemetry mặc định và gửi trace tới `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT`. Baseline này chưa dựng Collector nên endpoint có thể chưa sẵn sàng; lỗi export không làm Course dừng hoặc làm `/health` thất bại. Đặt `OTEL_SDK_DISABLED=true` để tắt bootstrap, hoặc đổi endpoint khi có OTLP backend cục bộ.
+
 ## Validate và khởi động
 
 Chạy từ repository root:

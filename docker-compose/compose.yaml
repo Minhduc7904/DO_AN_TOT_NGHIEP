@@ -5,6 +5,10 @@ services:
       dockerfile: services/course/Dockerfile
     environment:
       NODE_ENV: production
+      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: "${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT:-http://127.0.0.1:4318/v1/traces}"
+      OTEL_SDK_DISABLED: "${OTEL_SDK_DISABLED:-false}"
+      OTEL_SERVICE_INSTANCE_ID: "${COURSE_SERVICE_INSTANCE_ID:-course-compose-1}"
+      OTEL_SERVICE_VERSION: "${COURSE_SERVICE_VERSION:-0.1.0}"
       PORT: 3002
     ports:
       - "${COURSE_PORT:-3002}:3002"

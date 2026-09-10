@@ -21,6 +21,7 @@ pnpm --dir lms lint
 pnpm --dir lms format:check
 pnpm --dir lms test
 pnpm --dir lms test:e2e
+pnpm --dir lms test:telemetry
 pnpm --dir lms build
 ```
 
@@ -49,4 +50,4 @@ docker rm -f aiops-lms-course-check
 Lệnh `id -u` phải trả về UID khác `0`; health endpoint phải trả `status=ok` trên port đã cấu hình.
 
 Docker Compose baseline được hướng dẫn tại [`../docker-compose/README.md`](../docker-compose/README.md).
-OpenTelemetry và CI được triển khai trong các task tiếp theo.
+OpenTelemetry bootstrap và assertion được mô tả tại [`packages/observability/README.md`](packages/observability/README.md); CI được triển khai trong task tiếp theo.

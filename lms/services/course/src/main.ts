@@ -1,16 +1,30 @@
-import { NestFactory } from '@nestjs/core';
-import { ConfigService } from '@nestjs/config';
+import { startTelemetry } from '@aiops-lms/observability';
 
-import { AppModule } from './app.module.js';
-import { DEFAULT_HOST } from './config/app-config.js';
+import { COURSE_SERVICE_NAME } from './config/app-config.js';
+import { validateEnvironment } from './config/env.schema.js';
 
-async function bootstrap(): Promise<void> {
-  const app = await NestFactory.create(AppModule);
-  const configService = app.get(ConfigService);
-  const port = configService.getOrThrow<number>('PORT');
+const environment = validateEnvironment(process.env);
+const telemetry = startTelemetry({
+  enabled: !environment.OTEL_SDK_DISABLED,
+  otlpTracesEndpoint: environment.OTEL_EXPORTER_OTLP_TRACES_ENDPOINT,
+  serviceInstanceId: environment.OTEL_SERVICE_INSTANCE_ID,
+  serviceName: COURSE_SERVICE_NAME,
+  serviceVersion: environment.OTEL_SERVICE_VERSION,
+});
 
-  app.enableShutdownHooks();
-  await app.listen(port, DEFAULT_HOST);
+try {
+  const { bootstrapApplication } = await import('./bootstrap.js');
+  const app = await bootstrapApplication();
+  let shutdownPromise: Promise<void> | undefined;
+
+  const shutdown = (): Promise<void> => {
+    shutdownPromise ??= Promise.all([app.close(), telemetry.shutdown()]).then(() => undefined);
+    return shutdownPromise;
+  };
+
+  process.once('SIGINT', () => void shutdown());
+  process.once('SIGTERM', () => void shutdown());
+} catch (error) {
+  await telemetry.shutdown();
+  throw error;
 }
-
-void bootstrap();
