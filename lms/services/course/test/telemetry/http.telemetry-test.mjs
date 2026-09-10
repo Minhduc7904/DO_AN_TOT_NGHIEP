@@ -61,6 +61,7 @@ try {
   assert.equal(healthSpan.resource.attributes['service.version'], '0.1.0-test');
   assert.equal(healthSpan.resource.attributes['service.instance.id'], 'course-telemetry-test-1');
   assert.equal(healthSpan.attributes['http.request.method'], 'GET');
+  assert.equal(healthSpan.attributes['http.route'], '/health');
   assert.equal(healthSpan.attributes['http.response.status_code'], 200);
 
   exporter.reset();

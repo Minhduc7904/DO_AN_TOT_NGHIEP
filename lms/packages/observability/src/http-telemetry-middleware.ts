@@ -9,9 +9,13 @@ import {
 } from '@opentelemetry/api';
 
 interface HttpRequest {
+  baseUrl?: string;
   headers: Record<string, string | string[] | undefined>;
   method?: string;
   originalUrl?: string;
+  route?: {
+    path?: string | string[];
+  };
   url?: string;
 }
 
@@ -45,6 +49,18 @@ function getRequestPath(request: HttpRequest): string {
   }
 }
 
+function getMatchedRouteTemplate(request: HttpRequest): string | undefined {
+  const routePath = request.route?.path;
+
+  if (typeof routePath !== 'string') {
+    return undefined;
+  }
+
+  const baseUrl = request.baseUrl?.replace(/\/$/, '') ?? '';
+  const normalizedRoutePath = routePath.startsWith('/') ? routePath : `/${routePath}`;
+  return `${baseUrl}${normalizedRoutePath}` || '/';
+}
+
 export function createHttpTelemetryMiddleware(): HttpTelemetryMiddleware {
   const tracer = trace.getTracer('@aiops-lms/observability');
 
@@ -65,6 +81,13 @@ export function createHttpTelemetryMiddleware(): HttpTelemetryMiddleware {
     );
 
     response.once('finish', () => {
+      const routeTemplate = getMatchedRouteTemplate(request);
+
+      if (routeTemplate) {
+        span.setAttribute('http.route', routeTemplate);
+        span.updateName(`${method} ${routeTemplate}`);
+      }
+
       span.setAttribute('http.response.status_code', response.statusCode);
 
       if (response.statusCode >= 500) {
