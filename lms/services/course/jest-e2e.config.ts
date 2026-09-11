@@ -9,7 +9,7 @@ const config: Config = {
   },
   rootDir: '.',
   testEnvironment: 'node',
-  testMatch: ['<rootDir>/test/e2e/health.e2e-spec.ts'],
+  testMatch: ['**/test/e2e/health.e2e-spec.ts'],
   transform: {
     '^.+\\.ts$': ['ts-jest', { tsconfig: '<rootDir>/tsconfig.json', useESM: true }],
   },

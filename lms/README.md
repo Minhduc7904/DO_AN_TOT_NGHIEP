@@ -13,25 +13,34 @@
 Chạy từ repository root:
 
 ```powershell
-npm install --global corepack@0.34.0
-corepack enable
-corepack prepare pnpm@11.19.0 --activate
-pnpm --dir lms install --frozen-lockfile
-pnpm --dir lms lint
-pnpm --dir lms format:check
-pnpm --dir lms test
-pnpm --dir lms test:e2e
-pnpm --dir lms test:telemetry
-pnpm --dir lms build
+node --version # phải là v22.13.1
+
+Push-Location lms
+$corepackPnpm = @('exec', '--yes', '--package=corepack@0.34.0', '--', 'corepack', 'pnpm')
+npm @corepackPnpm --version # phải là 11.19.0
+npm @corepackPnpm install --frozen-lockfile
+npm @corepackPnpm run lint
+npm @corepackPnpm run format:check
+npm @corepackPnpm run test
+npm @corepackPnpm run test:e2e
+npm @corepackPnpm run test:telemetry
+npm @corepackPnpm run build
+npm @corepackPnpm run ci:verify
+Pop-Location
 ```
 
-Corepack được pin ở `0.34.0` vì phiên bản đi kèm image Node `22.13.1-alpine`
-không nhận khóa chữ ký hiện tại của pnpm `11.19.0`.
+Các lệnh dùng trực tiếp Corepack `0.34.0`, không gọi `corepack` hoặc `pnpm`
+qua shim đã có trong `PATH`. Cách này tránh trường hợp Windows vẫn resolve
+`corepack.cmd` cũ từ thư mục cài Node. Corepack đọc `packageManager` của `lms/`
+để chạy đúng pnpm `11.19.0`; hãy xác minh phiên bản trước khi cài dependency.
 
 Khởi động Course service:
 
 ```powershell
-pnpm --dir lms start:course
+Push-Location lms
+$corepackPnpm = @('exec', '--yes', '--package=corepack@0.34.0', '--', 'corepack', 'pnpm')
+npm @corepackPnpm run start:course
+Pop-Location
 Invoke-RestMethod http://localhost:3002/health
 ```
 
@@ -50,4 +59,4 @@ docker rm -f aiops-lms-course-check
 Lệnh `id -u` phải trả về UID khác `0`; health endpoint phải trả `status=ok` trên port đã cấu hình.
 
 Docker Compose baseline được hướng dẫn tại [`../docker-compose/README.md`](../docker-compose/README.md).
-OpenTelemetry bootstrap và assertion được mô tả tại [`packages/observability/README.md`](packages/observability/README.md); CI được triển khai trong task tiếp theo.
+OpenTelemetry bootstrap và assertion được mô tả tại [`packages/observability/README.md`](packages/observability/README.md). CI baseline chạy clean install, format check, build, lint và test qua `pnpm --dir lms ci:verify`; workflow cũng kiểm tra Compose bằng [`../docker-compose/.env.example`](../docker-compose/.env.example), không dùng `.env` local hoặc secret thật.
