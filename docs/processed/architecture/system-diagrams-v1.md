@@ -12,6 +12,8 @@
 - **Nét đứt kèm `PLANNED`:** thành phần chưa có trong Compose hiện tại.
 - Mũi tên liền biểu diễn HTTP hoặc data flow; mũi tên đậm biểu diễn event bất đồng bộ; mũi tên nét đứt biểu diễn telemetry.
 
+Các ảnh SVG/PNG nhúng trong tài liệu được xuất từ nguồn Draw.io cùng tên. File `.drawio` là nguồn chỉnh sửa chính; nguồn Mermaid/PlantUML cũ được giữ lại để truy vết lịch sử, không dùng để ghi đè ảnh nhúng.
+
 Thuật ngữ `root-cause candidate ranking` thể hiện kết quả xếp hạng ứng viên nguyên nhân gốc từ telemetry quan sát được, không được hiểu là bằng chứng nhân quả tuyệt đối.
 
 ## 2. Danh mục và khả năng truy vết
@@ -37,7 +39,7 @@ Sơ đồ giới thiệu hai ranh giới chính: LMS là System Under Test tạo
 
 ![D01 System Context](diagrams/rendered/system-context-v1.svg)
 
-Nguồn: [`system-context-v1.mmd`](diagrams/system-context-v1.mmd).
+Nguồn Draw.io: [`system-context-v1.drawio`](diagrams/system-context-v1.drawio).
 
 ### D02 — Kiến trúc tổng quát MVP
 
@@ -45,7 +47,7 @@ Nguồn: [`system-context-v1.mmd`](diagrams/system-context-v1.mmd).
 
 ![D02 MVP Architecture](diagrams/rendered/mvp-architecture-v1.svg)
 
-Nguồn: [`mvp-architecture-v1.mmd`](diagrams/mvp-architecture-v1.mmd).
+Nguồn Draw.io: [`mvp-architecture-v1.drawio`](diagrams/mvp-architecture-v1.drawio).
 
 ### D03 — Service topology LMS
 
@@ -53,7 +55,7 @@ Sơ đồ thể hiện dependency đồng bộ, database ownership và luồng b
 
 ![D03 LMS Service Topology](diagrams/rendered/lms-service-topology-v1.svg)
 
-Nguồn: [`lms-service-topology-v1.mmd`](diagrams/lms-service-topology-v1.mmd).
+Nguồn Draw.io: [`lms-service-topology-v1.drawio`](diagrams/lms-service-topology-v1.drawio).
 
 ### D04 — Deployment hiện trạng
 
@@ -61,7 +63,7 @@ Snapshot này chỉ phản ánh baseline Compose ở commit `9c0f4c4`: Course, P
 
 ![D04 Current Deployment](diagrams/rendered/current-deployment-v1.svg)
 
-Nguồn: [`current-deployment-v1.mmd`](diagrams/current-deployment-v1.mmd).
+Nguồn Draw.io: [`current-deployment-v1.drawio`](diagrams/current-deployment-v1.drawio).
 
 ### D05 — Use Case tổng hợp
 
@@ -69,7 +71,7 @@ Use case dùng hai system boundary để không biến các thao tác LMS thành
 
 ![D05 System Use Cases](diagrams/rendered/system-use-cases-v1.svg)
 
-Nguồn PlantUML: [`system-use-cases-v1.puml`](diagrams/system-use-cases-v1.puml).
+Nguồn Draw.io: [`system-use-cases-v1.drawio`](diagrams/system-use-cases-v1.drawio).
 
 ### D06 — Flow thí nghiệm end-to-end
 
@@ -77,7 +79,7 @@ Nhánh kiểm tra data quality ngăn run thiếu telemetry hoặc manifest đư�
 
 ![D06 Experiment Flow](diagrams/rendered/experiment-flow-v1.svg)
 
-Nguồn: [`experiment-flow-v1.mmd`](diagrams/experiment-flow-v1.mmd).
+Nguồn Draw.io: [`experiment-flow-v1.drawio`](diagrams/experiment-flow-v1.drawio).
 
 ### D07 — Sequence nghiệp vụ
 
@@ -87,19 +89,19 @@ Ba sequence chi tiết hóa các workflow có giá trị lớn nhất cho depend
 
 ![D07a W1 Login](diagrams/rendered/w1-login-v1.svg)
 
-Nguồn: [`w1-login-v1.mmd`](diagrams/w1-login-v1.mmd).
+Nguồn Draw.io: [`w1-login-v1.drawio`](diagrams/w1-login-v1.drawio).
 
 #### D07b — W4 Submit
 
 ![D07b W4 Submit](diagrams/rendered/w4-submit-v1.svg)
 
-Nguồn: [`w4-submit-v1.mmd`](diagrams/w4-submit-v1.mmd).
+Nguồn Draw.io: [`w4-submit-v1.drawio`](diagrams/w4-submit-v1.drawio).
 
 #### D07c — W5 Grade and Notify
 
 ![D07c W5 Grade and Notify](diagrams/rendered/w5-grade-notify-v1.svg)
 
-Nguồn: [`w5-grade-notify-v1.mmd`](diagrams/w5-grade-notify-v1.mmd).
+Nguồn Draw.io: [`w5-grade-notify-v1.drawio`](diagrams/w5-grade-notify-v1.drawio).
 
 ### D08 — Telemetry đến RCA
 
@@ -107,7 +109,7 @@ Sơ đồ phân biệt input, pipeline và output; ground truth chỉ đi vào e
 
 ![D08 Telemetry to RCA](diagrams/rendered/telemetry-rca-flow-v1.svg)
 
-Nguồn: [`telemetry-rca-flow-v1.mmd`](diagrams/telemetry-rca-flow-v1.mmd).
+Nguồn Draw.io: [`telemetry-rca-flow-v1.drawio`](diagrams/telemetry-rca-flow-v1.drawio).
 
 ## 4. Bộ hình dùng cho slide
 
@@ -121,28 +123,26 @@ Bộ tối thiểu gồm D01, D02, D05, D06 và D08. Khi thời lượng ngắn,
 4. Thành phần chưa triển khai phải có nhãn chữ `PLANNED`; không dùng màu làm dấu hiệu duy nhất.
 5. Không đưa Kubernetes, MinIO, Assignment hoặc full LMS frontend vào bộ MVP này.
 
-## 6. Render lại
+## 6. Chỉnh sửa và render lại
 
-Từ repository root, render Mermaid bằng:
+Mở file `.drawio` cần sửa bằng Draw.io Desktop hoặc [diagrams.net](https://app.diagrams.net/). Bố cục được đặt thủ công theo nội dung; không ép các khối vào kích thước hay lưới cố định. Khi bổ sung thuật ngữ tiếng Anh, ưu tiên kèm diễn giải tiếng Việt trong ngoặc nếu người đọc phổ thông có thể chưa quen.
 
-```powershell
-$source = 'docs/processed/architecture/diagrams'
-$output = Join-Path $source 'rendered'
-Get-ChildItem -LiteralPath $source -Filter '*.mmd' | ForEach-Object {
-    npx.cmd -y '@mermaid-js/mermaid-cli' -i $_.FullName -o (Join-Path $output ($_.BaseName + '.svg')) -b transparent -w 1800
-    npx.cmd -y '@mermaid-js/mermaid-cli' -i $_.FullName -o (Join-Path $output ($_.BaseName + '.png')) -b white -s 2
-}
-```
-
-Render use case PlantUML bằng bản `1.2026.6` đã kiểm chứng:
+Từ repository root, render toàn bộ nguồn Draw.io bằng:
 
 ```powershell
-$jar = Join-Path $env:TEMP 'plantuml-1.2026.6.jar'
-curl.exe -L --fail -o $jar 'https://repo1.maven.org/maven2/net/sourceforge/plantuml/plantuml/1.2026.6/plantuml-1.2026.6.jar'
-Push-Location 'docs/processed/architecture/diagrams'
-java -jar $jar -charset UTF-8 -tsvg -o rendered 'system-use-cases-v1.puml'
-java -jar $jar -charset UTF-8 -tpng -o rendered 'system-use-cases-v1.puml'
-Pop-Location
+.\tools\render-drawio-diagrams.ps1
 ```
 
-SVG là bản ưu tiên cho báo cáo và slide vì giữ chữ, đường nét rõ khi phóng to. PNG là bản dự phòng cho công cụ không hỗ trợ SVG.
+Nếu Draw.io Desktop không nằm trong `PATH` hoặc thư mục cài mặc định, truyền rõ executable:
+
+```powershell
+.\tools\render-drawio-diagrams.ps1 -DrawioExecutable 'C:\path\to\draw.io.exe'
+```
+
+Để chỉ render một số sơ đồ:
+
+```powershell
+.\tools\render-drawio-diagrams.ps1 -Names 'system-context-v1', 'mvp-architecture-v1', 'experiment-flow-v1'
+```
+
+Script xuất SVG và PNG vào `diagrams/rendered/`, đồng thời nhúng dữ liệu Draw.io vào cả hai định dạng. SVG là bản ưu tiên cho báo cáo và slide vì giữ chữ, đường nét rõ khi phóng to; PNG tỷ lệ 2x là bản dự phòng cho công cụ không hỗ trợ SVG.

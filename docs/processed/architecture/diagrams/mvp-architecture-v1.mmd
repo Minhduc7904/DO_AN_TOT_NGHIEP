@@ -4,38 +4,31 @@ config:
   theme: base
 ---
 block-beta
-    columns 4
-    CLIENT["Student / Test Client"]
-    GW["API Gateway\nservice.name=gateway"]
-    SERVICES["LMS business services\nPlanned MVP"]
-    DEPS["PostgreSQL · Redis\nRabbitMQ · Storage Mock"]
-    RUNNER["Workload & Experiment Runner"]
-    space
-    OTEL["OpenTelemetry\nCollector"]
-    STORES["Prometheus · Tempo · Loki\n+ Grafana"]
-    space
-    PIPELINE["Validation → Features\nAnomaly → Incident"]
-    RCA["Dynamic graph → RCA ranking\nEvidence & evaluation"]
-    USER["Developer / SRE\nIncident & RCA evidence"]
+    columns 7
 
-    CLIENT --> GW
-    RUNNER --> GW
-    GW --> SERVICES
-    SERVICES --> DEPS
-    SERVICES -.-> OTEL
-    OTEL --> STORES
-    STORES --> PIPELINE
-    RUNNER --> PIPELINE
-    PIPELINE --> RCA
-    RCA --> USER
+    CLIENT["Student / Test Client"] space GW["API Gateway<br/>service.name=gateway"] space SERVICES["LMS business services<br/>PLANNED · MVP"] space DEPS["PostgreSQL · Redis<br/>RabbitMQ · Storage Mock"]
+    space:7
+    RUNNER["Workload & Experiment Runner<br/>Workload · Fault injection · Ground truth"] space:3 OTEL["OpenTelemetry Collector<br/>Receive · Process · Export"] space STORES["Prometheus · Tempo · Loki<br/>Truy vấn qua Grafana"]
+    space:7
+    space PIPELINE["Data validation & feature pipeline<br/>Anomaly detection → Incident"] space RCA["Dynamic graph & RCA engine<br/>Candidate ranking · Evidence · Evaluation"] space USER["Developer / SRE<br/>Điều tra incident và xem bằng chứng"] space
 
-    style CLIENT fill:#ECEFF1,stroke:#455A64,color:#102027
-    style RUNNER fill:#ECEFF1,stroke:#455A64,color:#102027
-    style USER fill:#ECEFF1,stroke:#455A64,color:#102027
-    style GW fill:#E3F2FD,stroke:#1565C0,color:#0D47A1
-    style SERVICES fill:#E3F2FD,stroke:#1565C0,color:#0D47A1
-    style DEPS fill:#FFF3E0,stroke:#EF6C00,color:#7F2704
-    style OTEL fill:#FFF3E0,stroke:#EF6C00,color:#7F2704
-    style STORES fill:#FFF3E0,stroke:#EF6C00,color:#7F2704
-    style PIPELINE fill:#F3E5F5,stroke:#7B1FA2,color:#4A148C
-    style RCA fill:#F3E5F5,stroke:#7B1FA2,color:#4A148C
+    CLIENT -- "HTTP request" --> GW
+    RUNNER -- "Controlled workload" --> GW
+    GW -- "Route nghiệp vụ" --> SERVICES
+    SERVICES -- "State và business event" --> DEPS
+    SERVICES -. "OTLP telemetry" .-> OTEL
+    OTEL -- "Metrics · Traces · Logs" --> STORES
+    STORES -- "Telemetry window theo run" --> PIPELINE
+    RUNNER -. "Run manifest và ground truth" .-> PIPELINE
+    PIPELINE -- "Incident + feature graph" --> RCA
+    RCA -- "Xếp hạng nguyên nhân và evidence" --> USER
+
+    classDef actor fill:#ECEFF1,stroke:#455A64,color:#102027,stroke-width:2px
+    classDef lms fill:#E3F2FD,stroke:#1565C0,color:#0D47A1,stroke-width:2px
+    classDef telemetry fill:#FFF3E0,stroke:#EF6C00,color:#7F2704,stroke-width:2px
+    classDef analysis fill:#F3E5F5,stroke:#7B1FA2,color:#4A148C,stroke-width:2px
+
+    class CLIENT,RUNNER,USER actor
+    class GW,SERVICES lms
+    class DEPS,OTEL,STORES telemetry
+    class PIPELINE,RCA analysis

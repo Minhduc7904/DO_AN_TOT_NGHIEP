@@ -2,26 +2,47 @@
 title: System Context - AIOps RCA for Microservices
 config:
   theme: base
+  layout: elk
+  flowchart:
+    curve: basis
+    nodeSpacing: 80
+    rankSpacing: 110
+    diagramPadding: 40
+    padding: 24
 ---
-block-beta
-    columns 2
-    CLIENT["Student / Test Client\nRequest nghiệp vụ LMS"]
-    LMS["LMS Microservice Testbed\nSystem Under Test"]
-    RUNNER["Experiment Runner\nWorkload, fault, ground truth"]
-    OBS["Observability Platform\nMetrics, traces, logs"]
-    RCA["AIOps / RCA Platform\nIncident, ranking, evidence"]
-    USERS["Developer / SRE\nNhóm nghiên cứu"]
+flowchart LR
+    subgraph ACTORS["Nguồn tương tác và thí nghiệm"]
+        direction TB
+        CLIENT["Student / Test Client<br/>Gửi request nghiệp vụ LMS"]
+        RUNNER["Experiment Runner<br/>Sinh workload, fault và ground truth"]
+    end
 
-    CLIENT --> LMS
-    RUNNER --> LMS
-    RUNNER --> RCA
-    LMS -.-> OBS
-    OBS --> RCA
-    RCA --> USERS
+    subgraph PLATFORM["Hệ thống nghiên cứu"]
+        direction LR
+        LMS["LMS Microservice Testbed<br/>System Under Test"]
+        OBS["Observability Platform<br/>Metrics · Traces · Logs"]
+        RCA["AIOps / RCA Platform<br/>Incident · Candidate ranking · Evidence"]
 
-    style CLIENT fill:#ECEFF1,stroke:#455A64,color:#102027
-    style RUNNER fill:#ECEFF1,stroke:#455A64,color:#102027
-    style USERS fill:#ECEFF1,stroke:#455A64,color:#102027
-    style LMS fill:#E3F2FD,stroke:#1565C0,color:#0D47A1
-    style OBS fill:#FFF3E0,stroke:#EF6C00,color:#7F2704
-    style RCA fill:#F3E5F5,stroke:#7B1FA2,color:#4A148C
+        LMS -. "Xuất telemetry" .-> OBS
+        OBS -- "Telemetry đã thu thập" --> RCA
+    end
+
+    USERS["Developer / SRE<br/>Nhóm nghiên cứu"]
+
+    CLIENT -- "Business request" --> LMS
+    RUNNER -- "Workload và fault injection" --> LMS
+    RUNNER -. "Run manifest và ground truth" .-> RCA
+    RCA -- "Incident và bằng chứng RCA" --> USERS
+
+    classDef actor fill:#ECEFF1,stroke:#455A64,color:#102027,stroke-width:2px
+    classDef lms fill:#E3F2FD,stroke:#1565C0,color:#0D47A1,stroke-width:2px
+    classDef telemetry fill:#FFF3E0,stroke:#EF6C00,color:#7F2704,stroke-width:2px
+    classDef analysis fill:#F3E5F5,stroke:#7B1FA2,color:#4A148C,stroke-width:2px
+
+    class CLIENT,RUNNER,USERS actor
+    class LMS lms
+    class OBS telemetry
+    class RCA analysis
+
+    style ACTORS fill:#FAFAFA,stroke:#B0BEC5,stroke-width:1px
+    style PLATFORM fill:#FFFFFF,stroke:#90A4AE,stroke-width:1px
