@@ -1,0 +1,50 @@
+---
+title: Telemetry to RCA Data Flow - MVP
+config:
+  theme: base
+  flowchart:
+    curve: linear
+---
+flowchart LR
+    subgraph INPUT["Input"]
+        METRICS["Metrics\nPrometheus / artifact"]
+        TRACES["Traces\nTempo / artifact"]
+        LOGS["Structured logs\nLoki / artifact"]
+        MANIFEST["Experiment manifest"]
+        TRUTH["Ground truth"]
+        CATALOG["Service catalogue\nand ownership mapping"]
+    end
+
+    subgraph PIPELINE["Analysis pipeline - out-of-band"]
+        VALIDATE["Validation &\ntime alignment"]
+        FEATURES["Service / edge\nwindow features"]
+        ANOMALY["Anomaly scoring"]
+        INCIDENT["Incident detection\nand timeline"]
+        GRAPH["Dynamic dependency\ngraph"]
+        RANK["Service-level RCA\ncandidate ranking"]
+        EVIDENCE["Evidence extraction"]
+        VALIDATE --> FEATURES --> ANOMALY --> INCIDENT --> GRAPH --> RANK --> EVIDENCE
+    end
+
+    subgraph OUTPUT["Output"]
+        PRED["Prediction artifact"]
+        EVAL["Evaluation artifact"]
+        REPORT["Plots / tables\nfor report"]
+    end
+
+    METRICS --> VALIDATE
+    TRACES --> VALIDATE
+    LOGS --> VALIDATE
+    MANIFEST --> VALIDATE
+    CATALOG --> GRAPH
+    TRUTH --> EVAL
+    EVIDENCE --> PRED
+    PRED --> EVAL
+    EVAL --> REPORT
+
+    classDef infra fill:#FFF3E0,stroke:#EF6C00,color:#7F2704;
+    classDef analysis fill:#F3E5F5,stroke:#7B1FA2,color:#4A148C;
+    classDef output fill:#ECEFF1,stroke:#455A64,color:#102027;
+    class METRICS,TRACES,LOGS,MANIFEST,TRUTH,CATALOG infra;
+    class VALIDATE,FEATURES,ANOMALY,INCIDENT,GRAPH,RANK,EVIDENCE analysis;
+    class PRED,EVAL,REPORT output;

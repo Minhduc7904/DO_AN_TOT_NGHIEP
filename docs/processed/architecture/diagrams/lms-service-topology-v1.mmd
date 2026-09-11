@@ -1,0 +1,36 @@
+---
+title: LMS Service Topology - Planned MVP
+config:
+  theme: base
+  flowchart:
+    curve: linear
+---
+flowchart LR
+    CLIENT["Client"] -->|HTTP| GW["API Gateway\nservice.name=gateway"]
+
+    GW -->|login / refresh| AUTH["Auth\nservice.name=auth"]
+    GW -->|HTTP| COURSE["Course\nservice.name=course"]
+    GW -->|HTTP| ENROLL["Enrollment\nservice.name=enrollment"]
+    GW -->|HTTP| SUBMIT["Submission\nservice.name=submission"]
+    GW -->|HTTP| GRADE["Grading\nservice.name=grading"]
+
+    AUTH --> AUTHDB[("PostgreSQL\nauth_db")]
+    COURSE --> REDIS[("Redis\nCourse cache")]
+    COURSE --> COURSEDB[("PostgreSQL\ncourse_db")]
+    ENROLL -->|HTTP| COURSE
+    ENROLL --> ENROLLDB[("PostgreSQL\nenrollment_db")]
+    SUBMIT -->|HTTP| COURSE
+    SUBMIT -->|HTTP| ENROLL
+    SUBMIT --> STORAGE["Controllable\nStorage Mock"]
+    SUBMIT --> SUBMITDB[("PostgreSQL\nsubmission_db")]
+    GRADE -->|HTTP| SUBMIT
+    GRADE --> GRADEDB[("PostgreSQL\ngrading_db")]
+    GRADE ==>|publish grade.completed| MQ[("RabbitMQ")]
+    MQ ==>|consume grade.completed| NOTIFY["Notification\nservice.name=notification"]
+
+    classDef external fill:#ECEFF1,stroke:#455A64,color:#102027;
+    classDef lms fill:#E3F2FD,stroke:#1565C0,color:#0D47A1;
+    classDef infra fill:#FFF3E0,stroke:#EF6C00,color:#7F2704;
+    class CLIENT external;
+    class GW,AUTH,COURSE,ENROLL,SUBMIT,GRADE,NOTIFY lms;
+    class AUTHDB,COURSEDB,ENROLLDB,SUBMITDB,GRADEDB,REDIS,STORAGE,MQ infra;

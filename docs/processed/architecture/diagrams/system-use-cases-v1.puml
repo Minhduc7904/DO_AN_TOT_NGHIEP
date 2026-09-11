@@ -1,0 +1,53 @@
+@startuml
+title Use Case tổng hợp - AIOps RCA for Microservices (MVP)
+left to right direction
+skinparam backgroundColor white
+skinparam shadowing false
+skinparam dpi 180
+skinparam packageStyle rectangle
+skinparam actorStyle awesome
+skinparam usecase {
+  BackgroundColor #E3F2FD
+  BorderColor #1565C0
+  FontColor #0D47A1
+}
+
+actor "Student /\nTest Client" as Student
+actor "Seed / Admin\nClient" as Admin
+actor "Workload &\nExperiment Runner" as Runner
+actor "Developer / SRE" as SRE
+actor "Nhóm nghiên cứu" as Research
+
+rectangle "LMS Microservice Testbed" as LMSBoundary #E3F2FD {
+  usecase "Đăng nhập /\nrefresh token" as UC_Login
+  usecase "Xem course" as UC_Browse
+  usecase "Enroll course" as UC_Enroll
+  usecase "Nộp bài" as UC_Submit
+  usecase "Chấm điểm và phát\ngrade.completed" as UC_Grade
+  usecase "Tạo dữ liệu course" as UC_Seed
+  usecase "Tạo workload" as UC_Load
+}
+
+rectangle "AIOps / RCA Platform" as AIOpsBoundary #F3E5F5 {
+  usecase "Thu thập và chuẩn hóa\ntelemetry" as UC_Telemetry
+  usecase "Phát hiện anomaly\nvà incident" as UC_Incident
+  usecase "Xếp hạng root-cause\ncandidates" as UC_RCA
+  usecase "Xem timeline và\nevidence" as UC_Evidence
+  usecase "Chạy evaluation với\nground truth" as UC_Evaluate
+}
+
+Student -- UC_Login
+Student -- UC_Browse
+Student -- UC_Enroll
+Student -- UC_Submit
+Admin -- UC_Seed
+Runner -- UC_Load
+Runner -- UC_Grade
+Runner -- UC_Telemetry : fault + manifest\n+ ground truth
+SRE -- UC_Incident
+SRE -- UC_RCA
+SRE -- UC_Evidence
+Research -- UC_Evaluate
+
+UC_Load .> UC_Telemetry : <<include>>
+@enduml

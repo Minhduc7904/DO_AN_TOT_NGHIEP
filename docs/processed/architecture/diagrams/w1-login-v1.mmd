@@ -1,0 +1,19 @@
+---
+title: W1 - Login and JWT Issuance
+config:
+  theme: base
+---
+sequenceDiagram
+    autonumber
+    actor Client
+    participant Gateway as API Gateway
+    participant Auth
+    participant DB as auth_db
+
+    Client->>Gateway: POST /api/v1/auth/login
+    Gateway->>Auth: HTTP + W3C trace context
+    Auth->>DB: Tra cứu credential
+    DB-->>Auth: User / auth data
+    Auth-->>Gateway: JWT + refresh data
+    Gateway-->>Client: 200 Login response
+    Note over Gateway: Request nghiệp vụ sau login<br/>được validate JWT cục bộ

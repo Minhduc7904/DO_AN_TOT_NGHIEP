@@ -1,0 +1,31 @@
+---
+title: Current Docker Compose Deployment - 2026-09-11 / 9c0f4c4
+config:
+  theme: base
+  flowchart:
+    curve: linear
+---
+flowchart TB
+    USER["Local client"] -->|HTTP :3002| COURSE
+
+    subgraph HOST["Developer machine"]
+        subgraph COMPOSE["Docker Compose network: lms-network"]
+            COURSE["Course container\nservice.name=course\nCURRENT"]
+            PG[("PostgreSQL 17.6\ncourse_db\nCURRENT")]
+            REDIS[("Redis 8.2.1\nCURRENT")]
+            MQ[("RabbitMQ 4.1.4\nCURRENT")]
+            COURSE -->|depends_on / health| PG
+            COURSE -->|depends_on / health| REDIS
+            COURSE -->|depends_on / health| MQ
+        end
+        OTLP["OTLP endpoint configured: 127.0.0.1:4318\nCollector chưa có trong Compose\nPLANNED"]
+    end
+
+    COURSE -.->|OTLP traces; lỗi export không chặn health| OTLP
+
+    classDef external fill:#ECEFF1,stroke:#455A64,color:#102027;
+    classDef current fill:#E8F5E9,stroke:#2E7D32,color:#1B5E20;
+    classDef planned fill:#F5F5F5,stroke:#616161,color:#212121,stroke-dasharray: 5 5;
+    class USER external;
+    class COURSE,PG,REDIS,MQ current;
+    class OTLP planned;

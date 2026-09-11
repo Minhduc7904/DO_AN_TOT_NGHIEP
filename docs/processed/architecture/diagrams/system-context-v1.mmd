@@ -1,0 +1,27 @@
+---
+title: System Context - AIOps RCA for Microservices
+config:
+  theme: base
+---
+block-beta
+    columns 2
+    CLIENT["Student / Test Client\nRequest nghiệp vụ LMS"]
+    LMS["LMS Microservice Testbed\nSystem Under Test"]
+    RUNNER["Experiment Runner\nWorkload, fault, ground truth"]
+    OBS["Observability Platform\nMetrics, traces, logs"]
+    RCA["AIOps / RCA Platform\nIncident, ranking, evidence"]
+    USERS["Developer / SRE\nNhóm nghiên cứu"]
+
+    CLIENT --> LMS
+    RUNNER --> LMS
+    RUNNER --> RCA
+    LMS -.-> OBS
+    OBS --> RCA
+    RCA --> USERS
+
+    style CLIENT fill:#ECEFF1,stroke:#455A64,color:#102027
+    style RUNNER fill:#ECEFF1,stroke:#455A64,color:#102027
+    style USERS fill:#ECEFF1,stroke:#455A64,color:#102027
+    style LMS fill:#E3F2FD,stroke:#1565C0,color:#0D47A1
+    style OBS fill:#FFF3E0,stroke:#EF6C00,color:#7F2704
+    style RCA fill:#F3E5F5,stroke:#7B1FA2,color:#4A148C

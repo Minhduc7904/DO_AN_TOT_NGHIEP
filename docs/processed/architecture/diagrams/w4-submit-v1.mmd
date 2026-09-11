@@ -1,0 +1,28 @@
+---
+title: W4 - Submit Course Work
+config:
+  theme: base
+---
+sequenceDiagram
+    autonumber
+    actor Client
+    participant Gateway as API Gateway
+    participant Submission
+    participant Course
+    participant Enrollment
+    participant Storage as Storage Mock
+    participant DB as submission_db
+
+    Client->>Gateway: POST /api/v1/submissions + JWT
+    Gateway->>Gateway: Validate JWT cục bộ
+    Gateway->>Submission: HTTP + trace/principal context
+    Submission->>Course: Kiểm tra course
+    Course-->>Submission: Course hợp lệ
+    Submission->>Enrollment: Kiểm tra enrollment
+    Enrollment-->>Submission: Enrolled = true
+    Submission->>Storage: Lưu content / object
+    Storage-->>Submission: Object reference
+    Submission->>DB: Lưu submission metadata
+    DB-->>Submission: Submission persisted
+    Submission-->>Gateway: Submission representation
+    Gateway-->>Client: 201 Created

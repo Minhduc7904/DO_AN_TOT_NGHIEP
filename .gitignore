@@ -17,3 +17,6 @@ lms/**/.eslintcache
 docker-compose/.env
 docker-compose/.env.*
 !docker-compose/.env.example
+
+# Dữ liệu tạm do Codex tạo khi kiểm chứng hoặc render cục bộ.
+/.codex-tmp/

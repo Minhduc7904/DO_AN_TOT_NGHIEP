@@ -1,0 +1,41 @@
+---
+title: MVP Target Architecture - AIOps RCA for Microservices
+config:
+  theme: base
+---
+block-beta
+    columns 4
+    CLIENT["Student / Test Client"]
+    GW["API Gateway\nservice.name=gateway"]
+    SERVICES["LMS business services\nPlanned MVP"]
+    DEPS["PostgreSQL · Redis\nRabbitMQ · Storage Mock"]
+    RUNNER["Workload & Experiment Runner"]
+    space
+    OTEL["OpenTelemetry\nCollector"]
+    STORES["Prometheus · Tempo · Loki\n+ Grafana"]
+    space
+    PIPELINE["Validation → Features\nAnomaly → Incident"]
+    RCA["Dynamic graph → RCA ranking\nEvidence & evaluation"]
+    USER["Developer / SRE\nIncident & RCA evidence"]
+
+    CLIENT --> GW
+    RUNNER --> GW
+    GW --> SERVICES
+    SERVICES --> DEPS
+    SERVICES -.-> OTEL
+    OTEL --> STORES
+    STORES --> PIPELINE
+    RUNNER --> PIPELINE
+    PIPELINE --> RCA
+    RCA --> USER
+
+    style CLIENT fill:#ECEFF1,stroke:#455A64,color:#102027
+    style RUNNER fill:#ECEFF1,stroke:#455A64,color:#102027
+    style USER fill:#ECEFF1,stroke:#455A64,color:#102027
+    style GW fill:#E3F2FD,stroke:#1565C0,color:#0D47A1
+    style SERVICES fill:#E3F2FD,stroke:#1565C0,color:#0D47A1
+    style DEPS fill:#FFF3E0,stroke:#EF6C00,color:#7F2704
+    style OTEL fill:#FFF3E0,stroke:#EF6C00,color:#7F2704
+    style STORES fill:#FFF3E0,stroke:#EF6C00,color:#7F2704
+    style PIPELINE fill:#F3E5F5,stroke:#7B1FA2,color:#4A148C
+    style RCA fill:#F3E5F5,stroke:#7B1FA2,color:#4A148C

@@ -1,0 +1,40 @@
+---
+title: End-to-End Controlled Experiment Flow
+config:
+  theme: base
+---
+block-beta
+    columns 4
+    START["Bắt đầu run"]
+    CONFIG["1. Setup\nConfig, seed, manifest\nStart và health check"]
+    HEALTHY["2. Healthy baseline\nWorkload W1-W5"]
+    FAULT["3. Fault run\nInject fault và thu telemetry"]
+    END["Kết thúc run"]
+    REPORT["6. Output\nPrediction, evaluation\nbảng và biểu đồ"]
+    RCA["5. RCA & evaluation\nGraph, ranking, ground truth"]
+    VALIDATE["Kiểm tra data quality\nTelemetry + manifest"]
+    space
+    space
+    ANALYZE["4. Analyze\nAlignment, features, incident"]
+    INVALID["Run không hợp lệ\nLưu lý do và evidence"]
+
+    START --> CONFIG
+    CONFIG --> HEALTHY
+    HEALTHY --> FAULT
+    FAULT --> VALIDATE
+    VALIDATE --> ANALYZE
+    ANALYZE --> RCA
+    RCA --> REPORT
+    REPORT --> END
+    VALIDATE --> INVALID
+
+    style START fill:#ECEFF1,stroke:#455A64,color:#102027
+    style END fill:#ECEFF1,stroke:#455A64,color:#102027
+    style CONFIG fill:#E3F2FD,stroke:#1565C0,color:#0D47A1
+    style HEALTHY fill:#E3F2FD,stroke:#1565C0,color:#0D47A1
+    style FAULT fill:#E3F2FD,stroke:#1565C0,color:#0D47A1
+    style VALIDATE fill:#FFF3E0,stroke:#EF6C00,color:#7F2704
+    style INVALID fill:#FFF3E0,stroke:#EF6C00,color:#7F2704
+    style ANALYZE fill:#F3E5F5,stroke:#7B1FA2,color:#4A148C
+    style RCA fill:#F3E5F5,stroke:#7B1FA2,color:#4A148C
+    style REPORT fill:#F3E5F5,stroke:#7B1FA2,color:#4A148C

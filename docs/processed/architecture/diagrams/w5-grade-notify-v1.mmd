@@ -1,0 +1,28 @@
+---
+title: W5 - Grade and Notify
+config:
+  theme: base
+---
+sequenceDiagram
+    autonumber
+    actor Client
+    participant Gateway as API Gateway
+    participant Grading
+    participant Submission
+    participant DB as grading_db
+    participant MQ as RabbitMQ
+    participant Notification
+
+    Client->>Gateway: POST /api/v1/grades + JWT
+    Gateway->>Gateway: Validate JWT cục bộ
+    Gateway->>Grading: HTTP + trace/principal context
+    Grading->>Submission: Validate/read submission
+    Submission-->>Grading: Submission snapshot
+    Grading->>DB: Persist grade
+    DB-->>Grading: Grade persisted
+    Grading->>MQ: Publish grade.completed + trace context
+    Grading-->>Gateway: Grade representation
+    Gateway-->>Client: 201 Created
+    MQ-->>Notification: Deliver grade.completed
+    Notification->>Notification: Simulated notification processing
+    Note over Grading,Notification: Async edge được correlation qua event/trace context
