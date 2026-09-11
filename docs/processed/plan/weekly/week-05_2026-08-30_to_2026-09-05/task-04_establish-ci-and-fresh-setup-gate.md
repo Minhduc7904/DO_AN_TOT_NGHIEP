@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-04_establish-ci-and-fresh-setup-gate` |
 | Tuần | `week-05_2026-08-30_to_2026-09-05` |
-| Trạng thái | Chờ review |
+| Trạng thái | Hoàn thành |
 | Người phụ trách | Bách |
 | Collaborator | Đức chạy lại toàn bộ Quick Start và review telemetry assertion trong CI |
 | Ưu tiên | Cao |
@@ -44,22 +44,22 @@ Thiết lập CI baseline cho phần code tuần 5 và đóng gate M1 bằng m�
 
 - [x] CI trên pull request chạy clean install, build, lint và unit/telemetry assertion test; workflow pass trên commit được review.
 - [x] CI kiểm tra cấu hình Compose tối thiểu và không phụ thuộc secret thật hoặc file local không được commit.
-- [ ] Đức chạy fresh setup từ checkout sạch, khởi động stack, gọi `/health` và xác minh bootstrap telemetry tối thiểu theo Quick Start.
-- [ ] Mọi bước thiếu hoặc lỗi tái lập phát hiện trong fresh setup đã được sửa trong code/tài liệu và chạy lại thành công.
-- [ ] Gate M1 có bằng chứng từ cả CI và fresh setup độc lập; các giới hạn chưa tự động hóa được ghi rõ, không bị mô tả như đã đạt.
+- [x] Đức chạy fresh setup từ checkout sạch, khởi động stack, gọi `/health` và xác minh bootstrap telemetry tối thiểu theo Quick Start.
+- [x] Mọi bước thiếu hoặc lỗi tái lập phát hiện trong fresh setup đã được sửa trong code/tài liệu và chạy lại thành công.
+- [x] Gate M1 có bằng chứng từ cả CI và fresh setup độc lập; các giới hạn chưa tự động hóa được ghi rõ, không bị mô tả như đã đạt.
 
 ## Liên kết hồ sơ thực hiện
 
 - Input workspace: [task-input.md](../../../../../workspace/bach/week-05_2026-08-30_to_2026-09-05/task-04_establish-ci-and-fresh-setup-gate/input/task-input.md).
 - Output workspace: [task-output.md](../../../../../workspace/bach/week-05_2026-08-30_to_2026-09-05/task-04_establish-ci-and-fresh-setup-gate/output/task-output.md).
 - Pull request: [#18](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/18).
-- Kết quả review: Chưa review.
+- Kết quả review: Đức (`Minhduc7904`) gửi GitHub `APPROVED` trên commit `9270e9645bf3a928a526af47f5794d4dfa2358d3` lúc 11/09/2026 17:36 (UTC+7).
 
 > URL/số PR và `Chờ review` phải được commit/push vào PR head trước review. Thành viên còn lại phải gửi `APPROVED` hợp lệ trên GitHub; sau đó người phụ trách finalization metadata, ghi `Hoàn thành` trên chính branch/PR và tự merge task của mình. Card chỉ canonically hoàn thành khi commit đó vào nhánh canonical; xem [vòng đời task canonical](../../../rules/git-and-pull-request-rules.md#vòng-đời-task-canonical).
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 10/09/2026 — PR #17 đã merge vào `main`; Bách đã rebase Task 4 lên `main`, tự verify lại CI/Compose và chuyển PR #18 sang `Chờ review`.
-- Ghi chú/tồn đọng: theo xác nhận trực tiếp của Bách ngày 10/09/2026, lượt fresh setup độc lập của Đức được hoãn để Đức có thể review CI trước. Đây là ngoại lệ quy trình: không thay thế hoặc xác nhận DoD fresh setup, không cho phép finalization/merge trước khi phần còn thiếu được xử lý.
+- Cập nhật gần nhất: 11/09/2026 — Đức chạy lại fresh setup Windows trên clone mới, xác minh sửa lỗi đa nền tảng và gửi GitHub `APPROVED`; Bách finalization metadata trước merge.
+- Ghi chú/tồn đọng: không còn blocker. GitHub Actions run [34504525346](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/actions/runs/34504525346) pass cả job quality và Compose; full stack được xác minh qua fresh setup độc lập của Đức. JSON/timeline đang chờ đồng bộ vì môi trường không có PowerShell; Bách xác nhận tiếp tục finalization Markdown ngày 11/09/2026.
 
-> Ngoại lệ được Bách xác nhận trực tiếp ngày 10/09/2026: PR #18 được đưa vào `Chờ review` khi fresh setup của Đức còn hoãn. Reviewer cần ghi nhận rõ giới hạn này; không được diễn giải trạng thái review là M1 hoặc toàn bộ DoD đã đạt.
+> Ngoại lệ được Bách xác nhận trực tiếp ngày 10/09/2026 chỉ dùng để đưa PR #18 vào `Chờ review` trước fresh setup. Đức đã hoàn tất fresh setup và gửi GitHub `APPROVED`, nên ngoại lệ không còn ảnh hưởng đến DoD hay M1.
