@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-01_implement-auth-service` |
 | Tuần | `week-06_2026-09-06_to_2026-09-12` |
-| Trạng thái | Đã giao |
+| Trạng thái | Đang thực hiện |
 | Người phụ trách | Bách |
 | Collaborator | Đức review boundary Auth, migration và JWT claims |
 | Ưu tiên | Cao |
@@ -48,8 +48,8 @@ Triển khai Auth service theo contract W1 gồm login/refresh tối thiểu, ph
 
 ## Liên kết hồ sơ thực hiện
 
-- Input workspace: Chưa tạo trên nhánh task.
-- Output workspace: Chưa tạo trên nhánh task.
+- Input workspace: [task-input.md](../../../../../workspace/bach/week-06_2026-09-06_to_2026-09-12/task-01_implement-auth-service/input/task-input.md).
+- Output workspace: [task-output.md](../../../../../workspace/bach/week-06_2026-09-06_to_2026-09-12/task-01_implement-auth-service/output/task-output.md).
 - Pull request: Chưa tạo.
 - Kết quả review: Chưa review.
 
@@ -57,5 +57,5 @@ Triển khai Auth service theo contract W1 gồm login/refresh tối thiểu, ph
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 10/09/2026 — task được giao cho Bách theo thứ tự thực hiện đầu Week 6.
-- Ghi chú/tồn đọng: chỉ bắt đầu khi các dependency Week 5 cần thiết đã có trên `main`.
+- Cập nhật gần nhất: 15/09/2026 — Bách bắt đầu Task 01 trên nhánh `feat/week-06/task-01-implement-auth-service` sau khi xác minh baseline Week 5 trên `main`.
+- Ghi chú/tồn đọng: đang triển khai Auth service; chưa có pull request hoặc kết quả review.
