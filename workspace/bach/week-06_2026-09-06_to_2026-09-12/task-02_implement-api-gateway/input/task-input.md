@@ -8,7 +8,7 @@
 | Tên task | Triển khai Gateway, xác thực JWT cục bộ và error handling |
 | Người phụ trách | Bách |
 | Tuần thực hiện | `week-06_2026-09-06_to_2026-09-12` |
-| Trạng thái | Chưa bắt đầu |
+| Trạng thái | Đang thực hiện |
 | Ngày tạo | 10/09/2026 |
 | Thời gian dự kiến | 10/09/2026 |
 | Nhánh thực hiện | `feat/week-06/task-02-implement-api-gateway` |
@@ -33,7 +33,7 @@ Không remote-introspect Auth, không thêm API management production-grade, kh�
 
 ## Đầu vào và phụ thuộc
 
-- Tài liệu, dữ liệu hoặc task cần có trước: task-01 đã merge; HTTP contract v1; backend blueprint; telemetry schema v0.
+- Tài liệu, dữ liệu hoặc task cần có trước: task-01 đã merge vào `main`; HTTP contract v1; backend blueprint; telemetry schema v0.
 - Người cần phối hợp: Đức review routing, trust boundary và timeout semantics.
 - Rủi ro hoặc giả định: public key/secret contract đồng nhất với Auth; retry tắt mặc định.
 

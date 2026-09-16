@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-02_implement-api-gateway` |
 | Tuần | `week-06_2026-09-06_to_2026-09-12` |
-| Trạng thái | Đã giao |
+| Trạng thái | Đang thực hiện |
 | Người phụ trách | Bách |
 | Collaborator | Đức review routing, trust boundary và timeout semantics |
 | Ưu tiên | Cao |
@@ -48,8 +48,8 @@ Triển khai API Gateway cho route Auth và chuẩn bị route Course theo publi
 
 ## Liên kết hồ sơ thực hiện
 
-- Input workspace: Chưa tạo trên nhánh task.
-- Output workspace: Chưa tạo trên nhánh task.
+- Input workspace: [task-input.md](../../../../../workspace/bach/week-06_2026-09-06_to_2026-09-12/task-02_implement-api-gateway/input/task-input.md).
+- Output workspace: [task-output.md](../../../../../workspace/bach/week-06_2026-09-06_to_2026-09-12/task-02_implement-api-gateway/output/task-output.md).
 - Pull request: Chưa tạo.
 - Kết quả review: Chưa review.
 
@@ -57,5 +57,5 @@ Triển khai API Gateway cho route Auth và chuẩn bị route Course theo publi
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 10/09/2026 — task được giao cho Bách, thực hiện sau task-01.
-- Ghi chú/tồn đọng: chờ task-01 merge vào `main` để dùng JWT contract đã kiểm chứng.
+- Cập nhật gần nhất: 16/09/2026 — Bách bắt đầu task trên nhánh `feat/week-06/task-02-implement-api-gateway` sau khi task-01 đã merge vào `main`.
+- Ghi chú/tồn đọng: không còn blocker dependency; Gateway dùng JWT HS256 và claim `sub`/`role` từ Auth service.
