@@ -14,7 +14,7 @@
 | Mã task | Task | Người phụ trách | Collaborator | Ưu tiên | Trạng thái |
 | --- | --- | --- | --- | --- | --- |
 | [task-01_implement-auth-service](task-01_implement-auth-service.md) | Triển khai Auth service, migration, seed và phát JWT | Bách | Đức | Cao | Hoàn thành |
-| [task-02_implement-api-gateway](task-02_implement-api-gateway.md) | Triển khai Gateway, xác thực JWT cục bộ và error handling | Bách | Đức | Cao | Chờ review |
+| [task-02_implement-api-gateway](task-02_implement-api-gateway.md) | Triển khai Gateway, xác thực JWT cục bộ và error handling | Bách | Đức | Cao | Hoàn thành |
 | [task-03_verify-login-workflow](task-03_verify-login-workflow.md) | Kiểm chứng contract và workflow W1 qua Gateway | Bách | Đức | Cao | Đã giao |
 | [task-04_implement-course-service](task-04_implement-course-service.md) | Triển khai Course API, migration và seed | Đức | Bách | Cao | Đã giao |
 | [task-05_add-course-cache-and-telemetry](task-05_add-course-cache-and-telemetry.md) | Bổ sung Redis cache và telemetry dependency cho Course | Đức | Bách | Cao | Đã giao |
@@ -26,7 +26,7 @@
 
 | Task | Pull request | Trạng thái |
 | --- | --- | --- |
-| Task 2 — API Gateway | [#20](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/20) | Chờ Đức review trên GitHub |
+| Task 2 — API Gateway | [#20](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/20) | Sẵn sàng merge theo ngoại lệ review do Bách xác nhận; không có `APPROVED` GitHub |
 
 ## Phụ thuộc, rủi ro và quyết định
 
