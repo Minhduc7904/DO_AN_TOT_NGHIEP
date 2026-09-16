@@ -13,7 +13,7 @@
 
 | Mã task | Task | Người phụ trách | Collaborator | Ưu tiên | Trạng thái |
 | --- | --- | --- | --- | --- | --- |
-| [task-01_implement-auth-service](task-01_implement-auth-service.md) | Triển khai Auth service, migration, seed và phát JWT | Bách | Đức | Cao | Chờ review |
+| [task-01_implement-auth-service](task-01_implement-auth-service.md) | Triển khai Auth service, migration, seed và phát JWT | Bách | Đức | Cao | Hoàn thành |
 | [task-02_implement-api-gateway](task-02_implement-api-gateway.md) | Triển khai Gateway, xác thực JWT cục bộ và error handling | Bách | Đức | Cao | Đã giao |
 | [task-03_verify-login-workflow](task-03_verify-login-workflow.md) | Kiểm chứng contract và workflow W1 qua Gateway | Bách | Đức | Cao | Đã giao |
 | [task-04_implement-course-service](task-04_implement-course-service.md) | Triển khai Course API, migration và seed | Đức | Bách | Cao | Đã giao |

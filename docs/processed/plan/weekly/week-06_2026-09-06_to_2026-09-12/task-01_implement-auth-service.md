@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-01_implement-auth-service` |
 | Tuần | `week-06_2026-09-06_to_2026-09-12` |
-| Trạng thái | Chờ review |
+| Trạng thái | Hoàn thành |
 | Người phụ trách | Bách |
 | Collaborator | Đức review boundary Auth, migration và JWT claims |
 | Ưu tiên | Cao |
@@ -51,11 +51,11 @@ Triển khai Auth service theo contract W1 gồm login/refresh tối thiểu, ph
 - Input workspace: [task-input.md](../../../../../workspace/bach/week-06_2026-09-06_to_2026-09-12/task-01_implement-auth-service/input/task-input.md).
 - Output workspace: [task-output.md](../../../../../workspace/bach/week-06_2026-09-06_to_2026-09-12/task-01_implement-auth-service/output/task-output.md).
 - Pull request: [#19](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/19).
-- Kết quả review: Chờ Đức review trên GitHub.
+- Kết quả review: Không có GitHub `APPROVED`; finalization theo ngoại lệ do Bách xác nhận trực tiếp ngày 16/09/2026. Bách cho biết Đức đã ủy quyền review.
 
-> URL/số PR và `Chờ review` phải được commit/push vào PR head trước review. Thành viên còn lại phải gửi `APPROVED` hợp lệ trên GitHub; sau đó người phụ trách finalization metadata, ghi `Hoàn thành` trên chính branch/PR và tự merge task của mình. Card chỉ canonically hoàn thành khi commit đó vào nhánh canonical; xem [vòng đời task canonical](../../../rules/git-and-pull-request-rules.md#vòng-đời-task-canonical).
+> Ngoại lệ được Bách, người phụ trách task, xác nhận trực tiếp ngày 16/09/2026: không có GitHub `APPROVED`, nhưng completion metadata được finalization trên chính branch/PR với nguồn xác nhận thay thế. Trạng thái này chỉ là sẵn sàng merge; task chỉ canonically hoàn thành project-wide khi commit này vào `main`; xem [vòng đời task canonical](../../../rules/git-and-pull-request-rules.md#vòng-đời-task-canonical).
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 15/09/2026 — Bách tạo PR #19, đã commit/push URL PR và chuyển Task 01 sang `Chờ review` trên chính PR head.
-- Ghi chú/tồn đọng: chờ Đức review boundary Auth, migration/seed, JWT claims và telemetry assertions trên GitHub.
+- Cập nhật gần nhất: 16/09/2026 — Bách xác nhận finalization theo ngoại lệ; PR #19 ở commit `8686a62` có quality gate, Compose validation và GitGuardian đều pass.
+- Ghi chú/tồn đọng: Không có blocker kỹ thuật; thiếu GitHub `APPROVED` được ghi nhận minh bạch theo ngoại lệ. Bách là người duy nhất có quyền merge PR.
