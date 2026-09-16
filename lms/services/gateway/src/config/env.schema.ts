@@ -22,7 +22,12 @@ const environmentSchema = z.object({
   GATEWAY_AUTH_BASE_URL: z.url().default(DEFAULT_AUTH_BASE_URL),
   GATEWAY_COURSE_BASE_URL: z.url().default(DEFAULT_COURSE_BASE_URL),
   GATEWAY_JWT_SECRET: z.string().min(32).default(DEFAULT_JWT_SECRET),
-  GATEWAY_UPSTREAM_TIMEOUT_MS: z.coerce.number().int().min(100).max(60_000).default(DEFAULT_UPSTREAM_TIMEOUT_MS),
+  GATEWAY_UPSTREAM_TIMEOUT_MS: z.coerce
+    .number()
+    .int()
+    .min(100)
+    .max(60_000)
+    .default(DEFAULT_UPSTREAM_TIMEOUT_MS),
   OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: z.url().default(DEFAULT_OTLP_TRACES_ENDPOINT),
   OTEL_SDK_DISABLED: environmentBoolean.default(false),
   OTEL_SERVICE_INSTANCE_ID: z.string().trim().min(1).default(DEFAULT_SERVICE_INSTANCE_ID),

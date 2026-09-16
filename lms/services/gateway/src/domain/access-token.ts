@@ -20,10 +20,20 @@ function parseJsonSegment(segment: string): unknown {
 }
 
 function isClaims(value: unknown): value is AccessTokenClaims {
-  return typeof value === 'object' && value !== null && 'exp' in value && 'role' in value && 'sub' in value;
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'exp' in value &&
+    'role' in value &&
+    'sub' in value
+  );
 }
 
-export function verifyAccessToken(token: string, secret: string, now = Date.now()): Principal | null {
+export function verifyAccessToken(
+  token: string,
+  secret: string,
+  now = Date.now(),
+): Principal | null {
   const parts = token.split('.');
   const [headerSegment, payloadSegment, signature] = parts;
 
@@ -57,7 +67,10 @@ export function verifyAccessToken(token: string, secret: string, now = Date.now(
   const expectedBuffer = Buffer.from(expectedSignature);
   const actualBuffer = Buffer.from(signature);
 
-  if (expectedBuffer.length !== actualBuffer.length || !timingSafeEqual(expectedBuffer, actualBuffer)) {
+  if (
+    expectedBuffer.length !== actualBuffer.length ||
+    !timingSafeEqual(expectedBuffer, actualBuffer)
+  ) {
     return null;
   }
 

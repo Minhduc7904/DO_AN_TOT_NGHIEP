@@ -55,7 +55,10 @@ export class GatewayProxy {
       const contentType = upstream.headers.get('content-type') ?? 'application/json; charset=utf-8';
 
       return {
-        body: contentType.includes('application/json') && rawBody.length > 0 ? JSON.parse(rawBody) : rawBody,
+        body:
+          contentType.includes('application/json') && rawBody.length > 0
+            ? JSON.parse(rawBody)
+            : rawBody,
         contentType,
         status: upstream.status,
       };

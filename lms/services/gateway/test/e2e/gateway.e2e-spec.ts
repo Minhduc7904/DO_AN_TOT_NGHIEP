@@ -64,7 +64,10 @@ describe('Gateway HTTP contract', () => {
 
   it('rejects missing or malformed JWT before making a Course request', async () => {
     await request(app.getHttpServer()).get('/api/v1/courses').expect(401);
-    await request(app.getHttpServer()).get('/api/v1/courses').set('Authorization', 'Bearer invalid').expect(401);
+    await request(app.getHttpServer())
+      .get('/api/v1/courses')
+      .set('Authorization', 'Bearer invalid')
+      .expect(401);
 
     expect(fetchClient).not.toHaveBeenCalled();
   });

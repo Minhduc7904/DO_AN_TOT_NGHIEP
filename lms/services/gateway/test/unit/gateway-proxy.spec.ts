@@ -1,4 +1,8 @@
-import { DependencyTimeoutError, GatewayProxy, type FetchClient } from '../../src/application/gateway-proxy.js';
+import {
+  DependencyTimeoutError,
+  GatewayProxy,
+  type FetchClient,
+} from '../../src/application/gateway-proxy.js';
 
 describe('GatewayProxy', () => {
   it('forwards only trusted principal headers and preserves W3C trace context', async () => {

@@ -1,7 +1,24 @@
-import { All, Controller, ForbiddenException, GatewayTimeoutException, HttpCode, Post, Req, Res, ServiceUnavailableException, UnauthorizedException } from '@nestjs/common';
+import {
+  All,
+  Controller,
+  ForbiddenException,
+  GatewayTimeoutException,
+  HttpCode,
+  Post,
+  Req,
+  Res,
+  ServiceUnavailableException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
-import { DependencyTimeoutError, DependencyUnavailableError, GatewayProxy, type GatewayRequest, type GatewayResponse } from '../../../application/gateway-proxy.js';
+import {
+  DependencyTimeoutError,
+  DependencyUnavailableError,
+  GatewayProxy,
+  type GatewayRequest,
+  type GatewayResponse,
+} from '../../../application/gateway-proxy.js';
 import { verifyAccessToken, type Principal } from '../../../domain/access-token.js';
 
 interface HttpRequest {
@@ -43,34 +60,33 @@ export class GatewayController {
   @All(['courses', 'courses/*path'])
   async courses(@Req() request: HttpRequest, @Res() response: HttpResponse): Promise<void> {
     const principal = this.requireCoursePrincipal(request);
-    const result = await this.forward(
-      {
-        body: request.body,
-        headers: request.headers,
-        method: request.method,
-        path: request.originalUrl,
-        principal,
-        targetBaseUrl: this.config.getOrThrow<string>('GATEWAY_COURSE_BASE_URL'),
-      },
-    );
+    const result = await this.forward({
+      body: request.body,
+      headers: request.headers,
+      method: request.method,
+      path: request.originalUrl,
+      principal,
+      targetBaseUrl: this.config.getOrThrow<string>('GATEWAY_COURSE_BASE_URL'),
+    });
     this.send(response, result);
   }
 
   private forwardPublic(request: HttpRequest): Promise<GatewayResponse> {
-    return this.forward(
-      {
-        body: request.body,
-        headers: request.headers,
-        method: request.method,
-        path: request.originalUrl,
-        targetBaseUrl: this.config.getOrThrow<string>('GATEWAY_AUTH_BASE_URL'),
-      },
-    );
+    return this.forward({
+      body: request.body,
+      headers: request.headers,
+      method: request.method,
+      path: request.originalUrl,
+      targetBaseUrl: this.config.getOrThrow<string>('GATEWAY_AUTH_BASE_URL'),
+    });
   }
 
   private async forward(request: GatewayRequest): Promise<GatewayResponse> {
     try {
-      return await this.proxy.forward(request, this.config.getOrThrow<number>('GATEWAY_UPSTREAM_TIMEOUT_MS'));
+      return await this.proxy.forward(
+        request,
+        this.config.getOrThrow<number>('GATEWAY_UPSTREAM_TIMEOUT_MS'),
+      );
     } catch (error) {
       if (error instanceof DependencyTimeoutError) {
         throw new GatewayTimeoutException('Dịch vụ phụ thuộc phản hồi quá thời hạn');

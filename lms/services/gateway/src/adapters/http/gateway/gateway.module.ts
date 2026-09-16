@@ -1,6 +1,10 @@
 import { Module } from '@nestjs/common';
 
-import { GatewayProxy, GATEWAY_FETCH, type FetchClient } from '../../../application/gateway-proxy.js';
+import {
+  GatewayProxy,
+  GATEWAY_FETCH,
+  type FetchClient,
+} from '../../../application/gateway-proxy.js';
 import { GatewayController } from './gateway.controller.js';
 
 @Module({

@@ -18,7 +18,8 @@ interface HttpResponse {
 export class HttpExceptionFilter implements ExceptionFilter {
   catch(exception: unknown, host: ArgumentsHost): void {
     const response = host.switchToHttp().getResponse<HttpResponse>();
-    const status = exception instanceof HttpException ? exception.getStatus() : HttpStatus.INTERNAL_SERVER_ERROR;
+    const status =
+      exception instanceof HttpException ? exception.getStatus() : HttpStatus.INTERNAL_SERVER_ERROR;
     const body: ErrorEnvelope = {
       code: this.codeFor(status),
       details: null,
@@ -50,10 +51,17 @@ export class HttpExceptionFilter implements ExceptionFilter {
     if (typeof response === 'string') {
       return response;
     }
-    if (typeof response === 'object' && response && 'message' in response && typeof response.message === 'string') {
+    if (
+      typeof response === 'object' &&
+      response &&
+      'message' in response &&
+      typeof response.message === 'string'
+    ) {
       return response.message;
     }
 
-    return status === HttpStatus.INTERNAL_SERVER_ERROR ? 'Đã xảy ra lỗi nội bộ' : 'Yêu cầu không hợp lệ';
+    return status === HttpStatus.INTERNAL_SERVER_ERROR
+      ? 'Đã xảy ra lỗi nội bộ'
+      : 'Yêu cầu không hợp lệ';
   }
 }
