@@ -1,4 +1,40 @@
 services:
+  auth:
+    build:
+      context: ../lms
+      dockerfile: services/auth/Dockerfile
+    environment:
+      NODE_ENV: production
+      AUTH_DATABASE_URL: "postgresql://${AUTH_POSTGRES_USER:?AUTH_POSTGRES_USER is required}:${AUTH_POSTGRES_PASSWORD:?AUTH_POSTGRES_PASSWORD is required}@postgres:5432/auth_db"
+      AUTH_JWT_SECRET: "${AUTH_JWT_SECRET:-local-development-only-jwt-secret-change-before-production}"
+      AUTH_JWT_TTL_SECONDS: "${AUTH_JWT_TTL_SECONDS:-3600}"
+      AUTH_REFRESH_TTL_SECONDS: "${AUTH_REFRESH_TTL_SECONDS:-86400}"
+      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: "${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT:-http://127.0.0.1:4318/v1/traces}"
+      OTEL_SDK_DISABLED: "${OTEL_SDK_DISABLED:-false}"
+      OTEL_SERVICE_INSTANCE_ID: "${AUTH_SERVICE_INSTANCE_ID:-auth-compose-1}"
+      OTEL_SERVICE_VERSION: "${AUTH_SERVICE_VERSION:-0.1.0}"
+      PORT: 3001
+    ports:
+      - "${AUTH_PORT:-3001}:3001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - >-
+          fetch('http://127.0.0.1:3001/health')
+          .then((response) => { if (!response.ok) process.exit(1); })
+          .catch(() => process.exit(1));
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 5s
+    networks:
+      - lms-network
+
   course:
     build:
       context: ../lms
@@ -41,10 +77,13 @@ services:
       POSTGRES_DB: "${POSTGRES_DB:-course_db}"
       POSTGRES_USER: "${POSTGRES_USER:-lms}"
       POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:-lms-local-only}"
+      AUTH_POSTGRES_USER: "${AUTH_POSTGRES_USER:?AUTH_POSTGRES_USER is required}"
+      AUTH_POSTGRES_PASSWORD: "${AUTH_POSTGRES_PASSWORD:?AUTH_POSTGRES_PASSWORD is required}"
     ports:
       - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
+      - ./postgres-init:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test:
         - CMD-SHELL

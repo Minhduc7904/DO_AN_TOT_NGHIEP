@@ -8,7 +8,7 @@
 | Tên task | Triển khai Auth service, migration, seed và phát JWT |
 | Người phụ trách | Bách |
 | Tuần thực hiện | `week-06_2026-09-06_to_2026-09-12` |
-| Trạng thái | Đang thực hiện |
+| Trạng thái | Chờ review |
 | Ngày tạo | 10/09/2026 |
 | Thời gian dự kiến | 10/09/2026 |
 | Nhánh thực hiện | `feat/week-06/task-01-implement-auth-service` |
