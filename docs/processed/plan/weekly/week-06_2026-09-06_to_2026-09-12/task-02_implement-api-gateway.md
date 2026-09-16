@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-02_implement-api-gateway` |
 | Tuần | `week-06_2026-09-06_to_2026-09-12` |
-| Trạng thái | Đã giao |
+| Trạng thái | Hoàn thành |
 | Người phụ trách | Bách |
 | Collaborator | Đức review routing, trust boundary và timeout semantics |
 | Ưu tiên | Cao |
@@ -48,14 +48,14 @@ Triển khai API Gateway cho route Auth và chuẩn bị route Course theo publi
 
 ## Liên kết hồ sơ thực hiện
 
-- Input workspace: Chưa tạo trên nhánh task.
-- Output workspace: Chưa tạo trên nhánh task.
-- Pull request: Chưa tạo.
-- Kết quả review: Chưa review.
+- Input workspace: [task-input.md](../../../../../workspace/bach/week-06_2026-09-06_to_2026-09-12/task-02_implement-api-gateway/input/task-input.md).
+- Output workspace: [task-output.md](../../../../../workspace/bach/week-06_2026-09-06_to_2026-09-12/task-02_implement-api-gateway/output/task-output.md).
+- Pull request: [#20](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/20).
+- Kết quả review: Đạt qua review ngoài GitHub theo ủy quyền của Đức do Bách xác nhận; không có submission `APPROVED` trên GitHub.
 
 > URL/số PR và `Chờ review` phải được commit/push vào PR head trước review. Thành viên còn lại phải gửi `APPROVED` hợp lệ trên GitHub; sau đó người phụ trách finalization metadata, ghi `Hoàn thành` trên chính branch/PR và tự merge task của mình. Card chỉ canonically hoàn thành khi commit đó vào nhánh canonical; xem [vòng đời task canonical](../../../rules/git-and-pull-request-rules.md#vòng-đời-task-canonical).
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 10/09/2026 — task được giao cho Bách, thực hiện sau task-01.
-- Ghi chú/tồn đọng: chờ task-01 merge vào `main` để dùng JWT contract đã kiểm chứng.
+- Cập nhật gần nhất: 16/09/2026 — review ngoài GitHub theo ủy quyền Đức đã đạt; commit `dbd90c5` sửa format và cả ba GitHub checks của [PR #20](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/20) đều pass.
+- Ghi chú/tồn đọng: ngoại lệ workflow do Bách xác nhận trực tiếp ngày 16/09/2026: không có submission `APPROVED` trên GitHub, nhưng được phép finalization để Bách tự merge. Trạng thái project-wide chỉ trở thành hoàn thành sau khi PR merge vào `main`.

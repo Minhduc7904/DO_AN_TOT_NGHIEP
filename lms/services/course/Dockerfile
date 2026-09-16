@@ -14,6 +14,7 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
 COPY packages/observability/package.json packages/observability/package.json
 COPY services/course/package.json services/course/package.json
 COPY services/auth/package.json services/auth/package.json
+COPY services/gateway/package.json services/gateway/package.json
 RUN pnpm install --frozen-lockfile
 
 COPY tsconfig.base.json ./
