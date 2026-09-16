@@ -6,13 +6,13 @@
 | --- | --- |
 | Mã task | `task-02_implement-api-gateway` |
 | Người phụ trách | Bách |
-| Trạng thái | Đang thực hiện |
+| Trạng thái | Chờ review |
 | Bắt đầu thực tế | 16/09/2026 |
 | Hoàn thành thực tế |  |
 | Tổng thời lượng |  |
-| Pull request | Chưa tạo |
+| Pull request | [#20](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/20) |
 | Người review | Đức |
-| Kết quả review | Chưa review |
+| Kết quả review | Chờ Đức review trên GitHub |
 
 ## Báo cáo công việc đã làm
 
@@ -33,14 +33,14 @@
 | JWT signature/expiry/claims/role được xác minh cục bộ; external principal headers bị strip/overwrite | Đạt | `src/domain/access-token.ts`, `test/unit/access-token.spec.ts`, `test/e2e/gateway.e2e-spec.ts` |
 | Outbound timeout cấu hình rõ, retry tắt mặc định và error mapping có test | Đạt | `src/application/gateway-proxy.ts`, `test/unit/gateway-proxy.spec.ts` |
 | W3C trace context được propagate; unit/integration tests và build pass | Đạt | `test/unit/gateway-proxy.spec.ts`; `pnpm run build`, `pnpm run lint`, 7 test Gateway đều pass ngày 16/09/2026 |
-| Sản phẩm đã được lưu/đẩy lên vị trí dự kiến và có thể truy cập | Chưa đạt đầy đủ | File đã có trên nhánh local; chưa commit/push/PR |
-| URL/số PR và trạng thái `Chờ review` đã được commit/push vào PR head trước khi reviewer bắt đầu review | Chưa đạt | Chưa tạo PR |
-| Pull request từ nhánh task có mô tả đúng quy tắc, có verdict `APPROVED` hợp lệ từ Đức trên GitHub và completion metadata được commit/push vào chính PR trước khi Bách merge | Chưa đạt | Chưa tạo PR/review |
+| Sản phẩm đã được lưu/đẩy lên vị trí dự kiến và có thể truy cập | Đạt | Đã push nhánh `feat/week-06/task-02-implement-api-gateway`; [PR #20](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/20) |
+| URL/số PR và trạng thái `Chờ review` đã được commit/push vào PR head trước khi reviewer bắt đầu review | Đang thực hiện | PR #20 đã tạo; transition này sẽ được push trong commit metadata hiện tại trước khi bắt đầu review |
+| Pull request từ nhánh task có mô tả đúng quy tắc, có verdict `APPROVED` hợp lệ từ Đức trên GitHub và completion metadata được commit/push vào chính PR trước khi Bách merge | Chưa đạt | PR #20 dùng template; chờ Đức gửi GitHub `APPROVED` |
 
 ## Thay đổi, tồn đọng và bước tiếp theo
 
 - Thay đổi so với input: Chưa có.
-- Việc chưa hoàn thành hoặc trở ngại: Cần commit/push nhánh, tạo PR đúng template, cập nhật URL PR và chuyển `Chờ review` trên PR head trước khi Đức review.
-- Bước tiếp theo: Xem lại diff, commit/push substantive work, tạo PR rồi thực hiện transition `Chờ review` theo quy trình.
+- Việc chưa hoàn thành hoặc trở ngại: Chờ Đức review [PR #20](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/20) trên GitHub.
+- Bước tiếp theo: Sau `APPROVED` hợp lệ, thực hiện finalization metadata trên chính PR trước khi Bách merge.
 
 > `Hoàn thành thực tế` là thời điểm Bách đã hoàn tất work, DoD, nhận `APPROVED` hợp lệ từ Đức và finalization; không ghi merge time. URL/số PR cùng trạng thái **Chờ review** phải được commit/push vào PR head trước review. Sau approval, Bách dùng `task-completion-recording` để cập nhật hồ sơ và chuyển **Hoàn thành** trên chính branch/PR trước khi tự merge.

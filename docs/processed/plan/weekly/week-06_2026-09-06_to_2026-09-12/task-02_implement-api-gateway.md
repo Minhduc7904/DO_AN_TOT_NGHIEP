@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-02_implement-api-gateway` |
 | Tuần | `week-06_2026-09-06_to_2026-09-12` |
-| Trạng thái | Đang thực hiện |
+| Trạng thái | Chờ review |
 | Người phụ trách | Bách |
 | Collaborator | Đức review routing, trust boundary và timeout semantics |
 | Ưu tiên | Cao |
@@ -50,12 +50,12 @@ Triển khai API Gateway cho route Auth và chuẩn bị route Course theo publi
 
 - Input workspace: [task-input.md](../../../../../workspace/bach/week-06_2026-09-06_to_2026-09-12/task-02_implement-api-gateway/input/task-input.md).
 - Output workspace: [task-output.md](../../../../../workspace/bach/week-06_2026-09-06_to_2026-09-12/task-02_implement-api-gateway/output/task-output.md).
-- Pull request: Chưa tạo.
-- Kết quả review: Chưa review.
+- Pull request: [#20](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/20).
+- Kết quả review: Chờ Đức review trên GitHub.
 
 > URL/số PR và `Chờ review` phải được commit/push vào PR head trước review. Thành viên còn lại phải gửi `APPROVED` hợp lệ trên GitHub; sau đó người phụ trách finalization metadata, ghi `Hoàn thành` trên chính branch/PR và tự merge task của mình. Card chỉ canonically hoàn thành khi commit đó vào nhánh canonical; xem [vòng đời task canonical](../../../rules/git-and-pull-request-rules.md#vòng-đời-task-canonical).
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 16/09/2026 — Bách bắt đầu task trên nhánh `feat/week-06/task-02-implement-api-gateway` sau khi task-01 đã merge vào `main`.
-- Ghi chú/tồn đọng: không còn blocker dependency; Gateway dùng JWT HS256 và claim `sub`/`role` từ Auth service.
+- Cập nhật gần nhất: 16/09/2026 — Bách đã push Gateway và tạo [PR #20](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/20), chờ Đức review routing, trust boundary và timeout semantics.
+- Ghi chú/tồn đọng: không còn blocker kỹ thuật; chờ review GitHub trước finalization.

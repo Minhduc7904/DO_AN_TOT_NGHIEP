@@ -8,11 +8,11 @@
 | Tên task | Triển khai Gateway, xác thực JWT cục bộ và error handling |
 | Người phụ trách | Bách |
 | Tuần thực hiện | `week-06_2026-09-06_to_2026-09-12` |
-| Trạng thái | Đang thực hiện |
+| Trạng thái | Chờ review |
 | Ngày tạo | 10/09/2026 |
 | Thời gian dự kiến | 10/09/2026 |
 | Nhánh thực hiện | `feat/week-06/task-02-implement-api-gateway` |
-| Pull request dự kiến | PR từ nhánh task vào `main` |
+| Pull request dự kiến | [#20](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/20) từ nhánh task vào `main` |
 
 ## Mục tiêu và phạm vi
 
