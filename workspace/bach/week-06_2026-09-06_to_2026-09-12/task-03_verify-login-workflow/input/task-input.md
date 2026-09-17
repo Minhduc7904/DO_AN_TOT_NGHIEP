@@ -8,8 +8,8 @@
 | Tên task | Kiểm chứng contract và workflow W1 qua Gateway |
 | Người phụ trách | Bách |
 | Tuần thực hiện | `week-06_2026-09-06_to_2026-09-12` |
-| Trạng thái | Chưa bắt đầu |
-| Ngày tạo | 10/09/2026 |
+| Trạng thái | Đang thực hiện |
+| Ngày tạo | 10/09/2026; bắt đầu thực hiện 16/09/2026 |
 | Thời gian dự kiến | 11/09/2026 |
 | Nhánh thực hiện | `test/week-06/task-03-verify-login-workflow` |
 | Pull request dự kiến | PR từ nhánh task vào `main` |

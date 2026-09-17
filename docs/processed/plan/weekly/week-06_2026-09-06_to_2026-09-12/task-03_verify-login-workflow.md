@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-03_verify-login-workflow` |
 | Tuần | `week-06_2026-09-06_to_2026-09-12` |
-| Trạng thái | Đã giao |
+| Trạng thái | Đang thực hiện |
 | Người phụ trách | Bách |
 | Collaborator | Đức chạy độc lập workflow và review telemetry assertions |
 | Ưu tiên | Cao |
@@ -48,8 +48,8 @@ Tạo kiểm thử contract/integration cho W1 `Client → Gateway → Auth → 
 
 ## Liên kết hồ sơ thực hiện
 
-- Input workspace: Chưa tạo trên nhánh task.
-- Output workspace: Chưa tạo trên nhánh task.
+- Input workspace: [`task-input.md`](../../../../../workspace/bach/week-06_2026-09-06_to_2026-09-12/task-03_verify-login-workflow/input/task-input.md).
+- Output workspace: [`task-output.md`](../../../../../workspace/bach/week-06_2026-09-06_to_2026-09-12/task-03_verify-login-workflow/output/task-output.md).
 - Pull request: Chưa tạo.
 - Kết quả review: Chưa review.
 
@@ -57,5 +57,5 @@ Tạo kiểm thử contract/integration cho W1 `Client → Gateway → Auth → 
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 10/09/2026 — task được giao cho Bách, thực hiện sau task-02.
-- Ghi chú/tồn đọng: chỉ bắt đầu khi Auth và Gateway đã merge vào `main`.
+- Cập nhật gần nhất: 17/09/2026 — đã thêm `lms/test/w1-login-workflow.e2e-spec.ts` và script `test:w1`; quality gate LMS pass. Suite kiểm chứng Auth thật với repository sạch trong bộ nhớ qua Gateway, JWT, lỗi contract, timeout và chuỗi Gateway server → Gateway client → Auth server span qua W3C. Compose project tạm với Auth/PostgreSQL sạch cũng xác nhận login thật qua Gateway.
+- Ghi chú/tồn đọng: `auth-postgres` chưa có instrumentation nên không áp dụng assertion dependency signal; cần Đức chạy độc lập theo hướng dẫn trước khi chuyển `Chờ review`. Course chưa có route nên JWT hợp lệ đi qua Gateway tới Course nhận `404`, còn JWT sai nhận `401`. Không cập nhật project timeline HTML cho task này theo chỉ thị trực tiếp của Bách; Markdown vẫn là nguồn kế hoạch canonical.

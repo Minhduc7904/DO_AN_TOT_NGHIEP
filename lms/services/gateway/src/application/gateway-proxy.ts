@@ -1,4 +1,11 @@
-import { context, propagation } from '@opentelemetry/api';
+import {
+  context,
+  propagation,
+  SpanKind,
+  SpanStatusCode,
+  trace,
+  type Context,
+} from '@opentelemetry/api';
 
 import type { Principal } from '../domain/access-token.js';
 
@@ -37,11 +44,26 @@ export class GatewayProxy {
       timedOut = true;
       controller.abort();
     }, timeoutMs);
+    const targetUrl = new URL(request.path, request.targetBaseUrl);
+    const tracer = trace.getTracer('@aiops-lms/gateway');
+    const clientSpan = tracer.startSpan(
+      `${request.method.toUpperCase()} ${targetUrl.pathname}`,
+      {
+        attributes: {
+          'http.request.method': request.method.toUpperCase(),
+          'server.address': targetUrl.hostname,
+          'url.path': targetUrl.pathname,
+        },
+        kind: SpanKind.CLIENT,
+      },
+      context.active(),
+    );
+    const clientContext = trace.setSpan(context.active(), clientSpan);
 
     try {
       const body = request.body === undefined ? undefined : JSON.stringify(request.body);
       const init: RequestInit = {
-        headers: this.createHeaders(request),
+        headers: this.createHeaders(request, clientContext),
         method: request.method,
         signal: controller.signal,
       };
@@ -50,9 +72,14 @@ export class GatewayProxy {
         init.body = body;
       }
 
-      const upstream = await this.fetchClient(new URL(request.path, request.targetBaseUrl), init);
+      const upstream = await context.with(clientContext, () => this.fetchClient(targetUrl, init));
       const rawBody = await upstream.text();
       const contentType = upstream.headers.get('content-type') ?? 'application/json; charset=utf-8';
+
+      clientSpan.setAttribute('http.response.status_code', upstream.status);
+      if (upstream.status >= 500) {
+        clientSpan.setStatus({ code: SpanStatusCode.ERROR });
+      }
 
       return {
         body:
@@ -62,7 +89,9 @@ export class GatewayProxy {
         contentType,
         status: upstream.status,
       };
-    } catch {
+    } catch (error) {
+      clientSpan.recordException(error instanceof Error ? error : String(error));
+      clientSpan.setStatus({ code: SpanStatusCode.ERROR });
       if (timedOut) {
         throw new DependencyTimeoutError();
       }
@@ -70,10 +99,11 @@ export class GatewayProxy {
       throw new DependencyUnavailableError();
     } finally {
       clearTimeout(timeout);
+      clientSpan.end();
     }
   }
 
-  private createHeaders(request: GatewayRequest): Record<string, string> {
+  private createHeaders(request: GatewayRequest, activeContext: Context): Record<string, string> {
     const headers: Record<string, string> = {};
     const accept = firstHeader(request.headers.accept);
     const contentType = firstHeader(request.headers['content-type']);
@@ -86,7 +116,7 @@ export class GatewayProxy {
     }
 
     const traceCarrier: Record<string, string> = {};
-    propagation.inject(context.active(), traceCarrier);
+    propagation.inject(activeContext, traceCarrier);
     const incomingTraceparent = firstHeader(request.headers.traceparent);
     const incomingTracestate = firstHeader(request.headers.tracestate);
 

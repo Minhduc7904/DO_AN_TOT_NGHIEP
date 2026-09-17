@@ -2,6 +2,7 @@
   "name": "aiops-lms-workspace",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "packageManager": "pnpm@11.19.0",
   "engines": {
     "node": "22.13.1",
@@ -14,8 +15,10 @@
     "lint": "eslint \"{packages/observability,services/{course,auth,gateway}}/**/*.ts\" --max-warnings=0",
     "ci:verify": "pnpm run format:check && pnpm run build && pnpm run lint && pnpm run test",
     "start:course": "pnpm run build && pnpm --filter @aiops-lms/course start",
-    "test": "pnpm run test:architecture && pnpm --filter @aiops-lms/observability test && node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config services/course/jest.config.ts && node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config services/auth/jest.config.ts && node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config services/gateway/jest.config.ts && pnpm run test:telemetry",
+    "test": "pnpm run test:architecture && pnpm --filter @aiops-lms/observability test && node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config services/course/jest.config.ts && node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config services/auth/jest.config.ts && node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config services/gateway/jest.config.ts && pnpm run test:w1 && pnpm run test:telemetry",
     "test:architecture": "node test/eslint-boundaries.test.mjs",
+    "test:w1": "pnpm run test:w1:types && node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config jest.w1.config.ts",
+    "test:w1:types": "tsc --noEmit -p tsconfig.w1.json",
     "test:e2e": "pnpm run build && node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config services/course/jest-e2e.config.ts && node services/course/test/telemetry/http.telemetry-test.mjs",
     "test:telemetry": "pnpm run build && node services/course/test/telemetry/http.telemetry-test.mjs && node services/auth/test/telemetry/http.telemetry-test.mjs"
   },
