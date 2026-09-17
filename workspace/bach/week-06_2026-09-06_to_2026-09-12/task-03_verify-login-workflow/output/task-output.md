@@ -37,7 +37,7 @@
 | Trace Gateway/Auth liên kết W3C và có signal `auth-postgres` khi hỗ trợ | Đạt | `pnpm run test:w1`: xác minh quan hệ Gateway server → Gateway client → Auth server span cùng trace ID. Auth chưa tích hợp PostgreSQL instrumentation nên điều kiện `auth-postgres` chưa áp dụng. |
 | Test chạy từ dữ liệu sạch, được đưa vào CI; Đức chạy độc lập và ghi bằng chứng | Chưa đạt | Repository in-memory được reset trước từng test, `pnpm run ci:verify` pass và Compose với volume mới đã chạy; còn chờ Đức chạy độc lập. |
 | Sản phẩm đã được lưu/đẩy lên vị trí dự kiến và có thể truy cập | Đạt | Đã commit/push lên nhánh task và mở PR [#21](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/21). |
-| URL/số PR và trạng thái `Chờ review` đã được commit/push vào PR head trước review | Chưa đạt | PR đã tạo; metadata `Chờ review` sẽ được commit/push ngay sau cập nhật này. Việc mở review trước bằng chứng chạy độc lập là ngoại lệ do Bách xác nhận trực tiếp. |
+| URL/số PR và trạng thái `Chờ review` đã được commit/push vào PR head trước review | Đạt theo ngoại lệ | PR [#21](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/21) có head `c7b4a03`; remote PR head chứa trạng thái `Chờ review`. Bách xác nhận mở review trước bằng chứng chạy độc lập của Đức. |
 | Pull request có `APPROVED` hợp lệ từ Đức và completion metadata trước merge | Chưa đạt | Chưa đến bước review/finalization. |
 
 ## Thay đổi, tồn đọng và bước tiếp theo
