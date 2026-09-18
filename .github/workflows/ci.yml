@@ -18,6 +18,22 @@ jobs:
     defaults:
       run:
         working-directory: lms
+    services:
+      postgres:
+        image: postgres:17.6-alpine
+        env:
+          POSTGRES_DB: auth_db
+          POSTGRES_USER: w1_test
+          POSTGRES_PASSWORD: w1_test_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U w1_test -d auth_db"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      W1_AUTH_DATABASE_URL: postgresql://w1_test:w1_test_password@127.0.0.1:5432/auth_db
     steps:
       - name: Checkout source
         uses: actions/checkout@v6
@@ -42,7 +58,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Run quality gates
-        run: pnpm run ci:verify
+        run: pnpm run test:w1:postgres && pnpm run ci:verify
 
   compose-config:
     name: Validate Compose without local configuration

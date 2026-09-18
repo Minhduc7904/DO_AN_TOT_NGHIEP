@@ -9,7 +9,7 @@ const config: Config = {
   },
   rootDir: '.',
   testEnvironment: 'node',
-  testMatch: ['<rootDir>/test/w1-login-workflow.e2e-spec.ts'],
+  testMatch: ['<rootDir>/test/w1-postgres-workflow.e2e-spec.ts'],
   transform: {
     '^.+\\.ts$': ['ts-jest', { tsconfig: '<rootDir>/tsconfig.w1.json', useESM: true }],
   },
