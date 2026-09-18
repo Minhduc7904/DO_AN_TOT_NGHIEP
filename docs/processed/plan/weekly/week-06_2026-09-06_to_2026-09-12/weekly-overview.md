@@ -2,32 +2,32 @@
 
 ## Thông tin tuần
 
-| Trường | Nội dung |
-| --- | --- |
-| Tuần | `week-06_2026-09-06_to_2026-09-12` |
-| Nguồn plan canonical | [Plan v0.2 — Tuần 6](../../plan-v0.2-24-weeks.md#tuần-6--gateway-auth-course) |
-| Mục tiêu tuần | Hoàn thiện hai workflow W1 `login` và W2 `browse course` qua Gateway, có persistence/cache, kiểm thử tích hợp và telemetry cơ bản. |
-| Trạng thái tuần | Đang thực hiện |
+| Trường               | Nội dung                                                                                                                           |
+| -------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| Tuần                 | `week-06_2026-09-06_to_2026-09-12`                                                                                                 |
+| Nguồn plan canonical | [Plan v0.2 — Tuần 6](../../plan-v0.2-24-weeks.md#tuần-6--gateway-auth-course)                                                      |
+| Mục tiêu tuần        | Hoàn thiện hai workflow W1 `login` và W2 `browse course` qua Gateway, có persistence/cache, kiểm thử tích hợp và telemetry cơ bản. |
+| Trạng thái tuần      | Đang thực hiện                                                                                                                     |
 
 ## Danh sách task
 
-| Mã task | Task | Người phụ trách | Collaborator | Ưu tiên | Trạng thái |
-| --- | --- | --- | --- | --- | --- |
-| [task-01_implement-auth-service](task-01_implement-auth-service.md) | Triển khai Auth service, migration, seed và phát JWT | Bách | Đức | Cao | Hoàn thành |
-| [task-02_implement-api-gateway](task-02_implement-api-gateway.md) | Triển khai Gateway, xác thực JWT cục bộ và error handling | Bách | Đức | Cao | Hoàn thành |
-| [task-03_verify-login-workflow](task-03_verify-login-workflow.md) | Kiểm chứng contract và workflow W1 qua Gateway | Bách | Đức | Cao | Chờ review |
-| [task-04_implement-course-service](task-04_implement-course-service.md) | Triển khai Course API, migration và seed | Đức | Bách | Cao | Đã giao |
-| [task-05_add-course-cache-and-telemetry](task-05_add-course-cache-and-telemetry.md) | Bổ sung Redis cache và telemetry dependency cho Course | Đức | Bách | Cao | Đã giao |
-| [task-06_verify-login-to-course-workflow](task-06_verify-login-to-course-workflow.md) | Kiểm chứng E2E W1–W2 và telemetry qua Gateway | Đức | Bách | Cao | Đã giao |
+| Mã task                                                                               | Task                                                      | Người phụ trách | Collaborator | Ưu tiên | Trạng thái |
+| ------------------------------------------------------------------------------------- | --------------------------------------------------------- | --------------- | ------------ | ------- | ---------- |
+| [task-01_implement-auth-service](task-01_implement-auth-service.md)                   | Triển khai Auth service, migration, seed và phát JWT      | Bách            | Đức          | Cao     | Hoàn thành |
+| [task-02_implement-api-gateway](task-02_implement-api-gateway.md)                     | Triển khai Gateway, xác thực JWT cục bộ và error handling | Bách            | Đức          | Cao     | Hoàn thành |
+| [task-03_verify-login-workflow](task-03_verify-login-workflow.md)                     | Kiểm chứng contract và workflow W1 qua Gateway            | Bách            | Đức          | Cao     | Hoàn thành |
+| [task-04_implement-course-service](task-04_implement-course-service.md)               | Triển khai Course API, migration và seed                  | Đức             | Bách         | Cao     | Đã giao    |
+| [task-05_add-course-cache-and-telemetry](task-05_add-course-cache-and-telemetry.md)   | Bổ sung Redis cache và telemetry dependency cho Course    | Đức             | Bách         | Cao     | Đã giao    |
+| [task-06_verify-login-to-course-workflow](task-06_verify-login-to-course-workflow.md) | Kiểm chứng E2E W1–W2 và telemetry qua Gateway             | Đức             | Bách         | Cao     | Đã giao    |
 
 > Khi đọc tiến độ project-wide, chỉ coi hàng có trạng thái `Hoàn thành` trên nhánh canonical là hoàn thành; trạng thái đã finalization trên task branch chưa thay thế nguồn này.
 
 ## Pull request đang mở
 
-| Task | Pull request | Trạng thái |
-| --- | --- | --- |
-| Task 2 — API Gateway | [#20](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/20) | Sẵn sàng merge theo ngoại lệ review do Bách xác nhận; không có `APPROVED` GitHub |
-| Task 3 — W1 login workflow | [#21](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/21) | Chờ Đức review và chạy độc lập `test:w1` theo ngoại lệ do Bách xác nhận |
+| Task                       | Pull request                                                   | Trạng thái                                                                                                                |
+| -------------------------- | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| Task 2 — API Gateway       | [#20](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/20) | Sẵn sàng merge theo ngoại lệ review do Bách xác nhận; không có `APPROVED` GitHub                                          |
+| Task 3 — W1 login workflow | [#21](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/21) | Sẵn sàng merge theo ngoại lệ do Bách xác nhận trực tiếp; head `98bfa9c` có CI xanh, không có `APPROVED` GitHub mới từ Đức |
 
 ## Phụ thuộc, rủi ro và quyết định
 
