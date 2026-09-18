@@ -2,16 +2,16 @@
 
 ## Thông tin chung
 
-| Trường | Nội dung |
-| --- | --- |
-| Mã task | `task-03_verify-login-workflow` |
-| Tuần | `week-06_2026-09-06_to_2026-09-12` |
-| Trạng thái | Đã giao |
-| Người phụ trách | Bách |
-| Collaborator | Đức chạy độc lập workflow và review telemetry assertions |
-| Ưu tiên | Cao |
-| Hạn dự kiến | 11/09/2026 |
-| Nhánh thực hiện | `test/week-06/task-03-verify-login-workflow` |
+| Trường          | Nội dung                                                 |
+| --------------- | -------------------------------------------------------- |
+| Mã task         | `task-03_verify-login-workflow`                          |
+| Tuần            | `week-06_2026-09-06_to_2026-09-12`                       |
+| Trạng thái      | Hoàn thành                                               |
+| Người phụ trách | Bách                                                     |
+| Collaborator    | Đức chạy độc lập workflow và review telemetry assertions |
+| Ưu tiên         | Cao                                                      |
+| Hạn dự kiến     | 11/09/2026                                               |
+| Nhánh thực hiện | `test/week-06/task-03-verify-login-workflow`             |
 
 ## Yêu cầu và phạm vi
 
@@ -33,29 +33,29 @@ Tạo kiểm thử contract/integration cho W1 `Client → Gateway → Auth → 
 
 ## Sản phẩm kỳ vọng
 
-| Sản phẩm | Loại | Vị trí hoặc link dự kiến |
-| --- | --- | --- |
+| Sản phẩm                     | Loại | Vị trí hoặc link dự kiến                                                  |
+| ---------------------------- | ---- | ------------------------------------------------------------------------- |
 | W1 contract/integration test | Code | `lms/test/` hoặc test suite thuộc Gateway/Auth theo convention repository |
-| Hướng dẫn chạy W1 | Docs | `lms/README.md` hoặc tài liệu được liên kết từ Quick Start |
+| Hướng dẫn chạy W1            | Docs | `lms/README.md` hoặc tài liệu được liên kết từ Quick Start                |
 
 ## Definition of Done
 
-- [ ] Test tự động chứng minh login qua Gateway trả JWT hợp lệ từ seed user và request bảo vệ chấp nhận token đó.
-- [ ] Test bao phủ credential sai, token hết hạn/sai chữ ký, role không đủ và Auth timeout với status/error code canonical.
-- [ ] Trace W1 có Gateway server/client và Auth server span liên kết bằng W3C context; PostgreSQL dependency signal có identity `auth-postgres` khi instrumentation hỗ trợ.
-- [ ] Test chạy lặp lại được từ trạng thái dữ liệu sạch và được đưa vào CI phù hợp.
-- [ ] Đức chạy độc lập W1 theo hướng dẫn và kết quả/bất kỳ giới hạn telemetry nào được ghi trong PR hoặc output task.
+- [x] Test tự động chứng minh login qua Gateway trả JWT hợp lệ từ seed user và request bảo vệ chấp nhận token đó.
+- [x] Test bao phủ credential sai, token hết hạn/sai chữ ký, role không đủ và Auth timeout với status/error code canonical.
+- [x] Trace W1 có Gateway server/client và Auth server span liên kết bằng W3C context; PostgreSQL dependency signal có identity `auth-postgres` khi instrumentation hỗ trợ.
+- [x] Test chạy lặp lại được từ trạng thái dữ liệu sạch và được đưa vào CI phù hợp.
+- [x] Ngoại lệ theo xác nhận trực tiếp của Bách: ghi nhận hoàn thành mà không chờ lượt chạy/review độc lập mới của Đức; giới hạn telemetry đã ghi trong output task.
 
 ## Liên kết hồ sơ thực hiện
 
-- Input workspace: Chưa tạo trên nhánh task.
-- Output workspace: Chưa tạo trên nhánh task.
-- Pull request: Chưa tạo.
-- Kết quả review: Chưa review.
+- Input workspace: [`task-input.md`](../../../../../workspace/bach/week-06_2026-09-06_to_2026-09-12/task-03_verify-login-workflow/input/task-input.md).
+- Output workspace: [`task-output.md`](../../../../../workspace/bach/week-06_2026-09-06_to_2026-09-12/task-03_verify-login-workflow/output/task-output.md).
+- Pull request: [#21](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/21).
+- Kết quả review: Không có `APPROVED` GitHub hiệu lực tại head final; hoàn thành theo ngoại lệ do Bách xác nhận trực tiếp ngày 18/09/2026.
 
 > URL/số PR và `Chờ review` phải được commit/push vào PR head trước review. Thành viên còn lại phải gửi `APPROVED` hợp lệ trên GitHub; sau đó người phụ trách finalization metadata, ghi `Hoàn thành` trên chính branch/PR và tự merge task của mình. Card chỉ canonically hoàn thành khi commit đó vào nhánh canonical; xem [vòng đời task canonical](../../../rules/git-and-pull-request-rules.md#vòng-đời-task-canonical).
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 10/09/2026 — task được giao cho Bách, thực hiện sau task-02.
-- Ghi chú/tồn đọng: chỉ bắt đầu khi Auth và Gateway đã merge vào `main`.
+- Cập nhật gần nhất: 18/09/2026 — head PR [#21](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/21) `98bfa9c` đã có quality gate, Compose và security checks xanh. Bách xác nhận hoàn thành theo ngoại lệ, không chờ `APPROVED` GitHub mới từ Đức.
+- Ghi chú/tồn đọng: `auth-postgres` chưa có instrumentation nên không áp dụng assertion dependency signal. Course chưa có route nên JWT hợp lệ đi qua Gateway tới Course nhận `404`, còn JWT sai nhận `401`. Không cập nhật project timeline HTML cho task này theo chỉ thị trực tiếp của Bách; Markdown vẫn là nguồn kế hoạch canonical. Runtime PowerShell không khả dụng nên timeline sinh tự động đang chờ đồng bộ; không sửa tay đầu ra này.
