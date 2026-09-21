@@ -6,13 +6,13 @@
 | --- | --- |
 | Mã task | `task-04_implement-course-service` |
 | Người phụ trách | Đức |
-| Trạng thái | Chờ review |
+| Trạng thái | Hoàn thành |
 | Bắt đầu thực tế | 21/09/2026 |
-| Hoàn thành thực tế | Chưa hoàn thành |
-| Tổng thời lượng | Cập nhật sau |
+| Hoàn thành thực tế | 21/09/2026 |
+| Tổng thời lượng | Trong ngày 21/09/2026 |
 | Pull request | [#22](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/22) |
-| Người review | Bách |
-| Kết quả review | Chưa review |
+| Người review | Bách (không thực hiện được — nghỉ ốm) |
+| Kết quả review | Ngoại lệ: không có GitHub `APPROVED`. Bách không thể review do nghỉ ốm; Đức (người phụ trách) xác nhận bỏ qua bước review độc lập ngày 21/09/2026 và tự finalization/merge theo cơ chế ngoại lệ trong `docs/processed/rules/git-and-pull-request-rules.md`. |
 
 ## Báo cáo và sản phẩm
 
@@ -27,8 +27,8 @@
 | Migration/seed sạch và chạy lại | Đạt | PostgreSQL integration trong CI #22 |
 | Data ownership và principal | Đạt | Course repository và controller; architecture test |
 | Build, lint, test, health, CI | Đạt | [PR #22 checks](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/22/checks) |
-| PR và review | Chờ review | PR #22; chưa có verdict GitHub |
+| PR và review | Ngoại lệ | PR #22; không có GitHub `APPROVED` — Đức tự xác nhận bỏ qua review độc lập vì Bách nghỉ ốm |
 
 ## Tồn đọng
 
-- Chờ Bách review; sau approval mới ghi nhận hoàn thành và merge.
+- Không còn tồn đọng kỹ thuật. Task hoàn thành theo ngoại lệ workflow: thiếu review độc lập của Bách do nghỉ ốm; Đức là người phụ trách tự xác nhận DoD, finalization và merge.
