@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-05_add-course-cache-and-telemetry` |
 | Tuần | `week-06_2026-09-06_to_2026-09-12` |
-| Trạng thái | Đang thực hiện |
+| Trạng thái | Chờ review |
 | Người phụ trách | Đức |
 | Collaborator | Bách review cache semantics và telemetry field phục vụ phân tích |
 | Ưu tiên | Cao |
@@ -40,22 +40,22 @@ Bổ sung Redis cache cho Course read path với `course_db` là source of truth
 
 ## Definition of Done
 
-- [ ] Course get/list sử dụng Redis theo cache-aside policy được tài liệu hóa; write path invalidates/updates cache nhất quán và PostgreSQL vẫn là source of truth.
-- [ ] Test bao phủ cache hit, cache miss, invalidation và Redis unavailable/timeout theo behavior đã chốt.
-- [ ] Span/metric cho Course HTTP, `course-postgres` và `course-redis` có service/dependency identity canonical cùng status/duration/error cần thiết.
-- [ ] Telemetry không chứa secret, JWT, PII, ground-truth label hoặc label cardinality cao bị cấm.
+- [x] Course get/list sử dụng Redis theo cache-aside policy được tài liệu hóa; write path invalidates/updates cache nhất quán và PostgreSQL vẫn là source of truth.
+- [x] Test bao phủ cache hit, cache miss, invalidation và Redis unavailable/timeout theo behavior đã chốt.
+- [x] Span/metric cho Course HTTP, `course-postgres` và `course-redis` có service/dependency identity canonical cùng status/duration/error cần thiết.
+- [x] Telemetry không chứa secret, JWT, PII, ground-truth label hoặc label cardinality cao bị cấm.
 - [ ] Bách kiểm tra telemetry assertions đủ phân biệt HTTP, PostgreSQL và Redis path phục vụ phân tích sau này.
 
 ## Liên kết hồ sơ thực hiện
 
 - Input workspace: [task-input.md](../../../../../workspace/duc/week-06_2026-09-06_to_2026-09-12/task-05_add-course-cache-and-telemetry/input/task-input.md).
 - Output workspace: [task-output.md](../../../../../workspace/duc/week-06_2026-09-06_to_2026-09-12/task-05_add-course-cache-and-telemetry/output/task-output.md).
-- Pull request: [#23](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/23) (draft, xếp chồng trên #22).
+- Pull request: [#23](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/23) (xếp chồng trên #22).
 - Kết quả review: Chưa review.
 
 > URL/số PR và `Chờ review` phải được commit/push vào PR head trước review. Thành viên còn lại phải gửi `APPROVED` hợp lệ trên GitHub; sau đó người phụ trách finalization metadata, ghi `Hoàn thành` trên chính branch/PR và tự merge task của mình. Card chỉ canonically hoàn thành khi commit đó vào nhánh canonical; xem [vòng đời task canonical](../../../rules/git-and-pull-request-rules.md#vòng-đời-task-canonical).
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 21/09/2026 — Đức triển khai trên nhánh task-05 lấy base từ commit task-04 theo yêu cầu, trước khi task-04 merge.
-- Ghi chú/tồn đọng: Cần kiểm chứng Redis/PostgreSQL thực qua CI và Bách review telemetry assertions; chưa `Chờ review`.
+- Cập nhật gần nhất: 21/09/2026 — cache/telemetry assertions và quality/security checks đã xanh; Redis/PostgreSQL thực đã chạy thành công trong CI của PR #24 phụ thuộc. Chuyển `Chờ review` trên PR head.
+- Ghi chú/tồn đọng: Bách cần review cache semantics và telemetry; task chỉ `Hoàn thành` sau approval, finalization và merge theo thứ tự.
