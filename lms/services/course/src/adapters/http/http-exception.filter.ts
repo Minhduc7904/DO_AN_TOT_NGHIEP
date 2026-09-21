@@ -1,11 +1,18 @@
 import { ArgumentsHost, Catch, ExceptionFilter, HttpException, HttpStatus } from '@nestjs/common';
 import { trace } from '@opentelemetry/api';
+import { CourseDependencyError } from '../../application/course-dependency-error.js';
 
 @Catch()
 export class HttpExceptionFilter implements ExceptionFilter {
   catch(exception: unknown, host: ArgumentsHost): void {
     const status =
-      exception instanceof HttpException ? exception.getStatus() : HttpStatus.INTERNAL_SERVER_ERROR;
+      exception instanceof CourseDependencyError
+        ? exception.kind === 'timeout'
+          ? HttpStatus.GATEWAY_TIMEOUT
+          : HttpStatus.SERVICE_UNAVAILABLE
+        : exception instanceof HttpException
+          ? exception.getStatus()
+          : HttpStatus.INTERNAL_SERVER_ERROR;
     const codes: Record<number, string> = {
       400: 'VALIDATION_ERROR',
       401: 'UNAUTHORIZED',
@@ -16,14 +23,18 @@ export class HttpExceptionFilter implements ExceptionFilter {
     };
     const response = exception instanceof HttpException ? exception.getResponse() : null;
     const message =
-      typeof response === 'string'
-        ? response
-        : response &&
-            typeof response === 'object' &&
-            'message' in response &&
-            typeof response.message === 'string'
-          ? response.message
-          : 'Đã xảy ra lỗi nội bộ';
+      exception instanceof CourseDependencyError
+        ? exception.kind === 'timeout'
+          ? 'Dịch vụ phụ thuộc phản hồi quá hạn'
+          : 'Dịch vụ phụ thuộc không sẵn sàng'
+        : typeof response === 'string'
+          ? response
+          : response &&
+              typeof response === 'object' &&
+              'message' in response &&
+              typeof response.message === 'string'
+            ? response.message
+            : 'Đã xảy ra lỗi nội bộ';
     host
       .switchToHttp()
       .getResponse<{ status(code: number): { json(body: unknown): void } }>()

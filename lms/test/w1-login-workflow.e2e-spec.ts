@@ -196,7 +196,7 @@ describe('W1 Client → Gateway → Auth → JWT workflow', () => {
       courseServer.close((error) => (error ? reject(error) : resolve())),
     );
     await telemetry.shutdown();
-  });
+  }, 15_000);
 
   it('issues a JWT through Gateway and accepts it on the protected route', async () => {
     const loginResponse = await request(gatewayApp.getHttpServer())

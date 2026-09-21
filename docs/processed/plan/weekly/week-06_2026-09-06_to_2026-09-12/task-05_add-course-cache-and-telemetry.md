@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-05_add-course-cache-and-telemetry` |
 | Tuần | `week-06_2026-09-06_to_2026-09-12` |
-| Trạng thái | Đã giao |
+| Trạng thái | Đang thực hiện |
 | Người phụ trách | Đức |
 | Collaborator | Bách review cache semantics và telemetry field phục vụ phân tích |
 | Ưu tiên | Cao |
@@ -27,7 +27,7 @@ Bổ sung Redis cache cho Course read path với `course_db` là source of truth
 
 ## Đầu vào và phụ thuộc
 
-- Tài liệu/task cần có trước: task-04 đã merge; OpenTelemetry bootstrap Week 5; telemetry schema và fault matrix F1.
+- Tài liệu/task cần có trước: nhánh task-04 là base theo chỉ thị Đức trước merge; OpenTelemetry bootstrap Week 5; telemetry schema và fault matrix F1. Chỉ merge task-05 sau task-04.
 - Người hoặc phần việc cần phối hợp: Bách kiểm tra dependency identity, RED metrics và field đủ cho phân tích sau này.
 - Rủi ro/giả định: cache failure behavior cần nhất quán với error/timeout policy và không che lỗi persistence.
 
@@ -48,14 +48,14 @@ Bổ sung Redis cache cho Course read path với `course_db` là source of truth
 
 ## Liên kết hồ sơ thực hiện
 
-- Input workspace: Chưa tạo — Đức tạo khi nhận task.
-- Output workspace: Chưa tạo — Đức tạo khi nhận task.
-- Pull request: Chưa tạo.
+- Input workspace: [task-input.md](../../../../../workspace/duc/week-06_2026-09-06_to_2026-09-12/task-05_add-course-cache-and-telemetry/input/task-input.md).
+- Output workspace: [task-output.md](../../../../../workspace/duc/week-06_2026-09-06_to_2026-09-12/task-05_add-course-cache-and-telemetry/output/task-output.md).
+- Pull request: [#23](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/23) (draft, xếp chồng trên #22).
 - Kết quả review: Chưa review.
 
 > URL/số PR và `Chờ review` phải được commit/push vào PR head trước review. Thành viên còn lại phải gửi `APPROVED` hợp lệ trên GitHub; sau đó người phụ trách finalization metadata, ghi `Hoàn thành` trên chính branch/PR và tự merge task của mình. Card chỉ canonically hoàn thành khi commit đó vào nhánh canonical; xem [vòng đời task canonical](../../../rules/git-and-pull-request-rules.md#vòng-đời-task-canonical).
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 10/09/2026 — task được giao cho Đức, thực hiện sau task-04.
-- Ghi chú/tồn đọng: Đức cần tự tạo hồ sơ trong `workspace/duc/`; chờ Course persistence/API merge vào `main`.
+- Cập nhật gần nhất: 21/09/2026 — Đức triển khai trên nhánh task-05 lấy base từ commit task-04 theo yêu cầu, trước khi task-04 merge.
+- Ghi chú/tồn đọng: Cần kiểm chứng Redis/PostgreSQL thực qua CI và Bách review telemetry assertions; chưa `Chờ review`.
