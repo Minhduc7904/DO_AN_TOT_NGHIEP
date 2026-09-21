@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-04_implement-course-service` |
 | Tuần | `week-06_2026-09-06_to_2026-09-12` |
-| Trạng thái | Đang thực hiện |
+| Trạng thái | Chờ review |
 | Người phụ trách | Đức |
 | Collaborator | Bách review HTTP contract, data ownership và extension point telemetry |
 | Ưu tiên | Cao |
@@ -40,22 +40,22 @@ Triển khai Course service ở mức MVP gồm create/get/list, persistence ri�
 
 ## Definition of Done
 
-- [ ] `POST /api/v1/courses`, `GET /api/v1/courses` và `GET /api/v1/courses/{course_id}` đúng contract v1, validation và error envelope canonical.
-- [ ] Migration/seed tạo được `course_db` từ trạng thái sạch và chạy lại theo tài liệu.
-- [ ] Course là owner duy nhất của schema/data; không cross-service database hoặc source import.
-- [ ] Unit/integration tests bao phủ create/get/list, not-found và validation path; build/health check pass.
-- [ ] Service nhận principal context theo trust boundary nhưng không tự remote-introspect Auth.
+- [x] `POST /api/v1/courses`, `GET /api/v1/courses` và `GET /api/v1/courses/{course_id}` đúng contract v1, validation và error envelope canonical.
+- [x] Migration/seed tạo được `course_db` từ trạng thái sạch và chạy lại theo tài liệu.
+- [x] Course là owner duy nhất của schema/data; không cross-service database hoặc source import.
+- [x] Unit/integration tests bao phủ create/get/list, not-found và validation path; build/health check pass.
+- [x] Service nhận principal context theo trust boundary nhưng không tự remote-introspect Auth.
 
 ## Liên kết hồ sơ thực hiện
 
 - Input workspace: [task-input.md](../../../../../workspace/duc/week-06_2026-09-06_to_2026-09-12/task-04_implement-course-service/input/task-input.md).
 - Output workspace: [task-output.md](../../../../../workspace/duc/week-06_2026-09-06_to_2026-09-12/task-04_implement-course-service/output/task-output.md).
-- Pull request: [#22](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/22) (draft).
+- Pull request: [#22](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/22).
 - Kết quả review: Chưa review.
 
 > URL/số PR và `Chờ review` phải được commit/push vào PR head trước review. Thành viên còn lại phải gửi `APPROVED` hợp lệ trên GitHub; sau đó người phụ trách finalization metadata, ghi `Hoàn thành` trên chính branch/PR và tự merge task của mình. Card chỉ canonically hoàn thành khi commit đó vào nhánh canonical; xem [vòng đời task canonical](../../../rules/git-and-pull-request-rules.md#vòng-đời-task-canonical).
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 21/09/2026 — Đức bắt đầu triển khai trên nhánh task sau khi task-03 đã merge.
-- Ghi chú/tồn đọng: PostgreSQL migration/seed/integration đã qua trong CI đầu tiên; đang sửa format và kiểm tra lại quality/security checks. PR vẫn draft, chưa `Chờ review`.
+- Cập nhật gần nhất: 21/09/2026 — PR #22 đã có PostgreSQL integration, quality và security checks xanh; chuyển `Chờ review` trên PR head.
+- Ghi chú/tồn đọng: Chờ Bách review; task chỉ `Hoàn thành` sau approval, finalization và merge theo workflow.
