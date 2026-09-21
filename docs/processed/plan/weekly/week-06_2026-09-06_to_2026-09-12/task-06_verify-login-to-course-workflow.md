@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-06_verify-login-to-course-workflow` |
 | Tuần | `week-06_2026-09-06_to_2026-09-12` |
-| Trạng thái | Đang thực hiện |
+| Trạng thái | Chờ review |
 | Người phụ trách | Đức |
 | Collaborator | Bách chạy độc lập, review trace/metric và contract assertions |
 | Ưu tiên | Cao |
@@ -40,17 +40,17 @@ Ghép stack Auth/Gateway/Course vào Compose và CI phù hợp, tạo E2E cho W1
 
 ## Definition of Done
 
-- [ ] Từ trạng thái sạch, migration/seed và Compose khởi động Auth, Gateway, Course, PostgreSQL và Redis theo hướng dẫn không cần bước ngầm.
-- [ ] E2E login qua Gateway nhận JWT rồi dùng token browse seeded course qua Gateway; role hợp lệ/không hợp lệ được kiểm tra.
-- [ ] E2E bao phủ ít nhất một Auth dependency timeout/error và một Course Redis/PostgreSQL failure behavior với error envelope canonical.
-- [ ] Trace W1/W2 giữ W3C context qua Gateway và downstream; HTTP server/client cùng `auth-postgres`, `course-postgres`, `course-redis` signals có assertions phù hợp.
+- [x] Từ trạng thái sạch, migration/seed và Compose khởi động Auth, Gateway, Course, PostgreSQL và Redis theo hướng dẫn không cần bước ngầm.
+- [x] E2E login qua Gateway nhận JWT rồi dùng token browse seeded course qua Gateway; role hợp lệ/không hợp lệ được kiểm tra.
+- [x] E2E bao phủ ít nhất một Auth dependency timeout/error và một Course Redis/PostgreSQL failure behavior với error envelope canonical.
+- [x] Trace W1/W2 giữ W3C context qua Gateway và downstream; HTTP server/client cùng `auth-postgres`, `course-postgres`, `course-redis` signals có assertions phù hợp.
 - [ ] CI chạy test cần thiết thành công; Bách chạy độc lập W1–W2 và kết quả/giới hạn được ghi trong PR hoặc output task.
 
 ## Liên kết hồ sơ thực hiện
 
 - Input workspace: [task-input.md](../../../../../workspace/duc/week-06_2026-09-06_to_2026-09-12/task-06_verify-login-to-course-workflow/input/task-input.md).
 - Output workspace: [task-output.md](../../../../../workspace/duc/week-06_2026-09-06_to_2026-09-12/task-06_verify-login-to-course-workflow/output/task-output.md).
-- Pull request: [#24](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/24) (draft, xếp chồng trên #23).
+- Pull request: [#24](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/24) (xếp chồng trên #23, chờ review).
 - Kết quả review: Chưa review.
 
 > URL/số PR và `Chờ review` phải được commit/push vào PR head trước review. Thành viên còn lại phải gửi `APPROVED` hợp lệ trên GitHub; sau đó người phụ trách finalization metadata, ghi `Hoàn thành` trên chính branch/PR và tự merge task của mình. Card chỉ canonically hoàn thành khi commit đó vào nhánh canonical; xem [vòng đời task canonical](../../../rules/git-and-pull-request-rules.md#vòng-đời-task-canonical).
@@ -58,4 +58,4 @@ Ghép stack Auth/Gateway/Course vào Compose và CI phù hợp, tạo E2E cho W1
 ## Cập nhật tiến độ
 
 - Cập nhật gần nhất: 21/09/2026 — Đức triển khai nhánh task-06 lấy base từ commit task-05 theo yêu cầu, trước khi task-04/05 merge.
-- Ghi chú/tồn đọng: CI đầu trên PR #24 đã qua PostgreSQL/Redis E2E và fresh Compose smoke; đang đồng bộ lại nhánh do sửa credential mẫu. Bách chưa chạy độc lập; chưa `Chờ review`.
+- Ghi chú/tồn đọng: [CI trên head mới của PR #24](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/actions/runs/35598020547) đã qua PostgreSQL/Redis E2E, telemetry assertions và fresh Compose W1–W2 smoke. Bách chưa chạy độc lập và chưa review trên GitHub.
