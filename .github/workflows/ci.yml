@@ -58,7 +58,9 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Run quality gates
-        run: pnpm run test:w1:postgres && pnpm run ci:verify
+        run: |
+          export COURSE_DATABASE_URL="${W1_AUTH_DATABASE_URL%/auth_db}/course_db"
+          pnpm run test:w1:postgres && pnpm run test:course:postgres && pnpm run ci:verify
 
   compose-config:
     name: Validate Compose without local configuration

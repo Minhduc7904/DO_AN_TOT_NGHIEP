@@ -1,6 +1,14 @@
 # Course service
 
-Course là service mẫu đầu tiên của LMS workspace. Task 01 chỉ cung cấp bootstrap, environment validation, Clean Architecture boundary và liveness endpoint; chưa triển khai nghiệp vụ khóa học.
+Course sở hữu `course_db` và cung cấp contract HTTP v1 cho tạo, liệt kê và xem khóa học. Gateway tạo `x-principal-id` và `x-principal-role` sau khi kiểm tra JWT; Course chỉ tin các header này từ mạng nội bộ.
+
+## API
+
+- `POST /api/v1/courses`: `instructor`, body `{ "title": "..." }`, trả `201` với `id`, `title`, `created_at`.
+- `GET /api/v1/courses?limit=20`: `student` hoặc `instructor`, trả `{ "items": [...] }`; `limit` trong khoảng 1–100.
+- `GET /api/v1/courses/{course_id}`: `student` hoặc `instructor`, trả course hoặc `404 NOT_FOUND`.
+
+Lỗi dùng error envelope canonical có `code`, `message`, `trace_id`, `timestamp`, `details`. Course không đọc `auth_db` và không remote-introspect JWT.
 
 ## Chạy cục bộ
 
@@ -8,6 +16,9 @@ Từ repository root:
 
 ```powershell
 pnpm --dir lms install --frozen-lockfile
+pnpm --dir lms --filter @aiops-lms/course build
+$env:COURSE_DATABASE_URL='postgresql://localhost:5432/course_db' # điều chỉnh theo PostgreSQL local
+node lms/services/course/dist/scripts/migrate.js
 pnpm --dir lms start:course
 Invoke-RestMethod http://localhost:3002/health
 ```
@@ -18,6 +29,7 @@ Invoke-RestMethod http://localhost:3002/health
 | ------------------------------------ | --------------------------------- | ------------------------------------------- |
 | `NODE_ENV`                           | `development`                     | `development`, `test` hoặc `production`     |
 | `PORT`                               | `3002`                            | Số nguyên từ `1` đến `65535`                |
+| `COURSE_DATABASE_URL`                | Local `course_db` PostgreSQL      | Connection string chỉ cho Course            |
 | `OTEL_SDK_DISABLED`                  | `false`                           | Chỉ nhận `true` hoặc `false`                |
 | `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT` | `http://localhost:4318/v1/traces` | URL HTTP(S) đầy đủ của OTLP traces endpoint |
 | `OTEL_SERVICE_VERSION`               | `0.1.0`                           | Version được gắn vào resource telemetry     |
@@ -45,4 +57,4 @@ domain <- application <- adapters
 - `adapters`: HTTP, persistence, messaging và external client implementation.
 - `config`, `app.module.ts`, `main.ts`: environment và dependency wiring.
 
-README trong boundary chưa có code chỉ giúp nhóm quan sát template. Khi code thật được thêm, README phải được cập nhật hoặc thu gọn; không tạo implementation giả để giữ hình dạng cây.
+Migration dùng `CREATE TABLE IF NOT EXISTS` và seed `course-001` với `ON CONFLICT DO NOTHING`, nên chạy lại không nhân bản dữ liệu. Container Course chạy migration trước khi khởi động HTTP. Kiểm chứng PostgreSQL thực bằng `pnpm --dir lms test:course:postgres` với `W1_AUTH_DATABASE_URL` và `COURSE_DATABASE_URL` cấu hình tới hai logical database riêng.
