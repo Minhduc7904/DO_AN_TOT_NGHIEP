@@ -1,4 +1,5 @@
 import { CourseService } from '../../src/application/course.service.js';
+import { CourseDependencyError } from '../../src/application/course-dependency-error.js';
 import type { CourseCache } from '../../src/application/ports/course-cache.js';
 import type { CourseRepository } from '../../src/application/ports/course-repository.js';
 import type { Course } from '../../src/domain/course.js';
@@ -10,7 +11,7 @@ describe('Course cache-aside policy', () => {
   let listCache: Map<string, Course[]>;
   let version: number;
   let readCount: number;
-  let cacheBroken: boolean;
+  let cacheFailure: 'unavailable' | 'timeout' | null;
   let service: CourseService;
 
   beforeEach(() => {
@@ -19,7 +20,7 @@ describe('Course cache-aside policy', () => {
     listCache = new Map();
     version = 0;
     readCount = 0;
-    cacheBroken = false;
+    cacheFailure = null;
     const repository: CourseRepository = {
       create: async (title) => {
         const course = { id: 'course-002', title, created_at: '2026-08-27T11:00:00Z' };
@@ -36,7 +37,7 @@ describe('Course cache-aside policy', () => {
       },
     };
     const assertCache = (): void => {
-      if (cacheBroken) throw new Error('redis unavailable or timeout');
+      if (cacheFailure) throw new CourseDependencyError('course-redis', cacheFailure);
     };
     const cache: CourseCache = {
       getItem: async (id) => {
@@ -79,11 +80,14 @@ describe('Course cache-aside policy', () => {
     expect(await service.findById('course-002')).toMatchObject({ title: 'New' });
   });
 
-  it('falls back to PostgreSQL when Redis is unavailable or times out', async () => {
-    cacheBroken = true;
-    expect(await service.findById(seed.id)).toEqual(seed);
-    expect(await service.list(20)).toEqual({ items: [seed] });
-    await expect(service.create('New')).resolves.toMatchObject({ title: 'New' });
-    expect(readCount).toBe(2);
-  });
+  it.each(['unavailable', 'timeout'] as const)(
+    'falls back to PostgreSQL when Redis is %s',
+    async (failure) => {
+      cacheFailure = failure;
+      expect(await service.findById(seed.id)).toEqual(seed);
+      expect(await service.list(20)).toEqual({ items: [seed] });
+      await expect(service.create('New')).resolves.toMatchObject({ title: 'New' });
+      expect(readCount).toBe(2);
+    },
+  );
 });
