@@ -17,7 +17,7 @@
 | [task-02_implement-api-gateway](task-02_implement-api-gateway.md)                     | Triển khai Gateway, xác thực JWT cục bộ và error handling | Bách            | Đức          | Cao     | Hoàn thành |
 | [task-03_verify-login-workflow](task-03_verify-login-workflow.md)                     | Kiểm chứng contract và workflow W1 qua Gateway            | Bách            | Đức          | Cao     | Hoàn thành |
 | [task-04_implement-course-service](task-04_implement-course-service.md)               | Triển khai Course API, migration và seed                  | Đức             | Bách         | Cao     | Hoàn thành |
-| [task-05_add-course-cache-and-telemetry](task-05_add-course-cache-and-telemetry.md)   | Bổ sung Redis cache và telemetry dependency cho Course    | Đức             | Bách         | Cao     | Đã giao    |
+| [task-05_add-course-cache-and-telemetry](task-05_add-course-cache-and-telemetry.md)   | Bổ sung Redis cache và telemetry dependency cho Course    | Đức             | Bách         | Cao     | Hoàn thành |
 | [task-06_verify-login-to-course-workflow](task-06_verify-login-to-course-workflow.md) | Kiểm chứng E2E W1–W2 và telemetry qua Gateway             | Đức             | Bách         | Cao     | Đã giao    |
 
 > Khi đọc tiến độ project-wide, chỉ coi hàng có trạng thái `Hoàn thành` trên nhánh canonical là hoàn thành; trạng thái đã finalization trên task branch chưa thay thế nguồn này.
@@ -26,11 +26,11 @@
 
 | Task                       | Pull request                                                   | Trạng thái                                                                                                                |
 | -------------------------- | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| Task 4 — Course service | [#22](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/22) | CI xanh; finalization xong theo ngoại lệ (Bách nghỉ ốm, Đức tự xác nhận); sẵn sàng merge |
+| Task 5 — Course cache/telemetry | [#23](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/23) | CI xanh; finalization xong theo ngoại lệ (Bách nghỉ ốm, Đức tự xác nhận); sẵn sàng merge |
 
 ## Phụ thuộc, rủi ro và quyết định
 
-- Phụ thuộc: Week 5 phải cung cấp service template, Compose, OpenTelemetry bootstrap và CI baseline. Thứ tự thực hiện là task-01 → task-02 → task-03, sau đó task-04 → task-05 → task-06; task sau chỉ bắt đầu khi PR của task phụ thuộc đã merge vào `main`.
+- Phụ thuộc: Week 5 cung cấp service template, Compose, OpenTelemetry bootstrap và CI baseline. Theo chỉ thị Đức ngày 21/09/2026, task-05 lấy base nhánh task-04 và task-06 lấy base nhánh task-05 trước merge; ba PR vào `main` và chỉ merge theo thứ tự task-04 → task-05 → task-06.
 - Rủi ro: Week 5 còn task chưa canonically hoàn thành trên `main`; thời gian Week 6 còn ngắn; contract JWT, database isolation hoặc cache semantics không thống nhất có thể làm chậm tích hợp.
 - Quyết định cần chốt: Week 6 hoán đổi vai trò theo xác nhận của Bách ngày 10/09/2026 — Bách nhận ba task đầu thuộc Auth/Gateway/W1, Đức nhận ba task sau thuộc Course/cache/E2E. Việc hoán đổi không thay đổi deliverable hoặc milestone M2 trong plan canonical.
 

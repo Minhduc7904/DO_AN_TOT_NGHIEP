@@ -2,6 +2,12 @@
 
 Course sở hữu `course_db` và cung cấp contract HTTP v1 cho tạo, liệt kê và xem khóa học. Gateway tạo `x-principal-id` và `x-principal-role` sau khi kiểm tra JWT; Course chỉ tin các header này từ mạng nội bộ.
 
+## Cache và telemetry
+
+Read path dùng Redis cache-aside; `course_db` luôn là nguồn dữ liệu chuẩn. Item key là `course:v1:item:{id}` và list key là `course:v1:list:{version}:{limit}`. TTL mặc định 60 giây, chỉnh bằng `COURSE_CACHE_TTL_SECONDS`. Sau khi tạo course, service tăng list version để vô hiệu hóa mọi biến thể `limit`; các key cũ tự hết hạn. Redis không sẵn sàng hoặc vượt `COURSE_CACHE_TIMEOUT_MS` thì request đọc trực tiếp PostgreSQL. Lỗi PostgreSQL được trả thành `503 DEPENDENCY_UNAVAILABLE` hoặc `504 DEPENDENCY_TIMEOUT`.
+
+Course xuất HTTP server metrics/spans và dependency signal cho `course-postgres`/`course-redis` qua OpenTelemetry. Metrics chỉ dùng method, route template, status class, operation và dependency identity; không dùng principal/course ID làm label. Endpoint metrics OTLP được suy ra từ trace endpoint bằng `/v1/metrics`.
+
 ## API
 
 - `POST /api/v1/courses`: `instructor`, body `{ "title": "..." }`, trả `201` với `id`, `title`, `created_at`.
@@ -30,6 +36,9 @@ Invoke-RestMethod http://localhost:3002/health
 | `NODE_ENV`                           | `development`                     | `development`, `test` hoặc `production`     |
 | `PORT`                               | `3002`                            | Số nguyên từ `1` đến `65535`                |
 | `COURSE_DATABASE_URL`                | Local `course_db` PostgreSQL      | Connection string chỉ cho Course            |
+| `COURSE_REDIS_URL`                   | `redis://localhost:6379`          | Redis do Course sử dụng                     |
+| `COURSE_CACHE_TTL_SECONDS`           | `60`                              | TTL cache item và list                      |
+| `COURSE_CACHE_TIMEOUT_MS`            | `300`                             | Giới hạn chờ Redis trước khi đọc PostgreSQL |
 | `OTEL_SDK_DISABLED`                  | `false`                           | Chỉ nhận `true` hoặc `false`                |
 | `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT` | `http://localhost:4318/v1/traces` | URL HTTP(S) đầy đủ của OTLP traces endpoint |
 | `OTEL_SERVICE_VERSION`               | `0.1.0`                           | Version được gắn vào resource telemetry     |

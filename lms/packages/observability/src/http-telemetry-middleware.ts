@@ -1,5 +1,6 @@
 import {
   context,
+  metrics,
   propagation,
   ROOT_CONTEXT,
   SpanKind,
@@ -63,8 +64,13 @@ function getMatchedRouteTemplate(request: HttpRequest): string | undefined {
 
 export function createHttpTelemetryMiddleware(): HttpTelemetryMiddleware {
   const tracer = trace.getTracer('@aiops-lms/observability');
+  const meter = metrics.getMeter('@aiops-lms/observability');
+  const requestCount = meter.createCounter('http.server.request.count');
+  const errorCount = meter.createCounter('http.server.request.error.count');
+  const duration = meter.createHistogram('http.server.request.duration', { unit: 's' });
 
   return (request, response, next) => {
+    const start = performance.now();
     const method = request.method?.toUpperCase() ?? 'HTTP';
     const path = getRequestPath(request);
     const parentContext = propagation.extract(ROOT_CONTEXT, request.headers, headerGetter);
@@ -82,6 +88,14 @@ export function createHttpTelemetryMiddleware(): HttpTelemetryMiddleware {
 
     response.once('finish', () => {
       const routeTemplate = getMatchedRouteTemplate(request);
+      const labels = {
+        http_method: method,
+        http_route_template: routeTemplate ?? 'unmatched',
+        http_status_class: `${Math.floor(response.statusCode / 100)}xx`,
+      };
+      requestCount.add(1, labels);
+      if (response.statusCode >= 500) errorCount.add(1, labels);
+      duration.record((performance.now() - start) / 1_000, labels);
 
       if (routeTemplate) {
         span.setAttribute('http.route', routeTemplate);
