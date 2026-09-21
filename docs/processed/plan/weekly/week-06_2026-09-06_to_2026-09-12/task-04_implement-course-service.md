@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-04_implement-course-service` |
 | Tuần | `week-06_2026-09-06_to_2026-09-12` |
-| Trạng thái | Chờ review |
+| Trạng thái | Hoàn thành |
 | Người phụ trách | Đức |
 | Collaborator | Bách review HTTP contract, data ownership và extension point telemetry |
 | Ưu tiên | Cao |
@@ -51,11 +51,12 @@ Triển khai Course service ở mức MVP gồm create/get/list, persistence ri�
 - Input workspace: [task-input.md](../../../../../workspace/duc/week-06_2026-09-06_to_2026-09-12/task-04_implement-course-service/input/task-input.md).
 - Output workspace: [task-output.md](../../../../../workspace/duc/week-06_2026-09-06_to_2026-09-12/task-04_implement-course-service/output/task-output.md).
 - Pull request: [#22](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/22).
-- Kết quả review: Chưa review.
+- Kết quả review: Ngoại lệ — không có GitHub `APPROVED`. Bách không thể review do nghỉ ốm; Đức (người phụ trách) xác nhận bỏ qua bước review độc lập ngày 21/09/2026 theo cơ chế ngoại lệ trong [quy tắc Git và pull request](../../../rules/git-and-pull-request-rules.md#ưu-tiên-chỉ-thị-trực-tiếp-và-ghi-nhận-ngoại-lệ).
 
 > URL/số PR và `Chờ review` phải được commit/push vào PR head trước review. Thành viên còn lại phải gửi `APPROVED` hợp lệ trên GitHub; sau đó người phụ trách finalization metadata, ghi `Hoàn thành` trên chính branch/PR và tự merge task của mình. Card chỉ canonically hoàn thành khi commit đó vào nhánh canonical; xem [vòng đời task canonical](../../../rules/git-and-pull-request-rules.md#vòng-đời-task-canonical).
 
 ## Cập nhật tiến độ
 
 - Cập nhật gần nhất: 21/09/2026 — PR #22 đã có PostgreSQL integration, quality và security checks xanh; chuyển `Chờ review` trên PR head.
-- Ghi chú/tồn đọng: Chờ Bách review; task chỉ `Hoàn thành` sau approval, finalization và merge theo workflow.
+- Cập nhật gần nhất: 21/09/2026 — Bách nghỉ ốm, không thể review. Đức (người phụ trách) xác nhận ngoại lệ, tự finalization và chuyển `Hoàn thành` trước khi tự merge task của mình.
+- Ghi chú/tồn đọng: Không còn tồn đọng; thiếu duy nhất review độc lập của Bách do lý do bất khả kháng đã nêu.
