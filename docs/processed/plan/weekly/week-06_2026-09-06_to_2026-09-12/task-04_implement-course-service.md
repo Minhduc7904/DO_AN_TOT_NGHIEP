@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-04_implement-course-service` |
 | Tuần | `week-06_2026-09-06_to_2026-09-12` |
-| Trạng thái | Đã giao |
+| Trạng thái | Đang thực hiện |
 | Người phụ trách | Đức |
 | Collaborator | Bách review HTTP contract, data ownership và extension point telemetry |
 | Ưu tiên | Cao |
@@ -48,14 +48,14 @@ Triển khai Course service ở mức MVP gồm create/get/list, persistence ri�
 
 ## Liên kết hồ sơ thực hiện
 
-- Input workspace: Chưa tạo — Đức tạo khi nhận task.
-- Output workspace: Chưa tạo — Đức tạo khi nhận task.
-- Pull request: Chưa tạo.
+- Input workspace: [task-input.md](../../../../../workspace/duc/week-06_2026-09-06_to_2026-09-12/task-04_implement-course-service/input/task-input.md).
+- Output workspace: [task-output.md](../../../../../workspace/duc/week-06_2026-09-06_to_2026-09-12/task-04_implement-course-service/output/task-output.md).
+- Pull request: [#22](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/22) (draft).
 - Kết quả review: Chưa review.
 
 > URL/số PR và `Chờ review` phải được commit/push vào PR head trước review. Thành viên còn lại phải gửi `APPROVED` hợp lệ trên GitHub; sau đó người phụ trách finalization metadata, ghi `Hoàn thành` trên chính branch/PR và tự merge task của mình. Card chỉ canonically hoàn thành khi commit đó vào nhánh canonical; xem [vòng đời task canonical](../../../rules/git-and-pull-request-rules.md#vòng-đời-task-canonical).
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 10/09/2026 — task được giao cho Đức theo nhóm task sau của Week 6.
-- Ghi chú/tồn đọng: Đức cần tự tạo hồ sơ trong `workspace/duc/`; task bắt đầu sau task-03 theo thứ tự nhóm đã yêu cầu.
+- Cập nhật gần nhất: 21/09/2026 — Đức bắt đầu triển khai trên nhánh task sau khi task-03 đã merge.
+- Ghi chú/tồn đọng: PostgreSQL migration/seed/integration đã qua trong CI đầu tiên; đang sửa format và kiểm tra lại quality/security checks. PR vẫn draft, chưa `Chờ review`.

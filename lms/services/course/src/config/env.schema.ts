@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import {
+  DEFAULT_COURSE_DATABASE_URL,
   DEFAULT_OTLP_TRACES_ENDPOINT,
   DEFAULT_PORT,
   DEFAULT_SERVICE_INSTANCE_ID,
@@ -19,6 +20,7 @@ const environmentSchema = z.object({
   OTEL_SERVICE_INSTANCE_ID: z.string().trim().min(1).default(DEFAULT_SERVICE_INSTANCE_ID),
   OTEL_SERVICE_VERSION: z.string().trim().min(1).default(DEFAULT_SERVICE_VERSION),
   PORT: z.coerce.number().int().min(1).max(65_535).default(DEFAULT_PORT),
+  COURSE_DATABASE_URL: z.url().default(DEFAULT_COURSE_DATABASE_URL),
 });
 
 export type Environment = z.infer<typeof environmentSchema>;

@@ -37,4 +37,4 @@ COPY --from=build --chown=node:node /workspace/services/course/package.json ./pa
 
 USER node
 EXPOSE 3002
-CMD ["node", "dist/main.js"]
+CMD ["sh", "-c", "node dist/scripts/migrate.js && node dist/main.js"]

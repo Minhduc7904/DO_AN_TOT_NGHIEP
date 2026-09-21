@@ -1,4 +1,5 @@
 import {
+  DEFAULT_COURSE_DATABASE_URL,
   DEFAULT_OTLP_TRACES_ENDPOINT,
   DEFAULT_PORT,
   DEFAULT_SERVICE_INSTANCE_ID,
@@ -9,6 +10,7 @@ import { validateEnvironment } from '../../src/config/env.schema.js';
 describe('validateEnvironment', () => {
   it('uses deterministic defaults', () => {
     expect(validateEnvironment({})).toEqual({
+      COURSE_DATABASE_URL: DEFAULT_COURSE_DATABASE_URL,
       NODE_ENV: 'development',
       OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: DEFAULT_OTLP_TRACES_ENDPOINT,
       OTEL_SDK_DISABLED: false,
@@ -20,6 +22,7 @@ describe('validateEnvironment', () => {
 
   it('coerces a valid port from environment text', () => {
     expect(validateEnvironment({ NODE_ENV: 'production', PORT: '4100' })).toEqual({
+      COURSE_DATABASE_URL: DEFAULT_COURSE_DATABASE_URL,
       NODE_ENV: 'production',
       OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: DEFAULT_OTLP_TRACES_ENDPOINT,
       OTEL_SDK_DISABLED: false,
