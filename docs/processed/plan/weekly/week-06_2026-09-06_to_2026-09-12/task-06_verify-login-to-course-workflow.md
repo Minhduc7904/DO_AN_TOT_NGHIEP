@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-06_verify-login-to-course-workflow` |
 | Tuần | `week-06_2026-09-06_to_2026-09-12` |
-| Trạng thái | Đã giao |
+| Trạng thái | Đang thực hiện |
 | Người phụ trách | Đức |
 | Collaborator | Bách chạy độc lập, review trace/metric và contract assertions |
 | Ưu tiên | Cao |
@@ -27,7 +27,7 @@ Ghép stack Auth/Gateway/Course vào Compose và CI phù hợp, tạo E2E cho W1
 
 ## Đầu vào và phụ thuộc
 
-- Tài liệu/task cần có trước: task-01 đến task-05 đã merge; Compose/CI/OTel baseline Week 5.
+- Tài liệu/task cần có trước: task-01 đến task-03 đã merge; nhánh task-05 là base theo chỉ thị Đức trước merge task-04/05; Compose/CI/OTel baseline Week 5. Chỉ merge task-06 sau task-05.
 - Người hoặc phần việc cần phối hợp: Bách chạy W1–W2 độc lập và kiểm tra telemetry đủ field cho analysis.
 - Rủi ro/giả định: compose startup/readiness và seed ordering phải deterministic; telemetry backend vắng mặt không được làm service crash ngoài behavior đã tài liệu hóa.
 
@@ -48,14 +48,14 @@ Ghép stack Auth/Gateway/Course vào Compose và CI phù hợp, tạo E2E cho W1
 
 ## Liên kết hồ sơ thực hiện
 
-- Input workspace: Chưa tạo — Đức tạo khi nhận task.
-- Output workspace: Chưa tạo — Đức tạo khi nhận task.
-- Pull request: Chưa tạo.
+- Input workspace: [task-input.md](../../../../../workspace/duc/week-06_2026-09-06_to_2026-09-12/task-06_verify-login-to-course-workflow/input/task-input.md).
+- Output workspace: [task-output.md](../../../../../workspace/duc/week-06_2026-09-06_to_2026-09-12/task-06_verify-login-to-course-workflow/output/task-output.md).
+- Pull request: [#24](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/24) (draft, xếp chồng trên #23).
 - Kết quả review: Chưa review.
 
 > URL/số PR và `Chờ review` phải được commit/push vào PR head trước review. Thành viên còn lại phải gửi `APPROVED` hợp lệ trên GitHub; sau đó người phụ trách finalization metadata, ghi `Hoàn thành` trên chính branch/PR và tự merge task của mình. Card chỉ canonically hoàn thành khi commit đó vào nhánh canonical; xem [vòng đời task canonical](../../../rules/git-and-pull-request-rules.md#vòng-đời-task-canonical).
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 10/09/2026 — task được giao cho Đức, thực hiện cuối chuỗi Week 6.
-- Ghi chú/tồn đọng: Đức cần tự tạo hồ sơ trong `workspace/duc/`; chỉ bắt đầu khi task-01 đến task-05 đã merge vào `main`.
+- Cập nhật gần nhất: 21/09/2026 — Đức triển khai nhánh task-06 lấy base từ commit task-05 theo yêu cầu, trước khi task-04/05 merge.
+- Ghi chú/tồn đọng: CI đầu trên PR #24 đã qua PostgreSQL/Redis E2E và fresh Compose smoke; đang đồng bộ lại nhánh do sửa credential mẫu. Bách chưa chạy độc lập; chưa `Chờ review`.

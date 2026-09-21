@@ -36,7 +36,7 @@ docker compose --env-file docker-compose/.env -f docker-compose/compose.yaml up 
 docker compose --env-file docker-compose/.env -f docker-compose/compose.yaml ps
 ```
 
-Compose chỉ báo thành công sau khi Auth, Course, PostgreSQL, Redis và RabbitMQ đều healthy. PostgreSQL tạo credential Auth và `auth_db` từ các biến `AUTH_POSTGRES_USER`/`AUTH_POSTGRES_PASSWORD` trong `.env`; không đặt credential đó trực tiếp trong manifest Compose.
+Compose chỉ báo thành công sau khi Gateway, Auth, Course, PostgreSQL, Redis và RabbitMQ đều healthy. PostgreSQL tạo `auth_db` và `course_db` riêng; Auth và Course tự chạy migration/seed trước khi mở HTTP. Credential lấy từ `.env`, không đặt trực tiếp trong manifest Compose.
 
 ## Kiểm tra
 
@@ -51,6 +51,16 @@ Kiểm tra Auth từ Bash:
 ```bash
 curl --fail http://localhost:3001/health
 ```
+
+Kiểm tra W1–W2 qua Gateway từ Bash:
+
+```bash
+login=$(curl --fail --silent --show-error -H 'content-type: application/json' -d '{"email":"student@example.test","password":"example-password"}' http://localhost:3000/api/v1/auth/login)
+token=$(printf '%s' "$login" | node -e 'let text="";process.stdin.on("data",chunk=>text+=chunk);process.stdin.on("end",()=>process.stdout.write(JSON.parse(text).access_token))')
+curl --fail -H "Authorization: Bearer $token" http://localhost:3000/api/v1/courses/course-001
+```
+
+`course-001` là dữ liệu seed. Redis chỉ là cache; nếu Redis tạm không sẵn sàng, Course đọc từ `course_db`.
 
 Hoặc từ PowerShell:
 

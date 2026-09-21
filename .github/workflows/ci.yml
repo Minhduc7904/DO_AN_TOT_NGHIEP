@@ -32,8 +32,18 @@ jobs:
           --health-interval 5s
           --health-timeout 5s
           --health-retries 12
+      redis:
+        image: redis:8.2.1-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
     env:
       W1_AUTH_DATABASE_URL: postgresql://w1_test:w1_test_password@127.0.0.1:5432/auth_db
+      W2_REDIS_URL: redis://127.0.0.1:6379
     steps:
       - name: Checkout source
         uses: actions/checkout@v6
@@ -60,7 +70,7 @@ jobs:
       - name: Run quality gates
         run: |
           export COURSE_DATABASE_URL="${W1_AUTH_DATABASE_URL%/auth_db}/course_db"
-          pnpm run test:w1:postgres && pnpm run test:course:postgres && pnpm run ci:verify
+          pnpm run test:w1:postgres && pnpm run test:course:postgres && pnpm run test:w2:postgres && pnpm run ci:verify
 
   compose-config:
     name: Validate Compose without local configuration
@@ -74,3 +84,24 @@ jobs:
 
       - name: Validate Compose with committed example configuration
         run: docker compose --env-file docker-compose/.env.example -f docker-compose/compose.yaml config --quiet
+
+  w2-compose:
+    name: Fresh Compose W1–W2 smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v6
+      - name: Start clean LMS stack
+        run: docker compose --env-file docker-compose/.env.example -f docker-compose/compose.yaml up --build -d --wait
+      - name: Login and browse seeded course through Gateway
+        run: |
+          login="$(curl --fail --silent --show-error -H 'content-type: application/json' -d '{"email":"student@example.test","password":"example-password"}' http://127.0.0.1:3000/api/v1/auth/login)"
+          token="$(printf '%s' "$login" | node -e 'let text="";process.stdin.on("data",chunk=>text+=chunk);process.stdin.on("end",()=>process.stdout.write(JSON.parse(text).access_token))')"
+          curl --fail --silent --show-error -H "Authorization: Bearer $token" http://127.0.0.1:3000/api/v1/courses/course-001 | node -e 'let text="";process.stdin.on("data",chunk=>text+=chunk);process.stdin.on("end",()=>{if(JSON.parse(text).id!=="course-001")process.exit(1)})'
+      - name: Show logs on failure
+        if: failure()
+        run: docker compose --env-file docker-compose/.env.example -f docker-compose/compose.yaml logs --no-color
+      - name: Stop stack
+        if: always()
+        run: docker compose --env-file docker-compose/.env.example -f docker-compose/compose.yaml down --volumes --remove-orphans
