@@ -24,6 +24,8 @@ npm @corepackPnpm run format:check
 npm @corepackPnpm run test
 npm @corepackPnpm run test:e2e
 npm @corepackPnpm run test:telemetry
+npm @corepackPnpm run test:course:postgres # cần PostgreSQL test và hai database URL
+npm @corepackPnpm run test:w2:postgres # cần PostgreSQL + Redis test
 npm @corepackPnpm run build
 npm @corepackPnpm run ci:verify
 Pop-Location
@@ -59,4 +61,5 @@ docker rm -f aiops-lms-course-check
 Lệnh `id -u` phải trả về UID khác `0`; health endpoint phải trả `status=ok` trên port đã cấu hình.
 
 Docker Compose baseline được hướng dẫn tại [`../docker-compose/README.md`](../docker-compose/README.md).
+Test W2 dùng `W1_AUTH_DATABASE_URL`, `COURSE_DATABASE_URL` và `W2_REDIS_URL`; các lệnh reset dữ liệu test trong hai logical database trước khi chạy E2E. Chỉ dùng database dành riêng cho test.
 OpenTelemetry bootstrap và assertion được mô tả tại [`packages/observability/README.md`](packages/observability/README.md). CI baseline chạy clean install, format check, build, lint và test qua `pnpm --dir lms ci:verify`; workflow cũng kiểm tra Compose bằng [`../docker-compose/.env.example`](../docker-compose/.env.example), không dùng `.env` local hoặc secret thật.
