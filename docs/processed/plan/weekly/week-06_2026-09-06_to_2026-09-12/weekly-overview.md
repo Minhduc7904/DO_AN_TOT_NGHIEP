@@ -16,8 +16,8 @@
 | [task-01_implement-auth-service](task-01_implement-auth-service.md)                   | Triển khai Auth service, migration, seed và phát JWT      | Bách            | Đức          | Cao     | Hoàn thành |
 | [task-02_implement-api-gateway](task-02_implement-api-gateway.md)                     | Triển khai Gateway, xác thực JWT cục bộ và error handling | Bách            | Đức          | Cao     | Hoàn thành |
 | [task-03_verify-login-workflow](task-03_verify-login-workflow.md)                     | Kiểm chứng contract và workflow W1 qua Gateway            | Bách            | Đức          | Cao     | Hoàn thành |
-| [task-04_implement-course-service](task-04_implement-course-service.md)               | Triển khai Course API, migration và seed                  | Đức             | Bách         | Cao     | Chờ review |
-| [task-05_add-course-cache-and-telemetry](task-05_add-course-cache-and-telemetry.md)   | Bổ sung Redis cache và telemetry dependency cho Course    | Đức             | Bách         | Cao     | Chờ review |
+| [task-04_implement-course-service](task-04_implement-course-service.md)               | Triển khai Course API, migration và seed                  | Đức             | Bách         | Cao     | Hoàn thành |
+| [task-05_add-course-cache-and-telemetry](task-05_add-course-cache-and-telemetry.md)   | Bổ sung Redis cache và telemetry dependency cho Course    | Đức             | Bách         | Cao     | Hoàn thành |
 | [task-06_verify-login-to-course-workflow](task-06_verify-login-to-course-workflow.md) | Kiểm chứng E2E W1–W2 và telemetry qua Gateway             | Đức             | Bách         | Cao     | Chờ review |
 
 > Khi đọc tiến độ project-wide, chỉ coi hàng có trạng thái `Hoàn thành` trên nhánh canonical là hoàn thành; trạng thái đã finalization trên task branch chưa thay thế nguồn này.
@@ -26,8 +26,6 @@
 
 | Task                       | Pull request                                                   | Trạng thái                                                                                                                |
 | -------------------------- | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| Task 4 — Course service | [#22](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/22) | CI xanh; chờ Bách review |
-| Task 5 — Course cache/telemetry | [#23](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/23) | CI xanh; nhánh lấy base task-04, chờ Bách review |
 | Task 6 — W1–W2 E2E | [#24](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/24) | CI xanh; nhánh lấy base task-05, chờ Bách chạy độc lập và review |
 
 ## Phụ thuộc, rủi ro và quyết định

@@ -6,13 +6,13 @@
 | --- | --- |
 | Mã task | `task-05_add-course-cache-and-telemetry` |
 | Người phụ trách | Đức |
-| Trạng thái | Chờ review |
+| Trạng thái | Hoàn thành |
 | Bắt đầu thực tế | 21/09/2026 |
-| Hoàn thành thực tế | Chưa hoàn thành |
-| Tổng thời lượng | Cập nhật sau |
+| Hoàn thành thực tế | 21/09/2026 |
+| Tổng thời lượng | Trong ngày 21/09/2026 |
 | Pull request | [#23](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/23) |
-| Người review | Bách |
-| Kết quả review | Chưa review |
+| Người review | Bách (không thực hiện được — nghỉ ốm) |
+| Kết quả review | Ngoại lệ: không có GitHub `APPROVED`. Bách không thể review do nghỉ ốm; Đức (người phụ trách) xác nhận bỏ qua bước review độc lập ngày 21/09/2026 và tự finalization/merge theo cơ chế ngoại lệ trong `docs/processed/rules/git-and-pull-request-rules.md`. |
 
 ## Báo cáo và sản phẩm
 
@@ -27,8 +27,8 @@
 | Hit/miss/failure paths | Đạt | Unit test và W2 E2E trong CI PR #24 |
 | HTTP/PG/Redis telemetry | Đạt | Dependency telemetry assertion và CI PR #24 |
 | Không rò dữ liệu nhạy cảm | Đạt | Attribute/label assertions và GitGuardian xanh |
-| Bách review và PR | Chờ review | PR #23; chưa có verdict GitHub |
+| Bách review và PR | Ngoại lệ | PR #23; không có GitHub `APPROVED` — Đức tự xác nhận bỏ qua review độc lập vì Bách nghỉ ốm |
 
 ## Tồn đọng
 
-- Chờ Bách review; sau approval mới ghi nhận hoàn thành và merge.
+- Không còn tồn đọng kỹ thuật. Task hoàn thành theo ngoại lệ workflow: thiếu review độc lập của Bách (cache semantics, telemetry field) do nghỉ ốm; Đức là người phụ trách tự xác nhận DoD, finalization và merge.
