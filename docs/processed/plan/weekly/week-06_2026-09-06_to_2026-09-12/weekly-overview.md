@@ -24,9 +24,7 @@
 
 ## Pull request đang mở
 
-| Task                       | Pull request                                                   | Trạng thái                                                                                                                |
-| -------------------------- | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| Task 6 — W1–W2 E2E | [#24](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/24) | CI xanh; finalization xong theo ngoại lệ (Bách nghỉ ốm, Đức tự xác nhận); sẵn sàng merge |
+Không có PR nào đang mở. PR #22, #23, #24 (task-04/05/06) đã merge vào `main` theo ngoại lệ finalization ngày 21/09/2026 (Bách nghỉ ốm, Đức tự xác nhận).
 
 ## Phụ thuộc, rủi ro và quyết định
 
