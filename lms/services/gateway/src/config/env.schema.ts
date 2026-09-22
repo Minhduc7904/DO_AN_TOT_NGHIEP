@@ -3,6 +3,7 @@ import { z } from 'zod';
 import {
   DEFAULT_AUTH_BASE_URL,
   DEFAULT_COURSE_BASE_URL,
+  DEFAULT_ENROLLMENT_BASE_URL,
   DEFAULT_JWT_SECRET,
   DEFAULT_OTLP_TRACES_ENDPOINT,
   DEFAULT_PORT,
@@ -21,6 +22,7 @@ const environmentSchema = z.object({
   PORT: z.coerce.number().int().min(1).max(65_535).default(DEFAULT_PORT),
   GATEWAY_AUTH_BASE_URL: z.url().default(DEFAULT_AUTH_BASE_URL),
   GATEWAY_COURSE_BASE_URL: z.url().default(DEFAULT_COURSE_BASE_URL),
+  GATEWAY_ENROLLMENT_BASE_URL: z.url().default(DEFAULT_ENROLLMENT_BASE_URL),
   GATEWAY_JWT_SECRET: z.string().min(32).default(DEFAULT_JWT_SECRET),
   GATEWAY_UPSTREAM_TIMEOUT_MS: z.coerce
     .number()
