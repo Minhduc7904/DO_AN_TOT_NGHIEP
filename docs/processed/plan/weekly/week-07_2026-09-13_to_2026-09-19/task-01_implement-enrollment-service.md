@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-01_implement-enrollment-service` |
 | Tuần | `week-07_2026-09-13_to_2026-09-19` |
-| Trạng thái | Đã giao |
+| Trạng thái | Đang thực hiện |
 | Người phụ trách | Đức |
 | Collaborator | Bách review HTTP contract Enrollment↔Course và data ownership |
 | Ưu tiên | Cao |
@@ -48,8 +48,8 @@ Triển khai Enrollment service ở mức MVP: tạo enrollment (student ghi dan
 
 ## Liên kết hồ sơ thực hiện
 
-- Input workspace: Chưa tạo — Đức tạo khi nhận task.
-- Output workspace: Chưa tạo — Đức tạo khi nhận task.
+- Input workspace: [task-input.md](../../../../../workspace/duc/week-07_2026-09-13_to_2026-09-19/task-01_implement-enrollment-service/input/task-input.md).
+- Output workspace: [task-output.md](../../../../../workspace/duc/week-07_2026-09-13_to_2026-09-19/task-01_implement-enrollment-service/output/task-output.md).
 - Pull request: Chưa tạo.
 - Kết quả review: Chưa review.
 
@@ -58,4 +58,5 @@ Triển khai Enrollment service ở mức MVP: tạo enrollment (student ghi dan
 ## Cập nhật tiến độ
 
 - Cập nhật gần nhất: 21/09/2026 — task được giao cho Đức theo yêu cầu chia task tuần 7 (Đức làm trước, Bách làm sau).
-- Ghi chú/tồn đọng: Đức cần tự tạo hồ sơ trong `workspace/duc/`; task bắt đầu sau khi xác nhận Course (Week 6) đã sẵn sàng trên `main`.
+- Cập nhật gần nhất: 22/09/2026 — Đức bắt đầu triển khai trên nhánh `feat/week-07/task-01-implement-enrollment-service` (base `main`); tạo hồ sơ input trong `workspace/duc/`.
+- Ghi chú/tồn đọng: `tools/sync-plan-json-and-timeline.ps1` cần `pwsh`, không sẵn có trong môi trường thực hiện; timeline đang chờ đồng bộ, giống ngoại lệ đã ghi nhận ở Week 6 (`task-03_verify-login-workflow.md`).

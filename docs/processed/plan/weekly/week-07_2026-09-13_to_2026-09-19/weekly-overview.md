@@ -7,13 +7,13 @@
 | Tuần | `week-07_2026-09-13_to_2026-09-19` |
 | Nguồn plan canonical | [Plan v0.2 — Tuần 7](../../plan-v0.2-24-weeks.md#tuần-7--enrollment-submission-và-propagation-xuyên-service) |
 | Mục tiêu tuần | Triển khai Enrollment và Submission ở mức MVP, gọi chéo service qua HTTP, có storage mock điều khiển được và trace-context xuyên Gateway/Enrollment/Submission. |
-| Trạng thái tuần | Chưa bắt đầu |
+| Trạng thái tuần | Đang thực hiện |
 
 ## Danh sách task
 
 | Mã task | Task | Người phụ trách | Collaborator | Ưu tiên | Trạng thái |
 | --- | --- | --- | --- | --- | --- |
-| [task-01_implement-enrollment-service](task-01_implement-enrollment-service.md) | Triển khai Enrollment service, migration/seed và call tới Course | Đức | Bách | Cao | Đã giao |
+| [task-01_implement-enrollment-service](task-01_implement-enrollment-service.md) | Triển khai Enrollment service, migration/seed và call tới Course | Đức | Bách | Cao | Đang thực hiện |
 | [task-02_add-enrollment-resilience-and-propagation](task-02_add-enrollment-resilience-and-propagation.md) | Bổ sung resilience và trace-context propagation cho Enrollment→Course | Đức | Bách | Cao | Đã giao |
 | [task-03_verify-enrollment-workflow](task-03_verify-enrollment-workflow.md) | Kiểm chứng E2E login → enroll qua Gateway | Đức | Bách | Trung bình | Đã giao |
 | [task-04_implement-submission-service](task-04_implement-submission-service.md) | Triển khai Submission service MVP và storage mock điều khiển được | Bách | Đức | Cao | Đã giao |
