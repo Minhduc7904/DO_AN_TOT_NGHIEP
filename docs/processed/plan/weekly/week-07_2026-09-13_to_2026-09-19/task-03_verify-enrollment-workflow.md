@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-03_verify-enrollment-workflow` |
 | Tuần | `week-07_2026-09-13_to_2026-09-19` |
-| Trạng thái | Đã giao |
+| Trạng thái | Hoàn thành |
 | Người phụ trách | Đức |
 | Collaborator | Bách chạy độc lập, review trace/metric của luồng enroll |
 | Ưu tiên | Trung bình |
@@ -48,14 +48,17 @@ Kiểm chứng E2E luồng `login → enroll` qua Gateway với PostgreSQL thự
 
 ## Liên kết hồ sơ thực hiện
 
-- Input workspace: Chưa tạo — Đức tạo khi nhận task.
-- Output workspace: Chưa tạo — Đức tạo khi nhận task.
-- Pull request: Chưa tạo.
-- Kết quả review: Chưa review.
+- Input workspace: [task-input.md](../../../../../workspace/duc/week-07_2026-09-13_to_2026-09-19/task-03_verify-enrollment-workflow/input/task-input.md).
+- Output workspace: [task-output.md](../../../../../workspace/duc/week-07_2026-09-13_to_2026-09-19/task-03_verify-enrollment-workflow/output/task-output.md).
+- Pull request: [#27](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/27) (xếp chồng nội dung trên #26, #25; cả hai đã merge vào `main`).
+- Kết quả review: Đạt qua ngoại lệ workflow — Bách không thể review hay chạy độc lập nên Đức tự thực hiện review thay Bách; không có submission `APPROVED` trên GitHub, xác nhận trực tiếp của người phụ trách ngày 22/09/2026.
 
 > URL/số PR và `Chờ review` phải được commit/push vào PR head trước review. Thành viên còn lại phải gửi `APPROVED` hợp lệ trên GitHub; sau đó người phụ trách finalization metadata, ghi `Hoàn thành` trên chính branch/PR và tự merge task của mình. Card chỉ canonically hoàn thành khi commit đó vào nhánh canonical; xem [vòng đời task canonical](../../../rules/git-and-pull-request-rules.md#vòng-đời-task-canonical).
 
 ## Cập nhật tiến độ
 
 - Cập nhật gần nhất: 21/09/2026 — task được giao cho Đức theo yêu cầu chia task tuần 7; thực hiện cuối track Enrollment, trước khi Bách bắt đầu Submission.
-- Ghi chú/tồn đọng: Đức cần tự tạo hồ sơ trong `workspace/duc/`; chỉ bắt đầu khi task-01 và task-02 đã merge vào `main`.
+- Cập nhật gần nhất: 22/09/2026 — Đức bắt đầu triển khai trên nhánh `test/week-07/task-03-verify-enrollment-workflow`, base trực tiếp lên nhánh task-02 (PR #26, chưa merge) theo chỉ thị Đức về stacked branch; không đợi task-01/02 merge vào `main` trước.
+- Cập nhật gần nhất: 22/09/2026 — Gateway routing, Compose/CI và E2E `login → enroll` đạt qua CI-equivalent chain cục bộ và `docker compose up` thật; đã mở PR [#27](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/27) (xếp chồng trên #26, #25), chuyển `Chờ review`, chờ Bách chạy độc lập và review.
+- Cập nhật gần nhất: 22/09/2026 — PR #25/#26 (task-01/02) đã merge vào `main`; Bách không thể review hay chạy độc lập nên Đức tự thực hiện review thay Bách, phát hiện và sửa test conflict phụ thuộc thứ tự chạy qua commit `317e863`, rồi finalization theo ngoại lệ workflow và chuyển `Hoàn thành`.
+- Ghi chú/tồn đọng: `tools/sync-plan-json-and-timeline.ps1` cần `pwsh`, không sẵn có trong môi trường thực hiện; timeline đang chờ đồng bộ.

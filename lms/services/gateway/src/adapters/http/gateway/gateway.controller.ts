@@ -59,7 +59,7 @@ export class GatewayController {
 
   @All(['courses', 'courses/*path'])
   async courses(@Req() request: HttpRequest, @Res() response: HttpResponse): Promise<void> {
-    const principal = this.requireCoursePrincipal(request);
+    const principal = this.requireStudentOrInstructorPrincipal(request);
     const result = await this.forward({
       body: request.body,
       headers: request.headers,
@@ -67,6 +67,23 @@ export class GatewayController {
       path: request.originalUrl,
       principal,
       targetBaseUrl: this.config.getOrThrow<string>('GATEWAY_COURSE_BASE_URL'),
+    });
+    this.send(response, result);
+  }
+
+  // Chỉ khớp đúng path `enrollments` (không có wildcard con): `GET /api/v1/enrollments/check` theo
+  // contract v1 §7.3 là internal service contract giữa Enrollment và Submission, MVP không expose
+  // nó như public client route qua Gateway nên cố ý không forward.
+  @All(['enrollments'])
+  async enrollments(@Req() request: HttpRequest, @Res() response: HttpResponse): Promise<void> {
+    const principal = this.requireStudentOrInstructorPrincipal(request);
+    const result = await this.forward({
+      body: request.body,
+      headers: request.headers,
+      method: request.method,
+      path: request.originalUrl,
+      principal,
+      targetBaseUrl: this.config.getOrThrow<string>('GATEWAY_ENROLLMENT_BASE_URL'),
     });
     this.send(response, result);
   }
@@ -98,7 +115,7 @@ export class GatewayController {
     }
   }
 
-  private requireCoursePrincipal(request: HttpRequest): Principal {
+  private requireStudentOrInstructorPrincipal(request: HttpRequest): Principal {
     const authorization = firstHeader(request.headers.authorization);
     const token = authorization?.match(/^Bearer\s+(.+)$/iu)?.[1];
     const principal = token
@@ -109,7 +126,7 @@ export class GatewayController {
       throw new UnauthorizedException('Bearer JWT không hợp lệ hoặc đã hết hạn');
     }
     if (principal.role !== 'student' && principal.role !== 'instructor') {
-      throw new ForbiddenException('Vai trò không được phép truy cập Course');
+      throw new ForbiddenException('Vai trò không được phép truy cập tài nguyên này');
     }
 
     return principal;
