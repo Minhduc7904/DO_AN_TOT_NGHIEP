@@ -217,10 +217,13 @@ describe('W1–W3 Gateway → Auth/Course/Enrollment → PostgreSQL', () => {
       .expect(403);
   });
 
-  // Dựa vào state để lại từ test "logs in and enrolls" phía trên (cùng enrollmentApp/DB, cùng
-  // principal seed student@example.test) — student đó đã enroll course-001 nên POST lại phải 409.
   it('rejects a duplicate enrollment with the canonical conflict envelope', async () => {
     const token = await login();
+    // Đảm bảo enrollment đã tồn tại trước, không phụ thuộc thứ tự chạy của test khác.
+    await request(gatewayApp.getHttpServer())
+      .post('/api/v1/enrollments')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ course_id: 'course-001' });
     await request(gatewayApp.getHttpServer())
       .post('/api/v1/enrollments')
       .set('Authorization', `Bearer ${token}`)
