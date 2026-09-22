@@ -6,13 +6,13 @@
 | --- | --- |
 | Mã task | `task-03_verify-enrollment-workflow` |
 | Người phụ trách | Đức |
-| Trạng thái | Chờ review |
+| Trạng thái | Hoàn thành theo ngoại lệ review |
 | Bắt đầu thực tế | 22/09/2026 |
-| Hoàn thành thực tế | Chưa hoàn thành — đang chờ `APPROVED` từ Bách, xem [vòng đời task canonical](../../../../../docs/processed/rules/git-and-pull-request-rules.md#vòng-đời-task-canonical). |
+| Hoàn thành thực tế | 22/09/2026 12:20 ICT |
 | Tổng thời lượng | ~1 phiên làm việc (22/09/2026), tiếp nối task-01/02 |
-| Pull request | [#27](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/27) (xếp chồng trên #26, #25) |
-| Người review | Bách (chưa review) |
-| Kết quả review | Chưa review |
+| Pull request | [#27](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/27) (xếp chồng trên #26, #25; cả hai đã merge vào `main`) |
+| Người review | Đức tự review thay Bách (Bách không thể review, không chạy độc lập được) |
+| Kết quả review | Đạt theo ngoại lệ workflow, xác nhận trực tiếp ngày 22/09/2026 bởi người phụ trách: Bách không thể review hay chạy độc lập nên Đức tự thực hiện review thay Bách (xem các phát hiện/sửa lỗi ở mục "Báo cáo công việc đã làm"); không có submission `APPROVED` trên GitHub và không có review độc lập từ Bách — đây là xác nhận của chính người phụ trách, không phải verdict GitHub. |
 
 ## Báo cáo công việc đã làm
 
@@ -23,6 +23,7 @@
 - **CI**: job `quality` chạy thêm `test:enrollment:postgres` và `test:w3:postgres`; job compose smoke đổi tên `w2-compose` → `w3-compose`, thêm bước gọi `POST /api/v1/enrollments` qua Gateway.
 - **Verify thủ công bằng `docker compose up` thật** (không chỉ jest in-process): build toàn bộ image, tất cả service `Healthy`, gọi `curl` thật qua Gateway — login → browse course (200) → enroll (201) → enroll trùng (409) → course không tồn tại (404) → `/enrollments/check` qua Gateway không được route (404, đúng ý đồ thiết kế, log Gateway xác nhận chỉ map `{/api/v1/enrollments, ALL}` không có wildcard con).
 - Mở PR [#27](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/27) từ `test/week-07/task-03-verify-enrollment-workflow` vào nhánh task-02 (xếp chồng trên #26, #25), cập nhật card task và `weekly-overview.md` sang `Chờ review`.
+- Tự review lại (self-review) sau khi chuyển `Chờ review`, phát hiện và sửa qua commit `317e863`: test 409 conflict phụ thuộc side-effect của test khác chạy trước trong cùng file (dễ vỡ nếu đổi thứ tự/chạy riêng lẻ) — sửa cho tự tạo enrollment trước khi kiểm tra conflict, không phụ thuộc thứ tự chạy.
 - Phát hiện ngoài phạm vi (không sửa trong task này): Gateway `HttpExceptionFilter` thiếu mapping status 404 → code `NOT_FOUND` (trả về `INTERNAL_ERROR` thay vì `NOT_FOUND` cho route không khớp) — lỗi có sẵn từ Week 6, không liên quan Enrollment; đã tạo task riêng qua `spawn_task` để xử lý sau.
 
 ## Sản phẩm thực tế
@@ -44,12 +45,12 @@
 | Trace `login → enroll` giữ W3C context qua Gateway và downstream; HTTP server/client cùng `enrollment-postgres` signals có assertions phù hợp | Đạt | Test 1 assert span SERVER `enrollments`/`courses` và span CLIENT `enrollment-postgres`/`enrollment-course` cùng `trace_id`, dùng `InMemorySpanExporter`. |
 | CI chạy test cần thiết thành công; kết quả/giới hạn được ghi trong PR hoặc output task | Đạt (cục bộ; GitHub Actions chờ xác nhận qua PR) | Chạy đầy đủ chuỗi lệnh CI `quality` job (`test:w1:postgres && test:course:postgres && test:enrollment:postgres && test:w2:postgres && test:w3:postgres && ci:verify`) với Postgres/Redis thật trong container cục bộ — tất cả pass. |
 | URL/số PR và `Chờ review` đã commit/push vào PR head trước review | Đạt | Commit cập nhật card/weekly-overview/output nằm trên chính nhánh `test/week-07/task-03-verify-enrollment-workflow`, đã push lên PR #27. |
-| PR có mô tả đúng template, `APPROVED` từ Bách, completion metadata trước merge | Chưa đạt | Đang chờ Bách chạy độc lập và review PR #27 (và #25/#26 vì xếp chồng); finalization thực hiện riêng sau khi có `APPROVED`. |
+| PR có mô tả đúng template, `APPROVED` từ Bách, completion metadata trước merge | Đạt theo ngoại lệ đã xác nhận | PR #27 dùng template; GitHub không có submission `APPROVED` vì Bách không thể review hay chạy độc lập. Đức tự thực hiện review thay Bách (commit fix `317e863`) và xác nhận trực tiếp ngày 22/09/2026 chấp nhận bỏ qua cổng GitHub `APPROVED`; completion metadata được commit/push trên PR head trước merge, sau khi PR #25/#26 đã merge vào `main`. |
 
 ## Thay đổi, tồn đọng và bước tiếp theo
 
 - Thay đổi so với input: Không có thay đổi phạm vi; toàn bộ DoD input giữ nguyên.
-- Việc chưa hoàn thành hoặc trở ngại: Chờ Bách chạy độc lập luồng `login → enroll` và review; GitHub Actions CI cho cả 3 PR (#25/#26/#27) cần xác nhận xanh; `tools/sync-plan-json-and-timeline.ps1` không chạy được (thiếu `pwsh`), timeline đang chờ đồng bộ.
-- Bước tiếp theo: Sau khi PR #25/#26/#27 có `APPROVED`, Đức dùng `task-completion-recording` để finalization từng task theo đúng thứ tự (task-01 → task-02 → task-03) trước khi merge tuần tự vào `main`; sau đó track Submission (task-04/05/06, Bách phụ trách) mới đủ điều kiện bắt đầu vì phụ thuộc Enrollment đã merge. Gateway 404-code-mapping gap đã ghi nhận qua `spawn_task` riêng, không nằm trong phạm vi task này.
+- Việc chưa hoàn thành hoặc trở ngại: Bách không thể review hay chạy độc lập (theo xác nhận của người phụ trách ngày 22/09/2026) nên không có `APPROVED` GitHub — Đức tự thực hiện review thay Bách theo ngoại lệ đã xác nhận; `tools/sync-plan-json-and-timeline.ps1` không chạy được (thiếu `pwsh`), timeline đang chờ đồng bộ.
+- Bước tiếp theo: Finalization theo ngoại lệ đã hoàn tất cho cả task-01/02/03 trong cùng phiên; người phụ trách (Đức) merge PR #27 vào `main` sau khi PR #25/#26 đã merge, sau đó track Submission (task-04/05/06, Bách phụ trách) đủ điều kiện bắt đầu. Gateway 404-code-mapping gap đã ghi nhận qua `spawn_task` riêng, không nằm trong phạm vi task này.
 
-> `Hoàn thành thực tế` là thời điểm người phụ trách đã hoàn tất work, DoD, nhận `APPROVED` hợp lệ từ thành viên còn lại và finalization; không ghi merge time. URL/số PR cùng trạng thái **Chờ review** phải được commit/push vào PR head trước review. Sau approval, người phụ trách dùng `task-completion-recording` để cập nhật hồ sơ và chuyển **Hoàn thành** trên chính branch/PR trước khi tự merge. Task chỉ canonically hoàn thành khi commit đó vào nhánh canonical. `Chờ xử lý` chỉ dùng cho blocker/dependency thực sự, không dùng chỉ vì PR đang chờ merge.
+> Ngoại lệ workflow: GitHub không ghi nhận `APPROVED` vì Bách không thể review hay chạy độc lập. Người phụ trách (Đức) xác nhận trực tiếp ngày 22/09/2026 rằng Đức đã tự thực hiện review thay Bách cho cả 3 task (task-01/02/03) và chấp nhận bỏ qua cổng GitHub `APPROVED` để finalization. Không diễn giải ngoại lệ này thành GitHub approval hay review độc lập từ Bách. `Hoàn thành thực tế` là thời điểm work, DoD và finalization đã hoàn tất; không ghi merge time.
