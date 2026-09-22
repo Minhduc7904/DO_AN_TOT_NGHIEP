@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-01_implement-enrollment-service` |
 | Tuần | `week-07_2026-09-13_to_2026-09-19` |
-| Trạng thái | Đang thực hiện |
+| Trạng thái | Chờ review |
 | Người phụ trách | Đức |
 | Collaborator | Bách review HTTP contract Enrollment↔Course và data ownership |
 | Ưu tiên | Cao |
@@ -50,7 +50,7 @@ Triển khai Enrollment service ở mức MVP: tạo enrollment (student ghi dan
 
 - Input workspace: [task-input.md](../../../../../workspace/duc/week-07_2026-09-13_to_2026-09-19/task-01_implement-enrollment-service/input/task-input.md).
 - Output workspace: [task-output.md](../../../../../workspace/duc/week-07_2026-09-13_to_2026-09-19/task-01_implement-enrollment-service/output/task-output.md).
-- Pull request: Chưa tạo.
+- Pull request: [#25](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/25).
 - Kết quả review: Chưa review.
 
 > URL/số PR và `Chờ review` phải được commit/push vào PR head trước review. Thành viên còn lại phải gửi `APPROVED` hợp lệ trên GitHub; sau đó người phụ trách finalization metadata, ghi `Hoàn thành` trên chính branch/PR và tự merge task của mình. Card chỉ canonically hoàn thành khi commit đó vào nhánh canonical; xem [vòng đời task canonical](../../../rules/git-and-pull-request-rules.md#vòng-đời-task-canonical).
@@ -59,4 +59,5 @@ Triển khai Enrollment service ở mức MVP: tạo enrollment (student ghi dan
 
 - Cập nhật gần nhất: 21/09/2026 — task được giao cho Đức theo yêu cầu chia task tuần 7 (Đức làm trước, Bách làm sau).
 - Cập nhật gần nhất: 22/09/2026 — Đức bắt đầu triển khai trên nhánh `feat/week-07/task-01-implement-enrollment-service` (base `main`); tạo hồ sơ input trong `workspace/duc/`.
+- Cập nhật gần nhất: 22/09/2026 — Code, unit test và PostgreSQL integration test đạt; đã mở PR [#25](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/25), chuyển `Chờ review`, chờ Bách review contract Enrollment↔Course.
 - Ghi chú/tồn đọng: `tools/sync-plan-json-and-timeline.ps1` cần `pwsh`, không sẵn có trong môi trường thực hiện; timeline đang chờ đồng bộ, giống ngoại lệ đã ghi nhận ở Week 6 (`task-03_verify-login-workflow.md`).
