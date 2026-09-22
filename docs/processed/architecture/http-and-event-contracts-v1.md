@@ -173,6 +173,7 @@ Service không trả raw stack trace, password, JWT, secret hoặc internal DB d
 | Course | `GET /api/v1/courses/{course_id}` | Client/Gateway; Enrollment; Submission | W2/W3/W4 |
 | Enrollment | `POST /api/v1/enrollments` | Client qua Gateway | W3 |
 | Enrollment | `GET /api/v1/enrollments/check` | Submission | W4 |
+| Enrollment | `GET /api/v1/enrollments` | Client qua Gateway | W3 |
 | Submission | `POST /api/v1/submissions` | Client qua Gateway | W4 |
 | Submission | `GET /api/v1/submissions/{submission_id}` | Client/Gateway; Grading | W4/W5 |
 | Storage Mock | `PUT /api/v1/objects/{object_key}` | Submission | W4 |
@@ -421,6 +422,46 @@ Success `200`:
 Endpoint này là published service contract; Submission không được đọc `enrollment_db`.
 
 `GET /api/v1/enrollments/check` là internal published service contract với caller chính là Submission; MVP không cần expose nó như public client route qua Gateway.
+
+## 7.4. `GET /api/v1/enrollments`
+
+**Owner:** Enrollment
+**Caller:** Client qua Gateway
+**Principal:** lấy từ trusted `x-principal-id`/`x-principal-role`.
+
+Query tối thiểu:
+
+```text
+principal_id=<opaque-string>   # chỉ áp dụng khi principal là instructor
+course_id=<opaque-string>      # chỉ áp dụng khi principal là instructor
+limit=<int 1..100>             # optional, mặc định 20
+```
+
+Student luôn chỉ nhận enrollment của chính mình (`principal_id` suy từ trusted header, bỏ qua query); instructor phải truyền ít nhất `principal_id` hoặc `course_id`.
+
+Success `200`:
+
+```json
+{
+  "items": [
+    {
+      "id": "enrollment-001",
+      "principal_id": "student-001",
+      "course_id": "course-001",
+      "created_at": "2026-08-27T10:05:00Z"
+    }
+  ]
+}
+```
+
+Errors:
+
+- `400 VALIDATION_ERROR`
+- `401 UNAUTHORIZED`
+- `403 FORBIDDEN`
+- `500 INTERNAL_ERROR`
+
+Pagination phức tạp không thuộc task này, theo cùng quy ước với `GET /api/v1/courses`.
 
 ---
 

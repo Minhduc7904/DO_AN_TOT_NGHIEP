@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-01_implement-enrollment-service` |
 | Tuần | `week-07_2026-09-13_to_2026-09-19` |
-| Trạng thái | Đã giao |
+| Trạng thái | Hoàn thành |
 | Người phụ trách | Đức |
 | Collaborator | Bách review HTTP contract Enrollment↔Course và data ownership |
 | Ưu tiên | Cao |
@@ -48,14 +48,17 @@ Triển khai Enrollment service ở mức MVP: tạo enrollment (student ghi dan
 
 ## Liên kết hồ sơ thực hiện
 
-- Input workspace: Chưa tạo — Đức tạo khi nhận task.
-- Output workspace: Chưa tạo — Đức tạo khi nhận task.
-- Pull request: Chưa tạo.
-- Kết quả review: Chưa review.
+- Input workspace: [task-input.md](../../../../../workspace/duc/week-07_2026-09-13_to_2026-09-19/task-01_implement-enrollment-service/input/task-input.md).
+- Output workspace: [task-output.md](../../../../../workspace/duc/week-07_2026-09-13_to_2026-09-19/task-01_implement-enrollment-service/output/task-output.md).
+- Pull request: [#25](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/25).
+- Kết quả review: Đạt qua ngoại lệ workflow — Bách không thể review nên Đức tự thực hiện review thay Bách; không có submission `APPROVED` trên GitHub, xác nhận trực tiếp của người phụ trách ngày 22/09/2026.
 
 > URL/số PR và `Chờ review` phải được commit/push vào PR head trước review. Thành viên còn lại phải gửi `APPROVED` hợp lệ trên GitHub; sau đó người phụ trách finalization metadata, ghi `Hoàn thành` trên chính branch/PR và tự merge task của mình. Card chỉ canonically hoàn thành khi commit đó vào nhánh canonical; xem [vòng đời task canonical](../../../rules/git-and-pull-request-rules.md#vòng-đời-task-canonical).
 
 ## Cập nhật tiến độ
 
 - Cập nhật gần nhất: 21/09/2026 — task được giao cho Đức theo yêu cầu chia task tuần 7 (Đức làm trước, Bách làm sau).
-- Ghi chú/tồn đọng: Đức cần tự tạo hồ sơ trong `workspace/duc/`; task bắt đầu sau khi xác nhận Course (Week 6) đã sẵn sàng trên `main`.
+- Cập nhật gần nhất: 22/09/2026 — Đức bắt đầu triển khai trên nhánh `feat/week-07/task-01-implement-enrollment-service` (base `main`); tạo hồ sơ input trong `workspace/duc/`.
+- Cập nhật gần nhất: 22/09/2026 — Code, unit test và PostgreSQL integration test đạt; đã mở PR [#25](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/25), chuyển `Chờ review`, chờ Bách review contract Enrollment↔Course.
+- Cập nhật gần nhất: 22/09/2026 — Bách không thể review; Đức tự thực hiện review thay Bách, phát hiện và sửa 3 vấn đề (contract `check` sai yêu cầu header, endpoint list thiếu trong contract catalogue, Enrollment chưa wire vào build/lint/test/CI) qua commit `76c7c90`, rồi finalization theo ngoại lệ workflow và chuyển `Hoàn thành`.
+- Ghi chú/tồn đọng: `tools/sync-plan-json-and-timeline.ps1` cần `pwsh`, không sẵn có trong môi trường thực hiện; timeline đang chờ đồng bộ, giống ngoại lệ đã ghi nhận ở Week 6 (`task-03_verify-login-workflow.md`).
