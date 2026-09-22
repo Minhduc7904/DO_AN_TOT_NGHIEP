@@ -21,7 +21,7 @@ export class CourseHttpClient extends CourseClient {
 
   exists(courseId: string, principal: CoursePrincipal): Promise<boolean> {
     return observeDependency('enrollment-course', 'exists', async () => {
-      if (this.breaker.isOpen()) {
+      if (!this.breaker.allowRequest()) {
         trace.getActiveSpan()?.setAttribute('circuit_breaker_open', true);
         throw new EnrollmentDependencyError('enrollment-course', 'unavailable');
       }

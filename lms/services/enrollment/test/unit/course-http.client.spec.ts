@@ -167,4 +167,40 @@ describe('CourseHttpClient', () => {
     await new Promise((resolve) => setTimeout(resolve, 25));
     await expect(client.exists('course-001', principal)).resolves.toBe(true);
   });
+
+  it('allows only a single half-open probe through when calls race after cooldown', async () => {
+    let calls = 0;
+    let releaseProbe: (() => void) | undefined;
+    globalThis.fetch = (async () => {
+      calls++;
+      if (calls === 2) {
+        await new Promise<void>((resolve) => {
+          releaseProbe = resolve;
+        });
+      }
+      throw new Error('connection refused');
+    }) as typeof fetch;
+    const client = new CourseHttpClient(
+      createConfig({
+        ENROLLMENT_COURSE_BREAKER_COOLDOWN_MS: 10,
+        ENROLLMENT_COURSE_BREAKER_THRESHOLD: 1,
+      }) as never,
+    );
+
+    await expect(client.exists('course-001', principal)).rejects.toBeInstanceOf(
+      EnrollmentDependencyError,
+    );
+    expect(calls).toBe(1);
+
+    await new Promise((resolve) => setTimeout(resolve, 15));
+    const probe = client.exists('course-001', principal);
+    const racing = client.exists('course-001', principal);
+
+    await expect(racing).rejects.toBeInstanceOf(EnrollmentDependencyError);
+    expect(calls).toBe(2);
+
+    releaseProbe?.();
+    await expect(probe).rejects.toBeInstanceOf(EnrollmentDependencyError);
+    expect(calls).toBe(2);
+  });
 });
