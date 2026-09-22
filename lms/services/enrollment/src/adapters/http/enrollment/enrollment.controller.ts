@@ -36,14 +36,13 @@ export class EnrollmentController {
     return this.enrollments.create(principal, parsed.data.course_id);
   }
 
+  // Internal service-to-service contract (docs §2.3 mục 3): caller không bắt buộc
+  // mang x-principal-* headers, principal cần kiểm tra đến từ query param.
   @Get('check')
   async check(
-    @Headers('x-principal-id') principalId: string | undefined,
-    @Headers('x-principal-role') role: string | undefined,
     @Query('principal_id') targetPrincipalId: string | undefined,
     @Query('course_id') targetCourseId: string | undefined,
   ): Promise<{ principal_id: string; course_id: string; enrolled: boolean }> {
-    this.requirePrincipal(principalId, role);
     if (!targetPrincipalId?.trim() || !targetCourseId?.trim()) {
       throw new BadRequestException('principal_id và course_id là bắt buộc');
     }

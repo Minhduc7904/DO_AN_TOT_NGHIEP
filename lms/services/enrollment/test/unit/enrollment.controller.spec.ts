@@ -144,10 +144,9 @@ describe('Enrollment HTTP contract', () => {
       .expect(({ body }) => expect(body).toEqual({ items: [seed] }));
   });
 
-  it('answers the internal check contract used by Submission', async () => {
+  it('answers the internal check contract used by Submission without requiring principal headers', async () => {
     await request(app.getHttpServer())
       .get('/api/v1/enrollments/check?principal_id=student-001&course_id=course-001')
-      .set(student)
       .expect(200)
       .expect(({ body }) =>
         expect(body).toEqual({
@@ -158,8 +157,16 @@ describe('Enrollment HTTP contract', () => {
       );
     await request(app.getHttpServer())
       .get('/api/v1/enrollments/check?principal_id=student-001&course_id=missing')
-      .set(student)
       .expect(200)
       .expect(({ body }) => expect(body.enrolled).toBe(false));
+  });
+
+  it('rejects the check contract when principal_id or course_id query params are missing', async () => {
+    await request(app.getHttpServer())
+      .get('/api/v1/enrollments/check?course_id=course-001')
+      .expect(400);
+    await request(app.getHttpServer())
+      .get('/api/v1/enrollments/check?principal_id=student-001')
+      .expect(400);
   });
 });
