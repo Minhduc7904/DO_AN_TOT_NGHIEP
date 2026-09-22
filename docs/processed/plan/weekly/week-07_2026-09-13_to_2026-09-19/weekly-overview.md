@@ -15,7 +15,7 @@
 | --- | --- | --- | --- | --- | --- |
 | [task-01_implement-enrollment-service](task-01_implement-enrollment-service.md) | Triển khai Enrollment service, migration/seed và call tới Course | Đức | Bách | Cao | Hoàn thành |
 | [task-02_add-enrollment-resilience-and-propagation](task-02_add-enrollment-resilience-and-propagation.md) | Bổ sung resilience và trace-context propagation cho Enrollment→Course | Đức | Bách | Cao | Hoàn thành |
-| [task-03_verify-enrollment-workflow](task-03_verify-enrollment-workflow.md) | Kiểm chứng E2E login → enroll qua Gateway | Đức | Bách | Trung bình | Đã giao |
+| [task-03_verify-enrollment-workflow](task-03_verify-enrollment-workflow.md) | Kiểm chứng E2E login → enroll qua Gateway | Đức | Bách | Trung bình | Đang thực hiện |
 | [task-04_implement-submission-service](task-04_implement-submission-service.md) | Triển khai Submission service MVP và storage mock điều khiển được | Bách | Đức | Cao | Đã giao |
 | [task-05_add-submission-contract-and-storage-tests](task-05_add-submission-contract-and-storage-tests.md) | Bổ sung contract/integration test cho Submission và storage dependency | Bách | Đức | Cao | Đã giao |
 | [task-06_verify-enroll-to-submit-workflow](task-06_verify-enroll-to-submit-workflow.md) | Kiểm chứng E2E login → enroll → nộp bài qua Gateway | Bách | Đức | Trung bình | Đã giao |

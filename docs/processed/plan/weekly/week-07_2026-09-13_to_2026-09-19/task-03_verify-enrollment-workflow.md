@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-03_verify-enrollment-workflow` |
 | Tuần | `week-07_2026-09-13_to_2026-09-19` |
-| Trạng thái | Đã giao |
+| Trạng thái | Đang thực hiện |
 | Người phụ trách | Đức |
 | Collaborator | Bách chạy độc lập, review trace/metric của luồng enroll |
 | Ưu tiên | Trung bình |
@@ -48,8 +48,8 @@ Kiểm chứng E2E luồng `login → enroll` qua Gateway với PostgreSQL thự
 
 ## Liên kết hồ sơ thực hiện
 
-- Input workspace: Chưa tạo — Đức tạo khi nhận task.
-- Output workspace: Chưa tạo — Đức tạo khi nhận task.
+- Input workspace: [task-input.md](../../../../../workspace/duc/week-07_2026-09-13_to_2026-09-19/task-03_verify-enrollment-workflow/input/task-input.md).
+- Output workspace: [task-output.md](../../../../../workspace/duc/week-07_2026-09-13_to_2026-09-19/task-03_verify-enrollment-workflow/output/task-output.md).
 - Pull request: Chưa tạo.
 - Kết quả review: Chưa review.
 
@@ -58,4 +58,5 @@ Kiểm chứng E2E luồng `login → enroll` qua Gateway với PostgreSQL thự
 ## Cập nhật tiến độ
 
 - Cập nhật gần nhất: 21/09/2026 — task được giao cho Đức theo yêu cầu chia task tuần 7; thực hiện cuối track Enrollment, trước khi Bách bắt đầu Submission.
-- Ghi chú/tồn đọng: Đức cần tự tạo hồ sơ trong `workspace/duc/`; chỉ bắt đầu khi task-01 và task-02 đã merge vào `main`.
+- Cập nhật gần nhất: 22/09/2026 — Đức bắt đầu triển khai trên nhánh `test/week-07/task-03-verify-enrollment-workflow`, base trực tiếp lên nhánh task-02 (PR #26, chưa merge) theo chỉ thị Đức về stacked branch; không đợi task-01/02 merge vào `main` trước.
+- Ghi chú/tồn đọng: `tools/sync-plan-json-and-timeline.ps1` cần `pwsh`, không sẵn có trong môi trường thực hiện; timeline đang chờ đồng bộ.
