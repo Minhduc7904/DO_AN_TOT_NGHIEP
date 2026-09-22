@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-02_add-enrollment-resilience-and-propagation` |
 | Tuần | `week-07_2026-09-13_to_2026-09-19` |
-| Trạng thái | Đã giao |
+| Trạng thái | Hoàn thành |
 | Người phụ trách | Đức |
 | Collaborator | Bách review resilience policy và dependency telemetry |
 | Ưu tiên | Cao |
@@ -48,14 +48,17 @@ Bổ sung resilience cơ bản (timeout rõ ràng và retry hoặc circuit-break
 
 ## Liên kết hồ sơ thực hiện
 
-- Input workspace: Chưa tạo — Đức tạo khi nhận task.
-- Output workspace: Chưa tạo — Đức tạo khi nhận task.
-- Pull request: Chưa tạo.
-- Kết quả review: Chưa review.
+- Input workspace: [task-input.md](../../../../../workspace/duc/week-07_2026-09-13_to_2026-09-19/task-02_add-enrollment-resilience-and-propagation/input/task-input.md).
+- Output workspace: [task-output.md](../../../../../workspace/duc/week-07_2026-09-13_to_2026-09-19/task-02_add-enrollment-resilience-and-propagation/output/task-output.md).
+- Pull request: [#26](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/26) (xếp chồng nội dung trên #25, #25 đã merge vào `main`).
+- Kết quả review: Đạt qua ngoại lệ workflow — Bách không thể review nên Đức tự thực hiện review thay Bách; không có submission `APPROVED` trên GitHub, xác nhận trực tiếp của người phụ trách ngày 22/09/2026.
 
 > URL/số PR và `Chờ review` phải được commit/push vào PR head trước review. Thành viên còn lại phải gửi `APPROVED` hợp lệ trên GitHub; sau đó người phụ trách finalization metadata, ghi `Hoàn thành` trên chính branch/PR và tự merge task của mình. Card chỉ canonically hoàn thành khi commit đó vào nhánh canonical; xem [vòng đời task canonical](../../../rules/git-and-pull-request-rules.md#vòng-đời-task-canonical).
 
 ## Cập nhật tiến độ
 
 - Cập nhật gần nhất: 21/09/2026 — task được giao cho Đức theo yêu cầu chia task tuần 7; thực hiện sau task-01.
-- Ghi chú/tồn đọng: Đức cần tự tạo hồ sơ trong `workspace/duc/`; chờ task-01 merge vào `main`.
+- Cập nhật gần nhất: 22/09/2026 — Đức bắt đầu triển khai trên nhánh `feat/week-07/task-02-add-enrollment-resilience-and-propagation`, base trực tiếp lên nhánh task-01 (PR #25, chưa merge) theo chỉ thị Đức về stacked branch.
+- Cập nhật gần nhất: 22/09/2026 — Code, unit test và telemetry test đạt; đã mở PR [#26](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/26) (xếp chồng trên #25), chuyển `Chờ review`, chờ Bách review resilience policy.
+- Cập nhật gần nhất: 22/09/2026 — PR #25 (task-01) đã merge vào `main`; Bách không thể review nên Đức tự thực hiện review thay Bách, phát hiện và sửa half-open circuit breaker cho phép nhiều request đồng thời (trái docstring) và wire telemetry test còn thiếu vào CI qua commit `3f34a39`, rồi finalization theo ngoại lệ workflow và chuyển `Hoàn thành`.
+- Ghi chú/tồn đọng: `tools/sync-plan-json-and-timeline.ps1` cần `pwsh`, không sẵn có trong môi trường thực hiện; timeline đang chờ đồng bộ.

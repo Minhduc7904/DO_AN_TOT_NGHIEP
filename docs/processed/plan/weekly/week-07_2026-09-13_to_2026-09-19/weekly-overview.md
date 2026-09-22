@@ -14,7 +14,7 @@
 | Mã task | Task | Người phụ trách | Collaborator | Ưu tiên | Trạng thái |
 | --- | --- | --- | --- | --- | --- |
 | [task-01_implement-enrollment-service](task-01_implement-enrollment-service.md) | Triển khai Enrollment service, migration/seed và call tới Course | Đức | Bách | Cao | Hoàn thành |
-| [task-02_add-enrollment-resilience-and-propagation](task-02_add-enrollment-resilience-and-propagation.md) | Bổ sung resilience và trace-context propagation cho Enrollment→Course | Đức | Bách | Cao | Đã giao |
+| [task-02_add-enrollment-resilience-and-propagation](task-02_add-enrollment-resilience-and-propagation.md) | Bổ sung resilience và trace-context propagation cho Enrollment→Course | Đức | Bách | Cao | Hoàn thành |
 | [task-03_verify-enrollment-workflow](task-03_verify-enrollment-workflow.md) | Kiểm chứng E2E login → enroll qua Gateway | Đức | Bách | Trung bình | Đã giao |
 | [task-04_implement-submission-service](task-04_implement-submission-service.md) | Triển khai Submission service MVP và storage mock điều khiển được | Bách | Đức | Cao | Đã giao |
 | [task-05_add-submission-contract-and-storage-tests](task-05_add-submission-contract-and-storage-tests.md) | Bổ sung contract/integration test cho Submission và storage dependency | Bách | Đức | Cao | Đã giao |
@@ -24,7 +24,8 @@
 
 ## Pull request đang mở
 
-- [#25](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/25) — `task-01_implement-enrollment-service`, base `main`, sẵn sàng merge theo ngoại lệ workflow (Bách không thể review, Đức tự review thay Bách; không có `APPROVED` GitHub).
+- [#25](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/25) — `task-01_implement-enrollment-service`, đã merge vào `main` theo ngoại lệ workflow (Bách không thể review, Đức tự review thay Bách; không có `APPROVED` GitHub).
+- [#26](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/26) — `task-02_add-enrollment-resilience-and-propagation`, base `main` (nội dung xếp chồng trên #25, đã merge), sẵn sàng merge theo ngoại lệ workflow (Bách không thể review, Đức tự review thay Bách; không có `APPROVED` GitHub).
 
 ## Phụ thuộc, rủi ro và quyết định
 

@@ -2,6 +2,8 @@ import { z } from 'zod';
 
 import {
   DEFAULT_ENROLLMENT_COURSE_BASE_URL,
+  DEFAULT_ENROLLMENT_COURSE_BREAKER_COOLDOWN_MS,
+  DEFAULT_ENROLLMENT_COURSE_BREAKER_THRESHOLD,
   DEFAULT_ENROLLMENT_COURSE_TIMEOUT_MS,
   DEFAULT_ENROLLMENT_DATABASE_URL,
   DEFAULT_OTLP_TRACES_ENDPOINT,
@@ -30,6 +32,18 @@ const environmentSchema = z.object({
     .min(1)
     .max(60_000)
     .default(DEFAULT_ENROLLMENT_COURSE_TIMEOUT_MS),
+  ENROLLMENT_COURSE_BREAKER_THRESHOLD: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(100)
+    .default(DEFAULT_ENROLLMENT_COURSE_BREAKER_THRESHOLD),
+  ENROLLMENT_COURSE_BREAKER_COOLDOWN_MS: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(300_000)
+    .default(DEFAULT_ENROLLMENT_COURSE_BREAKER_COOLDOWN_MS),
 });
 
 export type Environment = z.infer<typeof environmentSchema>;
