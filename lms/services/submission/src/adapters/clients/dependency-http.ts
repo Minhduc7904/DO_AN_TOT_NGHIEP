@@ -6,7 +6,7 @@ import {
 } from '../../application/submission-dependency-error.js';
 import { observeDependency } from '../telemetry/dependency-telemetry.js';
 
-interface DependencyRequest {
+interface DependencyRequest<Result = Response> {
   allowedStatuses?: number[];
   baseUrl: string;
   body?: unknown;
@@ -14,11 +14,14 @@ interface DependencyRequest {
   headers?: Record<string, string>;
   method: 'GET' | 'PUT';
   operation: string;
+  parseResponse?: (response: Response) => Promise<Result>;
   path: string;
   timeoutMs: number;
 }
 
-export function requestDependency(input: DependencyRequest): Promise<Response> {
+export function requestDependency<Result = Response>(
+  input: DependencyRequest<Result>,
+): Promise<Result> {
   return observeDependency(input.dependency, input.operation, async () => {
     const controller = new AbortController();
     let timedOut = false;
@@ -39,8 +42,9 @@ export function requestDependency(input: DependencyRequest): Promise<Response> {
       if (!response.ok && !input.allowedStatuses?.includes(response.status)) {
         throw new SubmissionDependencyError(input.dependency, dependencyKind(response));
       }
-      return response;
-    } catch {
+      return input.parseResponse ? await input.parseResponse(response) : (response as Result);
+    } catch (error) {
+      if (error instanceof SubmissionDependencyError) throw error;
       throw new SubmissionDependencyError(input.dependency, timedOut ? 'timeout' : 'unavailable');
     } finally {
       clearTimeout(timeout);

@@ -1,6 +1,6 @@
 import { startTelemetry } from '@aiops-lms/observability';
 import { InMemorySpanExporter, SimpleSpanProcessor } from '@aiops-lms/observability/testing';
-import { context, trace } from '@opentelemetry/api';
+import { context, SpanStatusCode, trace } from '@opentelemetry/api';
 
 import { CourseHttpClient } from '../../src/adapters/clients/course-http.client.js';
 import { EnrollmentHttpClient } from '../../src/adapters/clients/enrollment-http.client.js';
@@ -29,6 +29,7 @@ function createConfig(overrides: Partial<FakeConfigValues> = {}): {
 
 describe('Submission HTTP dependency clients', () => {
   const originalFetch = globalThis.fetch;
+  const spanExporter = new InMemorySpanExporter();
   const telemetry = startTelemetry(
     {
       enabled: true,
@@ -37,7 +38,7 @@ describe('Submission HTTP dependency clients', () => {
       serviceName: 'submission',
       serviceVersion: '0.1.0-test',
     },
-    { spanProcessor: new SimpleSpanProcessor(new InMemorySpanExporter()) },
+    { spanProcessor: new SimpleSpanProcessor(spanExporter) },
   );
 
   afterEach(() => {
@@ -83,6 +84,31 @@ describe('Submission HTTP dependency clients', () => {
     expect(captured?.searchParams.get('course_id')).toBe('course-001');
   });
 
+  it('maps malformed Enrollment JSON to unavailable inside the dependency boundary', async () => {
+    globalThis.fetch = (async () =>
+      new Response('not-json', {
+        headers: { 'content-type': 'application/json' },
+        status: 200,
+      })) as typeof fetch;
+    const spansBefore = spanExporter.getFinishedSpans().length;
+    const client = new EnrollmentHttpClient(createConfig() as never);
+
+    const error = await client.isEnrolled('student-001', 'course-001').catch((caught) => caught);
+
+    expect(error).toBeInstanceOf(SubmissionDependencyError);
+    expect((error as SubmissionDependencyError).kind).toBe('unavailable');
+    await telemetry.forceFlush();
+    const span = spanExporter
+      .getFinishedSpans()
+      .slice(spansBefore)
+      .findLast(
+        (candidate) => candidate.attributes.dependency_identity === 'submission-enrollment',
+      );
+    expect(span).toBeDefined();
+    expect(span?.attributes['error.type']).toBe('unavailable');
+    expect(span?.status.code).toBe(SpanStatusCode.ERROR);
+  });
+
   it('stores content through the Storage Mock network contract', async () => {
     let captured: Request | undefined;
     globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -102,6 +128,16 @@ describe('Submission HTTP dependency clients', () => {
     const error = await client.store('submissions/unavailable', 'answer').catch((caught) => caught);
     expect(error).toBeInstanceOf(SubmissionDependencyError);
     expect((error as SubmissionDependencyError).kind).toBe('unavailable');
+  });
+
+  it('preserves a dependency 504 response as timeout', async () => {
+    globalThis.fetch = (async () => new Response(null, { status: 504 })) as typeof fetch;
+    const client = new StorageHttpClient(createConfig() as never);
+
+    const error = await client.store('submissions/timeout', 'answer').catch((caught) => caught);
+
+    expect(error).toBeInstanceOf(SubmissionDependencyError);
+    expect((error as SubmissionDependencyError).kind).toBe('timeout');
   });
 
   it('maps an aborted dependency request to DEPENDENCY_TIMEOUT without retry', async () => {
