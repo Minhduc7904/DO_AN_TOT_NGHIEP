@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-04_implement-submission-service` |
 | Tuần | `week-07_2026-09-13_to_2026-09-19` |
-| Trạng thái | Chờ review |
+| Trạng thái | Hoàn thành |
 | Người phụ trách | Bách |
 | Collaborator | Đức review HTTP contract Submission↔Enrollment/Course và storage mock boundary |
 | Ưu tiên | Cao |
@@ -51,7 +51,7 @@ Triển khai Submission service ở mức MVP: nộp bài cho một enrollment v
 - Input workspace: [task-input.md](../../../../../workspace/bach/week-07_2026-09-13_to_2026-09-19/task-04_implement-submission-service/input/task-input.md).
 - Output workspace: [task-output.md](../../../../../workspace/bach/week-07_2026-09-13_to_2026-09-19/task-04_implement-submission-service/output/task-output.md).
 - Pull request: [#28](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/28).
-- Kết quả review: Chưa review.
+- Kết quả review: Ngoại lệ workflow — không có GitHub `APPROVED`; Bách xác nhận trực tiếp ngày 24/09/2026 cho finalization sau vòng re-review kỹ thuật theo ủy quyền Đức.
 
 > URL/số PR và `Chờ review` phải được commit/push vào PR head trước review. Thành viên còn lại phải gửi `APPROVED` hợp lệ trên GitHub; sau đó người phụ trách finalization metadata, ghi `Hoàn thành` trên chính branch/PR và tự merge task của mình. Card chỉ canonically hoàn thành khi commit đó vào nhánh canonical; xem [vòng đời task canonical](../../../rules/git-and-pull-request-rules.md#vòng-đời-task-canonical).
 
@@ -61,3 +61,4 @@ Triển khai Submission service ở mức MVP: nộp bài cho một enrollment v
 - Cập nhật gần nhất: 24/09/2026 — Bách đã tạo nhánh và hồ sơ input sau khi PR #25, #26 và #27 merge vào `main`.
 - Cập nhật gần nhất: 24/09/2026 — Bách xác nhận giữ HTTP contract v1; Task 4 chỉ triển khai `GET /api/v1/submissions/{submission_id}`, không thêm endpoint danh sách, và chuyển sang thực hiện.
 - Cập nhật gần nhất: 24/09/2026 — Submission, `submission_db`, Storage Mock, unit/contract/PostgreSQL/telemetry tests và production Docker images đều đạt; substantive commit `587198a` đã push, mở PR [#28](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/28) và chuyển `Chờ review`.
+- Cập nhật gần nhất: 24/09/2026 — Bách xác nhận ngoại lệ finalization khi chưa có GitHub `APPROVED`; vòng re-review kỹ thuật sau commit `1c699f7` không còn feedback blocking.

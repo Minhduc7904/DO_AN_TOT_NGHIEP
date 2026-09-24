@@ -16,7 +16,7 @@
 | [task-01_implement-enrollment-service](task-01_implement-enrollment-service.md) | Triển khai Enrollment service, migration/seed và call tới Course | Đức | Bách | Cao | Hoàn thành |
 | [task-02_add-enrollment-resilience-and-propagation](task-02_add-enrollment-resilience-and-propagation.md) | Bổ sung resilience và trace-context propagation cho Enrollment→Course | Đức | Bách | Cao | Hoàn thành |
 | [task-03_verify-enrollment-workflow](task-03_verify-enrollment-workflow.md) | Kiểm chứng E2E login → enroll qua Gateway | Đức | Bách | Trung bình | Hoàn thành |
-| [task-04_implement-submission-service](task-04_implement-submission-service.md) | Triển khai Submission service MVP và storage mock điều khiển được | Bách | Đức | Cao | Chờ review |
+| [task-04_implement-submission-service](task-04_implement-submission-service.md) | Triển khai Submission service MVP và storage mock điều khiển được | Bách | Đức | Cao | Hoàn thành |
 | [task-05_add-submission-contract-and-storage-tests](task-05_add-submission-contract-and-storage-tests.md) | Bổ sung contract/integration test cho Submission và storage dependency | Bách | Đức | Cao | Đã giao |
 | [task-06_verify-enroll-to-submit-workflow](task-06_verify-enroll-to-submit-workflow.md) | Kiểm chứng E2E login → enroll → nộp bài qua Gateway | Bách | Đức | Trung bình | Đã giao |
 
@@ -27,7 +27,7 @@
 - [#25](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/25) — `task-01_implement-enrollment-service`, đã merge vào `main` theo ngoại lệ workflow (Bách không thể review, Đức tự review thay Bách; không có `APPROVED` GitHub).
 - [#26](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/26) — `task-02_add-enrollment-resilience-and-propagation`, base `main` (nội dung xếp chồng trên #25, đã merge), đã merge vào `main` theo ngoại lệ workflow (Bách không thể review, Đức tự review thay Bách; không có `APPROVED` GitHub).
 - [#27](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/27) — `task-03_verify-enrollment-workflow`, base `main` (nội dung xếp chồng trên #26, #25), đã merge vào `main` theo ngoại lệ workflow (Bách không thể review hay chạy độc lập, Đức tự review thay Bách; không có `APPROVED` GitHub). Toàn bộ track Enrollment (task-01→03) tuần 7 đã hoàn thành.
-- [#28](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/28) — `task-04_implement-submission-service`, base `main`; substantive work và bằng chứng DoD đã push, card trên PR head chuyển `Chờ review`, chờ Đức review HTTP contract, storage boundary và telemetry.
+- [#28](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/28) — `task-04_implement-submission-service`, base `main`; finalization trên branch theo ngoại lệ do Bách xác nhận trực tiếp sau vòng re-review kỹ thuật; không có GitHub `APPROVED`.
 
 ## Phụ thuộc, rủi ro và quyết định
 
