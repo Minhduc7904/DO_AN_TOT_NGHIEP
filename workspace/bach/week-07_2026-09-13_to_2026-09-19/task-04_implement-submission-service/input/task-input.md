@@ -8,7 +8,7 @@
 | Tên task | Triển khai Submission service MVP và storage mock điều khiển được |
 | Người phụ trách | Bách |
 | Tuần thực hiện | `week-07_2026-09-13_to_2026-09-19` |
-| Trạng thái | Chờ xử lý |
+| Trạng thái | Đang thực hiện |
 | Ngày tạo | 24/09/2026 |
 | Thời gian dự kiến | Bắt đầu 24/09/2026; hạn canonical 18/09/2026 đã qua và chưa tự thay đổi kế hoạch |
 | Nhánh thực hiện | `feat/week-07/task-04-implement-submission-service` |
@@ -36,7 +36,7 @@ Không triển khai Grading, Notification, upload production-grade, MinIO, fault
 
 - Tài liệu, dữ liệu hoặc task cần có trước: PR #25, #26 và #27 đã merge vào `main`; Course Week 6 đã merge; `docs/processed/architecture/http-and-event-contracts-v1.md`; `docs/processed/architecture/data-ownership-and-fault-matrix-v1.md`; `docs/processed/architecture/service-catalogue-and-topology-v1.md`.
 - Người cần phối hợp: Đức review HTTP contract Submission↔Enrollment/Course và ranh giới Storage Mock.
-- Rủi ro hoặc giả định: Card yêu cầu “liệt kê submission”, trong khi HTTP contract v1 chỉ công bố `GET /api/v1/submissions/{submission_id}`. Cần chốt một trong hai nguồn trước khi triển khai endpoint đọc để không tự ý thay đổi published contract. Storage Mock phải chạy như dependency riêng, có identity `submission-storage`, reset rõ và điều khiển latency/error từ test.
+- Rủi ro hoặc giả định: Bách đã xác nhận giữ HTTP contract v1; endpoint đọc là `GET /api/v1/submissions/{submission_id}`, không thêm endpoint danh sách trong Task 4. Storage Mock phải chạy như dependency riêng, có identity `submission-storage`, reset rõ và điều khiển latency/error từ test.
 
 ## Definition of Done
 

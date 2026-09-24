@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-04_implement-submission-service` |
 | Tuần | `week-07_2026-09-13_to_2026-09-19` |
-| Trạng thái | Chờ xử lý |
+| Trạng thái | Đang thực hiện |
 | Người phụ trách | Bách |
 | Collaborator | Đức review HTTP contract Submission↔Enrollment/Course và storage mock boundary |
 | Ưu tiên | Cao |
@@ -17,7 +17,7 @@
 
 ### Cần thực hiện
 
-Triển khai Submission service ở mức MVP: nộp bài cho một enrollment, liệt kê submission. Submission gọi Course và Enrollment qua HTTP để xác nhận course/enrollment hợp lệ trước khi chấp nhận bài nộp, và gọi một external storage mock qua HTTP/network (không phải import trong-process) để lưu file bài nộp. Storage mock phải có dependency identity ổn định và cho phép điều khiển latency/error từ test.
+Triển khai Submission service ở mức MVP: nộp bài cho một enrollment và truy vấn Submission theo ID. Submission gọi Course và Enrollment qua HTTP để xác nhận course/enrollment hợp lệ trước khi chấp nhận bài nộp, và gọi một external storage mock qua HTTP/network (không phải import trong-process) để lưu file bài nộp. Storage mock phải có dependency identity ổn định và cho phép điều khiển latency/error từ test.
 
 ### Không thực hiện
 
@@ -40,7 +40,7 @@ Triển khai Submission service ở mức MVP: nộp bài cho một enrollment, 
 
 ## Definition of Done
 
-- [ ] Endpoint nộp bài và liệt kê submission đúng response/error contract canonical, validation và quyền được kiểm tra.
+- [ ] Endpoint nộp bài và `GET /api/v1/submissions/{submission_id}` đúng response/error contract canonical, validation và quyền được kiểm tra.
 - [ ] Submission gọi Course và Enrollment qua HTTP để xác nhận hợp lệ trước khi chấp nhận bài nộp; course/enrollment không hợp lệ trả lỗi rõ ràng theo error envelope canonical.
 - [ ] Storage mock chạy như dependency qua network, có dependency identity ổn định, điều khiển được latency/error từ test, và tạo outbound/dependency span khi Submission gọi tới.
 - [ ] Submission là owner duy nhất của schema/data (nếu có persistence riêng); không cross-service database hoặc source import.
@@ -59,4 +59,4 @@ Triển khai Submission service ở mức MVP: nộp bài cho một enrollment, 
 
 - Cập nhật gần nhất: 21/09/2026 — task được giao cho Bách theo yêu cầu chia task tuần 7 (Đức làm trước với Enrollment, Bách làm sau với Submission).
 - Cập nhật gần nhất: 24/09/2026 — Bách đã tạo nhánh và hồ sơ input sau khi PR #25, #26 và #27 merge vào `main`.
-- Ghi chú/tồn đọng: Task đang chờ chốt sai lệch scope: card yêu cầu liệt kê Submission, nhưng HTTP contract v1 chỉ công bố `GET /api/v1/submissions/{submission_id}`. Không triển khai endpoint đọc cho đến khi chốt nguồn canonical.
+- Cập nhật gần nhất: 24/09/2026 — Bách xác nhận giữ HTTP contract v1; Task 4 chỉ triển khai `GET /api/v1/submissions/{submission_id}`, không thêm endpoint danh sách, và chuyển sang thực hiện.
