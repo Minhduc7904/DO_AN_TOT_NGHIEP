@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-04_implement-submission-service` |
 | Tuần | `week-07_2026-09-13_to_2026-09-19` |
-| Trạng thái | Đã giao |
+| Trạng thái | Chờ xử lý |
 | Người phụ trách | Bách |
 | Collaborator | Đức review HTTP contract Submission↔Enrollment/Course và storage mock boundary |
 | Ưu tiên | Cao |
@@ -48,7 +48,7 @@ Triển khai Submission service ở mức MVP: nộp bài cho một enrollment, 
 
 ## Liên kết hồ sơ thực hiện
 
-- Input workspace: Chưa tạo — Bách tạo khi nhận task.
+- Input workspace: [task-input.md](../../../../../workspace/bach/week-07_2026-09-13_to_2026-09-19/task-04_implement-submission-service/input/task-input.md).
 - Output workspace: Chưa tạo — Bách tạo khi nhận task.
 - Pull request: Chưa tạo.
 - Kết quả review: Chưa review.
@@ -58,4 +58,5 @@ Triển khai Submission service ở mức MVP: nộp bài cho một enrollment, 
 ## Cập nhật tiến độ
 
 - Cập nhật gần nhất: 21/09/2026 — task được giao cho Bách theo yêu cầu chia task tuần 7 (Đức làm trước với Enrollment, Bách làm sau với Submission).
-- Ghi chú/tồn đọng: Bách cần tự tạo hồ sơ trong `workspace/bach/`; task chỉ bắt đầu khi task-01/02 (Enrollment) đã merge vào `main`.
+- Cập nhật gần nhất: 24/09/2026 — Bách đã tạo nhánh và hồ sơ input sau khi PR #25, #26 và #27 merge vào `main`.
+- Ghi chú/tồn đọng: Task đang chờ chốt sai lệch scope: card yêu cầu liệt kê Submission, nhưng HTTP contract v1 chỉ công bố `GET /api/v1/submissions/{submission_id}`. Không triển khai endpoint đọc cho đến khi chốt nguồn canonical.
