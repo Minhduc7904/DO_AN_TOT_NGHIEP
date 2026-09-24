@@ -8,11 +8,11 @@
 | Tên task | Triển khai Submission service MVP và storage mock điều khiển được |
 | Người phụ trách | Bách |
 | Tuần thực hiện | `week-07_2026-09-13_to_2026-09-19` |
-| Trạng thái | Đang thực hiện |
+| Trạng thái | Chờ review |
 | Ngày tạo | 24/09/2026 |
 | Thời gian dự kiến | Bắt đầu 24/09/2026; hạn canonical 18/09/2026 đã qua và chưa tự thay đổi kế hoạch |
 | Nhánh thực hiện | `feat/week-07/task-04-implement-submission-service` |
-| Pull request dự kiến | PR từ nhánh task vào `main` |
+| Pull request dự kiến | [#28](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/28) vào `main` |
 
 ## Mục tiêu và phạm vi
 
@@ -40,11 +40,11 @@ Không triển khai Grading, Notification, upload production-grade, MinIO, fault
 
 ## Definition of Done
 
-- [ ] Endpoint nộp bài và endpoint đọc Submission đã được chốt theo HTTP contract canonical; response/error contract, validation và quyền được kiểm tra.
-- [ ] Submission gọi Course và Enrollment qua HTTP để xác nhận hợp lệ trước khi chấp nhận bài nộp; course/enrollment không hợp lệ trả error envelope canonical.
-- [ ] Storage Mock chạy qua network, có dependency identity `submission-storage`, điều khiển được latency/error từ test và tạo outbound/dependency span khi Submission gọi tới.
-- [ ] Submission là owner duy nhất của `submission_db` và object reference; không cross-service database hoặc source import.
-- [ ] Unit, integration test, build, lint, health và CI pass.
-- [ ] Sản phẩm đã được lưu/đẩy lên vị trí dự kiến và có thể truy cập.
-- [ ] URL/số PR và trạng thái `Chờ review` đã được commit/push vào PR head trước khi reviewer bắt đầu review.
+- [x] Endpoint nộp bài và endpoint đọc Submission đã được chốt theo HTTP contract canonical; response/error contract, validation và quyền được kiểm tra.
+- [x] Submission gọi Course và Enrollment qua HTTP để xác nhận hợp lệ trước khi chấp nhận bài nộp; course/enrollment không hợp lệ trả error envelope canonical.
+- [x] Storage Mock chạy qua network, có dependency identity `submission-storage`, điều khiển được latency/error từ test và tạo outbound/dependency span khi Submission gọi tới.
+- [x] Submission là owner duy nhất của `submission_db` và object reference; không cross-service database hoặc source import.
+- [x] Unit, integration test, build, lint, health và CI pass.
+- [x] Sản phẩm đã được lưu/đẩy lên vị trí dự kiến và có thể truy cập.
+- [x] URL/số PR và trạng thái `Chờ review` đã được commit/push vào PR head trước khi reviewer bắt đầu review.
 - [ ] Pull request từ nhánh task có mô tả đúng quy tắc, có verdict `APPROVED` hợp lệ từ Đức trên GitHub và completion metadata được commit/push vào chính PR trước khi Bách merge.
