@@ -71,7 +71,8 @@ jobs:
         run: |
           export COURSE_DATABASE_URL="${W1_AUTH_DATABASE_URL%/auth_db}/course_db"
           export ENROLLMENT_DATABASE_URL="${W1_AUTH_DATABASE_URL%/auth_db}/enrollment_db"
-          pnpm run test:w1:postgres && pnpm run test:course:postgres && pnpm run test:enrollment:postgres && pnpm run test:w2:postgres && pnpm run test:w3:postgres && pnpm run ci:verify
+          export SUBMISSION_DATABASE_URL="${W1_AUTH_DATABASE_URL%/auth_db}/submission_db"
+          pnpm run test:w1:postgres && pnpm run test:course:postgres && pnpm run test:enrollment:postgres && pnpm run test:submission:postgres && pnpm run test:w2:postgres && pnpm run test:w3:postgres && pnpm run ci:verify
 
   compose-config:
     name: Validate Compose without local configuration

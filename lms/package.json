@@ -9,13 +9,13 @@
     "pnpm": "11.19.0"
   },
   "scripts": {
-    "build": "pnpm --filter @aiops-lms/observability build && pnpm --filter @aiops-lms/course build && pnpm --filter @aiops-lms/auth build && pnpm --filter @aiops-lms/gateway build && pnpm --filter @aiops-lms/enrollment build",
+    "build": "pnpm --filter @aiops-lms/observability build && pnpm --filter @aiops-lms/course build && pnpm --filter @aiops-lms/auth build && pnpm --filter @aiops-lms/gateway build && pnpm --filter @aiops-lms/enrollment build && pnpm --filter @aiops-lms/submission-storage-mock build && pnpm --filter @aiops-lms/submission build",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "lint": "eslint \"{packages/observability,services/{course,auth,gateway,enrollment}}/**/*.ts\" --max-warnings=0",
+    "lint": "eslint \"{packages/observability,services/{course,auth,gateway,enrollment,submission,submission-storage-mock}}/**/*.ts\" --max-warnings=0",
     "ci:verify": "pnpm run format:check && pnpm run build && pnpm run lint && pnpm run test",
     "start:course": "pnpm run build && pnpm --filter @aiops-lms/course start",
-    "test": "pnpm run test:architecture && pnpm --filter @aiops-lms/observability test && node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config services/course/jest.config.ts && node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config services/auth/jest.config.ts && node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config services/gateway/jest.config.ts && node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config services/enrollment/jest.config.ts && pnpm run test:w1 && pnpm run test:telemetry",
+    "test": "pnpm run test:architecture && pnpm --filter @aiops-lms/observability test && node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config services/course/jest.config.ts && node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config services/auth/jest.config.ts && node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config services/gateway/jest.config.ts && node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config services/enrollment/jest.config.ts && node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config services/submission-storage-mock/jest.config.ts && node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config services/submission/jest.config.ts && pnpm run test:w1 && pnpm run test:telemetry",
     "test:architecture": "node test/eslint-boundaries.test.mjs",
     "test:w1": "pnpm run test:w1:types && node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config jest.w1.config.ts",
     "test:w1:postgres": "pnpm --filter @aiops-lms/observability build && pnpm --filter @aiops-lms/auth build && node services/auth/test/reset-w1-postgres.mjs && node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config jest.w1-postgres.config.ts",
@@ -25,7 +25,8 @@
     "test:w3:postgres": "pnpm run build && node services/auth/test/reset-w1-postgres.mjs && node services/course/test/reset-w2-postgres.mjs && node services/enrollment/test/reset-enrollment-postgres.mjs && node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config jest.w3-postgres.config.ts",
     "test:w1:types": "tsc --noEmit -p tsconfig.w1.json",
     "test:e2e": "pnpm run build && node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config services/course/jest-e2e.config.ts && node services/course/test/telemetry/http.telemetry-test.mjs",
-    "test:telemetry": "pnpm run build && node services/course/test/telemetry/http.telemetry-test.mjs && node services/course/test/telemetry/dependency.telemetry-test.mjs && node services/auth/test/telemetry/http.telemetry-test.mjs && node services/enrollment/test/telemetry/dependency.telemetry-test.mjs"
+    "test:telemetry": "pnpm run build && node services/course/test/telemetry/http.telemetry-test.mjs && node services/course/test/telemetry/dependency.telemetry-test.mjs && node services/auth/test/telemetry/http.telemetry-test.mjs && node services/enrollment/test/telemetry/dependency.telemetry-test.mjs && node services/submission/test/telemetry/dependency.telemetry-test.mjs",
+    "test:submission:postgres": "pnpm --filter @aiops-lms/observability build && pnpm --filter @aiops-lms/submission build && node services/submission/test/postgres-integration.mjs"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
