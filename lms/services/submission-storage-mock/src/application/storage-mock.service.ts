@@ -1,3 +1,5 @@
+import { setTimeout as delay } from 'node:timers/promises';
+
 import type { StoredObject, StorageFaultControl } from '../domain/stored-object.js';
 import { StorageInjectedError } from './storage-injected-error.js';
 
@@ -23,8 +25,9 @@ export class StorageMockService {
     return { ...this.fault };
   }
 
-  async store(objectKey: string, content: string): Promise<StoredObject> {
-    await this.applyFault();
+  async store(objectKey: string, content: string, signal?: AbortSignal): Promise<StoredObject> {
+    await this.applyFault(signal);
+    signal?.throwIfAborted();
     const object: StoredObject = {
       content,
       object_key: objectKey,
@@ -39,9 +42,9 @@ export class StorageMockService {
     return this.objects.get(objectKey) ?? null;
   }
 
-  private async applyFault(): Promise<void> {
+  private async applyFault(signal?: AbortSignal): Promise<void> {
     if (this.fault.latency_ms > 0) {
-      await new Promise((resolve) => setTimeout(resolve, this.fault.latency_ms));
+      await delay(this.fault.latency_ms, undefined, { signal });
     }
     if (this.fault.error_mode === 'unavailable') throw new StorageInjectedError();
   }

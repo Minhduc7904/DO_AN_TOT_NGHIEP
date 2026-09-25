@@ -8,7 +8,9 @@ import {
   NotFoundException,
   Param,
   Put,
+  Res,
 } from '@nestjs/common';
+import type { ServerResponse } from 'node:http';
 import { z } from 'zod';
 
 import { StorageMockService } from '../../../application/storage-mock.service.js';
@@ -31,14 +33,22 @@ export class StorageController {
   async put(
     @Param('object_key') objectKey: string,
     @Body() body: unknown,
+    @Res({ passthrough: true }) response: ServerResponse,
   ): Promise<{ object_key: string; stored: true; stored_at: string }> {
     if (!objectKey.trim() || objectKey.length > 500) {
       throw new BadRequestException('object_key không hợp lệ');
     }
     const parsed = objectSchema.safeParse(body);
     if (!parsed.success) throw new BadRequestException('Storage payload không hợp lệ');
-    const stored = await this.storage.store(objectKey, parsed.data.content);
-    return { object_key: stored.object_key, stored: true, stored_at: stored.stored_at };
+    const abort = new AbortController();
+    const onClose = (): void => abort.abort();
+    response.once('close', onClose);
+    try {
+      const stored = await this.storage.store(objectKey, parsed.data.content, abort.signal);
+      return { object_key: stored.object_key, stored: true, stored_at: stored.stored_at };
+    } finally {
+      response.off('close', onClose);
+    }
   }
 
   @Get('api/v1/objects/:object_key')
