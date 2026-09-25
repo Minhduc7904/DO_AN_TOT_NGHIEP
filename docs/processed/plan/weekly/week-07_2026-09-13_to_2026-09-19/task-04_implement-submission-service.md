@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-04_implement-submission-service` |
 | Tuần | `week-07_2026-09-13_to_2026-09-19` |
-| Trạng thái | Đã giao |
+| Trạng thái | Hoàn thành |
 | Người phụ trách | Bách |
 | Collaborator | Đức review HTTP contract Submission↔Enrollment/Course và storage mock boundary |
 | Ưu tiên | Cao |
@@ -17,7 +17,7 @@
 
 ### Cần thực hiện
 
-Triển khai Submission service ở mức MVP: nộp bài cho một enrollment, liệt kê submission. Submission gọi Course và Enrollment qua HTTP để xác nhận course/enrollment hợp lệ trước khi chấp nhận bài nộp, và gọi một external storage mock qua HTTP/network (không phải import trong-process) để lưu file bài nộp. Storage mock phải có dependency identity ổn định và cho phép điều khiển latency/error từ test.
+Triển khai Submission service ở mức MVP: nộp bài cho một enrollment và truy vấn Submission theo ID. Submission gọi Course và Enrollment qua HTTP để xác nhận course/enrollment hợp lệ trước khi chấp nhận bài nộp, và gọi một external storage mock qua HTTP/network (không phải import trong-process) để lưu file bài nộp. Storage mock phải có dependency identity ổn định và cho phép điều khiển latency/error từ test.
 
 ### Không thực hiện
 
@@ -40,22 +40,25 @@ Triển khai Submission service ở mức MVP: nộp bài cho một enrollment, 
 
 ## Definition of Done
 
-- [ ] Endpoint nộp bài và liệt kê submission đúng response/error contract canonical, validation và quyền được kiểm tra.
-- [ ] Submission gọi Course và Enrollment qua HTTP để xác nhận hợp lệ trước khi chấp nhận bài nộp; course/enrollment không hợp lệ trả lỗi rõ ràng theo error envelope canonical.
-- [ ] Storage mock chạy như dependency qua network, có dependency identity ổn định, điều khiển được latency/error từ test, và tạo outbound/dependency span khi Submission gọi tới.
-- [ ] Submission là owner duy nhất của schema/data (nếu có persistence riêng); không cross-service database hoặc source import.
-- [ ] Unit và integration tests pass; build, lint, health và CI pass.
+- [x] Endpoint nộp bài và `GET /api/v1/submissions/{submission_id}` đúng response/error contract canonical, validation và quyền được kiểm tra.
+- [x] Submission gọi Course và Enrollment qua HTTP để xác nhận hợp lệ trước khi chấp nhận bài nộp; course/enrollment không hợp lệ trả lỗi rõ ràng theo error envelope canonical.
+- [x] Storage mock chạy như dependency qua network, có dependency identity ổn định, điều khiển được latency/error từ test, và tạo outbound/dependency span khi Submission gọi tới.
+- [x] Submission là owner duy nhất của schema/data (nếu có persistence riêng); không cross-service database hoặc source import.
+- [x] Unit và integration tests pass; build, lint, health và CI pass.
 
 ## Liên kết hồ sơ thực hiện
 
-- Input workspace: Chưa tạo — Bách tạo khi nhận task.
-- Output workspace: Chưa tạo — Bách tạo khi nhận task.
-- Pull request: Chưa tạo.
-- Kết quả review: Chưa review.
+- Input workspace: [task-input.md](../../../../../workspace/bach/week-07_2026-09-13_to_2026-09-19/task-04_implement-submission-service/input/task-input.md).
+- Output workspace: [task-output.md](../../../../../workspace/bach/week-07_2026-09-13_to_2026-09-19/task-04_implement-submission-service/output/task-output.md).
+- Pull request: [#28](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/28).
+- Kết quả review: Ngoại lệ workflow — không có GitHub `APPROVED`; Bách xác nhận trực tiếp ngày 24/09/2026 cho finalization sau vòng re-review kỹ thuật theo ủy quyền Đức.
 
 > URL/số PR và `Chờ review` phải được commit/push vào PR head trước review. Thành viên còn lại phải gửi `APPROVED` hợp lệ trên GitHub; sau đó người phụ trách finalization metadata, ghi `Hoàn thành` trên chính branch/PR và tự merge task của mình. Card chỉ canonically hoàn thành khi commit đó vào nhánh canonical; xem [vòng đời task canonical](../../../rules/git-and-pull-request-rules.md#vòng-đời-task-canonical).
 
 ## Cập nhật tiến độ
 
 - Cập nhật gần nhất: 21/09/2026 — task được giao cho Bách theo yêu cầu chia task tuần 7 (Đức làm trước với Enrollment, Bách làm sau với Submission).
-- Ghi chú/tồn đọng: Bách cần tự tạo hồ sơ trong `workspace/bach/`; task chỉ bắt đầu khi task-01/02 (Enrollment) đã merge vào `main`.
+- Cập nhật gần nhất: 24/09/2026 — Bách đã tạo nhánh và hồ sơ input sau khi PR #25, #26 và #27 merge vào `main`.
+- Cập nhật gần nhất: 24/09/2026 — Bách xác nhận giữ HTTP contract v1; Task 4 chỉ triển khai `GET /api/v1/submissions/{submission_id}`, không thêm endpoint danh sách, và chuyển sang thực hiện.
+- Cập nhật gần nhất: 24/09/2026 — Submission, `submission_db`, Storage Mock, unit/contract/PostgreSQL/telemetry tests và production Docker images đều đạt; substantive commit `587198a` đã push, mở PR [#28](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/28) và chuyển `Chờ review`.
+- Cập nhật gần nhất: 24/09/2026 — Bách xác nhận ngoại lệ finalization khi chưa có GitHub `APPROVED`; vòng re-review kỹ thuật sau commit `1c699f7` không còn feedback blocking.
