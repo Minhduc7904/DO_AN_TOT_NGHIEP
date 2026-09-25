@@ -6,12 +6,12 @@
 | --- | --- |
 | Mã task | `task-05_add-submission-contract-and-storage-tests` |
 | Người phụ trách | Bách |
-| Trạng thái | Đang thực hiện |
+| Trạng thái | Chờ review |
 | Bắt đầu thực tế | 25/09/2026 (UTC+7) |
 | Hoàn thành thực tế | Chưa hoàn thành workflow |
 | Tổng thời lượng | Chưa chốt |
-| Pull request | Chưa tạo |
-| Người review | Chưa review |
+| Pull request | [#29](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/29) |
+| Người review | Đức — chờ review trên GitHub |
 | Kết quả review | Chưa review |
 
 ## Báo cáo công việc đã làm
@@ -27,7 +27,7 @@
 | --- | --- | --- |
 | Suite contract, Storage Mock fault và topology | Code | [contract-storage-integration.mjs](../../../../../lms/services/submission/test/contract-storage-integration.mjs) |
 | Quality gate chạy suite | Cấu hình | [package.json](../../../../../lms/package.json) |
-| Pull request | GitHub | Chưa tạo |
+| Pull request | GitHub | [#29](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/29) |
 
 ## Đối chiếu Definition of Done
 
@@ -38,14 +38,14 @@
 | Span/metric Submission HTTP và ba dependency có identity/status/duration/error | Đạt tại local | Assertion parent span, `dependency_identity`, HTTP/server và dependency metrics; histogram duration có dữ liệu, error counter phân biệt `unavailable`/`timeout` |
 | Topology trace khớp Submission→Course/Enrollment/storage | Đạt tại local | Suite so sánh ba CLIENT span với cùng SERVER parent span và trace ID |
 | Không đưa secret, JWT, PII, ground truth, label cardinality cao vào telemetry | Đạt trong phạm vi suite | Assertion kiểm tra metric/trace attributes không chứa content, principal/course ID, `root_cause`, `fault_id`, JWT hoặc trace ID làm label; chưa thay thế kiểm tra production |
-| Sản phẩm được push và truy cập qua PR | Chưa đạt | Chưa commit/push hoặc tạo PR |
-| URL PR và `Chờ review` nằm trên PR head trước review | Chưa đạt | Chưa tạo PR; task vẫn `Đang thực hiện` |
+| Sản phẩm được push và truy cập qua PR | Đạt | Commit `2934a50` đã push trên nhánh task; [#29](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/29) |
+| URL PR và `Chờ review` nằm trên PR head trước review | Đạt sau commit metadata này | Card, overview và hồ sơ ghi PR #29; commit transition được push lên PR head trước review |
 | GitHub `APPROVED` và completion metadata trước merge | Chưa đạt | Chưa review/finalization |
 
 ## Thay đổi, tồn đọng và bước tiếp theo
 
 - Thay đổi so với input: Không thay đổi phạm vi. Dùng Course/Enrollment HTTP stub và Storage Mock process thật để test contract; không chạy PostgreSQL trong suite mới.
-- Việc chưa hoàn thành hoặc trở ngại: Cần commit/push, PR, review và finalization theo quy trình. Runtime PowerShell để đồng bộ JSON/timeline hiện thiếu; theo chỉ thị trực tiếp của Bách, bước timeline được để lại.
-- Bước tiếp theo: Đưa thay đổi lên nhánh task khi Bách yêu cầu Git write, mở PR, ghi URL và chuyển `Chờ review` trên PR head trước khi Đức review.
+- Việc chưa hoàn thành hoặc trở ngại: Chờ Đức review và GitHub `APPROVED` hợp lệ trước finalization. Runtime PowerShell để đồng bộ JSON/timeline hiện thiếu; theo chỉ thị trực tiếp của Bách, bước timeline được để lại.
+- Bước tiếp theo: Đức review PR #29 sau khi commit `Chờ review` đã xuất hiện trên remote PR head; Bách xử lý feedback nếu có rồi finalization trước merge.
 
 > `Hoàn thành thực tế` chỉ điền sau khi đủ bằng chứng DoD và finalization hợp lệ; không ghi merge time.

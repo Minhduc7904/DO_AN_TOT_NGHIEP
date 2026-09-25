@@ -8,11 +8,11 @@
 | Tên task | Bổ sung contract/integration test cho Submission và storage dependency |
 | Người phụ trách | Bách |
 | Tuần thực hiện | `week-07_2026-09-13_to_2026-09-19` |
-| Trạng thái | Đang thực hiện |
+| Trạng thái | Chờ review |
 | Ngày tạo | 25/09/2026 |
 | Thời gian dự kiến | Bắt đầu 25/09/2026; hạn canonical 19/09/2026 đã qua và chưa tự thay đổi kế hoạch |
 | Nhánh thực hiện | `test/week-07/task-05-add-submission-contract-and-storage-tests` |
-| Pull request dự kiến | Sẽ tạo từ nhánh task vào `main` sau khi có bằng chứng DoD |
+| Pull request dự kiến | [#29](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/29) vào `main` |
 
 ## Mục tiêu và phạm vi
 
@@ -45,6 +45,6 @@ Không triển khai business logic Submission mới ngoài thay đổi tối thi
 - [x] Span/metric cho Submission HTTP, `submission→course`, `submission→enrollment` và `submission→storage` có dependency identity canonical cùng status/duration/error cần thiết.
 - [x] Topology sinh ra từ trace khớp dependency graph Submission→Course/Enrollment/storage và có assertion kiểm tra.
 - [x] Telemetry không chứa secret, JWT, PII, ground-truth label hoặc label cardinality cao bị cấm.
-- [ ] Sản phẩm đã được lưu/đẩy lên vị trí dự kiến và có thể truy cập.
-- [ ] URL/số PR và trạng thái `Chờ review` đã được commit/push vào PR head trước khi reviewer bắt đầu review.
+- [x] Sản phẩm đã được lưu/đẩy lên vị trí dự kiến và có thể truy cập.
+- [x] URL/số PR và trạng thái `Chờ review` đã được commit/push vào PR head trước khi reviewer bắt đầu review.
 - [ ] Pull request từ nhánh task có mô tả đúng quy tắc, có verdict `APPROVED` hợp lệ từ Đức trên GitHub và completion metadata được commit/push vào chính PR trước khi Bách merge.

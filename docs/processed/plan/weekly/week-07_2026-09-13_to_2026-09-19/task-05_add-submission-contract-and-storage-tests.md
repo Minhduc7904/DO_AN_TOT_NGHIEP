@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-05_add-submission-contract-and-storage-tests` |
 | Tuần | `week-07_2026-09-13_to_2026-09-19` |
-| Trạng thái | Đang thực hiện |
+| Trạng thái | Chờ review |
 | Người phụ trách | Bách |
 | Collaborator | Đức review dependency identity và topology sinh từ trace |
 | Ưu tiên | Cao |
@@ -50,8 +50,8 @@ Bổ sung ít nhất một HTTP contract test cho Submission↔Course và Submis
 
 - Input workspace: [task-input.md](../../../../../workspace/bach/week-07_2026-09-13_to_2026-09-19/task-05_add-submission-contract-and-storage-tests/input/task-input.md).
 - Output workspace: [task-output.md](../../../../../workspace/bach/week-07_2026-09-13_to_2026-09-19/task-05_add-submission-contract-and-storage-tests/output/task-output.md).
-- Pull request: Chưa tạo.
-- Kết quả review: Chưa review.
+- Pull request: [#29](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/29).
+- Kết quả review: Chưa review; chờ Đức đánh giá trên GitHub.
 
 > URL/số PR và `Chờ review` phải được commit/push vào PR head trước review. Thành viên còn lại phải gửi `APPROVED` hợp lệ trên GitHub; sau đó người phụ trách finalization metadata, ghi `Hoàn thành` trên chính branch/PR và tự merge task của mình. Card chỉ canonically hoàn thành khi commit đó vào nhánh canonical; xem [vòng đời task canonical](../../../rules/git-and-pull-request-rules.md#vòng-đời-task-canonical).
 
@@ -60,4 +60,5 @@ Bổ sung ít nhất một HTTP contract test cho Submission↔Course và Submis
 - Cập nhật gần nhất: 21/09/2026 — task được giao cho Bách theo yêu cầu chia task tuần 7; thực hiện sau task-04.
 - Cập nhật gần nhất: 25/09/2026 — Bách khởi tạo hồ sơ workspace và nhánh `test/week-07/task-05-add-submission-contract-and-storage-tests` từ `main` sau khi PR #28 của task-04 đã merge.
 - Cập nhật gần nhất: 25/09/2026 — contract/integration test cho Course, Enrollment và Storage Mock, cùng assertion topology/metric đã pass trong `pnpm run ci:verify`; bằng chứng nằm ở output workspace.
-- Ghi chú/tồn đọng: Hạn canonical 19/09/2026 đã qua; chưa có PR hoặc review. Đức cần review dependency identity và topology sinh từ trace khi PR sẵn sàng.
+- Cập nhật gần nhất: 25/09/2026 — mở PR [#29](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/29), ghi URL vào hồ sơ và chuyển `Chờ review` trên nhánh Task 5; transition này phải có trên remote PR head trước khi Đức bắt đầu review.
+- Ghi chú/tồn đọng: Hạn canonical 19/09/2026 đã qua; chờ Đức review dependency identity, topology từ trace và storage fault semantics.
