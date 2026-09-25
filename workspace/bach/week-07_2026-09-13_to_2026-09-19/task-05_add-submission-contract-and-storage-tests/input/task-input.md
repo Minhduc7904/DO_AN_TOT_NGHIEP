@@ -34,7 +34,7 @@ Không triển khai business logic Submission mới ngoài thay đổi tối thi
 
 ## Đầu vào và phụ thuộc
 
-- Tài liệu, dữ liệu hoặc task cần có trước: Task 4 đã merge vào `main` qua PR #28; `docs/processed/architecture/http-and-event-contracts-v1.md`; `docs/processed/architecture/data-ownership-and-fault-matrix-v1.md`; `docs/processed/architecture/telemetry-and-ground-truth-schema-v1.md`; policy lỗi/timeout Week 6.
+- Tài liệu, dữ liệu hoặc task cần có trước: Task 4 đã merge vào `main` qua PR #28; `docs/processed/architecture/http-and-event-contracts-v1.md`; `docs/processed/architecture/data-ownership-and-fault-matrix-v1.md`; `docs/processed/architecture/telemetry-and-ground-truth-schema-v0.md`; policy lỗi/timeout Week 6.
 - Người cần phối hợp: Đức review dependency identity, RED metrics và topology sinh từ trace.
 - Rủi ro hoặc giả định: Storage failure behavior phải nhất quán với error/timeout policy chung, không che lỗi thật của Course hoặc Enrollment, và telemetry không tiết lộ secret, JWT, PII hay ground-truth label.
 

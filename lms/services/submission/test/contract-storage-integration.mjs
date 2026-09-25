@@ -99,9 +99,25 @@ try {
     response.setHeader('content-type', 'application/json');
     if (url.pathname.startsWith('/api/v1/courses/')) {
       response.statusCode = courseExists ? 200 : 404;
-      response.end(JSON.stringify(courseExists ? { id: 'course-001' } : { code: 'NOT_FOUND' }));
+      response.end(
+        JSON.stringify(
+          courseExists
+            ? {
+                id: 'course-001',
+                title: 'Distributed Systems Basics',
+                created_at: '2026-08-27T10:00:00Z',
+              }
+            : { code: 'NOT_FOUND' },
+        ),
+      );
     } else if (url.pathname === '/api/v1/enrollments/check') {
-      response.end(JSON.stringify({ enrolled }));
+      response.end(
+        JSON.stringify({
+          principal_id: url.searchParams.get('principal_id'),
+          course_id: url.searchParams.get('course_id'),
+          enrolled,
+        }),
+      );
     } else {
       response.statusCode = 404;
       response.end(JSON.stringify({ code: 'NOT_FOUND' }));
@@ -222,7 +238,22 @@ try {
   const timeout = await submit(submissionUrl);
   assert.equal(timeout.status, 504);
   assert.equal(timeout.body.code, 'DEPENDENCY_TIMEOUT');
+  const abortedObjectKey = 'submissions/aborted-storage-put';
+  const abort = new AbortController();
+  const abortedPut = fetch(`${storageUrl}/api/v1/objects/${encodeURIComponent(abortedObjectKey)}`, {
+    method: 'PUT',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ content: 'answer-secret' }),
+    signal: abort.signal,
+  });
+  setTimeout(() => abort.abort(), 200);
+  await assert.rejects(abortedPut, { name: 'AbortError' });
+  await new Promise((resolve) => setTimeout(resolve, 650));
   assert.equal(rows.size, 2);
+  assert.equal(
+    (await fetch(`${storageUrl}/api/v1/objects/${encodeURIComponent(abortedObjectKey)}`)).status,
+    404,
+  );
   assert.equal((await fetch(`${storageUrl}/internal/v1/fault`, { method: 'DELETE' })).status, 200);
   assert.equal((await submit(submissionUrl)).status, 201);
   assert.equal(rows.size, 3);
