@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-06_verify-enroll-to-submit-workflow` |
 | Tuần | `week-07_2026-09-13_to_2026-09-19` |
-| Trạng thái | Đang thực hiện |
+| Trạng thái | Chờ review |
 | Người phụ trách | Bách |
 | Collaborator | Đức chạy độc lập, review trace/metric và contract assertions |
 | Ưu tiên | Trung bình |
@@ -49,8 +49,8 @@ Ghép Auth/Gateway/Course/Enrollment/Submission/storage mock vào Compose và CI
 ## Liên kết hồ sơ thực hiện
 
 - Input workspace: [task-input.md](../../../../../workspace/bach/week-07_2026-09-13_to_2026-09-19/task-06_verify-enroll-to-submit-workflow/input/task-input.md).
-- Output workspace: Chưa tạo — Bách tạo khi nhận task.
-- Pull request: Chưa tạo.
+- Output workspace: [task-output.md](../../../../../workspace/bach/week-07_2026-09-13_to_2026-09-19/task-06_verify-enroll-to-submit-workflow/output/task-output.md).
+- Pull request: [#30](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/30).
 - Kết quả review: Chưa review.
 
 > URL/số PR và `Chờ review` phải được commit/push vào PR head trước review. Thành viên còn lại phải gửi `APPROVED` hợp lệ trên GitHub; sau đó người phụ trách finalization metadata, ghi `Hoàn thành` trên chính branch/PR và tự merge task của mình. Card chỉ canonically hoàn thành khi commit đó vào nhánh canonical; xem [vòng đời task canonical](../../../rules/git-and-pull-request-rules.md#vòng-đời-task-canonical).
@@ -59,4 +59,5 @@ Ghép Auth/Gateway/Course/Enrollment/Submission/storage mock vào Compose và CI
 
 - Cập nhật gần nhất: 21/09/2026 — task được giao cho Bách theo yêu cầu chia task tuần 7; thực hiện cuối chuỗi tuần 7, sau khi cả Enrollment và Submission đã merge.
 - Cập nhật gần nhất: 26/09/2026 — Bách yêu cầu bắt đầu lại task-06 sau khi trì hoãn Week 8; đã tạo nhánh riêng và hồ sơ input. Chưa thực hiện thay đổi substantive, test E2E hoặc tạo PR.
-- Ghi chú/tồn đọng: task-01 đến task-05 đã merge vào `main`; task-06 có thể bắt đầu khi Bách sẵn sàng thực hiện phần E2E.
+- Cập nhật gần nhất: 26/09/2026 — đã bổ sung Gateway route cho Submission, Compose/CI và E2E PostgreSQL; `pnpm run ci:verify`, `pnpm run test:w3:postgres` cùng Compose smoke đạt. PR [#30](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/30) đã được tạo và task chuyển `Chờ review`.
+- Ghi chú/tồn đọng: Chờ Đức review trace/metric, contract assertions, Gateway route và Compose topology trên PR #30; chưa có GitHub `APPROVED`.

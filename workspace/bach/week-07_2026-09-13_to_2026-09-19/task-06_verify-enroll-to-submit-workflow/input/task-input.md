@@ -12,7 +12,7 @@
 | Ngày tạo | 26/09/2026 |
 | Thời gian dự kiến | Bắt đầu thiết lập 26/09/2026; hạn canonical 19/09/2026 đã qua và chưa tự thay đổi kế hoạch |
 | Nhánh thực hiện | `test/week-07/task-06-verify-enroll-to-submit-workflow` |
-| Pull request dự kiến | Tạo từ nhánh task vào `main` khi đã có bằng chứng DoD |
+| Pull request dự kiến | [#30](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/30) vào `main` |
 
 ## Mục tiêu và phạm vi
 
