@@ -6,13 +6,13 @@
 | --- | --- |
 | Mã task | `task-06_verify-enroll-to-submit-workflow` |
 | Người phụ trách | Bách |
-| Trạng thái | Chờ review |
+| Trạng thái | Hoàn thành |
 | Bắt đầu thực tế | 26/09/2026, bắt đầu từ commit khởi tạo `0174296` |
-| Hoàn thành thực tế | Chưa ghi — chờ review GitHub và finalization theo quy trình |
-| Tổng thời lượng | Chưa chốt — chỉ chốt khi đủ approval và finalization |
+| Hoàn thành thực tế | 26/09/2026, 21:00 ICT — finalization trên PR head |
+| Tổng thời lượng | 1 giờ 28 phút |
 | Pull request | [#30](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/30) |
-| Người review | Đức |
-| Kết quả review | Chưa review |
+| Người review | Review kỹ thuật ngoài GitHub do Codex thực hiện theo yêu cầu của Bách; Đức ủy quyền Bách giao review |
+| Kết quả review | APPROVED về kỹ thuật ngoài GitHub; không có GitHub `APPROVED` |
 
 ## Báo cáo công việc đã làm
 
@@ -33,18 +33,18 @@
 
 | Điều kiện từ input | Kết quả | Bằng chứng |
 | --- | --- | --- |
-| Compose khởi động toàn bộ service và persistence riêng | Đạt tại local | `docker compose ... up --build -d --wait` báo toàn bộ service healthy; Compose tạo `enrollment_db` và `submission_db` riêng. |
-| E2E login, enroll và nộp bài qua Gateway; kiểm tra role | Đạt tại local | `pnpm run test:w3:postgres` pass 5/5; Compose smoke nộp và đọc lại Submission qua Gateway đạt. |
-| Enrollment→Course và Submission→Storage failure | Đạt tại local | E2E PostgreSQL kiểm tra `DEPENDENCY_UNAVAILABLE` cho cả hai nhánh. |
-| W3C trace và dependency telemetry | Đạt tại local | E2E assertion kiểm tra `enrollment-postgres`, `enrollment-course`, `submission-course`, `submission-enrollment`, `submission-storage`; `pnpm run ci:verify` pass. |
-| CI và chạy độc lập của Đức | Chờ review | `pnpm run ci:verify` pass tại local; Đức cần chạy/review độc lập trên PR #30. |
-| URL PR và `Chờ review` nằm trên PR head trước review | Đang ghi nhận | Commit metadata này sẽ được push lên PR #30 trước khi yêu cầu Đức review. |
-| GitHub `APPROVED` và completion metadata trước merge | Chưa đạt | Chờ Đức review và gửi verdict GitHub hợp lệ; chưa finalization hoặc merge. |
+| Compose khởi động toàn bộ service và persistence riêng | Đạt | CI `Fresh Compose W1–W7 smoke` đạt; review độc lập chạy Compose với project/volume mới, toàn bộ service healthy và tạo `enrollment_db`, `submission_db`. |
+| E2E login, enroll và nộp bài qua Gateway; kiểm tra role | Đạt | `pnpm run test:w3:postgres` pass 5/5; smoke từ stack sạch login, enroll, submit và đọc lại Submission qua Gateway đạt. |
+| Enrollment→Course và Submission→Storage failure | Đạt | E2E PostgreSQL kiểm tra `DEPENDENCY_UNAVAILABLE` cho cả hai nhánh; review độc lập tái hiện Storage failure `503 DEPENDENCY_UNAVAILABLE`. |
+| W3C trace và dependency telemetry | Đạt | E2E assertion kiểm tra `enrollment-postgres`, `enrollment-course`, `submission-course`, `submission-enrollment`, `submission-storage`; CI quality gate đạt. |
+| CI và chạy độc lập của Đức | Đạt theo ngoại lệ | Bốn check GitHub của PR #30 đều đạt; Đức đang bận và ủy quyền Bách giao review kỹ thuật ngoài GitHub. Không ghi nhận chạy độc lập trực tiếp của Đức. |
+| URL PR và `Chờ review` nằm trên PR head trước review | Đạt | PR #30 head `471d3a2` chứa URL PR và trạng thái `Chờ review`; reviewer đã đối chiếu đúng head trước review. |
+| GitHub `APPROVED` và completion metadata trước merge | Đạt theo ngoại lệ | Bách, người phụ trách, chỉ thị finalization sau review kỹ thuật ngoài GitHub. GitHub không có review submission `APPROVED`; metadata finalization được commit vào PR head này trước merge. |
 
 ## Thay đổi, tồn đọng và bước tiếp theo
 
 - Thay đổi so với input: Không đổi phạm vi; thêm reset `submission_db` để E2E PostgreSQL tái lập.
-- Việc chưa hoàn thành hoặc trở ngại: Chưa có GitHub `APPROVED`; không đánh dấu task `Hoàn thành`.
-- Bước tiếp theo: Push metadata `Chờ review`, yêu cầu Đức review PR #30; sau `APPROVED` dùng `task-completion-recording` để finalization trước merge.
+- Ngoại lệ workflow: Đức đang bận và ủy quyền Bách giao review kỹ thuật ngoài GitHub. Bách, người phụ trách, xác nhận dùng review này làm bằng chứng thay thế và chỉ thị finalization ngày 26/09/2026. GitHub không có verdict `APPROVED`; branch protection vẫn có thể chặn merge.
+- Bước tiếp theo: Bách kiểm tra lại điều kiện branch protection rồi tự yêu cầu hoặc thực hiện merge PR #30.
 
-> `Hoàn thành thực tế` chỉ ghi sau GitHub `APPROVED`, finalization metadata trên PR và khi người phụ trách sẵn sàng merge; không ghi merge time.
+> `Hoàn thành thực tế` được ghi theo ngoại lệ do Bách xác nhận trực tiếp; không ghi merge time hoặc giả mạo verdict GitHub.
