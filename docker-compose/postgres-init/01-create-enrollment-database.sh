@@ -11,4 +11,12 @@ WHERE NOT EXISTS (
   WHERE datname = 'enrollment_db'
 )
 \gexec
+
+SELECT 'CREATE DATABASE submission_db'
+WHERE NOT EXISTS (
+  SELECT 1
+  FROM pg_database
+  WHERE datname = 'submission_db'
+)
+\gexec
 SQL
