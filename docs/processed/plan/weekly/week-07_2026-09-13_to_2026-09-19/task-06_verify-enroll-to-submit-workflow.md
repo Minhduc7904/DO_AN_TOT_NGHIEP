@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-06_verify-enroll-to-submit-workflow` |
 | Tuần | `week-07_2026-09-13_to_2026-09-19` |
-| Trạng thái | Đã giao |
+| Trạng thái | Đang thực hiện |
 | Người phụ trách | Bách |
 | Collaborator | Đức chạy độc lập, review trace/metric và contract assertions |
 | Ưu tiên | Trung bình |
@@ -48,7 +48,7 @@ Ghép Auth/Gateway/Course/Enrollment/Submission/storage mock vào Compose và CI
 
 ## Liên kết hồ sơ thực hiện
 
-- Input workspace: Chưa tạo — Bách tạo khi nhận task.
+- Input workspace: [task-input.md](../../../../../workspace/bach/week-07_2026-09-13_to_2026-09-19/task-06_verify-enroll-to-submit-workflow/input/task-input.md).
 - Output workspace: Chưa tạo — Bách tạo khi nhận task.
 - Pull request: Chưa tạo.
 - Kết quả review: Chưa review.
@@ -58,4 +58,5 @@ Ghép Auth/Gateway/Course/Enrollment/Submission/storage mock vào Compose và CI
 ## Cập nhật tiến độ
 
 - Cập nhật gần nhất: 21/09/2026 — task được giao cho Bách theo yêu cầu chia task tuần 7; thực hiện cuối chuỗi tuần 7, sau khi cả Enrollment và Submission đã merge.
-- Ghi chú/tồn đọng: Bách cần tự tạo hồ sơ trong `workspace/bach/`; chỉ bắt đầu khi task-01 đến task-05 đã merge vào `main`.
+- Cập nhật gần nhất: 26/09/2026 — Bách yêu cầu bắt đầu lại task-06 sau khi trì hoãn Week 8; đã tạo nhánh riêng và hồ sơ input. Chưa thực hiện thay đổi substantive, test E2E hoặc tạo PR.
+- Ghi chú/tồn đọng: task-01 đến task-05 đã merge vào `main`; task-06 có thể bắt đầu khi Bách sẵn sàng thực hiện phần E2E.

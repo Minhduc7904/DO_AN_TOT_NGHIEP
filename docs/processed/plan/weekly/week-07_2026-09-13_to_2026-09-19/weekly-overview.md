@@ -18,7 +18,7 @@
 | [task-03_verify-enrollment-workflow](task-03_verify-enrollment-workflow.md) | Kiểm chứng E2E login → enroll qua Gateway | Đức | Bách | Trung bình | Hoàn thành |
 | [task-04_implement-submission-service](task-04_implement-submission-service.md) | Triển khai Submission service MVP và storage mock điều khiển được | Bách | Đức | Cao | Hoàn thành |
 | [task-05_add-submission-contract-and-storage-tests](task-05_add-submission-contract-and-storage-tests.md) | Bổ sung contract/integration test cho Submission và storage dependency | Bách | Đức | Cao | Hoàn thành |
-| [task-06_verify-enroll-to-submit-workflow](task-06_verify-enroll-to-submit-workflow.md) | Kiểm chứng E2E login → enroll → nộp bài qua Gateway | Bách | Đức | Trung bình | Đã giao |
+| [task-06_verify-enroll-to-submit-workflow](task-06_verify-enroll-to-submit-workflow.md) | Kiểm chứng E2E login → enroll → nộp bài qua Gateway | Bách | Đức | Trung bình | Đang thực hiện |
 
 > Khi đọc tiến độ project-wide, chỉ coi hàng có trạng thái `Hoàn thành` trên nhánh canonical là hoàn thành; trạng thái đã finalization trên task branch chưa thay thế nguồn này.
 
