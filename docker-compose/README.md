@@ -1,6 +1,6 @@
 # Docker Compose baseline
 
-Thư mục này chứa manifest orchestration root cho LMS testbed. Baseline hiện tại build Auth và Course service từ `lms/`, đồng thời khởi động PostgreSQL, Redis và RabbitMQ bằng image đã pin.
+Thư mục này chứa manifest orchestration root cho LMS testbed. Baseline hiện tại build Gateway, Auth, Course, Enrollment, Submission và Storage Mock từ `lms/`, đồng thời khởi động PostgreSQL, Redis và RabbitMQ bằng image đã pin.
 
 ## Yêu cầu
 
@@ -36,7 +36,7 @@ docker compose --env-file docker-compose/.env -f docker-compose/compose.yaml up 
 docker compose --env-file docker-compose/.env -f docker-compose/compose.yaml ps
 ```
 
-Compose chỉ báo thành công sau khi Gateway, Auth, Course, PostgreSQL, Redis và RabbitMQ đều healthy. PostgreSQL tạo `auth_db` và `course_db` riêng; Auth và Course tự chạy migration/seed trước khi mở HTTP. Credential lấy từ `.env`, không đặt trực tiếp trong manifest Compose.
+Compose chỉ báo thành công sau khi Gateway, Auth, Course, Enrollment, Submission, Storage Mock, PostgreSQL, Redis và RabbitMQ đều healthy. PostgreSQL tạo `auth_db`, `course_db`, `enrollment_db` và `submission_db` riêng; các service có persistence tự chạy migration/seed trước khi mở HTTP. Credential lấy từ `.env`, không đặt trực tiếp trong manifest Compose.
 
 ## Kiểm tra
 

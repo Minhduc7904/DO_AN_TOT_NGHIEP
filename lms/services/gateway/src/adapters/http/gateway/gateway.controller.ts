@@ -88,6 +88,20 @@ export class GatewayController {
     this.send(response, result);
   }
 
+  @All(['submissions', 'submissions/*path'])
+  async submissions(@Req() request: HttpRequest, @Res() response: HttpResponse): Promise<void> {
+    const principal = this.requireStudentOrInstructorPrincipal(request);
+    const result = await this.forward({
+      body: request.body,
+      headers: request.headers,
+      method: request.method,
+      path: request.originalUrl,
+      principal,
+      targetBaseUrl: this.config.getOrThrow<string>('GATEWAY_SUBMISSION_BASE_URL'),
+    });
+    this.send(response, result);
+  }
+
   private forwardPublic(request: HttpRequest): Promise<GatewayResponse> {
     return this.forward({
       body: request.body,
