@@ -19,11 +19,17 @@ Schema thực thi và fixture canonical được export bởi package `@aiops-lm
 
 - `event_id`: UUID ổn định cho mỗi event;
 - `event_name`: cố định là `grade.completed`;
-- `schema_version`: cố định là `1`;
+- `schema_version`: số nguyên cố định `1`;
 - `occurred_at`: UTC ISO-8601;
 - `producer`: định danh phiên bản Grading;
-- `payload`: `grade_id`, `submission_id`, `score`, `graded_at`;
-- `trace_context`: W3C `traceparent` và `tracestate` nếu có.
+- `payload`: `grade_id`, `submission_id`, `principal_id`, `course_id`, `score`, `completed_at`;
+- `correlation`: W3C `traceparent` và `tracestate` (có thể là `null`) để debug/fallback.
+
+RabbitMQ headers/properties là transport carrier canonical: publisher đưa `traceparent` và
+`tracestate` (khi có) vào message headers, với cùng giá trị trong `correlation`. Hàm
+`createGradeCompletedRabbitMqHeaders` tạo header mapping này từ event đã được validate.
+Việc extract context và tạo publish/consume span thuộc task-02 khi consumer RabbitMQ thật
+được triển khai.
 
 Không dùng `grade-completed` làm tên event. Dấu gạch nối chỉ được dùng ở tên thư mục contract.
 

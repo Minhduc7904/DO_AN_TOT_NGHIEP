@@ -3,7 +3,7 @@ import { gradeCompletedEventSchema, type GradeCompletedEvent } from '@aiops-lms/
 export interface NotificationPreview {
   event_id: string;
   event_name: 'grade.completed';
-  schema_version: '1';
+  schema_version: 1;
   status: 'accepted';
 }
 
