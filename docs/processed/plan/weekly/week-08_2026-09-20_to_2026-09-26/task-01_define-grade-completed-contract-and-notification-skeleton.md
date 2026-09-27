@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-01_define-grade-completed-contract-and-notification-skeleton` |
 | Tuần | `week-08_2026-09-20_to_2026-09-26` |
-| Trạng thái | Đã giao |
+| Trạng thái | Đang thực hiện |
 | Người phụ trách | Bách |
 | Collaborator | Đức rà soát khả năng publisher của Grading |
 | Ưu tiên | Cao |
@@ -56,5 +56,5 @@
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 27/09/2026 — tạo card và giao cho Bách.
+- Cập nhật gần nhất: 27/09/2026 — Bách bắt đầu triển khai trên nhánh task.
 - Ghi chú/tồn đọng: Khởi động trước các task của Đức; publisher thật là dependency của consumer hoàn chỉnh.
