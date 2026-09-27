@@ -8,6 +8,7 @@ services:
       GATEWAY_AUTH_BASE_URL: http://auth:3001
       GATEWAY_COURSE_BASE_URL: http://course:3002
       GATEWAY_ENROLLMENT_BASE_URL: http://enrollment:3003
+      GATEWAY_SUBMISSION_BASE_URL: http://submission:3004
       GATEWAY_JWT_SECRET: "${AUTH_JWT_SECRET:-local-development-only-jwt-secret-change-before-production}"
       GATEWAY_UPSTREAM_TIMEOUT_MS: "${GATEWAY_UPSTREAM_TIMEOUT_MS:-5000}"
       OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: "${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT:-http://127.0.0.1:4318/v1/traces}"
@@ -23,6 +24,8 @@ services:
       course:
         condition: service_healthy
       enrollment:
+        condition: service_healthy
+      submission:
         condition: service_healthy
     healthcheck:
       test:
@@ -144,6 +147,80 @@ services:
         - -e
         - >-
           fetch('http://127.0.0.1:3003/health')
+          .then((response) => { if (!response.ok) process.exit(1); })
+          .catch(() => process.exit(1));
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 5s
+    networks:
+      - lms-network
+
+  submission:
+    build:
+      context: ../lms
+      dockerfile: services/submission/Dockerfile
+    environment:
+      NODE_ENV: production
+      SUBMISSION_DATABASE_URL: "postgresql://${POSTGRES_USER:?POSTGRES_USER is required}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@postgres:5432/submission_db"
+      SUBMISSION_COURSE_BASE_URL: http://course:3002
+      SUBMISSION_ENROLLMENT_BASE_URL: http://enrollment:3003
+      SUBMISSION_STORAGE_BASE_URL: http://submission-storage-mock:3005
+      SUBMISSION_DEPENDENCY_TIMEOUT_MS: "${SUBMISSION_DEPENDENCY_TIMEOUT_MS:-3000}"
+      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: "${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT:-http://127.0.0.1:4318/v1/traces}"
+      OTEL_SDK_DISABLED: "${OTEL_SDK_DISABLED:-false}"
+      OTEL_SERVICE_INSTANCE_ID: "${SUBMISSION_SERVICE_INSTANCE_ID:-submission-compose-1}"
+      OTEL_SERVICE_VERSION: "${SUBMISSION_SERVICE_VERSION:-0.1.0}"
+      PORT: 3004
+    ports:
+      - "${SUBMISSION_PORT:-3004}:3004"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      course:
+        condition: service_healthy
+      enrollment:
+        condition: service_healthy
+      submission-storage-mock:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - >-
+          fetch('http://127.0.0.1:3004/health')
+          .then((response) => { if (!response.ok) process.exit(1); })
+          .catch(() => process.exit(1));
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 5s
+    networks:
+      - lms-network
+
+  submission-storage-mock:
+    build:
+      context: ../lms
+      dockerfile: services/submission-storage-mock/Dockerfile
+    environment:
+      NODE_ENV: production
+      STORAGE_MOCK_DEFAULT_LATENCY_MS: "${STORAGE_MOCK_DEFAULT_LATENCY_MS:-0}"
+      STORAGE_MOCK_DEFAULT_ERROR_MODE: "${STORAGE_MOCK_DEFAULT_ERROR_MODE:-none}"
+      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: "${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT:-http://127.0.0.1:4318/v1/traces}"
+      OTEL_SDK_DISABLED: "${OTEL_SDK_DISABLED:-false}"
+      OTEL_SERVICE_INSTANCE_ID: "${STORAGE_MOCK_SERVICE_INSTANCE_ID:-submission-storage-compose-1}"
+      OTEL_SERVICE_VERSION: "${STORAGE_MOCK_SERVICE_VERSION:-0.1.0}"
+      PORT: 3005
+    ports:
+      - "${STORAGE_MOCK_PORT:-3005}:3005"
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - >-
+          fetch('http://127.0.0.1:3005/health')
           .then((response) => { if (!response.ok) process.exit(1); })
           .catch(() => process.exit(1));
       interval: 5s

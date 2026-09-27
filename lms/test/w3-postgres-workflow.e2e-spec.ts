@@ -23,6 +23,10 @@ import { AppModule as EnrollmentModule } from '../services/enrollment/src/app.mo
 import { HttpExceptionFilter as GatewayFilter } from '../services/gateway/src/adapters/http/http-exception.filter.js';
 import { AppModule as GatewayModule } from '../services/gateway/src/app.module.js';
 import { ConfigService } from '../services/gateway/node_modules/@nestjs/config/dist/config.service.js';
+import { HttpExceptionFilter as StorageFilter } from '../services/submission-storage-mock/src/adapters/http/http-exception.filter.js';
+import { AppModule as StorageModule } from '../services/submission-storage-mock/src/app.module.js';
+import { HttpExceptionFilter as SubmissionFilter } from '../services/submission/src/adapters/http/http-exception.filter.js';
+import { AppModule as SubmissionModule } from '../services/submission/src/app.module.js';
 
 const JWT_SECRET = 'w3-postgres-workflow-test-secret-with-at-least-thirty-two-characters';
 const TRACE_ID = '55555555555555555555555555555555';
@@ -41,7 +45,7 @@ function address(app: TestApplication): string {
   return `http://127.0.0.1:${(app.getHttpServer().address() as AddressInfo).port}`;
 }
 
-describe('W1–W3 Gateway → Auth/Course/Enrollment → PostgreSQL', () => {
+describe('W1–W3 Gateway → Auth/Course/Enrollment/Submission → PostgreSQL', () => {
   const exporter = new InMemorySpanExporter();
   const telemetry = startTelemetry(
     {
@@ -57,6 +61,8 @@ describe('W1–W3 Gateway → Auth/Course/Enrollment → PostgreSQL', () => {
   let courseApp: TestApplication;
   let enrollmentApp: TestApplication;
   let gatewayApp: TestApplication;
+  let storageApp: TestApplication;
+  let submissionApp: TestApplication;
 
   async function createCourseApp(): Promise<TestApplication> {
     const values: Record<string, unknown> = {
@@ -98,12 +104,54 @@ describe('W1–W3 Gateway → Auth/Course/Enrollment → PostgreSQL', () => {
     return app;
   }
 
-  async function createGatewayApp(enrollmentUrl: string): Promise<TestApplication> {
+  async function createStorageApp(): Promise<TestApplication> {
+    const values: Record<string, unknown> = {
+      STORAGE_MOCK_DEFAULT_ERROR_MODE: 'none',
+      STORAGE_MOCK_DEFAULT_LATENCY_MS: 0,
+    };
+    const module = await Test.createTestingModule({ imports: [StorageModule] })
+      .overrideProvider(ConfigService)
+      .useValue({ getOrThrow: (key: string): unknown => values[key] })
+      .compile();
+    const app = module.createNestApplication() as TestApplication;
+    app.use(createHttpTelemetryMiddleware());
+    app.useGlobalFilters(new StorageFilter());
+    await app.listen(0, '127.0.0.1');
+    return app;
+  }
+
+  async function createSubmissionApp(
+    enrollmentUrl: string,
+    storageUrl: string,
+  ): Promise<TestApplication> {
+    const values: Record<string, unknown> = {
+      SUBMISSION_COURSE_BASE_URL: address(courseApp),
+      SUBMISSION_DATABASE_URL: process.env.SUBMISSION_DATABASE_URL,
+      SUBMISSION_DEPENDENCY_TIMEOUT_MS: 300,
+      SUBMISSION_ENROLLMENT_BASE_URL: enrollmentUrl,
+      SUBMISSION_STORAGE_BASE_URL: storageUrl,
+    };
+    const module = await Test.createTestingModule({ imports: [SubmissionModule] })
+      .overrideProvider(ConfigService)
+      .useValue({ getOrThrow: (key: string): unknown => values[key] })
+      .compile();
+    const app = module.createNestApplication() as TestApplication;
+    app.use(createHttpTelemetryMiddleware());
+    app.useGlobalFilters(new SubmissionFilter());
+    await app.listen(0, '127.0.0.1');
+    return app;
+  }
+
+  async function createGatewayApp(
+    enrollmentUrl: string,
+    submissionUrl = address(submissionApp),
+  ): Promise<TestApplication> {
     const values: Record<string, unknown> = {
       GATEWAY_AUTH_BASE_URL: address(authApp),
       GATEWAY_COURSE_BASE_URL: address(courseApp),
       GATEWAY_ENROLLMENT_BASE_URL: enrollmentUrl,
       GATEWAY_JWT_SECRET: JWT_SECRET,
+      GATEWAY_SUBMISSION_BASE_URL: submissionUrl,
       GATEWAY_UPSTREAM_TIMEOUT_MS: 1_000,
     };
     const module = await Test.createTestingModule({ imports: [GatewayModule] })
@@ -122,10 +170,11 @@ describe('W1–W3 Gateway → Auth/Course/Enrollment → PostgreSQL', () => {
       !process.env.W1_AUTH_DATABASE_URL ||
       !process.env.COURSE_DATABASE_URL ||
       !process.env.W2_REDIS_URL ||
-      !process.env.ENROLLMENT_DATABASE_URL
+      !process.env.ENROLLMENT_DATABASE_URL ||
+      !process.env.SUBMISSION_DATABASE_URL
     ) {
       throw new Error(
-        'W1_AUTH_DATABASE_URL, COURSE_DATABASE_URL, W2_REDIS_URL và ENROLLMENT_DATABASE_URL là bắt buộc',
+        'W1_AUTH_DATABASE_URL, COURSE_DATABASE_URL, W2_REDIS_URL, ENROLLMENT_DATABASE_URL và SUBMISSION_DATABASE_URL là bắt buộc',
       );
     }
     const authValues: Record<string, unknown> = {
@@ -144,11 +193,15 @@ describe('W1–W3 Gateway → Auth/Course/Enrollment → PostgreSQL', () => {
     await authApp.listen(0, '127.0.0.1');
     courseApp = await createCourseApp();
     enrollmentApp = await createEnrollmentApp();
+    storageApp = await createStorageApp();
+    submissionApp = await createSubmissionApp(address(enrollmentApp), address(storageApp));
     gatewayApp = await createGatewayApp(address(enrollmentApp));
   }, 30_000);
 
   afterAll(async () => {
     await gatewayApp?.close();
+    await submissionApp?.close();
+    await storageApp?.close();
     await enrollmentApp?.close();
     await courseApp?.close();
     await authApp?.close();
@@ -163,7 +216,7 @@ describe('W1–W3 Gateway → Auth/Course/Enrollment → PostgreSQL', () => {
     return response.body.access_token as string;
   }
 
-  it('logs in and enrolls into the seeded course, preserving trace context end to end', async () => {
+  it('logs in, enrolls and submits through Gateway while preserving trace context end to end', async () => {
     exporter.reset();
     const token = await login();
 
@@ -175,6 +228,22 @@ describe('W1–W3 Gateway → Auth/Course/Enrollment → PostgreSQL', () => {
       .expect(201);
     expect(created.body).toMatchObject({ course_id: 'course-001' });
     expect(created.body.principal_id).toEqual(expect.any(String));
+
+    const submission = await request(gatewayApp.getHttpServer())
+      .post('/api/v1/submissions')
+      .set('Authorization', `Bearer ${token}`)
+      .set('traceparent', TRACEPARENT)
+      .send({ content: 'e2e-answer', course_id: 'course-001' })
+      .expect(201);
+    expect(submission.body).toMatchObject({
+      course_id: 'course-001',
+      principal_id: created.body.principal_id,
+    });
+    await request(gatewayApp.getHttpServer())
+      .get(`/api/v1/submissions/${submission.body.id as string}`)
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200)
+      .expect(({ body }) => expect(body.id).toBe(submission.body.id));
 
     const spans = exporter
       .getFinishedSpans()
@@ -199,9 +268,39 @@ describe('W1–W3 Gateway → Auth/Course/Enrollment → PostgreSQL', () => {
     expect(
       spans.some((span) => span.kind === SpanKind.SERVER && span.name.includes('courses')),
     ).toBe(true);
+    for (const dependencyIdentity of [
+      'submission-course',
+      'submission-enrollment',
+      'submission-storage',
+    ]) {
+      expect(
+        spans.some(
+          (span) =>
+            span.kind === SpanKind.CLIENT &&
+            span.attributes.dependency_identity === dependencyIdentity,
+        ),
+      ).toBe(true);
+    }
     expect(JSON.stringify(spans.map((span) => span.attributes))).not.toMatch(
-      /example-password|root_cause|fault_id/iu,
+      /example-password|e2e-answer|root_cause|fault_id/iu,
     );
+
+    await request(storageApp.getHttpServer())
+      .put('/internal/v1/fault')
+      .send({ error_mode: 'unavailable', latency_ms: 0 })
+      .expect(200);
+    try {
+      await request(gatewayApp.getHttpServer())
+        .post('/api/v1/submissions')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ content: 'storage-failure', course_id: 'course-001' })
+        .expect(503)
+        .expect(({ body }) =>
+          expect(body).toMatchObject({ code: 'DEPENDENCY_UNAVAILABLE', details: null }),
+        );
+    } finally {
+      await request(storageApp.getHttpServer()).delete('/internal/v1/fault').expect(200);
+    }
   });
 
   it('rejects enrollment without a JWT or with a disallowed role', async () => {

@@ -87,8 +87,8 @@ jobs:
       - name: Validate Compose with committed example configuration
         run: docker compose --env-file docker-compose/.env.example -f docker-compose/compose.yaml config --quiet
 
-  w3-compose:
-    name: Fresh Compose W1–W3 smoke
+  w7-compose:
+    name: Fresh Compose W1–W7 smoke
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -96,12 +96,16 @@ jobs:
         uses: actions/checkout@v6
       - name: Start clean LMS stack
         run: docker compose --env-file docker-compose/.env.example -f docker-compose/compose.yaml up --build -d --wait
-      - name: Login, browse seeded course and enroll through Gateway
+      - name: Login, enroll and submit through Gateway
         run: |
           login="$(curl --fail --silent --show-error -H 'content-type: application/json' -d '{"email":"student@example.test","password":"example-password"}' http://127.0.0.1:3000/api/v1/auth/login)"
           token="$(printf '%s' "$login" | node -e 'let text="";process.stdin.on("data",chunk=>text+=chunk);process.stdin.on("end",()=>process.stdout.write(JSON.parse(text).access_token))')"
           curl --fail --silent --show-error -H "Authorization: Bearer $token" http://127.0.0.1:3000/api/v1/courses/course-001 | node -e 'let text="";process.stdin.on("data",chunk=>text+=chunk);process.stdin.on("end",()=>{if(JSON.parse(text).id!=="course-001")process.exit(1)})'
           curl --fail --silent --show-error -H "Authorization: Bearer $token" -H 'content-type: application/json' -d '{"course_id":"course-001"}' http://127.0.0.1:3000/api/v1/enrollments | node -e 'let text="";process.stdin.on("data",chunk=>text+=chunk);process.stdin.on("end",()=>{if(JSON.parse(text).course_id!=="course-001")process.exit(1)})'
+          submission="$(curl --fail --silent --show-error -H "Authorization: Bearer $token" -H 'content-type: application/json' -d '{"course_id":"course-001","content":"compose-e2e-answer"}' http://127.0.0.1:3000/api/v1/submissions)"
+          submission_id="$(printf '%s' "$submission" | node -e 'let text="";process.stdin.on("data",chunk=>text+=chunk);process.stdin.on("end",()=>process.stdout.write(JSON.parse(text).id))')"
+          test -n "$submission_id"
+          curl --fail --silent --show-error -H "Authorization: Bearer $token" "http://127.0.0.1:3000/api/v1/submissions/$submission_id" | node -e 'let text="";process.stdin.on("data",chunk=>text+=chunk);process.stdin.on("end",()=>{if(JSON.parse(text).id!==process.argv[1])process.exit(1)})' "$submission_id"
       - name: Show logs on failure
         if: failure()
         run: docker compose --env-file docker-compose/.env.example -f docker-compose/compose.yaml logs --no-color
