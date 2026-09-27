@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-01_define-grade-completed-contract-and-notification-skeleton` |
 | Tuần | `week-08_2026-09-20_to_2026-09-26` |
-| Trạng thái | Đang thực hiện |
+| Trạng thái | Chờ review |
 | Người phụ trách | Bách |
 | Collaborator | Đức rà soát khả năng publisher của Grading |
 | Ưu tiên | Cao |
@@ -51,10 +51,10 @@
 
 - Input workspace: [task-input.md](../../../../../workspace/bach/week-08_2026-09-20_to_2026-09-26/task-01_define-grade-completed-contract-and-notification-skeleton/input/task-input.md).
 - Output workspace: [task-output.md](../../../../../workspace/bach/week-08_2026-09-20_to_2026-09-26/task-01_define-grade-completed-contract-and-notification-skeleton/output/task-output.md) (mẫu, chưa có báo cáo thực tế).
-- Pull request: Chưa tạo.
-- Kết quả review: Chưa review.
+- Pull request: [#31](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/31).
+- Kết quả review: Chưa review; đang chờ Đức rà soát compatibility publisher của Grading.
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 27/09/2026 — Bách bắt đầu triển khai trên nhánh task.
-- Ghi chú/tồn đọng: Khởi động trước các task của Đức; publisher thật là dependency của consumer hoàn chỉnh.
+- Cập nhật gần nhất: 28/09/2026 — PR [#31](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/31) đã được tạo từ nhánh task và sẵn sàng để Đức review.
+- Ghi chú/tồn đọng: Chờ Đức xác nhận field publisher/consumer; publisher thật vẫn là dependency của consumer hoàn chỉnh ở task-02.

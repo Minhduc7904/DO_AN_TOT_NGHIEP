@@ -7,13 +7,13 @@
 | Tuần | `week-08_2026-09-20_to_2026-09-26` |
 | Nguồn plan canonical | [Plan v0.2 — Tuần 8](../../plan-v0.2-24-weeks.md#tuần-8--grading-notification-và-async-dependency) |
 | Mục tiêu tuần | Hoàn thiện workflow W5 `nộp bài → chấm điểm → thông báo` với Grading gọi Submission, event `grade.completed` version hóa, RabbitMQ và telemetry async có correlation. |
-| Trạng thái tuần | Chưa bắt đầu |
+| Trạng thái tuần | Đang thực hiện |
 
 ## Danh sách task
 
 | Mã task | Task | Người phụ trách | Collaborator | Ưu tiên | Trạng thái |
 | --- | --- | --- | --- | --- | --- |
-| [task-01_define-grade-completed-contract-and-notification-skeleton](task-01_define-grade-completed-contract-and-notification-skeleton.md) | Đặc tả `grade.completed` và dựng skeleton Notification | Bách | Đức rà soát khả năng publisher | Cao | Đang thực hiện |
+| [task-01_define-grade-completed-contract-and-notification-skeleton](task-01_define-grade-completed-contract-and-notification-skeleton.md) | Đặc tả `grade.completed` và dựng skeleton Notification | Bách | Đức rà soát khả năng publisher | Cao | Chờ review |
 | [task-02_implement-notification-consumer-and-async-telemetry](task-02_implement-notification-consumer-and-async-telemetry.md) | Triển khai consumer Notification, duplicate handling và async telemetry | Bách | Đức rà soát tương thích RabbitMQ/publisher | Cao | Đã giao |
 | [task-03_verify-grade-to-notification-workflow](task-03_verify-grade-to-notification-workflow.md) | Kiểm chứng W5 E2E, topology HTTP + queue và fault hook backlog | Bách | Đức hỗ trợ môi trường Grading/RabbitMQ | Cao | Đã giao |
 | [task-04_implement-grading-service](task-04_implement-grading-service.md) | Triển khai Grading, persistence riêng và call tới Submission | Đức | Bách rà soát contract/correlation field | Cao | Đã giao |
