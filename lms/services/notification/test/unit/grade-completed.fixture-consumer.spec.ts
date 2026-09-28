@@ -4,10 +4,17 @@ import {
   gradeCompletedV1Fixture,
 } from '@aiops-lms/contracts';
 
+import { validateEnvironment } from '../../src/config/env.schema.js';
 import { GradeCompletedFixtureConsumer } from '../../src/adapters/messaging/grade-completed.fixture-consumer.js';
 import { createRabbitMqGradeCompletedBinding } from '../../src/adapters/messaging/rabbitmq-grade-completed.binding.js';
 
 describe('Notification grade.completed skeleton', () => {
+  it('uses the local Compose RabbitMQ URL by default', () => {
+    expect(validateEnvironment({}).NOTIFICATION_RABBITMQ_URL).toBe(
+      'amqp://lms:lms-local-only@localhost:5672',
+    );
+  });
+
   it('accepts the published version 1 fixture without exposing payload fields', () => {
     const consumer = new GradeCompletedFixtureConsumer();
 
