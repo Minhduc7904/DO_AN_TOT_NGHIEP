@@ -14,7 +14,7 @@
 | Mã task | Task | Người phụ trách | Collaborator | Ưu tiên | Trạng thái |
 | --- | --- | --- | --- | --- | --- |
 | [task-01_define-grade-completed-contract-and-notification-skeleton](task-01_define-grade-completed-contract-and-notification-skeleton.md) | Đặc tả `grade.completed` và dựng skeleton Notification | Bách | Đức rà soát khả năng publisher | Cao | Hoàn thành |
-| [task-02_implement-notification-consumer-and-async-telemetry](task-02_implement-notification-consumer-and-async-telemetry.md) | Triển khai consumer Notification, duplicate handling và async telemetry | Bách | Đức rà soát tương thích RabbitMQ/publisher | Cao | Đã giao |
+| [task-02_implement-notification-consumer-and-async-telemetry](task-02_implement-notification-consumer-and-async-telemetry.md) | Triển khai consumer Notification, duplicate handling và async telemetry | Bách | Đức rà soát tương thích RabbitMQ/publisher | Cao | Đang thực hiện |
 | [task-03_verify-grade-to-notification-workflow](task-03_verify-grade-to-notification-workflow.md) | Kiểm chứng W5 E2E, topology HTTP + queue và fault hook backlog | Bách | Đức hỗ trợ môi trường Grading/RabbitMQ | Cao | Đã giao |
 | [task-04_implement-grading-service](task-04_implement-grading-service.md) | Triển khai Grading, persistence riêng và call tới Submission | Đức | Bách rà soát contract/correlation field | Cao | Đã giao |
 | [task-05_publish-grade-completed-event](task-05_publish-grade-completed-event.md) | Publish `grade.completed` qua RabbitMQ với reliability/idempotency MVP | Đức | Bách kiểm tra consumer và async trace propagation | Cao | Đã giao |

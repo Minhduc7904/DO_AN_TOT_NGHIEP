@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-02_implement-notification-consumer-and-async-telemetry` |
 | Tuần | `week-08_2026-09-20_to_2026-09-26` |
-| Trạng thái | Đã giao |
+| Trạng thái | Đang thực hiện |
 | Người phụ trách | Bách |
 | Collaborator | Đức rà soát tương thích RabbitMQ/publisher |
 | Ưu tiên | Cao |
@@ -56,5 +56,5 @@ Triển khai Notification consumer cho `grade.completed`, xử lý duplicate the
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 27/09/2026 — tạo card và giao cho Bách.
-- Ghi chú/tồn đọng: Chỉ bắt đầu consumer tích hợp sau khi task-05 công bố publisher; có thể chuẩn bị test fixture từ task-01.
+- Cập nhật gần nhất: 28/09/2026 — Bách bắt đầu task và đã tạo workspace/branch riêng.
+- Ghi chú/tồn đọng: Task-01 đã có trên `main`; consumer tích hợp đầy đủ vẫn phụ thuộc publisher `grade.completed` của task-05. Có thể chuẩn bị fixture và boundary test trong lúc chờ publisher.
