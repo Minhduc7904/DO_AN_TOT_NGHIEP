@@ -1,4 +1,7 @@
 import { GradeConflictError } from '../../src/application/grade-conflict-error.js';
+import { GradeEventPendingError } from '../../src/application/grade-event-pending-error.js';
+import { GradeEventPublishError } from '../../src/application/grade-event-publish-error.js';
+import { GradePublicationCoordinator } from '../../src/application/grade-publication.coordinator.js';
 import { GradeForbiddenError } from '../../src/application/grade-forbidden-error.js';
 import { GradeNotFoundError } from '../../src/application/grade-not-found-error.js';
 import { GradingDependencyError } from '../../src/application/grading-dependency-error.js';
@@ -8,6 +11,7 @@ import type {
   CreateGradeRecord,
   GradeRepository,
 } from '../../src/application/ports/grade-repository.js';
+import type { GradeCompletedSnapshot } from '../../src/domain/grade-completed-snapshot.js';
 import type {
   SubmissionClient,
   SubmissionSummary,
@@ -28,6 +32,9 @@ describe('GradingService', () => {
   let submissions: SubmissionSummary[];
   let submissionLookups: string[];
   let submissionFailure: GradingDependencyError | undefined;
+  let eventIds: string[];
+  let published: GradeCompletedSnapshot[];
+  let publishFailure: Error | undefined;
   let service: GradingService;
 
   beforeEach(() => {
@@ -35,11 +42,15 @@ describe('GradingService', () => {
     submissions = [submission];
     submissionLookups = [];
     submissionFailure = undefined;
+    eventIds = [];
+    published = [];
+    publishFailure = undefined;
     const repository: GradeRepository = {
       create: async (input: CreateGradeRecord) => {
         if (grades.some((grade) => grade.submission_id === input.submissionId)) {
           throw new GradeConflictError(input.submissionId);
         }
+        eventIds.push(input.eventId);
         const grade: Grade = {
           completed_at: '2026-10-08T00:00:00.000Z',
           course_id: input.courseId,
@@ -60,7 +71,22 @@ describe('GradingService', () => {
         return submissions.find((item) => item.id === id) ?? null;
       },
     };
-    service = new GradingService(repository, submissionClient);
+    const publication = new GradePublicationCoordinator(
+      {
+        countPending: async () => 0,
+        findPending: async () => [],
+        markFailed: async () => undefined,
+        markPublished: async () => undefined,
+        recordAttempt: async () => true,
+      },
+      {
+        publish: async (snapshot) => {
+          if (publishFailure) throw publishFailure;
+          published.push(snapshot);
+        },
+      },
+    );
+    service = new GradingService(repository, submissionClient, publication);
   });
 
   it('creates a grade for an existing Submission with a snapshot of its owner and course', async () => {
@@ -74,6 +100,39 @@ describe('GradingService', () => {
     });
     expect(grade.id).toMatch(/^[0-9a-f-]{36}$/u);
     expect(submissionLookups).toEqual(['submission-001']);
+  });
+
+  it('publishes one event snapshot whose event_id is the one stored with the grade', async () => {
+    const grade = await service.create(instructor, 'submission-001', 92.5);
+
+    expect(eventIds).toHaveLength(1);
+    expect(eventIds[0]).toMatch(/^[0-9a-f-]{36}$/u);
+    expect(published).toEqual([
+      {
+        completedAt: grade.completed_at,
+        courseId: 'course-001',
+        eventId: eventIds[0],
+        gradeId: grade.id,
+        principalId: 'student-001',
+        score: 92.5,
+        submissionId: 'submission-001',
+      },
+    ]);
+  });
+
+  it('keeps the grade and reports a pending event when publishing fails', async () => {
+    publishFailure = new GradeEventPublishError('PUBLISH_TIMEOUT');
+
+    const failure = await service.create(instructor, 'submission-001', 90).catch((error) => error);
+
+    expect(failure).toBeInstanceOf(GradeEventPendingError);
+    expect(failure).toMatchObject({ eventId: eventIds[0], reason: 'PUBLISH_TIMEOUT' });
+    expect(grades).toHaveLength(1);
+    expect(failure.gradeId).toBe(grades[0]?.id);
+    await expect(service.create(instructor, 'submission-001', 90)).rejects.toBeInstanceOf(
+      GradeConflictError,
+    );
+    expect(grades).toHaveLength(1);
   });
 
   it('rejects a student before calling Submission or persisting', async () => {
