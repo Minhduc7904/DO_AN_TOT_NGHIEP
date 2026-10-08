@@ -6,11 +6,11 @@
 | --- | --- |
 | Mã task | `task-05_publish-grade-completed-event` |
 | Người phụ trách | Đức |
-| Trạng thái | Đang thực hiện |
+| Trạng thái | Chờ review |
 | Bắt đầu thực tế | 08/10/2026 |
 | Hoàn thành thực tế | Chưa hoàn thành |
 | Tổng thời lượng | Chưa tổng kết |
-| Pull request | Chưa tạo |
+| Pull request | [#33](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/33) |
 | Người review | Chưa có |
 | Kết quả review | Chưa review |
 
@@ -53,8 +53,8 @@ Bằng chứng chạy cục bộ ngày 08/10/2026 với Node 22.13.1, pnpm 11.19
 | Failure/retry không tạo grade hoặc event ID trùng; có test duplicate/failure | Đạt | `test/postgres-integration.mjs` (retry nhiều lần cùng `event_id`, đếm grade không đổi, published → không phát lại, grade lịch sử không bị republish, `event_id` UNIQUE); `test/rabbitmq-integration.mjs` (broker chết → grade lưu + pending, POST lại `409`, broker bật lại → worker publish cùng `event_id`, hai lần publish cùng `event_id` nhận diện là một event logic); `test/unit/grade-publication.coordinator.spec.ts`, `grading.service.spec.ts`, `grading.controller.spec.ts` (503, GET 200, POST lại 409). |
 | Span/metrics/logs có dependency identity, operation, error semantics; headers tương thích | Đạt | `test/telemetry/messaging.telemetry-test.mjs` và `test/rabbitmq-integration.mjs` (span PRODUCER, `grading-rabbitmq`, lỗi `timeout`/`unavailable`/`invalid`, metric publish count/error/duration, gauge pending giảm 1 → 0 sau recovery, không lộ credential/principal/event_id ở metric); `test:w5:postgres` (producer span cùng trace Gateway → Grading); log chỉ chứa ID kỹ thuật và mã lỗi (compose: không có `amqp://` hay mật khẩu trong log Grading). |
 | Integration test RabbitMQ thật pass; config/health/CI cập nhật | Đạt | `pnpm run test:grading:rabbitmq` (3 lần liên tiếp pass); `test:grading:postgres`; Compose healthy kể cả `grading`; smoke dừng/bật RabbitMQ (xem bên dưới); CI có service RabbitMQ và bước kiểm tra queue. Lưu ý: workflow CI chưa chạy trên GitHub, chỉ kiểm chứng lệnh tương đương cục bộ. |
-| URL/số PR và `Chờ review` đã commit/push | Chưa đạt | Chưa tạo PR. |
-| PR đúng quy tắc, `APPROVED`, completion metadata | Chưa đạt | Chưa tạo PR. |
+| URL/số PR và `Chờ review` đã commit/push | Đạt | PR [#33](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/33); transition này được commit/push vào PR head. |
+| PR đúng quy tắc, `APPROVED`, completion metadata | Chưa đạt | PR [#33](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/33) dùng template; chờ review và finalization. |
 
 ### Compose smoke (project riêng `task05-smoke`, Redis đổi sang cổng 16379)
 
@@ -95,5 +95,5 @@ Kiểm chứng sau khi sửa (08/10/2026, Node 22.13.1, pnpm 11.19.0; PostgreSQL
 ## Thay đổi, tồn đọng và bước tiếp theo
 
 - Thay đổi so với input: không đổi phạm vi; các điều chỉnh kỹ thuật nằm ở mục "Quyết định/điều chỉnh so với kế hoạch".
-- Việc chưa hoàn thành hoặc trở ngại: chưa tạo PR/review; timeline/JSON chờ đồng bộ bằng Windows PowerShell; CI GitHub chưa chạy; Bách chưa kiểm tra tương thích consumer.
-- Bước tiếp theo: tạo PR, ghi URL PR + `Chờ review`, commit/push vào PR head; Bách (hoặc reviewer được chỉ định) kiểm tra consumer/trace propagation.
+- Việc chưa hoàn thành hoặc trở ngại: chờ review/finalization; timeline/JSON chờ đồng bộ bằng Windows PowerShell; CI GitHub chưa chạy; Bách chưa kiểm tra tương thích consumer.
+- Bước tiếp theo: review PR #33 (Bách hoặc reviewer được Đức chỉ định) kiểm tra consumer/trace propagation, sau đó finalization.
