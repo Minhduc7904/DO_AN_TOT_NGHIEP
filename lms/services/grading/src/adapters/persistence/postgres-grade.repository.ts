@@ -1,4 +1,4 @@
-import { Injectable, OnModuleDestroy } from '@nestjs/common';
+import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Pool } from 'pg';
 
@@ -24,6 +24,7 @@ const GRADE_COLUMNS = 'id, submission_id, principal_id, course_id, score, comple
 
 @Injectable()
 export class PostgresGradeRepository extends GradeRepository implements OnModuleDestroy {
+  private readonly logger = new Logger(PostgresGradeRepository.name);
   private readonly pool: Pool;
 
   constructor(config: ConfigService) {
@@ -32,6 +33,11 @@ export class PostgresGradeRepository extends GradeRepository implements OnModule
       connectionString: config.getOrThrow<string>('GRADING_DATABASE_URL'),
       connectionTimeoutMillis: 1_000,
       query_timeout: 2_000,
+    });
+    // Client idle bị đóng/ngắt kết nối làm Pool phát 'error'; thiếu listener thì process crash.
+    // Chỉ log mã lỗi, không log message hay connection string để tránh lộ credential.
+    this.pool.on('error', (error: Error & { code?: string }) => {
+      this.logger.warn(`Idle PostgreSQL client lỗi (code=${error.code ?? 'unknown'})`);
     });
   }
 
@@ -85,6 +91,8 @@ export class PostgresGradeRepository extends GradeRepository implements OnModule
         if (code === '23505' && conflictSubmissionId !== undefined) {
           throw new GradeConflictError(conflictSubmissionId);
         }
+        // pg không gắn code ổn định cho connection/query timeout phía client (chỉ có message
+        // "timeout exceeded when trying to connect" / "Query read timeout"), nên giữ nhận diện bằng message.
         const timedOut =
           code === '57014' ||
           code === 'ETIMEDOUT' ||

@@ -119,6 +119,7 @@ describe('Grading HTTP contract', () => {
   it.each([
     ['negative score', { score: -1, submission_id: 'submission-002' }],
     ['score above 100', { score: 100.01, submission_id: 'submission-002' }],
+    ['score with more than 4 decimal places', { score: 90.12345, submission_id: 'submission-002' }],
     ['non-numeric score', { score: 'NaN', submission_id: 'submission-002' }],
     ['null score', { score: null, submission_id: 'submission-002' }],
     ['missing score', { submission_id: 'submission-002' }],
@@ -147,6 +148,12 @@ describe('Grading HTTP contract', () => {
       .post('/api/v1/grades')
       .set(instructor)
       .send({ score: 100, submission_id: 'submission-003' })
+      .expect(201);
+    submissionIds.push('submission-004');
+    await request(app.getHttpServer())
+      .post('/api/v1/grades')
+      .set(instructor)
+      .send({ score: 92.1234, submission_id: 'submission-004' })
       .expect(201);
   });
 

@@ -4,7 +4,7 @@ Grading tạo và đọc grade hoàn tất cho một Submission. Service sở h�
 
 ## API
 
-- `POST /api/v1/grades` — chỉ `instructor`; body `{ "submission_id", "score" }` với `score` trong `[0, 100]`. Trả `201` với `{ id, submission_id, score, completed_at }`; `404` nếu Submission không tồn tại, `409` nếu Submission đã có grade (grade là create-only), `503`/`504` khi Submission hoặc PostgreSQL lỗi/quá hạn.
+- `POST /api/v1/grades` — chỉ `instructor`; body `{ "submission_id", "score" }` với `score` trong `[0, 100]` và tối đa 4 chữ số thập phân (khớp `numeric(7,4)`, vượt thì `400`). Trả `201` với `{ id, submission_id, score, completed_at }`; `404` nếu Submission không tồn tại, `409` nếu Submission đã có grade (grade là create-only), `503`/`504` khi Submission hoặc PostgreSQL lỗi/quá hạn.
 - `GET /api/v1/grades/{grade_id}` — `instructor` đọc mọi grade; `student` chỉ đọc grade của chính mình (người khác nhận `403`).
 - `GET /health`.
 
