@@ -31,16 +31,22 @@ try {
     'CREATE INDEX IF NOT EXISTS auth_refresh_tokens_token_hash_idx ON auth_refresh_tokens (token_hash)',
   );
 
-  const email = 'student@example.test';
-  const existing = await pool.query<{ id: string }>('SELECT id FROM auth_users WHERE email = $1', [
-    email,
-  ]);
-  if (!existing.rows[0]) {
-    await pool.query(
-      `INSERT INTO auth_users (id, email, password_hash, role)
-       VALUES ($1, $2, $3, $4)`,
-      [randomUUID(), email, await hashPassword('example-password'), 'student'],
+  const seedUsers = [
+    { email: 'student@example.test', role: 'student' },
+    { email: 'instructor@example.test', role: 'instructor' },
+  ];
+  for (const { email, role } of seedUsers) {
+    const existing = await pool.query<{ id: string }>(
+      'SELECT id FROM auth_users WHERE email = $1',
+      [email],
     );
+    if (!existing.rows[0]) {
+      await pool.query(
+        `INSERT INTO auth_users (id, email, password_hash, role)
+         VALUES ($1, $2, $3, $4)`,
+        [randomUUID(), email, await hashPassword('example-password'), role],
+      );
+    }
   }
 } finally {
   await pool.end();

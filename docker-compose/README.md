@@ -1,12 +1,12 @@
 # Docker Compose baseline
 
-Thư mục này chứa manifest orchestration root cho LMS testbed. Baseline hiện tại build Gateway, Auth, Course, Enrollment, Submission và Storage Mock từ `lms/`, đồng thời khởi động PostgreSQL, Redis và RabbitMQ bằng image đã pin.
+Thư mục này chứa manifest orchestration root cho LMS testbed. Baseline hiện tại build Gateway, Auth, Course, Enrollment, Submission, Grading và Storage Mock từ `lms/`, đồng thời khởi động PostgreSQL, Redis và RabbitMQ bằng image đã pin.
 
 ## Yêu cầu
 
 - Docker Engine đang chạy.
 - Docker Compose v2 hỗ trợ `docker compose up --wait`.
-- Các port mặc định `3001`, `3002`, `5432`, `6379`, `5672` và `15672` chưa bị chiếm, hoặc đã được đổi trong file `.env` local.
+- Các port mặc định `3000`–`3005`, `3007`, `5432`, `6379`, `5672` và `15672` chưa bị chiếm, hoặc đã được đổi trong file `.env` local.
 
 ## Chuẩn bị cấu hình local
 
@@ -36,7 +36,7 @@ docker compose --env-file docker-compose/.env -f docker-compose/compose.yaml up 
 docker compose --env-file docker-compose/.env -f docker-compose/compose.yaml ps
 ```
 
-Compose chỉ báo thành công sau khi Gateway, Auth, Course, Enrollment, Submission, Storage Mock, PostgreSQL, Redis và RabbitMQ đều healthy. PostgreSQL tạo `auth_db`, `course_db`, `enrollment_db` và `submission_db` riêng; các service có persistence tự chạy migration/seed trước khi mở HTTP. Credential lấy từ `.env`, không đặt trực tiếp trong manifest Compose.
+Compose chỉ báo thành công sau khi Gateway, Auth, Course, Enrollment, Submission, Grading, Storage Mock, PostgreSQL, Redis và RabbitMQ đều healthy. PostgreSQL tạo `auth_db`, `course_db`, `enrollment_db`, `submission_db` và `grading_db` riêng; các service có persistence tự chạy migration/seed trước khi mở HTTP. Script khởi tạo PostgreSQL chỉ chạy trên volume mới; với volume cũ chưa có `grading_db`, reset volume theo hướng dẫn bên dưới. Credential lấy từ `.env`, không đặt trực tiếp trong manifest Compose.
 
 ## Kiểm tra
 
