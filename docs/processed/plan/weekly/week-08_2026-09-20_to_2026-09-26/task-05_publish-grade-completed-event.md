@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-05_publish-grade-completed-event` |
 | Tuần | `week-08_2026-09-20_to_2026-09-26` |
-| Trạng thái | Đã giao |
+| Trạng thái | Đang thực hiện |
 | Người phụ trách | Đức |
 | Collaborator | Bách kiểm tra consumer và async trace propagation |
 | Ưu tiên | Cao |
@@ -49,12 +49,12 @@ Tích hợp RabbitMQ publisher vào Grading sau khi grade thay đổi thành cô
 
 ## Liên kết hồ sơ thực hiện
 
-- Input workspace: Chưa tạo — Đức cần tạo trong workspace của mình trước khi bắt đầu.
-- Output workspace: Chưa tạo.
+- Input workspace: [task-input.md](../../../../../workspace/duc/week-08_2026-09-20_to_2026-09-26/task-05_publish-grade-completed-event/input/task-input.md)
+- Output workspace: [task-output.md](../../../../../workspace/duc/week-08_2026-09-20_to_2026-09-26/task-05_publish-grade-completed-event/output/task-output.md)
 - Pull request: Chưa tạo.
 - Kết quả review: Chưa review.
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 27/09/2026 — tạo card và giao cho Đức.
-- Ghi chú/tồn đọng: Chỉ bắt đầu sau task-01 và task-04; việc Bách review tương thích consumer không thay thế review PR chính thức.
+- Cập nhật gần nhất: 08/10/2026 — bắt đầu thực hiện; tạo input/output.
+- Ghi chú/tồn đọng: Việc Bách review tương thích consumer không thay thế review PR chính thức. Timeline/JSON chờ đồng bộ bằng Windows PowerShell (script không chạy được trên Linux); Đức chỉ thị tiếp tục, không sửa tay đầu ra.
