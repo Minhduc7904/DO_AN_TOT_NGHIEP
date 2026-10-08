@@ -241,6 +241,9 @@ importers:
 
   services/grading:
     dependencies:
+      '@aiops-lms/contracts':
+        specifier: workspace:*
+        version: link:../../contracts
       '@aiops-lms/observability':
         specifier: workspace:*
         version: link:../../packages/observability
@@ -259,6 +262,9 @@ importers:
       '@opentelemetry/api':
         specifier: 1.9.0
         version: 1.9.0
+      amqplib:
+        specifier: 2.2.0
+        version: 2.2.0
       pg:
         specifier: 8.16.3
         version: 8.16.3
@@ -2410,6 +2416,13 @@ packages:
       {
         integrity: sha512-Thbli+OlOj+iMPYFBVBfJ3OmCAnaSyNn4M1vz9T6Gka5Jt9ba/HIR56joy65tY6kx/FCF5VXNB819Y7/GUrBGA==,
       }
+
+  amqplib@2.2.0:
+    resolution:
+      {
+        integrity: sha512-VifzN9aHs/Q3zTruVHXh2yCisQyXexBN91CQ2E5iSyUKyNjH6ilYhJGte5AXZH/Bj1PaH7SwPhyuSf6Msd2udw==,
+      }
+    engines: { node: '>=18' }
 
   ansi-escapes@4.3.2:
     resolution:
@@ -6786,6 +6799,8 @@ snapshots:
       fast-uri: 3.1.6
       json-schema-traverse: 1.0.0
       require-from-string: 2.0.2
+
+  amqplib@2.2.0: {}
 
   ansi-escapes@4.3.2:
     dependencies:

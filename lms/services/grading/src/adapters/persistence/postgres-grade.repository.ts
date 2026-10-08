@@ -1,14 +1,17 @@
-import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
+import { Injectable, Logger, OnApplicationShutdown } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Pool } from 'pg';
 
 import { GradeConflictError } from '../../application/grade-conflict-error.js';
 import { GradingDependencyError } from '../../application/grading-dependency-error.js';
+import type { GradeEventPublishErrorCode } from '../../application/grade-event-publish-error.js';
 import {
   GradeRepository,
   type CreateGradeRecord,
 } from '../../application/ports/grade-repository.js';
+import { GradePublicationRepository } from '../../application/ports/grade-publication-repository.js';
 import type { Grade } from '../../domain/grade.js';
+import type { GradeCompletedSnapshot } from '../../domain/grade-completed-snapshot.js';
 import { observeDependency } from '../telemetry/dependency-telemetry.js';
 
 interface GradeRow {
@@ -20,10 +23,26 @@ interface GradeRow {
   completed_at: Date;
 }
 
+interface PendingGradeRow extends GradeRow {
+  event_id: string;
+}
+
 const GRADE_COLUMNS = 'id, submission_id, principal_id, course_id, score, completed_at';
 
+type DatabaseOperation =
+  | 'create'
+  | 'get'
+  | 'list_pending'
+  | 'count_pending'
+  | 'record_attempt'
+  | 'mark_published'
+  | 'mark_failed';
+
 @Injectable()
-export class PostgresGradeRepository extends GradeRepository implements OnModuleDestroy {
+export class PostgresGradeRepository
+  extends GradeRepository
+  implements GradePublicationRepository, OnApplicationShutdown
+{
   private readonly logger = new Logger(PostgresGradeRepository.name);
   private readonly pool: Pool;
 
@@ -44,10 +63,10 @@ export class PostgresGradeRepository extends GradeRepository implements OnModule
   async create(input: CreateGradeRecord): Promise<Grade> {
     const result = await this.query<GradeRow>(
       'create',
-      `INSERT INTO grades (id, submission_id, principal_id, course_id, score)
-       VALUES ($1, $2, $3, $4, $5)
+      `INSERT INTO grades (id, event_id, submission_id, principal_id, course_id, score)
+       VALUES ($1, $2, $3, $4, $5, $6)
        RETURNING ${GRADE_COLUMNS}`,
-      [input.id, input.submissionId, input.principalId, input.courseId, input.score],
+      [input.id, input.eventId, input.submissionId, input.principalId, input.courseId, input.score],
       input.submissionId,
     );
     return this.toGrade(result.rows[0]!);
@@ -62,7 +81,65 @@ export class PostgresGradeRepository extends GradeRepository implements OnModule
     return result.rows[0] ? this.toGrade(result.rows[0]) : null;
   }
 
-  async onModuleDestroy(): Promise<void> {
+  async findPending(limit: number): Promise<GradeCompletedSnapshot[]> {
+    const result = await this.query<PendingGradeRow>(
+      'list_pending',
+      `SELECT ${GRADE_COLUMNS}, event_id FROM grades
+        WHERE publish_status = 'pending'
+        ORDER BY completed_at, id
+        LIMIT $1`,
+      [limit],
+    );
+    return result.rows.map((row) => ({
+      completedAt: row.completed_at.toISOString(),
+      courseId: row.course_id,
+      eventId: row.event_id,
+      gradeId: row.id,
+      principalId: row.principal_id,
+      score: Number(row.score),
+      submissionId: row.submission_id,
+    }));
+  }
+
+  async countPending(): Promise<number> {
+    const result = await this.query<{ total: number }>(
+      'count_pending',
+      "SELECT count(*)::int AS total FROM grades WHERE publish_status = 'pending'",
+      [],
+    );
+    return result.rows[0]?.total ?? 0;
+  }
+
+  async recordAttempt(eventId: string): Promise<boolean> {
+    const result = await this.query(
+      'record_attempt',
+      `UPDATE grades SET publish_attempts = publish_attempts + 1
+        WHERE event_id = $1 AND publish_status = 'pending'`,
+      [eventId],
+    );
+    return result.rowCount === 1;
+  }
+
+  async markPublished(eventId: string): Promise<void> {
+    await this.query(
+      'mark_published',
+      `UPDATE grades
+          SET publish_status = 'published', published_at = now(), last_publish_error_code = NULL
+        WHERE event_id = $1 AND publish_status = 'pending'`,
+      [eventId],
+    );
+  }
+
+  async markFailed(eventId: string, code: GradeEventPublishErrorCode): Promise<void> {
+    await this.query(
+      'mark_failed',
+      `UPDATE grades SET last_publish_error_code = $2
+        WHERE event_id = $1 AND publish_status = 'pending'`,
+      [eventId, code],
+    );
+  }
+
+  async onApplicationShutdown(): Promise<void> {
     await this.pool.end();
   }
 
@@ -78,7 +155,7 @@ export class PostgresGradeRepository extends GradeRepository implements OnModule
   }
 
   private query<Row extends import('pg').QueryResultRow>(
-    operation: 'create' | 'get',
+    operation: DatabaseOperation,
     statement: string,
     values: unknown[],
     conflictSubmissionId?: string,

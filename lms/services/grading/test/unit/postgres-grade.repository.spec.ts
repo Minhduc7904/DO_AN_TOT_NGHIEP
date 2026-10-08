@@ -21,7 +21,7 @@ describe('PostgresGradeRepository pool', () => {
       expect(String(warn.mock.calls[0]?.[0])).toContain('57P01');
       expect(String(warn.mock.calls[0]?.[0])).not.toContain(secret);
     } finally {
-      await repository.onModuleDestroy();
+      await repository.onApplicationShutdown();
     }
   });
 });

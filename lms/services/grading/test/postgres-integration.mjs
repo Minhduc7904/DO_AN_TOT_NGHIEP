@@ -85,7 +85,7 @@ try {
     const afterMigrations = await gradingDb.query('SELECT count(*)::int AS total FROM grades');
     assert.equal(afterMigrations.rows[0].total, 2);
   } finally {
-    await repository.onModuleDestroy();
+    await repository.onApplicationShutdown();
   }
 
   const closed = createServer();
@@ -105,7 +105,7 @@ try {
         error.kind === 'unavailable',
     );
   } finally {
-    await unavailable.onModuleDestroy();
+    await unavailable.onApplicationShutdown();
   }
 
   const sockets = new Set();
@@ -127,7 +127,7 @@ try {
         error.kind === 'timeout',
     );
   } finally {
-    await timeoutRepository.onModuleDestroy();
+    await timeoutRepository.onApplicationShutdown();
     for (const socket of sockets) socket.destroy();
     await new Promise((resolve) => silent.close(resolve));
   }
