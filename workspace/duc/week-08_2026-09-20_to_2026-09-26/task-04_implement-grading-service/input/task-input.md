@@ -8,7 +8,7 @@
 | Tên task | Triển khai Grading service, persistence riêng và call tới Submission |
 | Người phụ trách | Đức |
 | Tuần thực hiện | `week-08_2026-09-20_to_2026-09-26` |
-| Trạng thái | Đang thực hiện |
+| Trạng thái | Chờ review |
 | Ngày tạo | 08/10/2026 |
 | Thời gian dự kiến | 1–2 ngày làm việc |
 | Nhánh thực hiện | `feat/week-08/task-04-implement-grading-service` |

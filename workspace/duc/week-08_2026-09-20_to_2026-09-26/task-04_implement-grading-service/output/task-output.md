@@ -6,13 +6,13 @@
 | --- | --- |
 | Mã task | `task-04_implement-grading-service` |
 | Người phụ trách | Đức |
-| Trạng thái | Đang thực hiện |
+| Trạng thái | Chờ review |
 | Bắt đầu thực tế | 08/10/2026 |
 | Hoàn thành thực tế | Chưa hoàn thành |
 | Tổng thời lượng | Đang thực hiện |
-| Pull request | Chưa tạo |
+| Pull request | [#32](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/32) |
 | Người review | Bách |
-| Kết quả review | Chưa review |
+| Kết quả review | Chờ Bách review |
 
 ## Báo cáo công việc đã làm
 
@@ -53,8 +53,8 @@ Bằng chứng chạy cục bộ ngày 08/10/2026 với Node 22.13.1, pnpm 11.19
 | `grading_db` migration/seed từ trạng thái sạch, chạy lại không nhân bản; không cross-service DB/source import | Đạt | `pnpm run test:grading:postgres`: "Grading PostgreSQL migration, seed và repository integration đạt." (migrate hai lần, seed 1 dòng, create/find, `numeric`→`number`, unique→`GradeConflictError`, CHECK score, DB unavailable/timeout map đúng); `pnpm run test` chạy `test:architecture` và `pnpm run lint` sạch (`architecture/no-cross-service-imports`). |
 | Health, config, Compose/Gateway wiring và unit/PostgreSQL integration tests pass | Đạt | `docker compose --env-file docker-compose/.env.example -f docker-compose/compose.yaml config --quiet` rc=0; `docker compose up --build -d --wait` toàn bộ service healthy (kể cả `grading`); smoke qua Gateway: login student → enroll → tạo Submission mới → login instructor → student bị `403` khi chấm → instructor tạo grade `201` → student đọc grade → tạo lần hai `409`; Gateway e2e 9/9 pass (route `/grades`, ghi đè principal giả mạo). Chạy lặp smoke vẫn đạt. |
 | Telemetry HTTP server/client và PostgreSQL giữ trace context, có dependency identity/error semantics, không lộ secret/PII | Đạt | `test/telemetry/dependency.telemetry-test.mjs` ("Grading dependency spans và metrics assertions đạt."), `submission-integration.mjs` (traceparent Grading → Submission, span lỗi `timeout`/`unavailable`, metric không chứa principal/submission/JWT), `test:w5:postgres` (cùng trace ID qua Gateway, Grading, Submission, `grading-postgres`, `submission-postgres`; quan hệ cha-con span đúng). |
-| URL/số PR và `Chờ review` đã commit/push vào PR head trước review | Chưa đạt | Chưa tạo PR, chưa push. |
-| PR có mô tả đúng quy tắc, có `APPROVED` hợp lệ và completion metadata | Chưa đạt | Chưa tạo PR, chưa review. |
+| URL/số PR và `Chờ review` đã commit/push vào PR head trước review | Đạt | PR [#32](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/32); transition này được commit/push vào PR head. |
+| PR có mô tả đúng quy tắc, có `APPROVED` hợp lệ và completion metadata | Chưa đạt | PR [#32](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/32) dùng template; chờ Bách `APPROVED` và finalization. |
 
 ### Cổng kiểm chứng đã chạy (kết quả thực)
 
@@ -73,5 +73,5 @@ Bằng chứng chạy cục bộ ngày 08/10/2026 với Node 22.13.1, pnpm 11.19
 ## Thay đổi, tồn đọng và bước tiếp theo
 
 - Thay đổi so với input: grade create-only (card nêu "tạo/cập nhật" nhưng kế hoạch đã chốt chỉ tạo); thêm `403` và giới hạn `score` so với ví dụ contract v1.
-- Việc chưa hoàn thành hoặc trở ngại: push, tạo PR, ghi URL PR và chuyển `Chờ review`; timeline đang chờ đồng bộ bằng Windows PowerShell (xem ghi chú trên).
-- Bước tiếp theo: reviewer xem các commit local, sau đó push nhánh, tạo PR bằng template, cập nhật card/overview/output sang `Chờ review` và đồng bộ plan.
+- Việc chưa hoàn thành hoặc trở ngại: chờ Bách review/`APPROVED`; timeline đang chờ đồng bộ bằng Windows PowerShell (xem ghi chú trên) — Đức đã chỉ thị tiếp tục chuyển `Chờ review` khi timeline chưa đồng bộ.
+- Bước tiếp theo: Bách review PR #32; sau `APPROVED`, Đức finalization bằng `task-completion-recording`, đồng bộ timeline trên Windows rồi merge.

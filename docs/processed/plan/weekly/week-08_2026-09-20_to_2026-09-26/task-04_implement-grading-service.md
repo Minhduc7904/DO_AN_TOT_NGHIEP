@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-04_implement-grading-service` |
 | Tuần | `week-08_2026-09-20_to_2026-09-26` |
-| Trạng thái | Đang thực hiện |
+| Trạng thái | Chờ review |
 | Người phụ trách | Đức |
 | Collaborator | Bách rà soát contract và correlation field |
 | Ưu tiên | Cao |
@@ -51,10 +51,10 @@ Triển khai Grading service MVP: API tạo/cập nhật grade cho submission h�
 
 - Input workspace: [task-input.md](../../../../../workspace/duc/week-08_2026-09-20_to_2026-09-26/task-04_implement-grading-service/input/task-input.md)
 - Output workspace: [task-output.md](../../../../../workspace/duc/week-08_2026-09-20_to_2026-09-26/task-04_implement-grading-service/output/task-output.md)
-- Pull request: Chưa tạo.
-- Kết quả review: Chưa review.
+- Pull request: [#32](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/32)
+- Kết quả review: Chờ Bách review.
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 08/10/2026 — Đức bắt đầu thực hiện, đã tạo input/output trong workspace.
-- Ghi chú/tồn đọng: Chưa có.
+- Cập nhật gần nhất: 08/10/2026 — Đức tạo PR #32, đủ bằng chứng kiểm chứng, chuyển `Chờ review`.
+- Ghi chú/tồn đọng: Timeline/JSON chờ đồng bộ bằng Windows PowerShell (script không chạy được trên Linux); Đức chỉ thị tiếp tục, không sửa tay đầu ra.
