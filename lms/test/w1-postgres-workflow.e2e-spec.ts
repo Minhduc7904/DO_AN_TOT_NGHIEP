@@ -123,4 +123,16 @@ describe('W1 Client → Gateway → Auth → PostgreSQL → JWT workflow', () =>
       'x-principal-role': 'student',
     });
   });
+
+  it('seeds an instructor account without duplicating it when migration runs again', async () => {
+    const loginResponse = await request(gatewayApp.getHttpServer())
+      .post('/api/v1/auth/login')
+      .send({ email: 'instructor@example.test', password: 'example-password' })
+      .expect(200);
+
+    expect(loginResponse.body).toMatchObject({
+      principal: { role: 'instructor' },
+      token_type: 'Bearer',
+    });
+  });
 });
