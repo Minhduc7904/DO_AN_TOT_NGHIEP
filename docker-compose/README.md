@@ -36,6 +36,8 @@ docker compose --env-file docker-compose/.env -f docker-compose/compose.yaml up 
 docker compose --env-file docker-compose/.env -f docker-compose/compose.yaml ps
 ```
 
+Grading nhận RabbitMQ URL (kèm credential từ `.env`) và publish `grade.completed` lên exchange `lms.events`; Grading phụ thuộc RabbitMQ healthy khi khởi động nhưng vẫn tự phục hồi nếu broker dừng rồi bật lại. Notification chưa nằm trong Compose của baseline này.
+
 Compose chỉ báo thành công sau khi Gateway, Auth, Course, Enrollment, Submission, Grading, Storage Mock, PostgreSQL, Redis và RabbitMQ đều healthy. PostgreSQL tạo `auth_db`, `course_db`, `enrollment_db`, `submission_db` và `grading_db` riêng; các service có persistence tự chạy migration/seed trước khi mở HTTP. Script khởi tạo PostgreSQL chỉ chạy trên volume mới; với volume cũ chưa có `grading_db`, reset volume theo hướng dẫn bên dưới. Credential lấy từ `.env`, không đặt trực tiếp trong manifest Compose.
 
 ## Kiểm tra
