@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-04_implement-grading-service` |
 | Tuần | `week-08_2026-09-20_to_2026-09-26` |
-| Trạng thái | Đã giao |
+| Trạng thái | Đang thực hiện |
 | Người phụ trách | Đức |
 | Collaborator | Bách rà soát contract và correlation field |
 | Ưu tiên | Cao |
@@ -49,12 +49,12 @@ Triển khai Grading service MVP: API tạo/cập nhật grade cho submission h�
 
 ## Liên kết hồ sơ thực hiện
 
-- Input workspace: Chưa tạo — Đức cần tạo trong workspace của mình trước khi bắt đầu.
-- Output workspace: Chưa tạo.
+- Input workspace: [task-input.md](../../../../../workspace/duc/week-08_2026-09-20_to_2026-09-26/task-04_implement-grading-service/input/task-input.md)
+- Output workspace: [task-output.md](../../../../../workspace/duc/week-08_2026-09-20_to_2026-09-26/task-04_implement-grading-service/output/task-output.md)
 - Pull request: Chưa tạo.
 - Kết quả review: Chưa review.
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 27/09/2026 — tạo card và giao cho Đức.
-- Ghi chú/tồn đọng: Không tạo hồ sơ trong `workspace/duc/` vì người giao hiện tại là Bách; Đức sẽ tự khởi tạo khi nhận task.
+- Cập nhật gần nhất: 08/10/2026 — Đức bắt đầu thực hiện, đã tạo input/output trong workspace.
+- Ghi chú/tồn đọng: Chưa có.
