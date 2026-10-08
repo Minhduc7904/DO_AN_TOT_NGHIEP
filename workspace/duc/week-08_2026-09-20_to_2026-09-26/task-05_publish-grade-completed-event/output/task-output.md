@@ -6,13 +6,13 @@
 | --- | --- |
 | Mã task | `task-05_publish-grade-completed-event` |
 | Người phụ trách | Đức |
-| Trạng thái | Chờ review |
+| Trạng thái | Hoàn thành |
 | Bắt đầu thực tế | 08/10/2026 |
-| Hoàn thành thực tế | Chưa hoàn thành |
-| Tổng thời lượng | Chưa tổng kết |
+| Hoàn thành thực tế | 08/10/2026 — finalization theo ngoại lệ do Đức xác nhận |
+| Tổng thời lượng | Không có giờ bắt đầu/kết thúc chính xác để tổng kết; thực hiện trong ngày 08/10/2026 |
 | Pull request | [#33](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/33) |
-| Người review | Chưa có |
-| Kết quả review | Chưa review |
+| Người review | Subagent AI theo chỉ định của Đức (thay Bách) |
+| Kết quả review | Review nội bộ vòng 1, 2 blocking đã sửa; **chưa có verdict GitHub `APPROVED`** |
 
 ## Báo cáo công việc đã làm
 
@@ -54,7 +54,7 @@ Bằng chứng chạy cục bộ ngày 08/10/2026 với Node 22.13.1, pnpm 11.19
 | Span/metrics/logs có dependency identity, operation, error semantics; headers tương thích | Đạt | `test/telemetry/messaging.telemetry-test.mjs` và `test/rabbitmq-integration.mjs` (span PRODUCER, `grading-rabbitmq`, lỗi `timeout`/`unavailable`/`invalid`, metric publish count/error/duration, gauge pending giảm 1 → 0 sau recovery, không lộ credential/principal/event_id ở metric); `test:w5:postgres` (producer span cùng trace Gateway → Grading); log chỉ chứa ID kỹ thuật và mã lỗi (compose: không có `amqp://` hay mật khẩu trong log Grading). |
 | Integration test RabbitMQ thật pass; config/health/CI cập nhật | Đạt | `pnpm run test:grading:rabbitmq` (3 lần liên tiếp pass); `test:grading:postgres`; Compose healthy kể cả `grading`; smoke dừng/bật RabbitMQ (xem bên dưới); CI có service RabbitMQ và bước kiểm tra queue. Lưu ý: workflow CI chưa chạy trên GitHub, chỉ kiểm chứng lệnh tương đương cục bộ. |
 | URL/số PR và `Chờ review` đã commit/push | Đạt | PR [#33](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/33); transition này được commit/push vào PR head. |
-| PR đúng quy tắc, `APPROVED`, completion metadata | Chưa đạt | PR [#33](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/33) dùng template; chờ review và finalization. |
+| PR đúng quy tắc, `APPROVED`, completion metadata | Đạt theo ngoại lệ | PR [#33](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/33) dùng template. Bách không thể review; Đức chỉ định subagent AI review (vòng 1, [comment](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/33#issuecomment-6055895978)) và xác nhận finalization dù chưa có GitHub `APPROVED`; completion metadata được commit/push vào PR #33. Không ghi nhận đây là GitHub approval. |
 
 ### Compose smoke (project riêng `task05-smoke`, Redis đổi sang cổng 16379)
 
@@ -76,7 +76,7 @@ Bằng chứng chạy cục bộ ngày 08/10/2026 với Node 22.13.1, pnpm 11.19
 
 ## Vòng review nội bộ vòng 1
 
-- Reviewer: subagent AI, theo chỉ định của Đức thay Bách (Bách không còn tham gia review). Đây là review nội bộ, **không phải** GitHub `APPROVED`; PR chưa tạo.
+- Reviewer: subagent AI, theo chỉ định của Đức thay Bách (Bách không còn tham gia review). Đây là review nội bộ, **không phải** GitHub `APPROVED`; nhận xét đăng tại [PR #33](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/33#issuecomment-6055895978). Sau vòng review này, Đức xác nhận finalization theo ngoại lệ.
 - Phạm vi: đối chiếu event mapping/schema v1, topology, confirm publish, migration/publication state, request flow, worker/shutdown, telemetry, config, Compose/CI và test với `git diff main...HEAD`.
 - Verdict đề xuất sau khi sửa: `APPROVED` (chờ GitHub review thật khi có PR).
 
@@ -90,10 +90,10 @@ Bằng chứng chạy cục bộ ngày 08/10/2026 với Node 22.13.1, pnpm 11.19
 
 Các mục đã kiểm tra và không có lỗi: event mapping dùng `gradeCompletedEventSchema` và `createGradeCompletedRabbitMqHeaders`, `event_id`/`occurred_at`/payload ổn định giữa retry, `correlation` khớp `traceparent` header; exchange `lms.events` topic durable, chỉ assert exchange, persistent, `application/json`, tương thích exchange/routing key của Notification skeleton; callback confirm theo từng message, không đánh dấu `published` khi chưa có confirm, channel đóng thì callback nhận lỗi; migration idempotent trong một transaction, backfill `published` không phát lại; `23505` chỉ map `409` cho `grades_submission_id_key`; `publish_attempts` tăng trước attempt; worker tuần tự, không chồng vòng, shutdown dừng worker trước pool và connection; metric label hữu hạn, `event_id` không ở metric; không lộ URL/credential trong log, span, metric; validation config đúng khoảng; không có Notification consumer/DLQ; không đụng `workspace/bach/`, `docs/raw/`, contract v1.
 
-Kiểm chứng sau khi sửa (08/10/2026, Node 22.13.1, pnpm 11.19.0; PostgreSQL 17.6, RabbitMQ 4.1.4, Redis 8.2.1 tạm bằng Docker, đã dọn): `pnpm install --frozen-lockfile`, `format:check`, `build`, `lint`, `test`, `test:w1/course/enrollment/submission/grading/w2/w3/w5:postgres`, `test:grading:rabbitmq` (có kịch bản 5d, ~7 s) và `ci:verify` đều đạt; `docker compose config --quiet` đạt. Compose smoke chạy lại (project `task05rev`, Redis cổng 16379): POST `201` khi broker sống; dừng RabbitMQ thì POST `503` sau ~3.0 s với đúng message, GET `200`, POST lại `409`; bật lại thì worker publish (`published`, `publish_attempts=2`), queue durable nhận đúng message cùng `event_id` với DB, log Grading không chứa URL/mật khẩu. Card và trạng thái task giữ nguyên.
+Kiểm chứng sau khi sửa (08/10/2026, Node 22.13.1, pnpm 11.19.0; PostgreSQL 17.6, RabbitMQ 4.1.4, Redis 8.2.1 tạm bằng Docker, đã dọn): `pnpm install --frozen-lockfile`, `format:check`, `build`, `lint`, `test`, `test:w1/course/enrollment/submission/grading/w2/w3/w5:postgres`, `test:grading:rabbitmq` (có kịch bản 5d, ~7 s) và `ci:verify` đều đạt; `docker compose config --quiet` đạt. Compose smoke chạy lại (project `task05rev`, Redis cổng 16379): POST `201` khi broker sống; dừng RabbitMQ thì POST `503` sau ~3.0 s với đúng message, GET `200`, POST lại `409`; bật lại thì worker publish (`published`, `publish_attempts=2`), queue durable nhận đúng message cùng `event_id` với DB, log Grading không chứa URL/mật khẩu. Card giữ nguyên trạng thái trong vòng review; finalization ghi ở commit sau.
 
 ## Thay đổi, tồn đọng và bước tiếp theo
 
 - Thay đổi so với input: không đổi phạm vi; các điều chỉnh kỹ thuật nằm ở mục "Quyết định/điều chỉnh so với kế hoạch".
-- Việc chưa hoàn thành hoặc trở ngại: chờ review/finalization; timeline/JSON chờ đồng bộ bằng Windows PowerShell; CI GitHub chưa chạy; Bách chưa kiểm tra tương thích consumer.
-- Bước tiếp theo: review PR #33 (Bách hoặc reviewer được Đức chỉ định) kiểm tra consumer/trace propagation, sau đó finalization.
+- Việc chưa hoàn thành hoặc trở ngại: không có blocker substantive; GitHub chưa có `APPROVED` từ thành viên còn lại (Đức yêu cầu bỏ qua theo ngoại lệ); timeline/JSON chờ đồng bộ bằng Windows PowerShell; CI GitHub chưa chạy; Bách chưa kiểm tra tương thích consumer.
+- Bước tiếp theo: Đức merge PR #33 theo ngoại lệ; Notification task-02 phải declare/bind queue `grade.completed` và deduplicate theo `event_id`; đồng bộ timeline bằng Windows PowerShell.

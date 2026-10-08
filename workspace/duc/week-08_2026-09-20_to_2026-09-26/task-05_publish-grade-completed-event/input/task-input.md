@@ -8,7 +8,7 @@
 | Tên task | Publish `grade.completed` qua RabbitMQ với reliability/idempotency MVP |
 | Người phụ trách | Đức |
 | Tuần thực hiện | `week-08_2026-09-20_to_2026-09-26` |
-| Trạng thái | Chờ review |
+| Trạng thái | Hoàn thành |
 | Ngày tạo | 08/10/2026 |
 | Thời gian dự kiến | 1–2 ngày làm việc |
 | Nhánh thực hiện | `feat/week-08/task-05-publish-grade-completed-event` |
