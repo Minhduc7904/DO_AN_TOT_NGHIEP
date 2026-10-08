@@ -13,7 +13,9 @@ import {
 import { Test } from '@nestjs/testing';
 import { createServer } from 'node:http';
 import type { Server } from 'node:http';
+import { createRequire } from 'node:module';
 import type { AddressInfo } from 'node:net';
+import { fileURLToPath } from 'node:url';
 import request from 'supertest';
 
 import { HttpExceptionFilter as AuthFilter } from '../services/auth/src/adapters/http/http-exception.filter.js';
@@ -25,6 +27,14 @@ import { HttpExceptionFilter as StorageFilter } from '../services/submission-sto
 import { AppModule as StorageModule } from '../services/submission-storage-mock/src/app.module.js';
 import { HttpExceptionFilter as SubmissionFilter } from '../services/submission/src/adapters/http/http-exception.filter.js';
 import { AppModule as SubmissionModule } from '../services/submission/src/app.module.js';
+
+// amqplib là dependency của Grading nên resolve từ package đó, không thêm dependency vào root workspace.
+const requireFromGrading = createRequire(
+  fileURLToPath(new URL('../services/grading/package.json', import.meta.url)),
+);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const amqp: any = requireFromGrading('amqplib');
+const EVENT_EXCHANGE = 'lms.events';
 
 const JWT_SECRET = 'w5-postgres-workflow-test-secret-with-at-least-thirty-two-characters';
 const TRACE_ID = '77777777777777777777777777777777';
@@ -69,6 +79,11 @@ describe('W5 Gateway → Grading → Submission → PostgreSQL', () => {
   let storageApp: TestApplication;
   let submissionApp: TestApplication;
   let submissionProxy: Server;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let brokerConnection: any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let brokerChannel: any;
+  let eventQueue: string;
 
   async function createApp(
     module: unknown,
@@ -92,12 +107,19 @@ describe('W5 Gateway → Grading → Submission → PostgreSQL', () => {
     if (
       !process.env.W1_AUTH_DATABASE_URL ||
       !process.env.SUBMISSION_DATABASE_URL ||
-      !process.env.GRADING_DATABASE_URL
+      !process.env.GRADING_DATABASE_URL ||
+      !process.env.GRADING_RABBITMQ_URL
     ) {
       throw new Error(
-        'W1_AUTH_DATABASE_URL, SUBMISSION_DATABASE_URL và GRADING_DATABASE_URL là bắt buộc',
+        'W1_AUTH_DATABASE_URL, SUBMISSION_DATABASE_URL, GRADING_DATABASE_URL và GRADING_RABBITMQ_URL là bắt buộc',
       );
     }
+    // Queue tạm bind grade.completed để quan sát event mà Grading publish (không cần Notification).
+    brokerConnection = await amqp.connect(process.env.GRADING_RABBITMQ_URL);
+    brokerChannel = await brokerConnection.createChannel();
+    await brokerChannel.assertExchange(EVENT_EXCHANGE, 'topic', { durable: true });
+    eventQueue = (await brokerChannel.assertQueue('', { exclusive: true })).queue as string;
+    await brokerChannel.bindQueue(eventQueue, EVENT_EXCHANGE, 'grade.completed');
     // Course và Enrollment chỉ cần trả lời hợp lệ để Submission tạo bài nộp mới.
     dependencyServer = createServer((incoming, response) => {
       response.setHeader('content-type', 'application/json');
@@ -149,6 +171,12 @@ describe('W5 Gateway → Grading → Submission → PostgreSQL', () => {
     gradingApp = await createApp(GradingModule, new GradingFilter(), {
       GRADING_DATABASE_URL: process.env.GRADING_DATABASE_URL,
       GRADING_DEPENDENCY_TIMEOUT_MS: 500,
+      GRADING_EVENT_RETRY_BATCH_SIZE: 20,
+      GRADING_EVENT_RETRY_INTERVAL_MS: 1_000,
+      GRADING_GRADE_COMPLETED_EXCHANGE: EVENT_EXCHANGE,
+      GRADING_PUBLISH_CONFIRM_TIMEOUT_MS: 3_000,
+      GRADING_RABBITMQ_URL: process.env.GRADING_RABBITMQ_URL,
+      OTEL_SERVICE_VERSION: '0.1.0-test',
       GRADING_SUBMISSION_BASE_URL: address({ getHttpServer: () => submissionProxy }),
     });
     gatewayApp = await createApp(
@@ -177,6 +205,8 @@ describe('W5 Gateway → Grading → Submission → PostgreSQL', () => {
     if (dependencyServer) {
       await new Promise<void>((resolve) => dependencyServer.close(() => resolve()));
     }
+    await brokerChannel?.close().catch(() => undefined);
+    await brokerConnection?.close().catch(() => undefined);
     await telemetry.shutdown();
   }, 20_000);
 
@@ -294,8 +324,34 @@ describe('W5 Gateway → Grading → Submission → PostgreSQL', () => {
     expect(gradingSubmission?.parentSpanContext?.spanId).toBe(gradingServer?.spanContext().spanId);
     expect(submissionServer?.spanContext().traceId).toBe(TRACE_ID);
 
+    // Event grade.completed được publish trong cùng trace, là con của span Grading server.
+    const publishSpan = spans.find((span) => span.kind === SpanKind.PRODUCER);
+    expect(publishSpan?.attributes.dependency_identity).toBe('grading-rabbitmq');
+    expect(publishSpan?.parentSpanContext?.spanId).toBe(gradingServer?.spanContext().spanId);
+    const message = await brokerChannel.get(eventQueue, { noAck: true });
+    expect(message).toBeTruthy();
+    const event = JSON.parse(String(message.content));
+    expect(message.properties.deliveryMode).toBe(2);
+    expect(event).toMatchObject({
+      event_name: 'grade.completed',
+      payload: {
+        course_id: 'course-001',
+        grade_id: created.body.id,
+        principal_id: student.id,
+        score: 92.5,
+        submission_id: submission.body.id,
+      },
+      producer: { service_name: 'grading' },
+      schema_version: 1,
+    });
+    expect(message.properties.headers.traceparent).toBe(event.correlation.traceparent);
+    expect(event.correlation.traceparent).toContain(TRACE_ID);
+    expect(await brokerChannel.get(eventQueue, { noAck: true })).toBe(false);
+
     const metrics = JSON.stringify(metricExporter.getMetrics());
     expect(metrics).toContain('grading.dependency.request.count');
+    expect(metrics).toContain('grading.messaging.publish.count');
+    expect(metrics).toContain('grading-rabbitmq');
     expect(metrics).toContain('grading-submission');
     expect(metrics).toContain('grading-postgres');
     const telemetryText = `${metrics}${JSON.stringify(spans.map((span) => span.attributes))}`;

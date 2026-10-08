@@ -1,18 +1,38 @@
-import { ArgumentsHost, Catch, ExceptionFilter, HttpException, HttpStatus } from '@nestjs/common';
+import {
+  ArgumentsHost,
+  Catch,
+  ExceptionFilter,
+  HttpException,
+  HttpStatus,
+  Logger,
+} from '@nestjs/common';
 import { trace } from '@opentelemetry/api';
 
 import { GradeConflictError } from '../../application/grade-conflict-error.js';
+import { GradeEventPendingError } from '../../application/grade-event-pending-error.js';
 import { GradeForbiddenError } from '../../application/grade-forbidden-error.js';
 import { GradeNotFoundError } from '../../application/grade-not-found-error.js';
 import { GradingDependencyError } from '../../application/grading-dependency-error.js';
 import { SubmissionNotFoundError } from '../../application/submission-not-found-error.js';
 
 type DomainError =
-  GradeConflictError | GradeForbiddenError | GradeNotFoundError | SubmissionNotFoundError;
+  | GradeConflictError
+  | GradeEventPendingError
+  | GradeForbiddenError
+  | GradeNotFoundError
+  | SubmissionNotFoundError;
 
 @Catch()
 export class HttpExceptionFilter implements ExceptionFilter {
+  private readonly logger = new Logger(HttpExceptionFilter.name);
+
   catch(exception: unknown, host: ArgumentsHost): void {
+    if (exception instanceof GradeEventPendingError) {
+      // Chỉ log ID kỹ thuật và mã lỗi hữu hạn, không log payload hay principal.
+      this.logger.warn(
+        `Grade ${exception.gradeId} đã lưu nhưng event ${exception.eventId} chưa publish (reason=${exception.reason})`,
+      );
+    }
     const status = this.statusFor(exception);
     const codes: Record<number, string> = {
       400: 'VALIDATION_ERROR',
@@ -42,6 +62,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
         ? HttpStatus.GATEWAY_TIMEOUT
         : HttpStatus.SERVICE_UNAVAILABLE;
     }
+    if (exception instanceof GradeEventPendingError) return HttpStatus.SERVICE_UNAVAILABLE;
     if (exception instanceof GradeConflictError) return HttpStatus.CONFLICT;
     if (exception instanceof GradeNotFoundError || exception instanceof SubmissionNotFoundError) {
       return HttpStatus.NOT_FOUND;
@@ -75,6 +96,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
   private isDomainError(exception: unknown): exception is DomainError {
     return (
       exception instanceof GradeConflictError ||
+      exception instanceof GradeEventPendingError ||
       exception instanceof GradeForbiddenError ||
       exception instanceof GradeNotFoundError ||
       exception instanceof SubmissionNotFoundError

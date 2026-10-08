@@ -7,6 +7,8 @@ import { HttpExceptionFilter } from '../../src/adapters/http/http-exception.filt
 import { GradeConflictError } from '../../src/application/grade-conflict-error.js';
 import { GradingDependencyError } from '../../src/application/grading-dependency-error.js';
 import { GradingService } from '../../src/application/grading.service.js';
+import { GradeEventPublishError } from '../../src/application/grade-event-publish-error.js';
+import { GradePublicationCoordinator } from '../../src/application/grade-publication.coordinator.js';
 import type { GradeRepository } from '../../src/application/ports/grade-repository.js';
 import type { SubmissionClient } from '../../src/application/ports/submission-client.js';
 import type { Grade } from '../../src/domain/grade.js';
@@ -26,12 +28,16 @@ describe('Grading HTTP contract', () => {
   let rows: Grade[];
   let submissionIds: string[];
   let submissionFailure: GradingDependencyError | undefined;
+  let publishFailure: GradeEventPublishError | undefined;
+  let publishedEventIds: string[];
   let app: INestApplication;
 
   beforeEach(async () => {
     rows = [seed];
     submissionIds = ['submission-001', 'submission-002'];
     submissionFailure = undefined;
+    publishFailure = undefined;
+    publishedEventIds = [];
     const repository: GradeRepository = {
       create: async (input) => {
         if (rows.some((row) => row.submission_id === input.submissionId)) {
@@ -58,12 +64,28 @@ describe('Grading HTTP contract', () => {
           : null;
       },
     };
+    const publication = new GradePublicationCoordinator(
+      {
+        countPending: async () => 0,
+        findPending: async () => [],
+        markFailed: async () => undefined,
+        markPublished: async () => undefined,
+        recordAttempt: async () => true,
+      },
+      {
+        publish: async (snapshot) => {
+          if (publishFailure) throw publishFailure;
+          publishedEventIds.push(snapshot.eventId);
+        },
+      },
+    );
     const module = await Test.createTestingModule({
       controllers: [GradingController],
       providers: [
         {
           provide: GradingService,
-          useFactory: (): GradingService => new GradingService(repository, submissionClient),
+          useFactory: (): GradingService =>
+            new GradingService(repository, submissionClient, publication),
         },
       ],
     }).compile();
@@ -197,6 +219,37 @@ describe('Grading HTTP contract', () => {
       .send(payload)
       .expect(504)
       .expect(({ body }) => expect(body).toMatchObject({ code: 'DEPENDENCY_TIMEOUT' }));
+  });
+
+  it('keeps the grade and answers 503 when the event cannot be published, then conflicts on retry', async () => {
+    publishFailure = new GradeEventPublishError('BROKER_UNAVAILABLE');
+    const payload = { score: 90, submission_id: 'submission-002' };
+    await request(app.getHttpServer())
+      .post('/api/v1/grades')
+      .set(instructor)
+      .send(payload)
+      .expect(503)
+      .expect(({ body }) =>
+        expect(body).toMatchObject({
+          code: 'DEPENDENCY_UNAVAILABLE',
+          message: 'Grade đã được lưu nhưng event chưa publish; hệ thống sẽ tự thử lại',
+        }),
+      );
+    expect(rows).toHaveLength(2);
+    const stored = rows[1]!;
+    await request(app.getHttpServer())
+      .get(`/api/v1/grades/${stored.id}`)
+      .set(instructor)
+      .expect(200)
+      .expect(({ body }) => expect(body).toMatchObject({ id: stored.id, score: 90 }));
+    publishFailure = undefined;
+    await request(app.getHttpServer())
+      .post('/api/v1/grades')
+      .set(instructor)
+      .send(payload)
+      .expect(409);
+    expect(rows).toHaveLength(2);
+    expect(publishedEventIds).toEqual([]);
   });
 
   it('lets the owner and any instructor read a grade but protects another student', async () => {
