@@ -74,6 +74,24 @@ Bằng chứng chạy cục bộ ngày 08/10/2026 với Node 22.13.1, pnpm 11.19
 | `pnpm run ci:verify` | Đạt |
 | `docker compose --env-file docker-compose/.env.example -f docker-compose/compose.yaml config --quiet` | Đạt |
 
+## Vòng review nội bộ vòng 1
+
+- Reviewer: subagent AI, theo chỉ định của Đức thay Bách (Bách không còn tham gia review). Đây là review nội bộ, **không phải** GitHub `APPROVED`; PR chưa tạo.
+- Phạm vi: đối chiếu event mapping/schema v1, topology, confirm publish, migration/publication state, request flow, worker/shutdown, telemetry, config, Compose/CI và test với `git diff main...HEAD`.
+- Verdict đề xuất sau khi sửa: `APPROVED` (chờ GitHub review thật khi có PR).
+
+| # | Mức | Vị trí | Finding | Xử lý |
+| --- | --- | --- | --- | --- |
+| 1 | Blocking | `rabbitmq-grade-completed.publisher.ts` (`open`) | Chỉ bước `connect` có timeout. Nếu broker nhận kết nối nhưng không trả lời `createConfirmChannel`/`assertExchange`, promise mở session treo vô hạn: request POST, vòng worker và shutdown bị giữ. | Bao toàn bộ bước dựng session bằng timeout `GRADING_PUBLISH_CONFIRM_TIMEOUT_MS`, quá hạn thì `PUBLISH_TIMEOUT` và đóng connection. |
+| 2 | Blocking | `rabbitmq-grade-completed.publisher.ts` (`invalidate`, shutdown) | `connection.close()` chờ close-ok của broker; khi mạng treo (không có phản hồi) socket không được giải phóng, mỗi chu kỳ retry 5 s rò thêm một connection; shutdown cũng chờ vô hạn. | Thêm `forceClose`: đóng êm rồi sau 1 s hủy socket kèm lỗi để amqplib dừng heartbeat. Shutdown chờ đóng êm có giới hạn 1 s. (Hủy socket không kèm lỗi để lại heartbeat timer, giữ process ~3 phút; đã phát hiện và sửa khi test.) |
+| 3 | Non-blocking | `test/rabbitmq-integration.mjs` | Chưa có test cho timeout ở giai đoạn confirm sau khi session đã mở (mạng treo) và cho việc không rò socket. | Thêm kịch bản 5d: proxy nuốt dữ liệu, POST nhận `PUBLISH_TIMEOUT` đúng ngưỡng, grade giữ `pending`, socket treo bị hủy về 0, mở lại thì worker publish cùng `event_id`. |
+| 4 | Ghi nhận, không sửa | Lịch sử commit | 3 commit `feat` đầu không tự compile riêng lẻ (theo implementer báo). | Không viết lại lịch sử theo chỉ thị; trạng thái cuối nhánh build đạt. |
+| 5 | Ghi nhận, không sửa | `docker-compose/compose.yaml` | RabbitMQ user/password nhúng vào URL không URL-encode; mật khẩu có ký tự đặc biệt trong `.env` sẽ làm URL sai. | Giá trị mặc định/ví dụ an toàn; để ngoài phạm vi task-05. |
+
+Các mục đã kiểm tra và không có lỗi: event mapping dùng `gradeCompletedEventSchema` và `createGradeCompletedRabbitMqHeaders`, `event_id`/`occurred_at`/payload ổn định giữa retry, `correlation` khớp `traceparent` header; exchange `lms.events` topic durable, chỉ assert exchange, persistent, `application/json`, tương thích exchange/routing key của Notification skeleton; callback confirm theo từng message, không đánh dấu `published` khi chưa có confirm, channel đóng thì callback nhận lỗi; migration idempotent trong một transaction, backfill `published` không phát lại; `23505` chỉ map `409` cho `grades_submission_id_key`; `publish_attempts` tăng trước attempt; worker tuần tự, không chồng vòng, shutdown dừng worker trước pool và connection; metric label hữu hạn, `event_id` không ở metric; không lộ URL/credential trong log, span, metric; validation config đúng khoảng; không có Notification consumer/DLQ; không đụng `workspace/bach/`, `docs/raw/`, contract v1.
+
+Kiểm chứng sau khi sửa (08/10/2026, Node 22.13.1, pnpm 11.19.0; PostgreSQL 17.6, RabbitMQ 4.1.4, Redis 8.2.1 tạm bằng Docker, đã dọn): `pnpm install --frozen-lockfile`, `format:check`, `build`, `lint`, `test`, `test:w1/course/enrollment/submission/grading/w2/w3/w5:postgres`, `test:grading:rabbitmq` (có kịch bản 5d, ~7 s) và `ci:verify` đều đạt; `docker compose config --quiet` đạt. Compose smoke chạy lại (project `task05rev`, Redis cổng 16379): POST `201` khi broker sống; dừng RabbitMQ thì POST `503` sau ~3.0 s với đúng message, GET `200`, POST lại `409`; bật lại thì worker publish (`published`, `publish_attempts=2`), queue durable nhận đúng message cùng `event_id` với DB, log Grading không chứa URL/mật khẩu. Card và trạng thái task giữ nguyên.
+
 ## Thay đổi, tồn đọng và bước tiếp theo
 
 - Thay đổi so với input: không đổi phạm vi; các điều chỉnh kỹ thuật nằm ở mục "Quyết định/điều chỉnh so với kế hoạch".

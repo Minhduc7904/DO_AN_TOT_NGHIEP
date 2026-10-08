@@ -105,9 +105,20 @@ function createBrokerProxy(targetUrl) {
   const sockets = new Set();
   let server;
   let port = 0;
+  let frozen = false;
   return {
     get port() {
       return port;
+    },
+    get openSockets() {
+      return sockets.size;
+    },
+    /** Giữ socket mở nhưng nuốt mọi dữ liệu: mô phỏng mạng treo (broker không bao giờ confirm). */
+    freeze() {
+      frozen = true;
+    },
+    thaw() {
+      frozen = false;
     },
     async start() {
       server = createServer((client) => {
@@ -117,8 +128,14 @@ function createBrokerProxy(targetUrl) {
           socket.on('error', () => socket.destroy());
           socket.on('close', () => sockets.delete(socket));
         }
-        client.pipe(upstream);
-        upstream.pipe(client);
+        client.on('data', (chunk) => {
+          if (!frozen) upstream.write(chunk);
+        });
+        upstream.on('data', (chunk) => {
+          if (!frozen) client.write(chunk);
+        });
+        client.on('close', () => upstream.destroy());
+        upstream.on('close', () => client.destroy());
       });
       port = await listen(server, port);
     },
@@ -378,6 +395,32 @@ try {
   assert.equal(pendingGauge(), 0);
   await worker.runCycle();
   await assertQueueEmpty();
+
+  // 5d. Mạng treo sau khi đã có session: confirm không bao giờ về -> PUBLISH_TIMEOUT đúng ngưỡng,
+  // event giữ pending, socket treo bị hủy (không rò) và lần sau tạo session mới publish được.
+  const hungSubmission = `submission-${randomUUID()}`;
+  newSubmission(hungSubmission);
+  proxy.freeze();
+  const hungStartedAt = performance.now();
+  const hungFailure = await service.create(instructor, hungSubmission, 66).catch((error) => error);
+  const hungElapsed = performance.now() - hungStartedAt;
+  assert.ok(hungFailure instanceof GradeEventPendingError);
+  assert.equal(hungFailure.reason, 'PUBLISH_TIMEOUT');
+  assert.ok(
+    hungElapsed >= CONFIRM_TIMEOUT_MS - 50 && hungElapsed < CONFIRM_TIMEOUT_MS + 1_500,
+    `hungElapsed=${hungElapsed}`,
+  );
+  assert.equal((await stateOf(hungFailure.gradeId)).publish_status, 'pending');
+  const settleDeadline = Date.now() + 4_000;
+  while (proxy.openSockets > 0 && Date.now() < settleDeadline) {
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+  assert.equal(proxy.openSockets, 0, 'connection treo phải bị hủy, không được rò socket');
+  proxy.thaw();
+  await worker.runCycle();
+  assert.equal((await stateOf(hungFailure.gradeId)).publish_status, 'published');
+  const [hungMessage] = await receive(1);
+  assert.equal(JSON.parse(hungMessage.content.toString()).event_id, hungFailure.eventId);
 
   const metrics = JSON.stringify(metricExporter.getMetrics());
   for (const name of [

@@ -15,6 +15,27 @@ interface BrokerSession {
   channel: ConfirmChannel;
 }
 
+const FORCE_CLOSE_GRACE_MS = 1_000;
+
+/**
+ * Đóng connection êm; nếu broker không trả close-ok (mạng treo) thì hủy socket sau thời gian chờ
+ * ngắn để các lần retry liên tiếp không tích lũy socket/file descriptor.
+ */
+function forceClose(connection: ChannelModel): void {
+  const timer = setTimeout(() => {
+    const internal = connection.connection as unknown as {
+      stream?: { destroy(error?: Error): void };
+    };
+    // Hủy kèm lỗi để amqplib chạy toClosed (dừng heartbeat, báo close) thay vì để timer heartbeat sống tiếp.
+    internal.stream?.destroy(new Error('Connection bị hủy sau khi đóng êm quá hạn'));
+  }, FORCE_CLOSE_GRACE_MS);
+  timer.unref();
+  void connection
+    .close()
+    .catch(() => undefined)
+    .finally(() => clearTimeout(timer));
+}
+
 @Injectable()
 export class RabbitMqGradeCompletedPublisher
   extends GradeCompletedPublisher
@@ -61,8 +82,21 @@ export class RabbitMqGradeCompletedPublisher
     const session = this.session;
     this.session = undefined;
     // Một lần mở đang dở sẽ tự đóng khi hoàn tất (xem `open`).
-    await session?.channel.close().catch(() => undefined);
-    await session?.connection.close().catch(() => undefined);
+    if (!session) return;
+    // Chờ đóng êm nhưng có giới hạn: broker treo không được giữ shutdown vô hạn.
+    let timer: NodeJS.Timeout | undefined;
+    await Promise.race([
+      session.channel
+        .close()
+        .catch(() => undefined)
+        .then(() => session.connection.close())
+        .catch(() => undefined),
+      new Promise<void>((resolve) => {
+        timer = setTimeout(resolve, FORCE_CLOSE_GRACE_MS);
+      }),
+    ]);
+    clearTimeout(timer);
+    forceClose(session.connection);
   }
 
   private ensureSession(): Promise<BrokerSession> {
@@ -75,25 +109,38 @@ export class RabbitMqGradeCompletedPublisher
 
   private async open(): Promise<BrokerSession> {
     const connection = await this.connectWithTimeout();
+    let timer: NodeJS.Timeout | undefined;
     try {
-      // Không có listener 'error' thì amqplib làm process crash khi broker ngắt kết nối.
-      connection.on('error', (error: Error) =>
-        this.logger.warn(this.describe('connection', error)),
-      );
-      const channel = await connection.createConfirmChannel();
-      channel.on('error', (error: Error) => this.logger.warn(this.describe('channel', error)));
-      const session = { channel, connection };
-      connection.on('close', () => this.invalidate(session));
-      channel.on('close', () => this.invalidate(session));
-      // Chỉ assert exchange; queue của consumer do Notification sở hữu.
-      await channel.assertExchange(this.exchange, 'topic', { durable: true });
-      if (this.closed) throw new GradeEventPublishError('BROKER_UNAVAILABLE');
-      this.session = session;
-      return session;
+      // Broker nhận kết nối nhưng không trả lời tạo channel/assertExchange sẽ làm treo mọi publish,
+      // worker và shutdown, nên toàn bộ bước dựng session cũng bị chặn bởi cùng ngưỡng timeout.
+      const timeout = new Promise<never>((_resolve, reject) => {
+        timer = setTimeout(
+          () => reject(new GradeEventPublishError('PUBLISH_TIMEOUT')),
+          this.confirmTimeoutMs,
+        );
+      });
+      return await Promise.race([this.setUp(connection), timeout]);
     } catch (error) {
-      await connection.close().catch(() => undefined);
+      forceClose(connection);
       throw this.classify(error);
+    } finally {
+      clearTimeout(timer);
     }
+  }
+
+  private async setUp(connection: ChannelModel): Promise<BrokerSession> {
+    // Không có listener 'error' thì amqplib làm process crash khi broker ngắt kết nối.
+    connection.on('error', (error: Error) => this.logger.warn(this.describe('connection', error)));
+    const channel = await connection.createConfirmChannel();
+    channel.on('error', (error: Error) => this.logger.warn(this.describe('channel', error)));
+    const session = { channel, connection };
+    connection.on('close', () => this.invalidate(session));
+    channel.on('close', () => this.invalidate(session));
+    // Chỉ assert exchange; queue của consumer do Notification sở hữu.
+    await channel.assertExchange(this.exchange, 'topic', { durable: true });
+    if (this.closed) throw new GradeEventPublishError('BROKER_UNAVAILABLE');
+    this.session = session;
+    return session;
   }
 
   private async connectWithTimeout(): Promise<ChannelModel> {
@@ -111,7 +158,7 @@ export class RabbitMqGradeCompletedPublisher
       ]);
     } catch (error) {
       // Kết nối về muộn sau khi đã timeout phải được đóng để không rò connection.
-      attempt.then((late) => late.close()).catch(() => undefined);
+      attempt.then(forceClose).catch(() => undefined);
       throw this.classify(error);
     } finally {
       clearTimeout(timer);
@@ -179,7 +226,7 @@ export class RabbitMqGradeCompletedPublisher
   private invalidate(session: BrokerSession): void {
     if (this.session === session) this.session = undefined;
     void session.channel.close().catch(() => undefined);
-    void session.connection.close().catch(() => undefined);
+    forceClose(session.connection);
   }
 
   private classify(error: unknown): GradeEventPublishError {
