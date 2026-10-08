@@ -13,7 +13,7 @@ npm exec --yes --package=corepack@0.34.0 -- corepack pnpm --filter @aiops-lms/au
 npm exec --yes --package=corepack@0.34.0 -- corepack pnpm --filter @aiops-lms/auth start
 ```
 
-Migration tạo bảng Auth theo hướng idempotent. Seed tạo duy nhất `student@example.test` với mật khẩu `example-password` khi user chưa tồn tại; đây là credential thử nghiệm cục bộ, không dùng cho môi trường thật.
+Migration tạo bảng Auth theo hướng idempotent. Seed tạo `student@example.test` (role `student`) và `instructor@example.test` (role `instructor`), cùng mật khẩu `example-password`, khi user chưa tồn tại; đây là credential thử nghiệm cục bộ, không dùng cho môi trường thật.
 
 ## Biến môi trường
 

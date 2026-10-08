@@ -19,4 +19,12 @@ WHERE NOT EXISTS (
   WHERE datname = 'submission_db'
 )
 \gexec
+
+SELECT 'CREATE DATABASE grading_db'
+WHERE NOT EXISTS (
+  SELECT 1
+  FROM pg_database
+  WHERE datname = 'grading_db'
+)
+\gexec
 SQL

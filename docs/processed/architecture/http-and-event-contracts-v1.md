@@ -645,10 +645,17 @@ Success `201`:
 }
 ```
 
+Ràng buộc (Grading MVP):
+
+- Chỉ principal có role `instructor` được tạo grade.
+- Payload strict, không nhận field thừa. `submission_id` là chuỗi không rỗng, tối đa 200 ký tự. `score` là số hữu hạn trong `[0, 100]`, tối đa 4 chữ số thập phân (khớp cột `numeric(7,4)`); giá trị khác bị từ chối bằng `400`, không làm tròn âm thầm. Các ví dụ trong tài liệu này (ví dụ `8.5`) vẫn hợp lệ.
+- Grade là create-only: mỗi Submission có tối đa một grade; tạo lần hai nhận `409`. Không có `PUT`, `PATCH`, `DELETE` hoặc list endpoint.
+
 Errors:
 
 - `400 VALIDATION_ERROR`
-- `401 UNAUTHORIZED`
+- `401 UNAUTHORIZED` nếu thiếu principal context
+- `403 FORBIDDEN` nếu principal không phải `instructor`
 - `404 NOT_FOUND` nếu Submission không tồn tại
 - `409 CONFLICT` nếu grade completed đã tồn tại cho submission theo rule MVP
 - `503 DEPENDENCY_UNAVAILABLE`
@@ -665,9 +672,13 @@ Contract v1 không tự tuyên bố distributed transaction/Outbox là bắt bu�
 
 Success `200`: Grade representation.
 
+Quyền đọc: `instructor` đọc mọi grade; `student` chỉ đọc grade của chính mình (grade gắn với principal sở hữu Submission tại thời điểm chấm).
+
 Errors:
 
-- `404 NOT_FOUND`
+- `401 UNAUTHORIZED` nếu thiếu principal context
+- `403 FORBIDDEN` nếu `student` đọc grade của người khác
+- `404 NOT_FOUND` (kể cả `grade_id` không phải UUID)
 - `500 INTERNAL_ERROR`
 
 ---

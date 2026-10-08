@@ -72,7 +72,8 @@ jobs:
           export COURSE_DATABASE_URL="${W1_AUTH_DATABASE_URL%/auth_db}/course_db"
           export ENROLLMENT_DATABASE_URL="${W1_AUTH_DATABASE_URL%/auth_db}/enrollment_db"
           export SUBMISSION_DATABASE_URL="${W1_AUTH_DATABASE_URL%/auth_db}/submission_db"
-          pnpm run test:w1:postgres && pnpm run test:course:postgres && pnpm run test:enrollment:postgres && pnpm run test:submission:postgres && pnpm run test:w2:postgres && pnpm run test:w3:postgres && pnpm run ci:verify
+          export GRADING_DATABASE_URL="${W1_AUTH_DATABASE_URL%/auth_db}/grading_db"
+          pnpm run test:w1:postgres && pnpm run test:course:postgres && pnpm run test:enrollment:postgres && pnpm run test:submission:postgres && pnpm run test:grading:postgres && pnpm run test:w2:postgres && pnpm run test:w3:postgres && pnpm run test:w5:postgres && pnpm run ci:verify
 
   compose-config:
     name: Validate Compose without local configuration
@@ -106,6 +107,21 @@ jobs:
           submission_id="$(printf '%s' "$submission" | node -e 'let text="";process.stdin.on("data",chunk=>text+=chunk);process.stdin.on("end",()=>process.stdout.write(JSON.parse(text).id))')"
           test -n "$submission_id"
           curl --fail --silent --show-error -H "Authorization: Bearer $token" "http://127.0.0.1:3000/api/v1/submissions/$submission_id" | node -e 'let text="";process.stdin.on("data",chunk=>text+=chunk);process.stdin.on("end",()=>{if(JSON.parse(text).id!==process.argv[1])process.exit(1)})' "$submission_id"
+      - name: Instructor grades a Submission through Gateway
+        run: |
+          json_field() { node -e 'let text="";process.stdin.on("data",chunk=>text+=chunk);process.stdin.on("end",()=>process.stdout.write(String(JSON.parse(text)[process.argv[1]])))' "$1"; }
+          login() { curl --fail --silent --show-error -H 'content-type: application/json' -d "{\"email\":\"$1\",\"password\":\"example-password\"}" http://127.0.0.1:3000/api/v1/auth/login | json_field access_token; }
+          student_token="$(login student@example.test)"
+          instructor_token="$(login instructor@example.test)"
+          submission_id="$(curl --fail --silent --show-error -H "Authorization: Bearer $student_token" -H 'content-type: application/json' -d '{"course_id":"course-001","content":"compose-grading-answer"}' http://127.0.0.1:3000/api/v1/submissions | json_field id)"
+          test -n "$submission_id"
+          grade_body="{\"submission_id\":\"$submission_id\",\"score\":92.5}"
+          test "$(curl --silent --output /dev/null --write-out '%{http_code}' -H "Authorization: Bearer $student_token" -H 'content-type: application/json' -d "$grade_body" http://127.0.0.1:3000/api/v1/grades)" = 403
+          grade="$(curl --fail --silent --show-error -H "Authorization: Bearer $instructor_token" -H 'content-type: application/json' -d "$grade_body" http://127.0.0.1:3000/api/v1/grades)"
+          grade_id="$(printf '%s' "$grade" | json_field id)"
+          test -n "$grade_id"
+          test "$(curl --fail --silent --show-error -H "Authorization: Bearer $student_token" "http://127.0.0.1:3000/api/v1/grades/$grade_id" | json_field submission_id)" = "$submission_id"
+          test "$(curl --silent --output /dev/null --write-out '%{http_code}' -H "Authorization: Bearer $instructor_token" -H 'content-type: application/json' -d "$grade_body" http://127.0.0.1:3000/api/v1/grades)" = 409
       - name: Show logs on failure
         if: failure()
         run: docker compose --env-file docker-compose/.env.example -f docker-compose/compose.yaml logs --no-color

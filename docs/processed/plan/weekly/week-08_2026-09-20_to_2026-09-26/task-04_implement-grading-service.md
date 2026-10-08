@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-04_implement-grading-service` |
 | Tuần | `week-08_2026-09-20_to_2026-09-26` |
-| Trạng thái | Đã giao |
+| Trạng thái | Hoàn thành |
 | Người phụ trách | Đức |
 | Collaborator | Bách rà soát contract và correlation field |
 | Ưu tiên | Cao |
@@ -40,21 +40,21 @@ Triển khai Grading service MVP: API tạo/cập nhật grade cho submission h�
 
 ## Definition of Done
 
-- [ ] Grading tạo/cập nhật grade theo HTTP contract, validation/authorization/error envelope rõ ràng và gọi Submission qua HTTP để xác nhận input.
-- [ ] `grading_db` được migration/seed từ trạng thái sạch, chạy lại không nhân bản dữ liệu; không cross-service database/source import.
-- [ ] Health, config, Compose/Gateway wiring và unit/PostgreSQL integration tests phù hợp pass.
-- [ ] HTTP server/client và PostgreSQL telemetry giữ trace context, có dependency identity/error semantics và không lộ secret/PII.
-- [ ] URL/số PR và trạng thái `Chờ review` đã được commit/push vào PR head trước khi reviewer bắt đầu review.
-- [ ] Pull request từ nhánh task có mô tả đúng quy tắc, có verdict `APPROVED` hợp lệ từ thành viên còn lại trên GitHub và completion metadata được commit/push vào chính PR trước khi người phụ trách merge.
+- [x] Grading tạo/cập nhật grade theo HTTP contract, validation/authorization/error envelope rõ ràng và gọi Submission qua HTTP để xác nhận input.
+- [x] `grading_db` được migration/seed từ trạng thái sạch, chạy lại không nhân bản dữ liệu; không cross-service database/source import.
+- [x] Health, config, Compose/Gateway wiring và unit/PostgreSQL integration tests phù hợp pass.
+- [x] HTTP server/client và PostgreSQL telemetry giữ trace context, có dependency identity/error semantics và không lộ secret/PII.
+- [x] URL/số PR và trạng thái `Chờ review` đã được commit/push vào PR head trước khi review.
+- [x] Ngoại lệ theo xác nhận trực tiếp của Đức: Bách không thể review nên review do subagent AI theo chỉ định của Đức thực hiện; completion metadata được commit/push vào chính PR trước merge dù chưa có verdict GitHub `APPROVED`; không coi đây là GitHub approval.
 
 ## Liên kết hồ sơ thực hiện
 
-- Input workspace: Chưa tạo — Đức cần tạo trong workspace của mình trước khi bắt đầu.
-- Output workspace: Chưa tạo.
-- Pull request: Chưa tạo.
-- Kết quả review: Chưa review.
+- Input workspace: [task-input.md](../../../../../workspace/duc/week-08_2026-09-20_to_2026-09-26/task-04_implement-grading-service/input/task-input.md)
+- Output workspace: [task-output.md](../../../../../workspace/duc/week-08_2026-09-20_to_2026-09-26/task-04_implement-grading-service/output/task-output.md)
+- Pull request: [#32](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/32)
+- Kết quả review: Review nội bộ vòng 1 bởi subagent AI theo chỉ định của Đức (thay Bách), không có blocking, 4 góp ý non-blocking đã xử lý ([comment PR](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/32#issuecomment-6053804131)); **chưa có verdict GitHub `APPROVED`**.
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 27/09/2026 — tạo card và giao cho Đức.
-- Ghi chú/tồn đọng: Không tạo hồ sơ trong `workspace/duc/` vì người giao hiện tại là Bách; Đức sẽ tự khởi tạo khi nhận task.
+- Cập nhật gần nhất: 08/10/2026 — xử lý feedback review nội bộ vòng 1, cập nhật contract v1 §10; finalization theo ngoại lệ do Đức xác nhận.
+- Ghi chú/tồn đọng: Task sẵn sàng merge theo ngoại lệ của Đức; GitHub chưa có `APPROVED` từ thành viên còn lại. Timeline/JSON chờ đồng bộ bằng Windows PowerShell (script không chạy được trên Linux); Đức chỉ thị tiếp tục, không sửa tay đầu ra.
