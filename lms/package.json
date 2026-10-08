@@ -9,10 +9,10 @@
     "pnpm": "11.19.0"
   },
   "scripts": {
-    "build": "pnpm --filter @aiops-lms/contracts build && pnpm --filter @aiops-lms/observability build && pnpm --filter @aiops-lms/course build && pnpm --filter @aiops-lms/auth build && pnpm --filter @aiops-lms/gateway build && pnpm --filter @aiops-lms/enrollment build && pnpm --filter @aiops-lms/submission-storage-mock build && pnpm --filter @aiops-lms/submission build && pnpm --filter @aiops-lms/notification build",
+    "build": "pnpm --filter @aiops-lms/contracts build && pnpm --filter @aiops-lms/observability build && pnpm --filter @aiops-lms/course build && pnpm --filter @aiops-lms/auth build && pnpm --filter @aiops-lms/gateway build && pnpm --filter @aiops-lms/enrollment build && pnpm --filter @aiops-lms/submission-storage-mock build && pnpm --filter @aiops-lms/submission build && pnpm --filter @aiops-lms/notification build && pnpm --filter @aiops-lms/grading build",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "lint": "eslint \"{contracts,packages/observability,services/{course,auth,gateway,enrollment,submission,submission-storage-mock,notification}}/**/*.ts\" --max-warnings=0",
+    "lint": "eslint \"{contracts,packages/observability,services/{course,auth,gateway,enrollment,submission,submission-storage-mock,notification,grading}}/**/*.ts\" --max-warnings=0",
     "ci:verify": "pnpm run format:check && pnpm run build && pnpm run lint && pnpm run test",
     "start:course": "pnpm run build && pnpm --filter @aiops-lms/course start",
     "test": "pnpm run test:architecture && pnpm --filter @aiops-lms/contracts build && pnpm --filter @aiops-lms/observability test && node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config services/course/jest.config.ts && node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config services/auth/jest.config.ts && node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config services/gateway/jest.config.ts && node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config services/enrollment/jest.config.ts && node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config services/submission-storage-mock/jest.config.ts && node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config services/submission/jest.config.ts && pnpm --filter @aiops-lms/notification test && pnpm run test:w1 && pnpm run test:telemetry",
