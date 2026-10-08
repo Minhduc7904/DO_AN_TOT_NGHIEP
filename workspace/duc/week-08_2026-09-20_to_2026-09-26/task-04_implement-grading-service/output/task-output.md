@@ -6,13 +6,13 @@
 | --- | --- |
 | Mã task | `task-04_implement-grading-service` |
 | Người phụ trách | Đức |
-| Trạng thái | Chờ review |
+| Trạng thái | Hoàn thành |
 | Bắt đầu thực tế | 08/10/2026 |
-| Hoàn thành thực tế | Chưa hoàn thành |
-| Tổng thời lượng | Đang thực hiện |
+| Hoàn thành thực tế | 08/10/2026 — finalization theo ngoại lệ do Đức xác nhận |
+| Tổng thời lượng | Không có giờ bắt đầu/kết thúc chính xác để tổng kết; thực hiện trong ngày 08/10/2026 |
 | Pull request | [#32](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/32) |
-| Người review | Bách |
-| Kết quả review | Chờ Bách review |
+| Người review | Subagent AI theo chỉ định của Đức (thay Bách) |
+| Kết quả review | Review nội bộ vòng 1 không có blocking; **chưa có verdict GitHub `APPROVED`** |
 
 ## Báo cáo công việc đã làm
 
@@ -54,7 +54,7 @@ Bằng chứng chạy cục bộ ngày 08/10/2026 với Node 22.13.1, pnpm 11.19
 | Health, config, Compose/Gateway wiring và unit/PostgreSQL integration tests pass | Đạt | `docker compose --env-file docker-compose/.env.example -f docker-compose/compose.yaml config --quiet` rc=0; `docker compose up --build -d --wait` toàn bộ service healthy (kể cả `grading`); smoke qua Gateway: login student → enroll → tạo Submission mới → login instructor → student bị `403` khi chấm → instructor tạo grade `201` → student đọc grade → tạo lần hai `409`; Gateway e2e 9/9 pass (route `/grades`, ghi đè principal giả mạo). Chạy lặp smoke vẫn đạt. |
 | Telemetry HTTP server/client và PostgreSQL giữ trace context, có dependency identity/error semantics, không lộ secret/PII | Đạt | `test/telemetry/dependency.telemetry-test.mjs` ("Grading dependency spans và metrics assertions đạt."), `submission-integration.mjs` (traceparent Grading → Submission, span lỗi `timeout`/`unavailable`, metric không chứa principal/submission/JWT), `test:w5:postgres` (cùng trace ID qua Gateway, Grading, Submission, `grading-postgres`, `submission-postgres`; quan hệ cha-con span đúng). |
 | URL/số PR và `Chờ review` đã commit/push vào PR head trước review | Đạt | PR [#32](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/32); transition này được commit/push vào PR head. |
-| PR có mô tả đúng quy tắc, có `APPROVED` hợp lệ và completion metadata | Chưa đạt | PR [#32](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/32) dùng template; chờ Bách `APPROVED` và finalization. |
+| PR có mô tả đúng quy tắc, có `APPROVED` hợp lệ và completion metadata | Đạt theo ngoại lệ | PR [#32](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/32) dùng template. Bách không thể review; Đức chỉ định subagent AI review (vòng 1, [comment](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/32#issuecomment-6053804131)) và xác nhận finalization dù chưa có GitHub `APPROVED`; completion metadata được commit/push vào PR #32. Không ghi nhận đây là GitHub approval. |
 
 ### Cổng kiểm chứng đã chạy (kết quả thực)
 
@@ -73,12 +73,12 @@ Bằng chứng chạy cục bộ ngày 08/10/2026 với Node 22.13.1, pnpm 11.19
 ## Thay đổi, tồn đọng và bước tiếp theo
 
 - Thay đổi so với input: grade create-only (card nêu "tạo/cập nhật" nhưng kế hoạch đã chốt chỉ tạo); thêm `403` và giới hạn `score` so với ví dụ contract v1.
-- Việc chưa hoàn thành hoặc trở ngại: chờ Bách review/`APPROVED`; timeline đang chờ đồng bộ bằng Windows PowerShell (xem ghi chú trên) — Đức đã chỉ thị tiếp tục chuyển `Chờ review` khi timeline chưa đồng bộ.
-- Bước tiếp theo: Bách review PR #32; sau `APPROVED`, Đức finalization bằng `task-completion-recording`, đồng bộ timeline trên Windows rồi merge.
+- Việc chưa hoàn thành hoặc trở ngại: Không có blocker substantive trong phạm vi task-04. GitHub chưa có `APPROVED` hợp lệ từ thành viên còn lại — cổng chuẩn được Đức yêu cầu bỏ qua theo ngoại lệ. Timeline đang chờ đồng bộ bằng Windows PowerShell (xem ghi chú trên); Đức chỉ thị tiếp tục.
+- Bước tiếp theo: Đức kiểm tra branch protection rồi merge PR #32 theo ngoại lệ; đồng bộ timeline bằng Windows PowerShell; bắt đầu task-05 từ `main` mới.
 
 ## Vòng review nội bộ vòng 1 (ngày 08/10/2026)
 
-Nguồn: Đức giao một subagent AI đóng vai reviewer thay Bách (Bách không còn tham gia review). Đây là xác nhận/chỉ định của người phụ trách, **không phải** verdict GitHub `APPROVED`; PR chưa có approval hợp lệ trên GitHub và card vẫn giữ `Chờ review`. Reviewer đã tự review lại toàn bộ `git diff main...HEAD` (không dựa vào kết luận review nội bộ trước), không tìm thấy lỗi blocking; có 4 góp ý non-blocking, đã xử lý như sau.
+Nguồn: Đức giao một subagent AI đóng vai reviewer thay Bách (Bách không còn tham gia review). Đây là xác nhận/chỉ định của người phụ trách, **không phải** verdict GitHub `APPROVED`; PR chưa có approval hợp lệ trên GitHub. Sau vòng review này, Đức xác nhận finalization theo ngoại lệ. Reviewer đã tự review lại toàn bộ `git diff main...HEAD` (không dựa vào kết luận review nội bộ trước), không tìm thấy lỗi blocking; có 4 góp ý non-blocking, đã xử lý như sau.
 
 | # | Mức | Vị trí | Vấn đề | Xử lý |
 | --- | --- | --- | --- | --- |
