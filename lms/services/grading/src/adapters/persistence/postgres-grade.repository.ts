@@ -165,7 +165,14 @@ export class PostgresGradeRepository
         return await this.pool.query<Row>(statement, values);
       } catch (error) {
         const code = error instanceof Error && 'code' in error ? String(error.code) : '';
-        if (code === '23505' && conflictSubmissionId !== undefined) {
+        // Chỉ unique(submission_id) là xung đột nghiệp vụ; vi phạm unique khác (id, event_id) là lỗi hệ thống.
+        const constraint =
+          error instanceof Error && 'constraint' in error ? String(error.constraint) : '';
+        if (
+          code === '23505' &&
+          constraint === 'grades_submission_id_key' &&
+          conflictSubmissionId !== undefined
+        ) {
           throw new GradeConflictError(conflictSubmissionId);
         }
         // pg không gắn code ổn định cho connection/query timeout phía client (chỉ có message
