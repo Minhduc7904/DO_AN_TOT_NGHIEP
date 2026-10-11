@@ -2,17 +2,17 @@
 
 ## Thông tin hoàn thành
 
-| Trường             | Nội dung                                                      |
-| ------------------ | ------------------------------------------------------------- |
-| Mã task            | `task-02_implement-notification-consumer-and-async-telemetry` |
-| Người phụ trách    | Đức                                                           |
-| Trạng thái         | Đang thực hiện                                                |
-| Bắt đầu thực tế    | 11/10/2026                                                    |
-| Hoàn thành thực tế | Chưa hoàn thành                                               |
-| Tổng thời lượng    | Chưa tổng kết                                                 |
-| Pull request       | Chưa tạo                                                      |
-| Người review       | Agent review độc lập theo ngoại lệ của Đức                    |
-| Kết quả review     | Chưa review                                                   |
+| Trường             | Nội dung                                                       |
+| ------------------ | -------------------------------------------------------------- |
+| Mã task            | `task-02_implement-notification-consumer-and-async-telemetry`  |
+| Người phụ trách    | Đức                                                            |
+| Trạng thái         | Chờ review                                                     |
+| Bắt đầu thực tế    | 11/10/2026                                                     |
+| Hoàn thành thực tế | Chưa hoàn thành                                                |
+| Tổng thời lượng    | Chưa tổng kết                                                  |
+| Pull request       | [#34](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/34) |
+| Người review       | Agent review độc lập theo ngoại lệ của Đức                     |
+| Kết quả review     | Chưa review                                                    |
 
 ## Báo cáo công việc đã làm
 
@@ -35,7 +35,7 @@
 | ----------------------------------------------------- | ---------------------- | ---------------------------------------------------------------------------------- |
 | Consumer, duplicate handling, telemetry và fault hook | Đạt                    | Notification unit test `3 suites / 11 tests` và RabbitMQ integration pass          |
 | Compose và test phù hợp pass                          | Đạt trong phạm vi task | Compose config pass; container Notification healthy; build, lint và full test pass |
-| URL PR và `Chờ review` trên PR head                   | Chưa đạt               | PR chưa tạo                                                                        |
+| URL PR và `Chờ review` trên PR head                   | Đạt                    | PR #34; metadata được commit/push trước khi review                                 |
 | Review/finalization theo ngoại lệ                     | Chưa đạt               | Chưa review                                                                        |
 
 ## Thay đổi, tồn đọng và bước tiếp theo
@@ -44,4 +44,4 @@
 - Việc chưa hoàn thành hoặc trở ngại:
   - `pnpm run ci:verify` dừng tại `format:check` vì 34 file baseline ngoài diff hiện không đạt Prettier; không tự format file ngoài phạm vi task.
   - Đồng bộ plan/timeline dừng vì liên kết `workspace/bach/week-08_2026-09-20_to_2026-09-26/task-03_verify-grade-to-notification-workflow/input/task-input.md` chưa tồn tại; không tự tạo hoặc sửa workspace của Bách.
-- Bước tiếp theo: Commit/push, tạo PR, ghi URL và chuyển `Chờ review` trước khi reviewer bắt đầu.
+- Bước tiếp theo: Agent review độc lập thực hiện full review; chưa finalization và chưa merge.

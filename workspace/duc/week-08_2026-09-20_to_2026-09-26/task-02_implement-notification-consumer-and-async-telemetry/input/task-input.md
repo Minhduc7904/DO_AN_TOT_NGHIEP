@@ -8,11 +8,11 @@
 | Tên task             | Triển khai consumer Notification và async telemetry                        |
 | Người phụ trách      | Đức                                                                        |
 | Tuần thực hiện       | `week-08_2026-09-20_to_2026-09-26`                                         |
-| Trạng thái           | Đang thực hiện                                                             |
+| Trạng thái           | Chờ review                                                                 |
 | Ngày tạo             | 11/10/2026                                                                 |
 | Thời gian dự kiến    | 11/10/2026                                                                 |
 | Nhánh thực hiện      | `feat/week-08/task-02-implement-notification-consumer-and-async-telemetry` |
-| Pull request dự kiến | Tạo sau khi substantive work và kiểm tra hoàn tất                          |
+| Pull request dự kiến | [#34](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/34)             |
 
 ## Mục tiêu và phạm vi
 
