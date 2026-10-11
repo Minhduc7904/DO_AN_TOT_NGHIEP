@@ -66,7 +66,7 @@ export class GatewayProxy {
       operation_name: operation,
     };
     const clientSpan = tracer.startSpan(
-      `${request.dependency} ${operation}`,
+      `${operation} ${targetUrl.pathname}`,
       {
         attributes: {
           ...metricAttributes,

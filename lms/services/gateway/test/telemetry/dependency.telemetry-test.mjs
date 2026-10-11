@@ -96,6 +96,17 @@ try {
       'gateway-grading',
     ],
   );
+  assert.deepEqual(
+    spans.map((span) => span.name),
+    [
+      'POST /api/v1/auth/login',
+      'GET /api/v1/courses/course-001',
+      'GET /api/v1/enrollments',
+      'GET /api/v1/submissions/submission-001',
+      'GET /api/v1/grades/grade-001',
+    ],
+    'Gateway client span name phải giữ contract method + path cho regression E2E',
+  );
   assert.notEqual(spans[0].status.code, SpanStatusCode.ERROR);
   assert.notEqual(spans[1].status.code, SpanStatusCode.ERROR);
   assert.equal(spans[2].attributes['error.type'], 'timeout');
