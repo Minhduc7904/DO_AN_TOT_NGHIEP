@@ -2,17 +2,17 @@
 
 ## Thông tin hoàn thành
 
-| Trường             | Nội dung                                                        |
-| ------------------ | --------------------------------------------------------------- |
-| Mã task            | `task-02_implement-notification-consumer-and-async-telemetry`   |
-| Người phụ trách    | Đức                                                             |
-| Trạng thái         | Hoàn thành                                                      |
-| Bắt đầu thực tế    | 11/10/2026                                                      |
-| Hoàn thành thực tế | 11/10/2026 — finalization theo ngoại lệ review nội bộ của Đức   |
-| Tổng thời lượng    | Chưa tổng kết                                                   |
-| Pull request       | [#34](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/34)  |
-| Người review       | Agent review độc lập theo ngoại lệ của Đức                      |
-| Kết quả review     | Focused re-review `APPROVED` nội bộ; không có GitHub `APPROVED` |
+| Trường             | Nội dung                                                                                                                                                                                |
+| ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Mã task            | `task-02_implement-notification-consumer-and-async-telemetry`                                                                                                                           |
+| Người phụ trách    | Đức                                                                                                                                                                                     |
+| Trạng thái         | Hoàn thành                                                                                                                                                                              |
+| Bắt đầu thực tế    | 11/10/2026                                                                                                                                                                              |
+| Hoàn thành thực tế | 11/10/2026 — finalization theo ngoại lệ review nội bộ của Đức                                                                                                                           |
+| Tổng thời lượng    | Khoảng 41 phút cho phần tiếp quản của Đức, tính theo mốc Git `fdb9578` (19:10:36) đến `11fb5e2` (19:51:52); không tính phần Bách đã thực hiện trước đó và không phải timesheet thủ công |
+| Pull request       | [#34](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/34)                                                                                                                          |
+| Người review       | Agent review độc lập theo ngoại lệ của Đức                                                                                                                                              |
+| Kết quả review     | Focused re-review `APPROVED` nội bộ; không có GitHub `APPROVED`                                                                                                                         |
 
 ## Báo cáo công việc đã làm
 
