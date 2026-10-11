@@ -1,6 +1,6 @@
 # API Gateway
 
-Gateway là trust boundary HTTP của LMS. Các route `POST /api/v1/auth/login` và `POST /api/v1/auth/refresh` được chuyển tiếp tới Auth mà không cần access token. Route `/api/v1/courses` yêu cầu Bearer JWT HS256 hợp lệ; Gateway chỉ chuyển `x-principal-id` và `x-principal-role` do chính nó derive từ claim `sub` và `role`.
+Gateway là trust boundary HTTP của LMS. Các route `POST /api/v1/auth/login` và `POST /api/v1/auth/refresh` được chuyển tiếp tới Auth mà không cần access token. Các route `/api/v1/courses`, `/api/v1/enrollments`, `/api/v1/submissions` và `/api/v1/grades` yêu cầu Bearer JWT HS256 hợp lệ; Gateway chỉ chuyển `x-principal-id` và `x-principal-role` do chính nó derive từ claim `sub` và `role`.
 
 ## Chạy cục bộ
 

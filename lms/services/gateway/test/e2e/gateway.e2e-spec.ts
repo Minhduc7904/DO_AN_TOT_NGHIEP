@@ -11,10 +11,10 @@ import { AppModule } from '../../src/app.module.js';
 
 const secret = 'local-development-only-jwt-secret-change-before-production';
 
-function createToken(role = 'student'): string {
+function createToken(role = 'student', subject = 'student-001'): string {
   const header = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url');
   const payload = Buffer.from(
-    JSON.stringify({ exp: Math.floor(Date.now() / 1_000) + 3_600, role, sub: 'student-001' }),
+    JSON.stringify({ exp: Math.floor(Date.now() / 1_000) + 3_600, role, sub: subject }),
   ).toString('base64url');
   const signature = createHmac('sha256', secret).update(`${header}.${payload}`).digest('base64url');
   return `${header}.${payload}.${signature}`;
@@ -96,5 +96,66 @@ describe('Gateway HTTP contract', () => {
       .set('Authorization', `Bearer ${createToken('admin')}`)
       .expect(403);
     expect(forbidden.body.code).toBe('FORBIDDEN');
+  });
+
+  it('forwards grades to Grading with the principal derived from the JWT, never from client headers', async () => {
+    fetchClient.mockResolvedValueOnce(
+      new Response(JSON.stringify({ id: 'grade-001' }), {
+        headers: { 'content-type': 'application/json' },
+        status: 201,
+      }),
+    );
+
+    await request(app.getHttpServer())
+      .post('/api/v1/grades')
+      .set('Authorization', `Bearer ${createToken('instructor', 'instructor-001')}`)
+      .set('x-principal-id', 'spoofed-client')
+      .set('x-principal-role', 'student')
+      .set('traceparent', '00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01')
+      .send({ score: 90, submission_id: 'submission-001' })
+      .expect(201);
+
+    const [target, init] = fetchClient.mock.calls[0] ?? [];
+    expect(String(target)).toBe('http://localhost:3007/api/v1/grades');
+    expect(init?.method).toBe('POST');
+    expect(init?.body).toBe(JSON.stringify({ score: 90, submission_id: 'submission-001' }));
+    const forwardedHeaders = new Headers(init?.headers);
+    expect(forwardedHeaders.get('x-principal-id')).toBe('instructor-001');
+    expect(forwardedHeaders.get('x-principal-role')).toBe('instructor');
+    expect(forwardedHeaders.get('traceparent')).toContain('0af7651916cd43dd8448eb211c80319c');
+    expect(forwardedHeaders.get('authorization')).toBeNull();
+  });
+
+  it('forwards grade reads under /grades/* and rejects missing or invalid JWT before forwarding', async () => {
+    fetchClient.mockResolvedValueOnce(
+      new Response(JSON.stringify({ id: 'grade-001' }), {
+        headers: { 'content-type': 'application/json' },
+        status: 200,
+      }),
+    );
+
+    await request(app.getHttpServer())
+      .get('/api/v1/grades/7d1f3a52-0c4e-4b8a-9d36-5a2e8f10c001')
+      .set('Authorization', `Bearer ${createToken()}`)
+      .expect(200);
+    expect(String(fetchClient.mock.calls[0]?.[0])).toBe(
+      'http://localhost:3007/api/v1/grades/7d1f3a52-0c4e-4b8a-9d36-5a2e8f10c001',
+    );
+    expect(new Headers(fetchClient.mock.calls[0]?.[1]?.headers).get('x-principal-id')).toBe(
+      'student-001',
+    );
+
+    fetchClient.mockClear();
+    await request(app.getHttpServer()).post('/api/v1/grades').send({}).expect(401);
+    await request(app.getHttpServer())
+      .get('/api/v1/grades/7d1f3a52-0c4e-4b8a-9d36-5a2e8f10c001')
+      .set('Authorization', 'Bearer invalid')
+      .expect(401);
+    await request(app.getHttpServer())
+      .post('/api/v1/grades')
+      .set('Authorization', `Bearer ${createToken('admin')}`)
+      .send({})
+      .expect(403);
+    expect(fetchClient).not.toHaveBeenCalled();
   });
 });
