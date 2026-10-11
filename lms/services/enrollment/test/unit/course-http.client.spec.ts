@@ -106,7 +106,9 @@ describe('CourseHttpClient', () => {
   });
 
   it('maps a network failure to an unavailable dependency error', async () => {
+    let calls = 0;
     globalThis.fetch = (async () => {
+      calls++;
       throw new Error('connection refused');
     }) as typeof fetch;
     const client = new CourseHttpClient(createConfig() as never);
@@ -114,6 +116,22 @@ describe('CourseHttpClient', () => {
     const error = await client.exists('course-001', principal).catch((caught: unknown) => caught);
     expect(error).toBeInstanceOf(EnrollmentDependencyError);
     expect((error as EnrollmentDependencyError).kind).toBe('unavailable');
+    expect(calls).toBe(1);
+  });
+
+  it('preserves an upstream 504 as timeout without retrying', async () => {
+    let calls = 0;
+    globalThis.fetch = (async () => {
+      calls++;
+      return new Response(null, { status: 504 });
+    }) as typeof fetch;
+    const client = new CourseHttpClient(createConfig() as never);
+
+    const error = await client.exists('course-001', principal).catch((caught: unknown) => caught);
+
+    expect(error).toBeInstanceOf(EnrollmentDependencyError);
+    expect((error as EnrollmentDependencyError).kind).toBe('timeout');
+    expect(calls).toBe(1);
   });
 
   it('opens the circuit after consecutive failures and short-circuits without calling the network', async () => {

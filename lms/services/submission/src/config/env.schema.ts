@@ -31,7 +31,7 @@ const environmentSchema = z.object({
   SUBMISSION_DEPENDENCY_TIMEOUT_MS: z.coerce
     .number()
     .int()
-    .min(1)
+    .min(100)
     .max(60_000)
     .default(DEFAULT_SUBMISSION_DEPENDENCY_TIMEOUT_MS),
 });

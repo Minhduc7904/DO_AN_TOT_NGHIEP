@@ -39,4 +39,18 @@ describe('Grading RabbitMQ configuration', () => {
   ])('accepts the boundary %s=%s', (key, value) => {
     expect(() => validateEnvironment({ [key]: value })).not.toThrow();
   });
+
+  it('uses the canonical 3000 ms HTTP dependency timeout default', () => {
+    expect(validateEnvironment({}).GRADING_DEPENDENCY_TIMEOUT_MS).toBe(3_000);
+  });
+
+  it.each(['100', '60000'])('accepts HTTP dependency timeout boundary %s ms', (value) => {
+    expect(() => validateEnvironment({ GRADING_DEPENDENCY_TIMEOUT_MS: value })).not.toThrow();
+  });
+
+  it.each(['99', '60001'])('rejects out-of-range HTTP dependency timeout %s ms', (value) => {
+    expect(() => validateEnvironment({ GRADING_DEPENDENCY_TIMEOUT_MS: value })).toThrow(
+      'Invalid environment',
+    );
+  });
 });

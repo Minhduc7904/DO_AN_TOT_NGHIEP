@@ -29,7 +29,7 @@ const environmentSchema = z.object({
   ENROLLMENT_COURSE_TIMEOUT_MS: z.coerce
     .number()
     .int()
-    .min(1)
+    .min(100)
     .max(60_000)
     .default(DEFAULT_ENROLLMENT_COURSE_TIMEOUT_MS),
   ENROLLMENT_COURSE_BREAKER_THRESHOLD: z.coerce

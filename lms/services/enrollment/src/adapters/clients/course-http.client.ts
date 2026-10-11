@@ -57,6 +57,9 @@ export class CourseHttpClient extends CourseClient {
 
       const response = await fetch(url, { headers, method: 'GET', signal: controller.signal });
       if (response.status === 404) return false;
+      if (response.status === 504) {
+        throw new EnrollmentDependencyError('enrollment-course', 'timeout');
+      }
       if (!response.ok) {
         throw new EnrollmentDependencyError('enrollment-course', 'unavailable');
       }

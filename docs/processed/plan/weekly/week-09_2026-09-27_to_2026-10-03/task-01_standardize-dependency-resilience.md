@@ -2,15 +2,15 @@
 
 ## Thông tin chung
 
-| Trường | Nội dung |
-| --- | --- |
-| Mã task | `task-01_standardize-dependency-resilience` |
-| Tuần | `week-09_2026-09-27_to_2026-10-03` |
-| Trạng thái | Đã giao |
-| Người phụ trách | Đức |
-| Collaborator | Không có |
-| Ưu tiên | Cao |
-| Hạn dự kiến | 12/10/2026 — mốc bù tiến độ |
+| Trường          | Nội dung                                                     |
+| --------------- | ------------------------------------------------------------ |
+| Mã task         | `task-01_standardize-dependency-resilience`                  |
+| Tuần            | `week-09_2026-09-27_to_2026-10-03`                           |
+| Trạng thái      | Đang thực hiện                                               |
+| Người phụ trách | Đức                                                          |
+| Collaborator    | Không có                                                     |
+| Ưu tiên         | Cao                                                          |
+| Hạn dự kiến     | 12/10/2026 — mốc bù tiến độ                                  |
 | Nhánh thực hiện | `refactor/week-09/task-01-standardize-dependency-resilience` |
 
 ## Yêu cầu và phạm vi
@@ -33,10 +33,10 @@ Lập ma trận và chuẩn hóa timeout, retry, error mapping cho các dependen
 
 ## Sản phẩm kỳ vọng
 
-| Sản phẩm | Loại | Vị trí hoặc link dự kiến |
-| --- | --- | --- |
-| Policy/matrix timeout, retry và error mapping | Docs | `docs/processed/architecture/` hoặc README service liên quan |
-| Code/config/test resilience cho dependency HTTP | Code / Config | `lms/services/`, `lms/test/` |
+| Sản phẩm                                        | Loại          | Vị trí hoặc link dự kiến                                     |
+| ----------------------------------------------- | ------------- | ------------------------------------------------------------ |
+| Policy/matrix timeout, retry và error mapping   | Docs          | `docs/processed/architecture/` hoặc README service liên quan |
+| Code/config/test resilience cho dependency HTTP | Code / Config | `lms/services/`, `lms/test/`                                 |
 
 ## Definition of Done
 
@@ -49,8 +49,8 @@ Lập ma trận và chuẩn hóa timeout, retry, error mapping cho các dependen
 
 ## Liên kết hồ sơ thực hiện
 
-- Input workspace: Chưa tạo.
-- Output workspace: Chưa tạo.
+- Input workspace: [task-input.md](../../../../../workspace/duc/week-09_2026-09-27_to_2026-10-03/task-01_standardize-dependency-resilience/input/task-input.md).
+- Output workspace: [task-output.md](../../../../../workspace/duc/week-09_2026-09-27_to_2026-10-03/task-01_standardize-dependency-resilience/output/task-output.md).
 - Pull request: Chưa tạo.
 - Kết quả review: Chưa review.
 
@@ -58,5 +58,5 @@ Lập ma trận và chuẩn hóa timeout, retry, error mapping cho các dependen
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 11/10/2026 — lập task bù tiến độ W9.
-- Ghi chú/tồn đọng: Có thể bắt đầu ngay, không phụ thuộc W8 Notification.
+- Cập nhật gần nhất: 11/10/2026 — Đức bắt đầu triển khai trên nhánh task.
+- Ghi chú/tồn đọng: Không có blocker; review dùng agent độc lập theo ngoại lệ Đức đã xác nhận.

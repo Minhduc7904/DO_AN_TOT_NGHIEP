@@ -62,6 +62,7 @@ export class GatewayController {
     const principal = this.requireStudentOrInstructorPrincipal(request);
     const result = await this.forward({
       body: request.body,
+      dependency: 'gateway-course',
       headers: request.headers,
       method: request.method,
       path: request.originalUrl,
@@ -79,6 +80,7 @@ export class GatewayController {
     const principal = this.requireStudentOrInstructorPrincipal(request);
     const result = await this.forward({
       body: request.body,
+      dependency: 'gateway-enrollment',
       headers: request.headers,
       method: request.method,
       path: request.originalUrl,
@@ -93,6 +95,7 @@ export class GatewayController {
     const principal = this.requireStudentOrInstructorPrincipal(request);
     const result = await this.forward({
       body: request.body,
+      dependency: 'gateway-submission',
       headers: request.headers,
       method: request.method,
       path: request.originalUrl,
@@ -107,6 +110,7 @@ export class GatewayController {
     const principal = this.requireStudentOrInstructorPrincipal(request);
     const result = await this.forward({
       body: request.body,
+      dependency: 'gateway-grading',
       headers: request.headers,
       method: request.method,
       path: request.originalUrl,
@@ -119,6 +123,7 @@ export class GatewayController {
   private forwardPublic(request: HttpRequest): Promise<GatewayResponse> {
     return this.forward({
       body: request.body,
+      dependency: 'gateway-auth',
       headers: request.headers,
       method: request.method,
       path: request.originalUrl,
