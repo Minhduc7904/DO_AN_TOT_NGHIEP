@@ -2,24 +2,24 @@
 
 ## Thông tin tuần
 
-| Trường | Nội dung |
-| --- | --- |
-| Tuần | `week-09_2026-09-27_to_2026-10-03` |
-| Nguồn plan canonical | [Plan v0.2 — Tuần 9](../../plan-v0.2-24-weeks.md#tuần-9--hardening-testbed-mvp) |
-| Mục tiêu tuần | Hoàn thiện Testbed MVP v0.1: chuẩn hóa resilience, kiểm chứng messaging, có reset/seed thống nhất, regression E2E và bằng chứng dựng lại từ môi trường sạch. |
-| Trạng thái tuần | Đang thực hiện |
+| Trường               | Nội dung                                                                                                                                                     |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Tuần                 | `week-09_2026-09-27_to_2026-10-03`                                                                                                                           |
+| Nguồn plan canonical | [Plan v0.2 — Tuần 9](../../plan-v0.2-24-weeks.md#tuần-9--hardening-testbed-mvp)                                                                              |
+| Mục tiêu tuần        | Hoàn thiện Testbed MVP v0.1: chuẩn hóa resilience, kiểm chứng messaging, có reset/seed thống nhất, regression E2E và bằng chứng dựng lại từ môi trường sạch. |
+| Trạng thái tuần      | Đang thực hiện                                                                                                                                               |
 
 > Kế hoạch W9 được cụ thể hóa hồi tố ngày 11/10/2026 để bù tiến độ sau W8. Mốc tuần canonical vẫn là 27/09/2026–03/10/2026; hạn task bên dưới là mốc bù tiến độ, không thay đổi phạm vi milestone.
 
 ## Danh sách task
 
-| Mã task | Task | Người phụ trách | Collaborator | Ưu tiên | Trạng thái |
-| --- | --- | --- | --- | --- | --- |
-| [task-01_standardize-dependency-resilience](task-01_standardize-dependency-resilience.md) | Chuẩn hóa timeout, retry và error propagation cho dependency HTTP | Đức | Không có | Cao | Đã giao |
-| [task-02_harden-messaging-delivery](task-02_harden-messaging-delivery.md) | Hardening publisher/consumer idempotency và failure handling | Đức | Không có | Cao | Chờ xử lý |
-| [task-03_implement-reset-and-seed-command](task-03_implement-reset-and-seed-command.md) | Tạo lệnh reset/seed thống nhất cho Testbed MVP | Đức | Không có | Cao | Đã giao |
-| [task-04_build-mvp-regression-suite](task-04_build-mvp-regression-suite.md) | Xây regression E2E và telemetry assertions cho các workflow chính | Bách | Đức hỗ trợ môi trường testbed | Cao | Chờ xử lý |
-| [task-05_validate-fresh-setup-and-m2-gate](task-05_validate-fresh-setup-and-m2-gate.md) | Xác minh fresh setup và Gate M2 | Bách | Đức hỗ trợ vận hành và đối chiếu Gate M2 | Trung bình | Chờ xử lý |
+| Mã task                                                                                   | Task                                                              | Người phụ trách | Collaborator                             | Ưu tiên    | Trạng thái |
+| ----------------------------------------------------------------------------------------- | ----------------------------------------------------------------- | --------------- | ---------------------------------------- | ---------- | ---------- |
+| [task-01_standardize-dependency-resilience](task-01_standardize-dependency-resilience.md) | Chuẩn hóa timeout, retry và error propagation cho dependency HTTP | Đức             | Không có                                 | Cao        | Hoàn thành |
+| [task-02_harden-messaging-delivery](task-02_harden-messaging-delivery.md)                 | Hardening publisher/consumer idempotency và failure handling      | Đức             | Không có                                 | Cao        | Chờ xử lý  |
+| [task-03_implement-reset-and-seed-command](task-03_implement-reset-and-seed-command.md)   | Tạo lệnh reset/seed thống nhất cho Testbed MVP                    | Đức             | Không có                                 | Cao        | Đã giao    |
+| [task-04_build-mvp-regression-suite](task-04_build-mvp-regression-suite.md)               | Xây regression E2E và telemetry assertions cho các workflow chính | Bách            | Đức hỗ trợ môi trường testbed            | Cao        | Chờ xử lý  |
+| [task-05_validate-fresh-setup-and-m2-gate](task-05_validate-fresh-setup-and-m2-gate.md)   | Xác minh fresh setup và Gate M2                                   | Bách            | Đức hỗ trợ vận hành và đối chiếu Gate M2 | Trung bình | Chờ xử lý  |
 
 > Khi đọc tiến độ project-wide, chỉ coi hàng có trạng thái `Hoàn thành` trên nhánh canonical là hoàn thành; trạng thái đã finalization trên task branch chưa thay thế nguồn này.
 
@@ -39,7 +39,7 @@
 ## Tiêu chí kết thúc tuần
 
 - [ ] Sáu business service `Auth`, `Course`, `Enrollment`, `Submission`, `Grading`, `Notification` và Gateway chạy trong topology MVP cùng PostgreSQL, Redis và RabbitMQ.
-- [ ] Timeout, retry và error propagation của dependency HTTP có policy thống nhất, test được và không nhân retry ngoài chủ đích.
+- [x] Timeout, retry và error propagation của dependency HTTP có policy thống nhất, test được và không nhân retry ngoài chủ đích.
 - [ ] Publisher/consumer `grade.completed` chứng minh semantics at-least-once, deduplicate theo `event_id`, giữ correlation và xử lý failure/recovery quan sát được.
 - [ ] Có một lệnh reset/seed tái lập dữ liệu Testbed MVP từ trạng thái sạch và chạy lặp lại cho kết quả xác định.
 - [ ] Regression suite bao phủ ít nhất hai workflow xuyên service, các nhánh error/latency quan trọng và telemetry assertions tương ứng.

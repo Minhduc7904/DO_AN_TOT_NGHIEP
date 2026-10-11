@@ -6,7 +6,9 @@ Gateway là trust boundary HTTP của LMS. Các route `POST /api/v1/auth/login` 
 
 Từ thư mục `lms`, sao chép `services/gateway/.env.example` thành `services/gateway/.env`, bảo đảm Auth/Course đang chạy, rồi dùng `pnpm --filter @aiops-lms/gateway start:dev`.
 
-`GATEWAY_UPSTREAM_TIMEOUT_MS` là timeout cho từng outbound request. Gateway không retry mặc định; lỗi kết nối map thành `503 DEPENDENCY_UNAVAILABLE`, timeout map thành `504 DEPENDENCY_TIMEOUT`, và không trả raw stack trace.
+`GATEWAY_UPSTREAM_TIMEOUT_MS` là timeout cho từng outbound request, mặc định 5.000 ms và chỉ nhận 100–60.000 ms. Gateway không retry: local timeout hoặc upstream `504` map thành `504 DEPENDENCY_TIMEOUT`; lỗi network hoặc upstream 5xx khác map thành `503 DEPENDENCY_UNAVAILABLE`; business 4xx giữ nguyên envelope.
+
+Outbound telemetry dùng identity hữu hạn `gateway-auth`, `gateway-course`, `gateway-enrollment`, `gateway-submission`, `gateway-grading` với client span và ba metric `gateway.dependency.request.count`, `gateway.dependency.error.count`, `gateway.dependency.duration`. Metric label không chứa path động, principal hoặc resource ID. Policy đầy đủ nằm tại [`dependency-resilience-policy-v1.md`](../../../docs/processed/architecture/dependency-resilience-policy-v1.md).
 
 ## Kiểm chứng W1
 

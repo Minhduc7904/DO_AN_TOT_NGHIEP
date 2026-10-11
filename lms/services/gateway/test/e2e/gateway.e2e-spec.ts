@@ -62,6 +62,25 @@ describe('Gateway HTTP contract', () => {
     expect(fetchClient.mock.calls[0]?.[1]?.headers).not.toHaveProperty('x-principal-id');
   });
 
+  it.each([
+    [504, 504, 'DEPENDENCY_TIMEOUT'],
+    [500, 503, 'DEPENDENCY_UNAVAILABLE'],
+    [503, 503, 'DEPENDENCY_UNAVAILABLE'],
+  ])(
+    'maps upstream %i to canonical %i without retrying',
+    async (upstreamStatus, expectedStatus, expectedCode) => {
+      fetchClient.mockResolvedValueOnce(new Response(null, { status: upstreamStatus }));
+
+      const response = await request(app.getHttpServer())
+        .post('/api/v1/auth/login')
+        .send({ email: 'student@example.test', password: 'example-password' })
+        .expect(expectedStatus);
+
+      expect(response.body.code).toBe(expectedCode);
+      expect(fetchClient).toHaveBeenCalledTimes(1);
+    },
+  );
+
   it('rejects missing or malformed JWT before making a Course request', async () => {
     await request(app.getHttpServer()).get('/api/v1/courses').expect(401);
     await request(app.getHttpServer())

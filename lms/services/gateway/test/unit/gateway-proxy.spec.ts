@@ -1,5 +1,8 @@
+import { jest } from '@jest/globals';
+
 import {
   DependencyTimeoutError,
+  DependencyUnavailableError,
   GatewayProxy,
   type FetchClient,
 } from '../../src/application/gateway-proxy.js';
@@ -19,6 +22,7 @@ describe('GatewayProxy', () => {
     await proxy.forward(
       {
         body: undefined,
+        dependency: 'gateway-course',
         headers: {
           authorization: 'Bearer client-token-must-not-reach-downstream',
           traceparent: '00-0123456789abcdef0123456789abcdef-0123456789abcdef-01',
@@ -44,8 +48,10 @@ describe('GatewayProxy', () => {
   });
 
   it('maps an aborted outbound call to the canonical timeout exception without retrying', async () => {
+    let calls = 0;
     const fetchClient: FetchClient = async (_input, init) =>
       new Promise((_resolve, reject) => {
+        calls++;
         init?.signal?.addEventListener('abort', () => reject(new Error('aborted')));
       });
     const proxy = new GatewayProxy(fetchClient);
@@ -54,6 +60,7 @@ describe('GatewayProxy', () => {
       proxy.forward(
         {
           body: undefined,
+          dependency: 'gateway-course',
           headers: {},
           method: 'GET',
           path: '/api/v1/courses',
@@ -62,5 +69,58 @@ describe('GatewayProxy', () => {
         1,
       ),
     ).rejects.toBeInstanceOf(DependencyTimeoutError);
+    expect(calls).toBe(1);
+  });
+
+  it.each([
+    [504, DependencyTimeoutError],
+    [500, DependencyUnavailableError],
+    [503, DependencyUnavailableError],
+  ])(
+    'maps upstream %i to the canonical dependency exception without retry',
+    async (status, kind) => {
+      const fetchClient = jest.fn<FetchClient>().mockResolvedValue(new Response(null, { status }));
+      const proxy = new GatewayProxy(fetchClient);
+
+      await expect(
+        proxy.forward(
+          {
+            body: { score: 90 },
+            dependency: 'gateway-grading',
+            headers: {},
+            method: 'POST',
+            path: '/api/v1/grades',
+            targetBaseUrl: 'http://grading.test',
+          },
+          100,
+        ),
+      ).rejects.toBeInstanceOf(kind);
+      expect(fetchClient).toHaveBeenCalledTimes(1);
+    },
+  );
+
+  it('preserves a business 404 response without retrying', async () => {
+    const fetchClient = jest.fn<FetchClient>().mockResolvedValue(
+      new Response(JSON.stringify({ code: 'NOT_FOUND' }), {
+        headers: { 'content-type': 'application/json' },
+        status: 404,
+      }),
+    );
+    const proxy = new GatewayProxy(fetchClient);
+
+    const response = await proxy.forward(
+      {
+        body: undefined,
+        dependency: 'gateway-course',
+        headers: {},
+        method: 'GET',
+        path: '/api/v1/courses/missing',
+        targetBaseUrl: 'http://course.test',
+      },
+      100,
+    );
+
+    expect(response).toMatchObject({ body: { code: 'NOT_FOUND' }, status: 404 });
+    expect(fetchClient).toHaveBeenCalledTimes(1);
   });
 });

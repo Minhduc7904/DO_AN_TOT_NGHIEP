@@ -36,7 +36,7 @@ const environmentSchema = z.object({
   GRADING_DEPENDENCY_TIMEOUT_MS: z.coerce
     .number()
     .int()
-    .min(1)
+    .min(100)
     .max(60_000)
     .default(DEFAULT_GRADING_DEPENDENCY_TIMEOUT_MS),
   GRADING_RABBITMQ_URL: amqpUrl.default(DEFAULT_GRADING_RABBITMQ_URL),
