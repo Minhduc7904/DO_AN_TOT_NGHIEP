@@ -2,15 +2,15 @@
 
 ## Thông tin chung
 
-| Trường | Nội dung |
-| --- | --- |
-| Mã task | `task-02_implement-notification-consumer-and-async-telemetry` |
-| Tuần | `week-08_2026-09-20_to_2026-09-26` |
-| Trạng thái | Đang thực hiện |
-| Người phụ trách | Bách |
-| Collaborator | Đức rà soát tương thích RabbitMQ/publisher |
-| Ưu tiên | Cao |
-| Hạn dự kiến | 25/09/2026 |
+| Trường          | Nội dung                                                                   |
+| --------------- | -------------------------------------------------------------------------- |
+| Mã task         | `task-02_implement-notification-consumer-and-async-telemetry`              |
+| Tuần            | `week-08_2026-09-20_to_2026-09-26`                                         |
+| Trạng thái      | Đang thực hiện                                                             |
+| Người phụ trách | Đức                                                                        |
+| Collaborator    | Không có                                                                   |
+| Ưu tiên         | Cao                                                                        |
+| Hạn dự kiến     | 25/09/2026                                                                 |
 | Nhánh thực hiện | `feat/week-08/task-02-implement-notification-consumer-and-async-telemetry` |
 
 ## Yêu cầu và phạm vi
@@ -33,9 +33,9 @@ Triển khai Notification consumer cho `grade.completed`, xử lý duplicate the
 
 ## Sản phẩm kỳ vọng
 
-| Sản phẩm | Loại | Vị trí hoặc link dự kiến |
-| --- | --- | --- |
-| Notification consumer và duplicate handling MVP | Code | `lms/services/notification/` |
+| Sản phẩm                                           | Loại | Vị trí hoặc link dự kiến                                                 |
+| -------------------------------------------------- | ---- | ------------------------------------------------------------------------ |
+| Notification consumer và duplicate handling MVP    | Code | `lms/services/notification/`                                             |
 | Async trace/log/metric assertions và fault hook F4 | Code | `lms/services/notification/test/`, `faults/` hoặc vị trí canonical đã có |
 
 ## Definition of Done
@@ -49,12 +49,12 @@ Triển khai Notification consumer cho `grade.completed`, xử lý duplicate the
 
 ## Liên kết hồ sơ thực hiện
 
-- Input workspace: [task-input.md](../../../../../workspace/bach/week-08_2026-09-20_to_2026-09-26/task-02_implement-notification-consumer-and-async-telemetry/input/task-input.md).
-- Output workspace: [task-output.md](../../../../../workspace/bach/week-08_2026-09-20_to_2026-09-26/task-02_implement-notification-consumer-and-async-telemetry/output/task-output.md) (mẫu, chưa có báo cáo thực tế).
+- Input workspace: [task-input.md](../../../../../workspace/duc/week-08_2026-09-20_to_2026-09-26/task-02_implement-notification-consumer-and-async-telemetry/input/task-input.md).
+- Output workspace: [task-output.md](../../../../../workspace/duc/week-08_2026-09-20_to_2026-09-26/task-02_implement-notification-consumer-and-async-telemetry/output/task-output.md).
 - Pull request: Chưa tạo.
 - Kết quả review: Chưa review.
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 28/09/2026 — Bách bắt đầu task và đã tạo workspace/branch riêng.
-- Ghi chú/tồn đọng: Task-01 đã có trên `main`; consumer tích hợp đầy đủ vẫn phụ thuộc publisher `grade.completed` của task-05. Có thể chuẩn bị fixture và boundary test trong lúc chờ publisher.
+- Cập nhật gần nhất: 11/10/2026 — Đức tiếp quản task theo chỉ thị trực tiếp do Bách không còn tham gia.
+- Ghi chú/tồn đọng: Giữ nguyên hồ sơ `workspace/bach/`; tiếp tục substantive work đã có trên chính branch task, tạo hồ sơ thực hiện mới của Đức và ghi provenance trung thực.
