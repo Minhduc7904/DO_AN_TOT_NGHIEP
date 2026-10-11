@@ -2,17 +2,17 @@
 
 ## Thông tin chung
 
-| Trường               | Nội dung                                                     |
-| -------------------- | ------------------------------------------------------------ |
-| Mã task              | `task-01_standardize-dependency-resilience`                  |
-| Tên task             | Chuẩn hóa resilience cho dependency HTTP                     |
-| Người phụ trách      | Đức                                                          |
-| Tuần thực hiện       | `week-09_2026-09-27_to_2026-10-03`                           |
-| Trạng thái           | Đang thực hiện                                               |
-| Ngày tạo             | 11/10/2026                                                   |
-| Thời gian dự kiến    | 11–12/10/2026                                                |
-| Nhánh thực hiện      | `refactor/week-09/task-01-standardize-dependency-resilience` |
-| Pull request dự kiến | Chưa tạo                                                     |
+| Trường               | Nội dung                                                       |
+| -------------------- | -------------------------------------------------------------- |
+| Mã task              | `task-01_standardize-dependency-resilience`                    |
+| Tên task             | Chuẩn hóa resilience cho dependency HTTP                       |
+| Người phụ trách      | Đức                                                            |
+| Tuần thực hiện       | `week-09_2026-09-27_to_2026-10-03`                             |
+| Trạng thái           | Chờ review                                                     |
+| Ngày tạo             | 11/10/2026                                                     |
+| Thời gian dự kiến    | 11–12/10/2026                                                  |
+| Nhánh thực hiện      | `refactor/week-09/task-01-standardize-dependency-resilience`   |
+| Pull request dự kiến | [#35](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/35) |
 
 ## Mục tiêu và phạm vi
 

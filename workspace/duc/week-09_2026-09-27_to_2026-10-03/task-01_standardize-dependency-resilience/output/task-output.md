@@ -2,17 +2,17 @@
 
 ## Thông tin hoàn thành
 
-| Trường             | Nội dung                                    |
-| ------------------ | ------------------------------------------- |
-| Mã task            | `task-01_standardize-dependency-resilience` |
-| Người phụ trách    | Đức                                         |
-| Trạng thái         | Đang thực hiện                              |
-| Bắt đầu thực tế    | 11/10/2026 20:00 (UTC+07:00)                |
-| Hoàn thành thực tế | Chưa hoàn thành                             |
-| Tổng thời lượng    | Chưa tổng kết                               |
-| Pull request       | Chưa tạo                                    |
-| Người review       | Chưa review                                 |
-| Kết quả review     | Chưa review                                 |
+| Trường             | Nội dung                                                       |
+| ------------------ | -------------------------------------------------------------- |
+| Mã task            | `task-01_standardize-dependency-resilience`                    |
+| Người phụ trách    | Đức                                                            |
+| Trạng thái         | Chờ review                                                     |
+| Bắt đầu thực tế    | 11/10/2026 20:00 (UTC+07:00)                                   |
+| Hoàn thành thực tế | Chưa hoàn thành                                                |
+| Tổng thời lượng    | Chưa tổng kết                                                  |
+| Pull request       | [#35](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/35) |
+| Người review       | Chưa review                                                    |
+| Kết quả review     | Chưa review                                                    |
 
 ## Báo cáo công việc đã làm
 
@@ -39,7 +39,7 @@
 | Gateway telemetry và label cardinality | Đạt                    | `test:telemetry` pass; đủ năm identity, ba metric và assertion không có dynamic ID/credential trong metric labels                                                       |
 | Mỗi request chỉ gọi `fetch` một lần    | Đạt                    | Gateway/Enrollment/Submission/Grading unit test chứng minh không retry; Storage `PUT` không duplicate write                                                             |
 | Kiểm tra bắt buộc                      | Đạt trong phạm vi diff | Build và lint full pass; full test pass 206 Jest test + 4 architecture test + telemetry/integration scripts; scoped Prettier, `git diff --check` và Compose config pass |
-| PR và review lifecycle                 | Chưa đạt               | Chưa tạo PR                                                                                                                                                             |
+| PR và review lifecycle                 | Chờ review             | PR #35; URL và trạng thái `Chờ review` được commit/push vào PR head trước review                                                                                        |
 
 ## Thay đổi, tồn đọng và bước tiếp theo
 
@@ -47,4 +47,4 @@
 - Việc chưa hoàn thành hoặc trở ngại:
   - `pnpm run format:check` và do đó `pnpm run ci:verify` cục bộ dừng ở bước đầu do 34 file baseline ngoài diff trên `main` chưa khớp Prettier. Không sửa lan ngoài task; scoped Prettier của toàn bộ file thay đổi pass, còn build/lint/full test được chạy riêng và pass.
   - Đồng bộ plan/timeline dừng vì thiếu `workspace/bach/week-08_2026-09-20_to_2026-09-26/task-03_verify-grade-to-notification-workflow/input/task-input.md`; không tự tạo hoặc sửa workspace của Bách theo ngoại lệ Đức đã xác nhận.
-- Bước tiếp theo: Commit/push substantive work, tạo PR và commit/push URL PR cùng trạng thái `Chờ review`.
+- Bước tiếp theo: Reviewer agent thực hiện một vòng review đầy đủ trên PR #35.

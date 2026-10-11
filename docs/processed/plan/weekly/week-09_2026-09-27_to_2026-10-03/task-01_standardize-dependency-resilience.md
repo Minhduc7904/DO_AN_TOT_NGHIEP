@@ -6,7 +6,7 @@
 | --------------- | ------------------------------------------------------------ |
 | Mã task         | `task-01_standardize-dependency-resilience`                  |
 | Tuần            | `week-09_2026-09-27_to_2026-10-03`                           |
-| Trạng thái      | Đang thực hiện                                               |
+| Trạng thái      | Chờ review                                                   |
 | Người phụ trách | Đức                                                          |
 | Collaborator    | Không có                                                     |
 | Ưu tiên         | Cao                                                          |
@@ -51,12 +51,12 @@ Lập ma trận và chuẩn hóa timeout, retry, error mapping cho các dependen
 
 - Input workspace: [task-input.md](../../../../../workspace/duc/week-09_2026-09-27_to_2026-10-03/task-01_standardize-dependency-resilience/input/task-input.md).
 - Output workspace: [task-output.md](../../../../../workspace/duc/week-09_2026-09-27_to_2026-10-03/task-01_standardize-dependency-resilience/output/task-output.md).
-- Pull request: Chưa tạo.
+- Pull request: [#35](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/35).
 - Kết quả review: Chưa review.
 
 > URL/số PR và `Chờ review` phải được commit/push vào PR head trước review. Thành viên còn lại phải gửi `APPROVED` hợp lệ trên GitHub; sau đó người phụ trách finalization metadata, ghi `Hoàn thành` trên chính branch/PR và tự merge task của mình. Card chỉ canonically hoàn thành khi commit đó vào nhánh canonical; xem [vòng đời task canonical](../../../rules/git-and-pull-request-rules.md#vòng-đời-task-canonical).
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 11/10/2026 — Đức bắt đầu triển khai trên nhánh task.
-- Ghi chú/tồn đọng: Không có blocker; review dùng agent độc lập theo ngoại lệ Đức đã xác nhận.
+- Cập nhật gần nhất: 11/10/2026 — substantive work và bằng chứng đã push; PR #35 sẵn sàng review.
+- Ghi chú/tồn đọng: Chờ agent độc lập review theo ngoại lệ Đức đã xác nhận; không ghi review nội bộ thành GitHub `APPROVED`.
