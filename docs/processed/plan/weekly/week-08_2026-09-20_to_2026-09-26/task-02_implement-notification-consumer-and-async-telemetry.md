@@ -6,7 +6,7 @@
 | --------------- | -------------------------------------------------------------------------- |
 | Mã task         | `task-02_implement-notification-consumer-and-async-telemetry`              |
 | Tuần            | `week-08_2026-09-20_to_2026-09-26`                                         |
-| Trạng thái      | Chờ review                                                                 |
+| Trạng thái      | Hoàn thành                                                                 |
 | Người phụ trách | Đức                                                                        |
 | Collaborator    | Không có                                                                   |
 | Ưu tiên         | Cao                                                                        |
@@ -45,16 +45,16 @@ Triển khai Notification consumer cho `grade.completed`, xử lý duplicate the
 - [x] Fault hook Notification slowdown hoặc RabbitMQ backlog mặc định tắt, bật được có chủ đích và có test/assertion về symptom tối thiểu.
 - [x] Test unit/integration phù hợp pass; không có database/source import xuyên service và không ghi secret/PII vào telemetry.
 - [x] URL/số PR và trạng thái `Chờ review` đã được commit/push vào PR head trước khi reviewer bắt đầu review.
-- [ ] Pull request từ nhánh task có mô tả đúng quy tắc, có verdict `APPROVED` hợp lệ từ thành viên còn lại trên GitHub và completion metadata được commit/push vào chính PR trước khi người phụ trách merge.
+- [x] Ngoại lệ theo xác nhận trực tiếp của Đức: review kỹ thuật nội bộ bởi reviewer agent đã xử lý hết blocking; completion metadata được commit/push vào chính PR trước merge dù không có verdict GitHub `APPROVED`.
 
 ## Liên kết hồ sơ thực hiện
 
 - Input workspace: [task-input.md](../../../../../workspace/duc/week-08_2026-09-20_to_2026-09-26/task-02_implement-notification-consumer-and-async-telemetry/input/task-input.md).
 - Output workspace: [task-output.md](../../../../../workspace/duc/week-08_2026-09-20_to_2026-09-26/task-02_implement-notification-consumer-and-async-telemetry/output/task-output.md).
 - Pull request: [#34](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/34).
-- Kết quả review: Chưa review.
+- Kết quả review: Review nội bộ vòng 1 `CHANGES_REQUESTED`; focused re-review tại head `b19afe2` kết luận `APPROVED` nội bộ, không phải verdict GitHub `APPROVED`.
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 11/10/2026 — Đã mở PR #34 và chuyển `Chờ review` sau khi substantive work cùng kiểm tra phù hợp hoàn tất.
-- Ghi chú/tồn đọng: Giữ nguyên hồ sơ `workspace/bach/`; provenance substantive commits trước takeover là `9043ee1`, `3d574ec`. `ci:verify` còn bị chặn bởi 34 file format baseline ngoài diff; sync plan/timeline còn bị chặn bởi liên kết input task-03 trong workspace Bách chưa tồn tại.
+- Cập nhật gần nhất: 11/10/2026 — finalization theo ngoại lệ review nội bộ do Đức xác nhận; hai blocking finding đã được sửa và focused re-review không còn blocking.
+- Ghi chú/tồn đọng: Giữ nguyên hồ sơ `workspace/bach/`; provenance substantive commits trước takeover là `9043ee1`, `3d574ec`. GitHub CI tại head `b19afe2` xanh toàn bộ. Sync plan/timeline còn bị chặn bởi liên kết input task-03 trong workspace Bách chưa tồn tại.
