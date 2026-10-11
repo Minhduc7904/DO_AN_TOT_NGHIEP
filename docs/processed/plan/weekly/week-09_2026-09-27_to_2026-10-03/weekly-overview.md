@@ -15,7 +15,7 @@
 
 | Mã task                                                                                   | Task                                                              | Người phụ trách | Collaborator                             | Ưu tiên    | Trạng thái |
 | ----------------------------------------------------------------------------------------- | ----------------------------------------------------------------- | --------------- | ---------------------------------------- | ---------- | ---------- |
-| [task-01_standardize-dependency-resilience](task-01_standardize-dependency-resilience.md) | Chuẩn hóa timeout, retry và error propagation cho dependency HTTP | Đức             | Không có                                 | Cao        | Chờ review |
+| [task-01_standardize-dependency-resilience](task-01_standardize-dependency-resilience.md) | Chuẩn hóa timeout, retry và error propagation cho dependency HTTP | Đức             | Không có                                 | Cao        | Hoàn thành |
 | [task-02_harden-messaging-delivery](task-02_harden-messaging-delivery.md)                 | Hardening publisher/consumer idempotency và failure handling      | Đức             | Không có                                 | Cao        | Chờ xử lý  |
 | [task-03_implement-reset-and-seed-command](task-03_implement-reset-and-seed-command.md)   | Tạo lệnh reset/seed thống nhất cho Testbed MVP                    | Đức             | Không có                                 | Cao        | Đã giao    |
 | [task-04_build-mvp-regression-suite](task-04_build-mvp-regression-suite.md)               | Xây regression E2E và telemetry assertions cho các workflow chính | Bách            | Đức hỗ trợ môi trường testbed            | Cao        | Chờ xử lý  |
@@ -39,7 +39,7 @@
 ## Tiêu chí kết thúc tuần
 
 - [ ] Sáu business service `Auth`, `Course`, `Enrollment`, `Submission`, `Grading`, `Notification` và Gateway chạy trong topology MVP cùng PostgreSQL, Redis và RabbitMQ.
-- [ ] Timeout, retry và error propagation của dependency HTTP có policy thống nhất, test được và không nhân retry ngoài chủ đích.
+- [x] Timeout, retry và error propagation của dependency HTTP có policy thống nhất, test được và không nhân retry ngoài chủ đích.
 - [ ] Publisher/consumer `grade.completed` chứng minh semantics at-least-once, deduplicate theo `event_id`, giữ correlation và xử lý failure/recovery quan sát được.
 - [ ] Có một lệnh reset/seed tái lập dữ liệu Testbed MVP từ trạng thái sạch và chạy lặp lại cho kết quả xác định.
 - [ ] Regression suite bao phủ ít nhất hai workflow xuyên service, các nhánh error/latency quan trọng và telemetry assertions tương ứng.
