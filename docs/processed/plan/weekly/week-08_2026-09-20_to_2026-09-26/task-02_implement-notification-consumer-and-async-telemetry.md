@@ -2,15 +2,15 @@
 
 ## Thông tin chung
 
-| Trường | Nội dung |
-| --- | --- |
-| Mã task | `task-02_implement-notification-consumer-and-async-telemetry` |
-| Tuần | `week-08_2026-09-20_to_2026-09-26` |
-| Trạng thái | Đã giao |
-| Người phụ trách | Bách |
-| Collaborator | Đức rà soát tương thích RabbitMQ/publisher |
-| Ưu tiên | Cao |
-| Hạn dự kiến | 25/09/2026 |
+| Trường          | Nội dung                                                                   |
+| --------------- | -------------------------------------------------------------------------- |
+| Mã task         | `task-02_implement-notification-consumer-and-async-telemetry`              |
+| Tuần            | `week-08_2026-09-20_to_2026-09-26`                                         |
+| Trạng thái      | Hoàn thành                                                                 |
+| Người phụ trách | Đức                                                                        |
+| Collaborator    | Không có                                                                   |
+| Ưu tiên         | Cao                                                                        |
+| Hạn dự kiến     | 25/09/2026                                                                 |
 | Nhánh thực hiện | `feat/week-08/task-02-implement-notification-consumer-and-async-telemetry` |
 
 ## Yêu cầu và phạm vi
@@ -33,28 +33,28 @@ Triển khai Notification consumer cho `grade.completed`, xử lý duplicate the
 
 ## Sản phẩm kỳ vọng
 
-| Sản phẩm | Loại | Vị trí hoặc link dự kiến |
-| --- | --- | --- |
-| Notification consumer và duplicate handling MVP | Code | `lms/services/notification/` |
+| Sản phẩm                                           | Loại | Vị trí hoặc link dự kiến                                                 |
+| -------------------------------------------------- | ---- | ------------------------------------------------------------------------ |
+| Notification consumer và duplicate handling MVP    | Code | `lms/services/notification/`                                             |
 | Async trace/log/metric assertions và fault hook F4 | Code | `lms/services/notification/test/`, `faults/` hoặc vị trí canonical đã có |
 
 ## Definition of Done
 
-- [ ] Consumer xử lý fixture/publisher thật theo contract `grade.completed`, mô phỏng notification kiểm tra được và không xử lý lại event ID đã thành công.
-- [ ] RabbitMQ publish→consume/process giữ trace context qua headers; spans, log correlation và metrics có dependency identity/operation/error semantics phù hợp.
-- [ ] Fault hook Notification slowdown hoặc RabbitMQ backlog mặc định tắt, bật được có chủ đích và có test/assertion về symptom tối thiểu.
-- [ ] Test unit/integration phù hợp pass; không có database/source import xuyên service và không ghi secret/PII vào telemetry.
-- [ ] URL/số PR và trạng thái `Chờ review` đã được commit/push vào PR head trước khi reviewer bắt đầu review.
-- [ ] Pull request từ nhánh task có mô tả đúng quy tắc, có verdict `APPROVED` hợp lệ từ thành viên còn lại trên GitHub và completion metadata được commit/push vào chính PR trước khi người phụ trách merge.
+- [x] Consumer xử lý fixture/publisher thật theo contract `grade.completed`, mô phỏng notification kiểm tra được và không xử lý lại event ID đã thành công.
+- [x] RabbitMQ publish→consume/process giữ trace context qua headers; spans, log correlation và metrics có dependency identity/operation/error semantics phù hợp.
+- [x] Fault hook Notification slowdown hoặc RabbitMQ backlog mặc định tắt, bật được có chủ đích và có test/assertion về symptom tối thiểu.
+- [x] Test unit/integration phù hợp pass; không có database/source import xuyên service và không ghi secret/PII vào telemetry.
+- [x] URL/số PR và trạng thái `Chờ review` đã được commit/push vào PR head trước khi reviewer bắt đầu review.
+- [x] Ngoại lệ theo xác nhận trực tiếp của Đức: review kỹ thuật nội bộ bởi reviewer agent đã xử lý hết blocking; completion metadata được commit/push vào chính PR trước merge dù không có verdict GitHub `APPROVED`.
 
 ## Liên kết hồ sơ thực hiện
 
-- Input workspace: [task-input.md](../../../../../workspace/bach/week-08_2026-09-20_to_2026-09-26/task-02_implement-notification-consumer-and-async-telemetry/input/task-input.md).
-- Output workspace: [task-output.md](../../../../../workspace/bach/week-08_2026-09-20_to_2026-09-26/task-02_implement-notification-consumer-and-async-telemetry/output/task-output.md) (mẫu, chưa có báo cáo thực tế).
-- Pull request: Chưa tạo.
-- Kết quả review: Chưa review.
+- Input workspace: [task-input.md](../../../../../workspace/duc/week-08_2026-09-20_to_2026-09-26/task-02_implement-notification-consumer-and-async-telemetry/input/task-input.md).
+- Output workspace: [task-output.md](../../../../../workspace/duc/week-08_2026-09-20_to_2026-09-26/task-02_implement-notification-consumer-and-async-telemetry/output/task-output.md).
+- Pull request: [#34](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/34).
+- Kết quả review: Review nội bộ vòng 1 `CHANGES_REQUESTED`; focused re-review tại head `b19afe2` kết luận `APPROVED` nội bộ, không phải verdict GitHub `APPROVED`.
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 27/09/2026 — tạo card và giao cho Bách.
-- Ghi chú/tồn đọng: Chỉ bắt đầu consumer tích hợp sau khi task-05 công bố publisher; có thể chuẩn bị test fixture từ task-01.
+- Cập nhật gần nhất: 11/10/2026 — finalization theo ngoại lệ review nội bộ do Đức xác nhận; hai blocking finding đã được sửa và focused re-review không còn blocking.
+- Ghi chú/tồn đọng: Giữ nguyên hồ sơ `workspace/bach/`; provenance substantive commits trước takeover là `9043ee1`, `3d574ec`. GitHub CI tại head `b19afe2` xanh toàn bộ. Sync plan/timeline còn bị chặn bởi liên kết input task-03 trong workspace Bách chưa tồn tại.
