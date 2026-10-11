@@ -1,7 +1,13 @@
 import { jest } from '@jest/globals';
 import { createGradeCompletedRabbitMqHeaders, gradeCompletedV1Fixture } from '@aiops-lms/contracts';
 import { startTelemetry } from '@aiops-lms/observability';
-import { InMemorySpanExporter, SimpleSpanProcessor } from '@aiops-lms/observability/testing';
+import {
+  InMemoryMetricExporter,
+  InMemorySpanExporter,
+  PeriodicExportingMetricReader,
+  SimpleSpanProcessor,
+  SpanStatusCode,
+} from '@aiops-lms/observability/testing';
 
 import { GradeCompletedFixtureConsumer } from '../../src/adapters/messaging/grade-completed.fixture-consumer.js';
 import { NotificationConsumerFault } from '../../src/adapters/messaging/notification-consumer-fault.js';
@@ -10,6 +16,10 @@ import {
   InvalidGradeCompletedMessageError,
   RabbitMqGradeCompletedMessageHandler,
 } from '../../src/adapters/messaging/rabbitmq-grade-completed.message-handler.js';
+
+const TEST_BINDING = {
+  queue: 'notification.grade-completed.custom-test',
+};
 
 function createFault(enabled = false, processingDelayMs = 0): NotificationConsumerFault {
   const values = {
@@ -23,6 +33,7 @@ function createFault(enabled = false, processingDelayMs = 0): NotificationConsum
 
 describe('RabbitMqGradeCompletedMessageHandler', () => {
   const spanExporter = new InMemorySpanExporter();
+  const metricExporter = new InMemoryMetricExporter();
   const telemetry = startTelemetry(
     {
       enabled: true,
@@ -31,7 +42,13 @@ describe('RabbitMqGradeCompletedMessageHandler', () => {
       serviceName: 'notification',
       serviceVersion: '0.1.0-test',
     },
-    { spanProcessor: new SimpleSpanProcessor(spanExporter) },
+    {
+      metricReader: new PeriodicExportingMetricReader({
+        exporter: metricExporter,
+        exportIntervalMillis: 3_600_000,
+      }),
+      spanProcessor: new SimpleSpanProcessor(spanExporter),
+    },
   );
 
   afterAll(async () => {
@@ -44,7 +61,7 @@ describe('RabbitMqGradeCompletedMessageHandler', () => {
     const handler = new RabbitMqGradeCompletedMessageHandler(
       new GradeCompletedFixtureConsumer(),
       fault,
-      new NotificationMessagingTelemetry(),
+      new NotificationMessagingTelemetry(TEST_BINDING),
     );
     const log = jest.spyOn(console, 'info').mockImplementation();
 
@@ -66,6 +83,7 @@ describe('RabbitMqGradeCompletedMessageHandler', () => {
     expect(beforeProcess).toHaveBeenCalledTimes(1);
     expect(consumeSpan?.spanContext().traceId).toBe('4bf92f3577b34da6a3ce929d0e0e4736');
     expect(consumeSpan?.attributes.dependency_identity).toBe('notification-rabbitmq');
+    expect(consumeSpan?.attributes['messaging.destination.name']).toBe(TEST_BINDING.queue);
     expect(processSpan?.attributes['messaging.message.id']).toBe(gradeCompletedV1Fixture.event_id);
     expect(log).toHaveBeenCalledWith(
       expect.stringContaining(`"event_id":"${gradeCompletedV1Fixture.event_id}"`),
@@ -76,7 +94,7 @@ describe('RabbitMqGradeCompletedMessageHandler', () => {
     const handler = new RabbitMqGradeCompletedMessageHandler(
       new GradeCompletedFixtureConsumer(),
       createFault(true, 15),
-      new NotificationMessagingTelemetry(),
+      new NotificationMessagingTelemetry(TEST_BINDING),
     );
     const startedAt = performance.now();
 
@@ -92,7 +110,7 @@ describe('RabbitMqGradeCompletedMessageHandler', () => {
     const handler = new RabbitMqGradeCompletedMessageHandler(
       new GradeCompletedFixtureConsumer(),
       createFault(),
-      new NotificationMessagingTelemetry(),
+      new NotificationMessagingTelemetry(TEST_BINDING),
     );
     const headers = createGradeCompletedRabbitMqHeaders(gradeCompletedV1Fixture);
     const content = Buffer.from(JSON.stringify(gradeCompletedV1Fixture));
@@ -105,7 +123,7 @@ describe('RabbitMqGradeCompletedMessageHandler', () => {
     const handler = new RabbitMqGradeCompletedMessageHandler(
       new GradeCompletedFixtureConsumer(),
       createFault(),
-      new NotificationMessagingTelemetry(),
+      new NotificationMessagingTelemetry(TEST_BINDING),
     );
     const headers = createGradeCompletedRabbitMqHeaders(gradeCompletedV1Fixture);
 
@@ -115,5 +133,69 @@ describe('RabbitMqGradeCompletedMessageHandler', () => {
         traceparent: '00-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-bbbbbbbbbbbbbbbb-01',
       }),
     ).rejects.toBeInstanceOf(InvalidGradeCompletedMessageError);
+  });
+
+  it.each([
+    {
+      content: Buffer.from('{"credential":"top-secret-password"'),
+      expectedErrorType: 'InvalidGradeCompletedMessageError',
+      headers: createGradeCompletedRabbitMqHeaders(gradeCompletedV1Fixture),
+      name: 'malformed JSON',
+    },
+    {
+      content: Buffer.from(
+        JSON.stringify({
+          ...gradeCompletedV1Fixture,
+          event_name: 'grade.invalid',
+          principal_id: 'sensitive.student@example.com',
+        }),
+      ),
+      expectedErrorType: 'ZodError',
+      headers: createGradeCompletedRabbitMqHeaders(gradeCompletedV1Fixture),
+      name: 'schema mismatch',
+    },
+    {
+      content: Buffer.from(JSON.stringify(gradeCompletedV1Fixture)),
+      expectedErrorType: 'InvalidGradeCompletedMessageError',
+      headers: {
+        ...createGradeCompletedRabbitMqHeaders(gradeCompletedV1Fixture),
+        traceparent: '00-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-bbbbbbbbbbbbbbbb-01',
+      },
+      name: 'header mismatch',
+    },
+  ])('observes and sanitizes the $name consume failure', async (scenario) => {
+    const handler = new RabbitMqGradeCompletedMessageHandler(
+      new GradeCompletedFixtureConsumer(),
+      createFault(),
+      new NotificationMessagingTelemetry(TEST_BINDING),
+    );
+    const spanStart = spanExporter.getFinishedSpans().length;
+    const errorLog = jest.spyOn(console, 'error').mockImplementation();
+
+    await expect(handler.handle(scenario.content, scenario.headers)).rejects.toThrow();
+    await telemetry.forceFlush();
+
+    const newSpans = spanExporter.getFinishedSpans().slice(spanStart);
+    const consumeSpan = newSpans.find((span) => span.name === 'rabbitmq consume grade.completed');
+    expect(consumeSpan?.status.code).toBe(SpanStatusCode.ERROR);
+    expect(consumeSpan?.attributes['error.type']).toBe(scenario.expectedErrorType);
+    expect(consumeSpan?.attributes['messaging.destination.name']).toBe(TEST_BINDING.queue);
+    expect(newSpans.some((span) => span.name === 'notification process grade.completed')).toBe(
+      false,
+    );
+
+    const correlatedLog = errorLog.mock.calls
+      .map(([value]) => String(value))
+      .find((value) => value.includes('"operation_name":"consume"'));
+    expect(correlatedLog).toContain(`"error_type":"${scenario.expectedErrorType}"`);
+    expect(correlatedLog).toContain(`"trace_id":"${consumeSpan?.spanContext().traceId}"`);
+    expect(correlatedLog).not.toMatch(
+      /top-secret-password|sensitive\.student@example\.com|amqp:\/\//u,
+    );
+
+    const metrics = JSON.stringify(metricExporter.getMetrics());
+    expect(metrics).toContain('notification.rabbitmq.consume.error.count');
+    expect(metrics).toContain('notification.rabbitmq.consume.duration');
+    expect(metrics).toContain(scenario.expectedErrorType);
   });
 });

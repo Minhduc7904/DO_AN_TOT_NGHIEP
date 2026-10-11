@@ -71,28 +71,29 @@ export class RabbitMqGradeCompletedMessageHandler {
     content: Buffer,
     rawHeaders: Record<string, unknown> | undefined,
   ): Promise<NotificationPreview> {
-    const event = gradeCompletedEventSchema.parse(parseEvent(content));
-    const headers = gradeCompletedRabbitMqHeadersSchema.parse(normalizeHeaders(rawHeaders));
+    const traceHeaders = normalizeHeaders(rawHeaders);
 
-    if (
-      headers.traceparent !== event.correlation.traceparent ||
-      (headers.tracestate ?? null) !== event.correlation.tracestate
-    ) {
-      throw new InvalidGradeCompletedMessageError(
-        'RabbitMQ trace headers must match grade.completed correlation',
-      );
-    }
+    return this.telemetry.observe(
+      traceHeaders,
+      () => gradeCompletedEventSchema.parse(parseEvent(content)),
+      (event) => {
+        const headers = gradeCompletedRabbitMqHeadersSchema.parse(traceHeaders);
 
-    const traceHeaders: RabbitMqTraceHeaders = {
-      traceparent: headers.traceparent,
-      ...(headers.tracestate ? { tracestate: headers.tracestate } : {}),
-    };
-
-    return this.telemetry.observe(traceHeaders, event, async () => {
-      await this.fault.beforeProcess();
-      const preview = this.processor.process(event);
-      logProcessing(event.event_name, event.event_id, preview.status);
-      return preview;
-    });
+        if (
+          headers.traceparent !== event.correlation.traceparent ||
+          (headers.tracestate ?? null) !== event.correlation.tracestate
+        ) {
+          throw new InvalidGradeCompletedMessageError(
+            'RabbitMQ trace headers must match grade.completed correlation',
+          );
+        }
+      },
+      async (event) => {
+        await this.fault.beforeProcess();
+        const preview = this.processor.process(event);
+        logProcessing(event.event_name, event.event_id, preview.status);
+        return preview;
+      },
+    );
   }
 }

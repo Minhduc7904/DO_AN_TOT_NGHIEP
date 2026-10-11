@@ -1,4 +1,5 @@
 import type { GradeCompletedEvent } from '@aiops-lms/contracts';
+import { Inject, Injectable } from '@nestjs/common';
 import {
   context,
   metrics,
@@ -10,6 +11,11 @@ import {
   type Context,
   type TextMapGetter,
 } from '@opentelemetry/api';
+
+import {
+  RABBITMQ_GRADE_COMPLETED_BINDING,
+  type RabbitMqGradeCompletedBinding,
+} from './rabbitmq-grade-completed.binding.js';
 
 export type RabbitMqTraceHeaders = Record<string, string>;
 
@@ -26,6 +32,7 @@ function errorType(error: unknown): string {
   return error instanceof Error && error.name ? error.name : 'processing_error';
 }
 
+@Injectable()
 export class NotificationMessagingTelemetry {
   private readonly consumeCount = metrics
     .getMeter('@aiops-lms/notification')
@@ -47,18 +54,22 @@ export class NotificationMessagingTelemetry {
     .createHistogram('notification.process.duration', { unit: 's' });
   private readonly tracer = trace.getTracer('@aiops-lms/notification');
 
+  constructor(
+    @Inject(RABBITMQ_GRADE_COMPLETED_BINDING)
+    private readonly binding: Pick<RabbitMqGradeCompletedBinding, 'queue'>,
+  ) {}
+
   async observe<T>(
     headers: RabbitMqTraceHeaders,
-    event: GradeCompletedEvent,
-    run: () => Promise<T>,
+    receive: () => GradeCompletedEvent,
+    validate: (event: GradeCompletedEvent) => void,
+    run: (event: GradeCompletedEvent) => Promise<T>,
   ): Promise<T> {
     const parentContext = propagation.extract(ROOT_CONTEXT, headers, rabbitMqHeaderGetter);
     const attributes = {
       dependency_identity: 'notification-rabbitmq',
-      event_name: event.event_name,
       'messaging.destination.kind': 'queue',
-      'messaging.destination.name': 'notification.grade-completed.v1',
-      'messaging.message.id': event.event_id,
+      'messaging.destination.name': this.binding.queue,
       'messaging.operation': 'receive',
       'messaging.system': 'rabbitmq',
       operation_name: 'consume',
@@ -71,14 +82,25 @@ export class NotificationMessagingTelemetry {
     const consumeContext = trace.setSpan(parentContext, consumeSpan);
     const consumeStartedAt = performance.now();
     let consumeStatus = 'ok';
+    let event: GradeCompletedEvent | undefined;
 
     try {
-      return await context.with(consumeContext, () => this.observeProcessing(event, run));
+      return await context.with(consumeContext, async () => {
+        const receivedEvent = receive();
+        event = receivedEvent;
+        consumeSpan.setAttributes({
+          event_name: receivedEvent.event_name,
+          'messaging.message.id': receivedEvent.event_id,
+        });
+        validate(receivedEvent);
+        return this.observeProcessing(receivedEvent, () => run(receivedEvent));
+      });
     } catch (error) {
       consumeStatus = errorType(error);
       consumeSpan.recordException(error instanceof Error ? error : String(error));
       consumeSpan.setAttribute('error.type', consumeStatus);
       consumeSpan.setStatus({ code: SpanStatusCode.ERROR });
+      context.with(consumeContext, () => this.logConsumeError(error, event));
       throw error;
     } finally {
       const labels = {
@@ -93,6 +115,22 @@ export class NotificationMessagingTelemetry {
       this.consumeDuration.record((performance.now() - consumeStartedAt) / 1_000, labels);
       consumeSpan.end();
     }
+  }
+
+  private logConsumeError(error: unknown, event: GradeCompletedEvent | undefined): void {
+    const spanContext = trace.getSpan(context.active())?.spanContext();
+    console.error(
+      JSON.stringify({
+        error_type: errorType(error),
+        event: event?.event_name ?? 'grade.completed',
+        ...(event ? { event_id: event.event_id } : {}),
+        level: 'error',
+        operation_name: 'consume',
+        service_name: 'notification',
+        span_id: spanContext?.spanId,
+        trace_id: spanContext?.traceId,
+      }),
+    );
   }
 
   private async observeProcessing<T>(

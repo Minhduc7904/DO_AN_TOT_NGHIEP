@@ -108,7 +108,7 @@ const processor = new GradeCompletedFixtureConsumer();
 const handler = new RabbitMqGradeCompletedMessageHandler(
   processor,
   new NotificationConsumerFault(notificationConfig),
-  new NotificationMessagingTelemetry(),
+  new NotificationMessagingTelemetry(binding),
 );
 const consumer = new RabbitMqGradeCompletedConsumer(binding, handler, connectRabbitMq);
 const publisher = new RabbitMqGradeCompletedPublisher(publisherConfig);
@@ -154,6 +154,7 @@ try {
   assert.deepEqual(processes.map((span) => span.spanContext().traceId).sort(), producerTraceIds);
   for (const consume of consumes) {
     assert.equal(consume.attributes.dependency_identity, 'notification-rabbitmq');
+    assert.equal(consume.attributes['messaging.destination.name'], QUEUE);
   }
 
   const metrics = JSON.stringify(metricExporter.getMetrics());
