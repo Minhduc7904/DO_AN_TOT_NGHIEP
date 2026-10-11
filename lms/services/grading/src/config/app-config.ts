@@ -7,6 +7,12 @@ export const DEFAULT_OTLP_TRACES_ENDPOINT = 'http://localhost:4318/v1/traces';
 export const DEFAULT_GRADING_DATABASE_URL = 'postgresql://localhost:5432/grading_db';
 export const DEFAULT_GRADING_SUBMISSION_BASE_URL = 'http://localhost:3004';
 export const DEFAULT_GRADING_DEPENDENCY_TIMEOUT_MS = 3_000;
+export const DEFAULT_GRADING_RABBITMQ_URL = 'amqp://localhost:5672';
+export const DEFAULT_GRADE_COMPLETED_EXCHANGE = 'lms.events';
+export const GRADE_COMPLETED_ROUTING_KEY = 'grade.completed';
+export const DEFAULT_PUBLISH_CONFIRM_TIMEOUT_MS = 3_000;
+export const DEFAULT_EVENT_RETRY_INTERVAL_MS = 5_000;
+export const DEFAULT_EVENT_RETRY_BATCH_SIZE = 20;
 export const NODE_ENVIRONMENTS = ['development', 'test', 'production'] as const;
 
 export type NodeEnvironment = (typeof NODE_ENVIRONMENTS)[number];

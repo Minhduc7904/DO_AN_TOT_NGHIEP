@@ -41,9 +41,23 @@ jobs:
           --health-interval 5s
           --health-timeout 5s
           --health-retries 12
+      rabbitmq:
+        image: rabbitmq:4.1.4-management-alpine
+        env:
+          RABBITMQ_DEFAULT_USER: w1_test
+          RABBITMQ_DEFAULT_PASS: w1_test_password
+        ports:
+          - 5672:5672
+        options: >-
+          --health-cmd "rabbitmq-diagnostics -q ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 12
+          --health-start-period 20s
     env:
       W1_AUTH_DATABASE_URL: postgresql://w1_test:w1_test_password@127.0.0.1:5432/auth_db
       W2_REDIS_URL: redis://127.0.0.1:6379
+      GRADING_RABBITMQ_URL: amqp://w1_test:w1_test_password@127.0.0.1:5672
     steps:
       - name: Checkout source
         uses: actions/checkout@v6
@@ -73,7 +87,7 @@ jobs:
           export ENROLLMENT_DATABASE_URL="${W1_AUTH_DATABASE_URL%/auth_db}/enrollment_db"
           export SUBMISSION_DATABASE_URL="${W1_AUTH_DATABASE_URL%/auth_db}/submission_db"
           export GRADING_DATABASE_URL="${W1_AUTH_DATABASE_URL%/auth_db}/grading_db"
-          pnpm run test:w1:postgres && pnpm run test:course:postgres && pnpm run test:enrollment:postgres && pnpm run test:submission:postgres && pnpm run test:grading:postgres && pnpm run test:w2:postgres && pnpm run test:w3:postgres && pnpm run test:w5:postgres && pnpm run ci:verify
+          pnpm run test:w1:postgres && pnpm run test:course:postgres && pnpm run test:enrollment:postgres && pnpm run test:submission:postgres && pnpm run test:grading:postgres && pnpm run test:grading:rabbitmq && pnpm run test:w2:postgres && pnpm run test:w3:postgres && pnpm run test:w5:postgres && pnpm run ci:verify
 
   compose-config:
     name: Validate Compose without local configuration
@@ -107,8 +121,12 @@ jobs:
           submission_id="$(printf '%s' "$submission" | node -e 'let text="";process.stdin.on("data",chunk=>text+=chunk);process.stdin.on("end",()=>process.stdout.write(JSON.parse(text).id))')"
           test -n "$submission_id"
           curl --fail --silent --show-error -H "Authorization: Bearer $token" "http://127.0.0.1:3000/api/v1/submissions/$submission_id" | node -e 'let text="";process.stdin.on("data",chunk=>text+=chunk);process.stdin.on("end",()=>{if(JSON.parse(text).id!==process.argv[1])process.exit(1)})' "$submission_id"
-      - name: Instructor grades a Submission through Gateway
+      - name: Instructor grades a Submission and Grading publishes grade.completed
         run: |
+          rabbit() { curl --fail --silent --show-error -u lms:lms-local-only -H 'content-type: application/json' "$@"; }
+          rabbit -X PUT -d '{"type":"topic","durable":true}' http://127.0.0.1:15672/api/exchanges/%2F/lms.events
+          rabbit -X PUT -d '{"durable":false,"auto_delete":true}' http://127.0.0.1:15672/api/queues/%2F/ci-grade-completed
+          rabbit -X POST -d '{"routing_key":"grade.completed"}' http://127.0.0.1:15672/api/bindings/%2F/e/lms.events/q/ci-grade-completed
           json_field() { node -e 'let text="";process.stdin.on("data",chunk=>text+=chunk);process.stdin.on("end",()=>process.stdout.write(String(JSON.parse(text)[process.argv[1]])))' "$1"; }
           login() { curl --fail --silent --show-error -H 'content-type: application/json' -d "{\"email\":\"$1\",\"password\":\"example-password\"}" http://127.0.0.1:3000/api/v1/auth/login | json_field access_token; }
           student_token="$(login student@example.test)"
@@ -122,6 +140,8 @@ jobs:
           test -n "$grade_id"
           test "$(curl --fail --silent --show-error -H "Authorization: Bearer $student_token" "http://127.0.0.1:3000/api/v1/grades/$grade_id" | json_field submission_id)" = "$submission_id"
           test "$(curl --silent --output /dev/null --write-out '%{http_code}' -H "Authorization: Bearer $instructor_token" -H 'content-type: application/json' -d "$grade_body" http://127.0.0.1:3000/api/v1/grades)" = 409
+          messages="$(rabbit -X POST -d '{"count":5,"ackmode":"ack_requeue_false","encoding":"auto"}' http://127.0.0.1:15672/api/queues/%2F/ci-grade-completed/get)"
+          printf '%s' "$messages" | node -e 'let text="";process.stdin.on("data",chunk=>text+=chunk);process.stdin.on("end",()=>{const [message, ...rest]=JSON.parse(text);const event=JSON.parse(message.payload);if(rest.length||event.event_name!=="grade.completed"||event.schema_version!==1||event.payload.grade_id!==process.argv[1]||event.payload.submission_id!==process.argv[2]||message.properties.headers.traceparent!==event.correlation.traceparent||message.properties.delivery_mode!==2)process.exit(1)})' "$grade_id" "$submission_id"
       - name: Show logs on failure
         if: failure()
         run: docker compose --env-file docker-compose/.env.example -f docker-compose/compose.yaml logs --no-color

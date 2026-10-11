@@ -34,11 +34,13 @@ const [
   { GradingController },
   { HttpExceptionFilter },
   { GradingService },
+  { GradePublicationCoordinator },
 ] = await Promise.all([
   import('../dist/adapters/clients/submission-http.client.js'),
   import('../dist/adapters/http/grading/grading.controller.js'),
   import('../dist/adapters/http/http-exception.filter.js'),
   import('../dist/application/grading.service.js'),
+  import('../dist/application/grade-publication.coordinator.js'),
 ]);
 
 const calls = [];
@@ -125,13 +127,25 @@ try {
       return rows.get(id) ?? null;
     },
   };
+  // Test này chỉ kiểm chứng contract HTTP với Submission; publication được thay bằng fake luôn thành công.
+  const publication = new GradePublicationCoordinator(
+    {
+      countPending: async () => 0,
+      findPending: async () => [],
+      markFailed: async () => undefined,
+      markPublished: async () => undefined,
+      recordAttempt: async () => true,
+    },
+    { publish: async () => undefined },
+  );
   const module = await Test.createTestingModule({
     controllers: [GradingController],
     providers: [
       { provide: ConfigService, useValue: config },
       {
         provide: GradingService,
-        useFactory: () => new GradingService(repository, new SubmissionHttpClient(config)),
+        useFactory: () =>
+          new GradingService(repository, new SubmissionHttpClient(config), publication),
       },
     ],
   }).compile();

@@ -2,6 +2,7 @@ import type { Grade } from '../../domain/grade.js';
 
 export interface CreateGradeRecord {
   id: string;
+  eventId: string;
   submissionId: string;
   principalId: string;
   courseId: string;
