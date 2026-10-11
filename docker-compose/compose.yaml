@@ -202,6 +202,44 @@ services:
     networks:
       - lms-network
 
+  notification:
+    build:
+      context: ../lms
+      dockerfile: services/notification/Dockerfile
+    environment:
+      NODE_ENV: production
+      NOTIFICATION_RABBITMQ_URL: "amqp://${RABBITMQ_DEFAULT_USER:-lms}:${RABBITMQ_DEFAULT_PASS:-lms-local-only}@rabbitmq:5672"
+      NOTIFICATION_GRADE_COMPLETED_EXCHANGE: "${NOTIFICATION_GRADE_COMPLETED_EXCHANGE:-lms.events}"
+      NOTIFICATION_GRADE_COMPLETED_QUEUE: "${NOTIFICATION_GRADE_COMPLETED_QUEUE:-notification.grade-completed.v1}"
+      NOTIFICATION_CONSUMER_PREFETCH: "${NOTIFICATION_CONSUMER_PREFETCH:-1}"
+      NOTIFICATION_CONSUMER_SLOWDOWN_ENABLED: "${NOTIFICATION_CONSUMER_SLOWDOWN_ENABLED:-false}"
+      NOTIFICATION_CONSUMER_SLOWDOWN_MS: "${NOTIFICATION_CONSUMER_SLOWDOWN_MS:-0}"
+      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: "${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT:-http://127.0.0.1:4318/v1/traces}"
+      OTEL_SDK_DISABLED: "${OTEL_SDK_DISABLED:-false}"
+      OTEL_SERVICE_INSTANCE_ID: "${NOTIFICATION_SERVICE_INSTANCE_ID:-notification-compose-1}"
+      OTEL_SERVICE_VERSION: "${NOTIFICATION_SERVICE_VERSION:-0.1.0}"
+      PORT: 3006
+    ports:
+      - "${NOTIFICATION_PORT:-3006}:3006"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - >-
+          fetch('http://127.0.0.1:3006/health')
+          .then((response) => { if (!response.ok) process.exit(1); })
+          .catch(() => process.exit(1));
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 5s
+    networks:
+      - lms-network
+
   grading:
     build:
       context: ../lms
