@@ -14,7 +14,6 @@
 
 - skill, rule, guide, template và instruction dùng chung cho agent hoặc repository;
 - break task/lập bảng tuần trước khi bắt đầu triển khai task cụ thể;
-- timeline hoặc đầu ra sinh tự động chỉ phát sinh từ các thay đổi dùng chung hợp lệ;
 - metadata/cấu hình quản trị repository dùng chung không phải application code, shared application library hoặc artifact DoD của một task.
 
 Ngoại lệ không áp dụng cho code triển khai, test, contract, architecture artifact, shared application code, input/output cá nhân, cập nhật trạng thái task, URL PR, review/finalization metadata hoặc bất kỳ thay đổi nào dùng làm bằng chứng DoD của task. Nếu working tree trộn thay đổi dùng chung với thay đổi thuộc task cụ thể, phải tách commit; chỉ phần dùng chung mới được push trực tiếp lên `main`.

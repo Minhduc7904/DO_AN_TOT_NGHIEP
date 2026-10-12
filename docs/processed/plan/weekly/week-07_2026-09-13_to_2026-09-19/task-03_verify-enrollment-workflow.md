@@ -61,4 +61,4 @@ Kiểm chứng E2E luồng `login → enroll` qua Gateway với PostgreSQL thự
 - Cập nhật gần nhất: 22/09/2026 — Đức bắt đầu triển khai trên nhánh `test/week-07/task-03-verify-enrollment-workflow`, base trực tiếp lên nhánh task-02 (PR #26, chưa merge) theo chỉ thị Đức về stacked branch; không đợi task-01/02 merge vào `main` trước.
 - Cập nhật gần nhất: 22/09/2026 — Gateway routing, Compose/CI và E2E `login → enroll` đạt qua CI-equivalent chain cục bộ và `docker compose up` thật; đã mở PR [#27](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/27) (xếp chồng trên #26, #25), chuyển `Chờ review`, chờ Bách chạy độc lập và review.
 - Cập nhật gần nhất: 22/09/2026 — PR #25/#26 (task-01/02) đã merge vào `main`; Bách không thể review hay chạy độc lập nên Đức tự thực hiện review thay Bách, phát hiện và sửa test conflict phụ thuộc thứ tự chạy qua commit `317e863`, rồi finalization theo ngoại lệ workflow và chuyển `Hoàn thành`.
-- Ghi chú/tồn đọng: `tools/sync-plan-json-and-timeline.ps1` cần `pwsh`, không sẵn có trong môi trường thực hiện; timeline đang chờ đồng bộ.
+- Ghi chú/tồn đọng: Không còn blocker trong phạm vi task.

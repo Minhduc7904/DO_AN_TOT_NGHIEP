@@ -7,6 +7,8 @@ Trước mọi thay đổi, đọc `AGENTS.md`, sau đó đọc đầy đủ:
 
 Đây là quy ước bắt buộc của dự án. Áp dụng cho mọi code, task, kế hoạch và tài liệu. Không bỏ qua quy tắc quyền sở hữu thư mục, ngôn ngữ, tên file/thư mục, input/output và Definition of Done.
 
+Kế hoạch và tiến độ dùng Markdown canonical trong `docs/processed/plan/` cùng hồ sơ `workspace/`. Sau mỗi thay đổi tuần/task, đối chiếu trực tiếp overview, card, input/output và trạng thái GitHub liên quan.
+
 Khi cần biết người dùng là Đức hay Bách để lọc task hoặc sửa workspace, chỉ dùng thông tin người dùng nói rõ trong yêu cầu hiện tại. Nếu chưa rõ, phải hỏi lại; không đoán từ lịch sử hội thoại, tên tài khoản, tên thư mục hoặc task cũ.
 
 Với yêu cầu lập/chia task tuần hoặc hỏi công việc tuần, đọc `agent-resources/skills/weekly-task-planning/SKILL.md`. Với review task/PR của người khác, đọc `agent-resources/skills/task-code-review/SKILL.md`. Khi người phụ trách muốn xử lý feedback/comment/review trên PR của chính task, đọc `agent-resources/skills/pr-review-response/SKILL.md`. Khi PR đã review đạt và người phụ trách muốn finalization/ghi nhận hồ sơ, đọc `agent-resources/skills/task-completion-recording/SKILL.md` trước merge.
@@ -15,4 +17,4 @@ Trước khi tạo branch, sửa code/tài liệu hoặc mở pull request, đ�
 
 Requirement workflow về commit/push không tự cấp quyền Git write. Khi user chưa yêu cầu rõ commit/push, chỉ chuẩn bị thay đổi và báo transition chưa hợp lệ trên remote.
 
-Thay đổi vận hành dùng chung không thuộc task cụ thể, gồm skill/rule/guide/template, break task tuần, timeline sinh tương ứng và metadata quản trị repository, có thể commit/push trực tiếp lên `main` khi user yêu cầu rõ Git write. Không dùng ngoại lệ này cho code/artifact/DoD/lifecycle task hoặc shared application code; diff trộn phải được tách theo `docs/processed/rules/git-and-pull-request-rules.md`.
+Thay đổi vận hành dùng chung không thuộc task cụ thể, gồm skill/rule/guide/template, break task tuần và metadata quản trị repository, có thể commit/push trực tiếp lên `main` khi user yêu cầu rõ Git write. Không dùng ngoại lệ này cho code/artifact/DoD/lifecycle task hoặc shared application code; diff trộn phải được tách theo `docs/processed/rules/git-and-pull-request-rules.md`.

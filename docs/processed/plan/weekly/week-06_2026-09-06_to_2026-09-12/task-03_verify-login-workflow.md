@@ -58,4 +58,4 @@ Tạo kiểm thử contract/integration cho W1 `Client → Gateway → Auth → 
 ## Cập nhật tiến độ
 
 - Cập nhật gần nhất: 18/09/2026 — head PR [#21](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/21) `98bfa9c` đã có quality gate, Compose và security checks xanh. Bách xác nhận hoàn thành theo ngoại lệ, không chờ `APPROVED` GitHub mới từ Đức.
-- Ghi chú/tồn đọng: `auth-postgres` chưa có instrumentation nên không áp dụng assertion dependency signal. Course chưa có route nên JWT hợp lệ đi qua Gateway tới Course nhận `404`, còn JWT sai nhận `401`. Không cập nhật project timeline HTML cho task này theo chỉ thị trực tiếp của Bách; Markdown vẫn là nguồn kế hoạch canonical. Runtime PowerShell không khả dụng nên timeline sinh tự động đang chờ đồng bộ; không sửa tay đầu ra này.
+- Ghi chú/tồn đọng: `auth-postgres` chưa có instrumentation nên không áp dụng assertion dependency signal. Course chưa có route nên JWT hợp lệ đi qua Gateway tới Course nhận `404`, còn JWT sai nhận `401`.

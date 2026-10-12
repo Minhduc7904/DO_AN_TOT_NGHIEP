@@ -57,4 +57,4 @@ Tích hợp RabbitMQ publisher vào Grading sau khi grade thay đổi thành cô
 ## Cập nhật tiến độ
 
 - Cập nhật gần nhất: 08/10/2026 — xử lý feedback review nội bộ vòng 1; finalization theo ngoại lệ do Đức xác nhận.
-- Ghi chú/tồn đọng: Việc Bách review tương thích consumer không thay thế review PR chính thức. Timeline/JSON chờ đồng bộ bằng Windows PowerShell (script không chạy được trên Linux); Đức chỉ thị tiếp tục, không sửa tay đầu ra.
+- Ghi chú/tồn đọng: Việc Bách review tương thích consumer không thay thế review PR chính thức.

@@ -7,6 +7,8 @@ Trước khi đề xuất hoặc sửa code/tài liệu, hãy đọc `AGENTS.md`
 
 Tuân thủ toàn bộ quy ước workspace, quyền sở hữu, ngôn ngữ, tên file/thư mục và tiêu chí hoàn thành task.
 
+Kế hoạch và tiến độ dùng Markdown canonical trong `docs/processed/plan/` cùng hồ sơ `workspace/`. Sau mỗi thay đổi tuần/task, đối chiếu trực tiếp overview, card, input/output và trạng thái GitHub liên quan.
+
 Khi cần biết người dùng là Đức hay Bách để lọc task hoặc sửa workspace, chỉ dùng thông tin người dùng nói rõ trong yêu cầu hiện tại. Nếu chưa rõ, phải hỏi lại; không đoán từ lịch sử hội thoại, tên tài khoản, tên thư mục hoặc task cũ.
 
 - Lập/chia task tuần hoặc trả lời công việc tuần: đọc `agent-resources/skills/weekly-task-planning/SKILL.md`.
@@ -32,4 +34,4 @@ Tổng quan:
 - Không ép chuyển thuật ngữ kỹ thuật, tên riêng hoặc ngữ cảnh mà tiếng Anh rõ hơn sang tiếng Việt.
 - Không thêm tiêu đề, giải thích, tên người thực hiện, lời chào, nội dung PR hoặc Markdown fence vào message được sinh.
 - Không tạo commit nếu người dùng chưa yêu cầu rõ. Requirement workflow về commit/push không tự cấp quyền Git write; khi chưa được phép, chỉ chuẩn bị thay đổi và báo bước còn thiếu.
-- Skill/rule/guide/template, break task tuần, timeline sinh từ thay đổi dùng chung và metadata quản trị repository không thuộc task cụ thể có thể commit/push trực tiếp lên `main` khi người dùng yêu cầu rõ. Không áp dụng cho code/artifact/DoD/lifecycle task hoặc shared application code; diff trộn phải tách theo `docs/processed/rules/git-and-pull-request-rules.md`.
+- Skill/rule/guide/template, break task tuần và metadata quản trị repository không thuộc task cụ thể có thể commit/push trực tiếp lên `main` khi người dùng yêu cầu rõ. Không áp dụng cho code/artifact/DoD/lifecycle task hoặc shared application code; diff trộn phải tách theo `docs/processed/rules/git-and-pull-request-rules.md`.

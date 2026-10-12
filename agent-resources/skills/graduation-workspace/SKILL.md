@@ -11,8 +11,8 @@ Chỉ dùng template ở các đường dẫn canonical được liệt kê tron
 
 Khi yêu cầu là lập/tra cứu task tuần, ghi nhận hoàn thành hoặc review, đọc thêm skill chuyên biệt tương ứng trước khi thay đổi trạng thái hay hồ sơ.
 
-## Đồng bộ dữ liệu kế hoạch và timeline
+## Kiểm tra trực tiếp dữ liệu kế hoạch
 
-Markdown canonical trong `docs/processed/plan/` vẫn là nguồn sự thật. Sau mọi thay đổi làm ảnh hưởng đến plan, `weekly-overview.md` hoặc card `task-*.md`, bắt buộc chạy `tools/sync-plan-json-and-timeline.ps1` và xác minh script thành công. Không báo workflow hoàn tất, không commit/push trạng thái mới và không để JSON/timeline lệch với Markdown khi bước đồng bộ thất bại.
+Markdown canonical trong `docs/processed/plan/` và hồ sơ `workspace/` là nguồn sự thật duy nhất.
 
-JSON tại `docs/processed/plan/json/` và timeline tại `docs/processed/plan/timeline/` là đầu ra sinh tự động; không sửa trực tiếp. JSON được kiểm tra tại local và bị Git ignore, không force-add; timeline là đầu ra tracked nên đi cùng diff kế hoạch. Nếu runtime đồng bộ không khả dụng, cảnh báo rõ; khi đúng người phụ trách vẫn chỉ thị tiếp tục, được commit Markdown và ghi nhận timeline đang chờ đồng bộ, không sửa tay đầu ra.
+Sau mọi thay đổi ảnh hưởng đến plan, `weekly-overview.md`, card `task-*.md` hoặc hồ sơ task, agent phải đọc lại các file liên quan và đối chiếu trực tiếp người phụ trách, trạng thái, nhánh, liên kết input/output, PR/review và bằng chứng DoD. Khi trạng thái phụ thuộc GitHub, kiểm tra GitHub thay vì suy diễn từ Markdown local. Không báo workflow hoàn tất khi các nguồn canonical còn lệch nhau.
