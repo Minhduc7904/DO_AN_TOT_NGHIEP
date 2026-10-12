@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-03_verify-grade-to-notification-workflow` |
 | Tuần | `week-08_2026-09-20_to_2026-09-26` |
-| Trạng thái | Đã giao |
+| Trạng thái | Đang thực hiện |
 | Người phụ trách | Bách |
 | Collaborator | Đức hỗ trợ môi trường Grading/RabbitMQ |
 | Ưu tiên | Cao |
@@ -50,11 +50,11 @@ Kiểm chứng workflow W5 từ nộp bài đã tồn tại đến chấm điể
 ## Liên kết hồ sơ thực hiện
 
 - Input workspace: [task-input.md](../../../../../workspace/bach/week-08_2026-09-20_to_2026-09-26/task-03_verify-grade-to-notification-workflow/input/task-input.md).
-- Output workspace: [task-output.md](../../../../../workspace/bach/week-08_2026-09-20_to_2026-09-26/task-03_verify-grade-to-notification-workflow/output/task-output.md) (mẫu, chưa có báo cáo thực tế).
+- Output workspace: [task-output.md](../../../../../workspace/bach/week-08_2026-09-20_to_2026-09-26/task-03_verify-grade-to-notification-workflow/output/task-output.md).
 - Pull request: Chưa tạo.
 - Kết quả review: Chưa review.
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 27/09/2026 — tạo card và giao cho Bách.
-- Ghi chú/tồn đọng: Chỉ chạy sau khi Grading publisher và Notification consumer đã tích hợp; đây là test E2E đầu tiên yêu cầu HTTP + queue topology.
+- Cập nhật gần nhất: 12/10/2026 — Bách khởi tạo branch và hồ sơ để bắt đầu Task 03; chưa triển khai task chính.
+- Ghi chú/tồn đọng: Task-02, task-04 và task-05 đã hoàn thành trên `main`, nên dependency triển khai đã sẵn sàng. Đồng bộ JSON/timeline đang chờ vì môi trường setup không có PowerShell; Bách xác nhận tiếp tục theo ngoại lệ ngày 12/10/2026.
