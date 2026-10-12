@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-04_build-mvp-regression-suite` |
 | Tuần | `week-09_2026-09-27_to_2026-10-03` |
-| Trạng thái | Chờ xử lý |
+| Trạng thái | Đang thực hiện |
 | Người phụ trách | Bách |
 | Collaborator | Đức hỗ trợ môi trường testbed |
 | Ưu tiên | Cao |
@@ -29,7 +29,7 @@ Xây một regression entrypoint cho Testbed MVP chạy từ dữ liệu sạch,
 
 - Tài liệu/task cần có trước: W8 task-03; W9 task-01, task-02 và task-03 đã merge.
 - Người hoặc phần việc cần phối hợp: Đức hỗ trợ cấu hình Gateway, Grading, RabbitMQ và reset/seed; kết quả cần đủ rõ để chạy độc lập ở task-05.
-- Rủi ro/giả định: Bách hiện không tham gia nên task chưa thể bắt đầu; async assertions dễ flaky, mọi poll/retry của test phải có timeout, interval và failure diagnostics rõ.
+- Rủi ro/giả định: Bách tham gia lại từ 12/10/2026 và bắt đầu dựng khung suite trên `main` hiện tại; bước reset/seed và ca failure/recovery messaging chỉ hoàn thiện sau khi W9 task-02 và task-03 merge. Async assertions dễ flaky, mọi poll/retry của test phải có timeout, interval và failure diagnostics rõ.
 
 ## Sản phẩm kỳ vọng
 
@@ -49,8 +49,8 @@ Xây một regression entrypoint cho Testbed MVP chạy từ dữ liệu sạch,
 
 ## Liên kết hồ sơ thực hiện
 
-- Input workspace: Chưa tạo.
-- Output workspace: Chưa tạo.
+- Input workspace: [task-input.md](../../../../../workspace/bach/week-09_2026-09-27_to_2026-10-03/task-04_build-mvp-regression-suite/input/task-input.md).
+- Output workspace: [task-output.md](../../../../../workspace/bach/week-09_2026-09-27_to_2026-10-03/task-04_build-mvp-regression-suite/output/task-output.md).
 - Pull request: Chưa tạo.
 - Kết quả review: Chưa review.
 
@@ -58,5 +58,5 @@ Xây một regression entrypoint cho Testbed MVP chạy từ dữ liệu sạch,
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 11/10/2026 — lập task bù tiến độ W9.
-- Ghi chú/tồn đọng: Chờ Bách tiếp tục công việc, W8 Notification/E2E và ba task hardening W9; không bắt đầu bằng cách sao chép các script test rời rạc.
+- Cập nhật gần nhất: 12/10/2026 — Bách khởi tạo branch và hồ sơ để bắt đầu Task 04; chưa triển khai regression suite.
+- Ghi chú/tồn đọng: W8 task-03 và W9 task-01 đã hoàn thành trên `main`; còn chờ W9 task-02 và task-03 của Đức trước khi hoàn tất và merge. Không bắt đầu bằng cách sao chép các script test rời rạc.
