@@ -30,6 +30,7 @@
     "test:grading:rabbitmq": "pnpm --filter @aiops-lms/contracts build && pnpm --filter @aiops-lms/observability build && pnpm --filter @aiops-lms/grading build && node services/grading/test/reset-grading-postgres.mjs && node services/grading/test/rabbitmq-integration.mjs",
     "test:notification:rabbitmq": "pnpm --filter @aiops-lms/contracts build && pnpm --filter @aiops-lms/observability build && pnpm --filter @aiops-lms/grading build && pnpm --filter @aiops-lms/notification build && node services/notification/test/rabbitmq-integration.mjs",
     "test:w5:postgres": "pnpm run build && node services/auth/test/reset-w1-postgres.mjs && node services/submission/test/reset-submission-postgres.mjs && node services/grading/test/reset-grading-postgres.mjs && node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config jest.w5-postgres.config.ts",
+    "test:w5:postgres:slowdown": "cross-env W5_NOTIFICATION_SLOWDOWN_ENABLED=true pnpm run test:w5:postgres",
     "test:submission:postgres": "pnpm --filter @aiops-lms/observability build && pnpm --filter @aiops-lms/submission build && node services/submission/test/postgres-integration.mjs"
   },
   "devDependencies": {
@@ -40,6 +41,7 @@
     "@types/jest": "30.0.0",
     "@types/node": "22.20.1",
     "@types/supertest": "7.2.1",
+    "cross-env": "10.1.0",
     "eslint": "10.9.1",
     "eslint-config-prettier": "10.1.8",
     "globals": "17.11.0",

@@ -35,6 +35,12 @@ const requireFromGrading = createRequire(
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const amqp: any = requireFromGrading('amqplib');
 const EVENT_EXCHANGE = 'lms.events';
+const NOTIFICATION_QUEUE = 'notification.grade-completed.w5-e2e';
+const SLOWDOWN_ENABLED = process.env.W5_NOTIFICATION_SLOWDOWN_ENABLED === 'true';
+const SLOWDOWN_MS = Math.max(
+  1,
+  Number.parseInt(process.env.W5_NOTIFICATION_SLOWDOWN_MS ?? '250', 10),
+);
 
 const JWT_SECRET = 'w5-postgres-workflow-test-secret-with-at-least-thirty-two-characters';
 const TRACE_ID = '77777777777777777777777777777777';
@@ -50,11 +56,39 @@ interface TestApplication {
   useGlobalFilters(...filters: unknown[]): void;
 }
 
+interface NotificationConsumer {
+  onModuleDestroy(): Promise<void>;
+  onModuleInit(): Promise<void>;
+}
+
+interface NotificationLog {
+  event_id: string;
+  outcome: 'accepted' | 'duplicate';
+  trace_id?: string;
+}
+
+interface PublishedEvent {
+  content: Buffer;
+  headers: Record<string, unknown>;
+  id: string;
+}
+
 function address(app: { getHttpServer(): Server }): string {
   return `http://127.0.0.1:${(app.getHttpServer().address() as AddressInfo).port}`;
 }
 
-describe('W5 Gateway → Grading → Submission → PostgreSQL', () => {
+function expectErrorEnvelope(body: unknown, code: string): void {
+  expect(body).toMatchObject({ code, details: null });
+  expect(body).toEqual(
+    expect.objectContaining({
+      message: expect.any(String),
+      timestamp: expect.any(String),
+      trace_id: expect.any(String),
+    }),
+  );
+}
+
+describe('W5 Gateway → Grading → Submission → PostgreSQL → RabbitMQ → Notification', () => {
   const spanExporter = new InMemorySpanExporter();
   // 1 = AggregationTemporality.CUMULATIVE; enum không được re-export từ testing helper dùng chung.
   const metricExporter = new InMemoryMetricExporter(1);
@@ -84,6 +118,35 @@ describe('W5 Gateway → Grading → Submission → PostgreSQL', () => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let brokerChannel: any;
   let eventQueue: string;
+  let notificationConsumer: NotificationConsumer;
+  let notificationHasProcessed: (eventId: string) => boolean;
+  let publishedEvent: PublishedEvent | undefined;
+  const notificationLogs: NotificationLog[] = [];
+  const originalConsoleInfo = console.info;
+  const slowdownTest = SLOWDOWN_ENABLED ? it : it.skip;
+
+  async function waitUntil(
+    predicate: () => boolean | Promise<boolean>,
+    description: string,
+    timeoutMs = 8_000,
+  ): Promise<void> {
+    const deadline = Date.now() + timeoutMs;
+    while (Date.now() < deadline) {
+      if (await predicate()) return;
+      await new Promise<void>((resolve) => {
+        setTimeout(resolve, 25);
+      });
+    }
+    throw new Error(`Quá hạn khi chờ ${description}`);
+  }
+
+  function publishDuplicate(event: PublishedEvent): void {
+    brokerChannel.publish(EVENT_EXCHANGE, 'grade.completed', event.content, {
+      contentType: 'application/json',
+      deliveryMode: 2,
+      headers: event.headers,
+    });
+  }
 
   async function createApp(
     module: unknown,
@@ -114,12 +177,77 @@ describe('W5 Gateway → Grading → Submission → PostgreSQL', () => {
         'W1_AUTH_DATABASE_URL, SUBMISSION_DATABASE_URL, GRADING_DATABASE_URL và GRADING_RABBITMQ_URL là bắt buộc',
       );
     }
-    // Queue tạm bind grade.completed để quan sát event mà Grading publish (không cần Notification).
+    // Queue tạm quan sát payload publisher, tách khỏi queue mà Notification consume.
     brokerConnection = await amqp.connect(process.env.GRADING_RABBITMQ_URL);
     brokerChannel = await brokerConnection.createChannel();
     await brokerChannel.assertExchange(EVENT_EXCHANGE, 'topic', { durable: true });
     eventQueue = (await brokerChannel.assertQueue('', { exclusive: true })).queue as string;
     await brokerChannel.bindQueue(eventQueue, EVENT_EXCHANGE, 'grade.completed');
+    await brokerChannel.assertQueue(NOTIFICATION_QUEUE, { durable: true });
+    await brokerChannel.bindQueue(NOTIFICATION_QUEUE, EVENT_EXCHANGE, 'grade.completed');
+    await brokerChannel.purgeQueue(NOTIFICATION_QUEUE);
+
+    // Jest ESM phải link các module dùng chung @aiops-lms/contracts theo thứ tự ổn định.
+    const { GradeCompletedFixtureConsumer } =
+      await import('../services/notification/src/adapters/messaging/grade-completed.fixture-consumer.js');
+    const { NotificationConsumerFault } =
+      await import('../services/notification/src/adapters/messaging/notification-consumer-fault.js');
+    const { NotificationMessagingTelemetry } =
+      await import('../services/notification/src/adapters/messaging/notification-messaging-telemetry.js');
+    const { connectRabbitMq } =
+      await import('../services/notification/src/adapters/messaging/rabbitmq-client.js');
+    const { RabbitMqGradeCompletedConsumer } =
+      await import('../services/notification/src/adapters/messaging/rabbitmq-grade-completed.consumer.js');
+    const { RabbitMqGradeCompletedMessageHandler } =
+      await import('../services/notification/src/adapters/messaging/rabbitmq-grade-completed.message-handler.js');
+    const notificationBinding = {
+      exchange: EVENT_EXCHANGE,
+      prefetch: 1,
+      queue: NOTIFICATION_QUEUE,
+      routing_key: 'grade.completed' as const,
+      url: process.env.GRADING_RABBITMQ_URL,
+    };
+    const processor = new GradeCompletedFixtureConsumer();
+    notificationHasProcessed = processor.hasProcessed.bind(processor);
+    const handler = new RabbitMqGradeCompletedMessageHandler(
+      processor,
+      new NotificationConsumerFault({
+        getOrThrow: (key: string): boolean | number =>
+          ({
+            NOTIFICATION_CONSUMER_SLOWDOWN_ENABLED: SLOWDOWN_ENABLED,
+            NOTIFICATION_CONSUMER_SLOWDOWN_MS: SLOWDOWN_ENABLED ? SLOWDOWN_MS : 0,
+          })[key] as boolean | number,
+      } as never),
+      new NotificationMessagingTelemetry(notificationBinding),
+    );
+    notificationConsumer = new RabbitMqGradeCompletedConsumer(
+      notificationBinding,
+      handler,
+      connectRabbitMq,
+    );
+    console.info = (...values: unknown[]): void => {
+      try {
+        const parsed = JSON.parse(String(values[0])) as Partial<NotificationLog> & {
+          service_name?: string;
+        };
+        if (
+          parsed.service_name === 'notification' &&
+          typeof parsed.event_id === 'string' &&
+          (parsed.outcome === 'accepted' || parsed.outcome === 'duplicate')
+        ) {
+          notificationLogs.push({
+            event_id: parsed.event_id,
+            outcome: parsed.outcome,
+            ...(typeof parsed.trace_id === 'string' ? { trace_id: parsed.trace_id } : {}),
+          });
+          return;
+        }
+      } catch {
+        // Chuyển tiếp log không phải JSON của Notification như bình thường.
+      }
+      originalConsoleInfo(...values);
+    };
+    await notificationConsumer.onModuleInit();
     // Course và Enrollment chỉ cần trả lời hợp lệ để Submission tạo bài nộp mới.
     dependencyServer = createServer((incoming, response) => {
       response.setHeader('content-type', 'application/json');
@@ -194,8 +322,10 @@ describe('W5 Gateway → Grading → Submission → PostgreSQL', () => {
   }, 30_000);
 
   afterAll(async () => {
+    console.info = originalConsoleInfo;
     await gatewayApp?.close();
     await gradingApp?.close();
+    await notificationConsumer?.onModuleDestroy().catch(() => undefined);
     if (submissionProxy) {
       await new Promise<void>((resolve) => submissionProxy.close(() => resolve()));
     }
@@ -205,6 +335,7 @@ describe('W5 Gateway → Grading → Submission → PostgreSQL', () => {
     if (dependencyServer) {
       await new Promise<void>((resolve) => dependencyServer.close(() => resolve()));
     }
+    await brokerChannel?.deleteQueue(NOTIFICATION_QUEUE).catch(() => undefined);
     await brokerChannel?.close().catch(() => undefined);
     await brokerConnection?.close().catch(() => undefined);
     await telemetry.shutdown();
@@ -221,7 +352,7 @@ describe('W5 Gateway → Grading → Submission → PostgreSQL', () => {
     };
   }
 
-  it('grades a new Submission through Gateway and keeps one trace across Grading, Submission and PostgreSQL', async () => {
+  it('grades a new Submission and keeps one trace through HTTP, RabbitMQ and Notification', async () => {
     const student = await login('student@example.test');
     const instructor = await login('instructor@example.test');
     const submission = await request(gatewayApp.getHttpServer())
@@ -266,24 +397,27 @@ describe('W5 Gateway → Grading → Submission → PostgreSQL', () => {
         'Authorization',
         `Bearer ${createAccessToken('student-other', 'student', JWT_SECRET, 600)}`,
       )
-      .expect(403);
+      .expect(403)
+      .expect(({ body }) => expectErrorEnvelope(body, 'FORBIDDEN'));
 
     await request(gatewayApp.getHttpServer())
       .post('/api/v1/grades')
       .set('Authorization', `Bearer ${instructor.token}`)
       .send({ score: 50, submission_id: submission.body.id })
       .expect(409)
-      .expect(({ body }) => expect(body).toMatchObject({ code: 'CONFLICT', details: null }));
+      .expect(({ body }) => expectErrorEnvelope(body, 'CONFLICT'));
     await request(gatewayApp.getHttpServer())
       .post('/api/v1/grades')
       .set('Authorization', `Bearer ${student.token}`)
       .send({ score: 50, submission_id: submission.body.id })
-      .expect(403);
+      .expect(403)
+      .expect(({ body }) => expectErrorEnvelope(body, 'FORBIDDEN'));
     await request(gatewayApp.getHttpServer())
       .post('/api/v1/grades')
       .set('Authorization', `Bearer ${instructor.token}`)
       .send({ score: 50, submission_id: 'missing-submission' })
-      .expect(404);
+      .expect(404)
+      .expect(({ body }) => expectErrorEnvelope(body, 'NOT_FOUND'));
 
     // Grading gọi Submission không mang Bearer JWT hay principal header, chỉ có W3C trace context.
     const firstCall = submissionCalls[0];
@@ -291,6 +425,45 @@ describe('W5 Gateway → Grading → Submission → PostgreSQL', () => {
     expect(firstCall?.headers.authorization).toBeUndefined();
     expect(firstCall?.headers['x-principal-id']).toBeUndefined();
     expect(String(firstCall?.headers.traceparent)).toContain(TRACE_ID);
+
+    const message = await brokerChannel.get(eventQueue, { noAck: true });
+    expect(message).toBeTruthy();
+    const event = JSON.parse(String(message.content));
+    expect(message.properties.deliveryMode).toBe(2);
+    expect(event).toMatchObject({
+      event_name: 'grade.completed',
+      payload: {
+        course_id: 'course-001',
+        grade_id: created.body.id,
+        principal_id: student.id,
+        score: 92.5,
+        submission_id: submission.body.id,
+      },
+      producer: { service_name: 'grading' },
+      schema_version: 1,
+    });
+    expect(message.properties.headers.traceparent).toBe(event.correlation.traceparent);
+    expect(event.correlation.traceparent).toContain(TRACE_ID);
+    expect(await brokerChannel.get(eventQueue, { noAck: true })).toBe(false);
+    publishedEvent = {
+      content: Buffer.from(message.content),
+      headers: message.properties.headers as Record<string, unknown>,
+      id: event.event_id as string,
+    };
+
+    await waitUntil(
+      () =>
+        notificationLogs.some(
+          (entry) => entry.event_id === event.event_id && entry.outcome === 'accepted',
+        ),
+      'Notification nhận grade.completed',
+    );
+    expect(notificationHasProcessed(event.event_id as string)).toBe(true);
+    expect(
+      notificationLogs.filter(
+        (entry) => entry.event_id === event.event_id && entry.outcome === 'accepted',
+      ),
+    ).toHaveLength(1);
 
     await telemetry.forceFlush();
     const spans = spanExporter
@@ -324,36 +497,32 @@ describe('W5 Gateway → Grading → Submission → PostgreSQL', () => {
     expect(gradingSubmission?.parentSpanContext?.spanId).toBe(gradingServer?.spanContext().spanId);
     expect(submissionServer?.spanContext().traceId).toBe(TRACE_ID);
 
-    // Event grade.completed được publish trong cùng trace, là con của span Grading server.
+    // Event grade.completed và Notification consume cùng trace với chuỗi HTTP phía trước.
     const publishSpan = spans.find((span) => span.kind === SpanKind.PRODUCER);
+    const consumeSpan = spans.find((span) => span.name === 'rabbitmq consume grade.completed');
+    const processSpan = spans.find((span) => span.name === 'notification process grade.completed');
     expect(publishSpan?.attributes.dependency_identity).toBe('grading-rabbitmq');
     expect(publishSpan?.parentSpanContext?.spanId).toBe(gradingServer?.spanContext().spanId);
-    const message = await brokerChannel.get(eventQueue, { noAck: true });
-    expect(message).toBeTruthy();
-    const event = JSON.parse(String(message.content));
-    expect(message.properties.deliveryMode).toBe(2);
-    expect(event).toMatchObject({
-      event_name: 'grade.completed',
-      payload: {
-        course_id: 'course-001',
-        grade_id: created.body.id,
-        principal_id: student.id,
-        score: 92.5,
-        submission_id: submission.body.id,
-      },
-      producer: { service_name: 'grading' },
-      schema_version: 1,
-    });
-    expect(message.properties.headers.traceparent).toBe(event.correlation.traceparent);
-    expect(event.correlation.traceparent).toContain(TRACE_ID);
-    expect(await brokerChannel.get(eventQueue, { noAck: true })).toBe(false);
+    expect(consumeSpan?.attributes.dependency_identity).toBe('notification-rabbitmq');
+    expect(consumeSpan?.parentSpanContext?.spanId).toBe(publishSpan?.spanContext().spanId);
+    expect(processSpan?.parentSpanContext?.spanId).toBe(consumeSpan?.spanContext().spanId);
+    expect(notificationLogs.find((entry) => entry.event_id === event.event_id)?.trace_id).toBe(
+      TRACE_ID,
+    );
 
     const metrics = JSON.stringify(metricExporter.getMetrics());
-    expect(metrics).toContain('grading.dependency.request.count');
-    expect(metrics).toContain('grading.messaging.publish.count');
+    for (const metricName of [
+      'grading.dependency.request.count',
+      'grading.messaging.publish.count',
+      'notification.rabbitmq.consume.count',
+      'notification.process.count',
+    ]) {
+      expect(metrics).toContain(metricName);
+    }
     expect(metrics).toContain('grading-rabbitmq');
     expect(metrics).toContain('grading-submission');
     expect(metrics).toContain('grading-postgres');
+    expect(metrics).toContain('notification-rabbitmq');
     const telemetryText = `${metrics}${JSON.stringify(spans.map((span) => span.attributes))}`;
     expect(telemetryText).not.toMatch(
       /w5-secret-answer|example-password|spoofed-client|student-other|Bearer|jwt|root_cause|fault_id/iu,
@@ -362,6 +531,61 @@ describe('W5 Gateway → Grading → Submission → PostgreSQL', () => {
     expect(metrics).not.toContain(student.id);
     expect(metrics).not.toContain(created.body.id);
   });
+
+  it('acks duplicate deliveries without creating a second simulated notification', async () => {
+    if (!publishedEvent) {
+      throw new Error('W5 chưa ghi nhận event grade.completed từ Grading');
+    }
+
+    publishDuplicate(publishedEvent);
+    publishDuplicate(publishedEvent);
+    await waitUntil(
+      () => notificationLogs.filter((entry) => entry.event_id === publishedEvent?.id).length === 3,
+      'Notification xử lý hai duplicate delivery',
+    );
+    await waitUntil(
+      async () => (await brokerChannel.checkQueue(NOTIFICATION_QUEUE)).messageCount === 0,
+      'Notification queue drain sau duplicate',
+    );
+
+    const outcomes = notificationLogs
+      .filter((entry) => entry.event_id === publishedEvent?.id)
+      .map((entry) => entry.outcome);
+    expect(outcomes).toEqual(['accepted', 'duplicate', 'duplicate']);
+    expect(outcomes.filter((outcome) => outcome === 'accepted')).toHaveLength(1);
+  });
+
+  slowdownTest(
+    'creates an observable RabbitMQ backlog only when the slowdown scenario is enabled',
+    async () => {
+      if (!publishedEvent) {
+        throw new Error('W5 chưa ghi nhận event grade.completed từ Grading');
+      }
+      const initialCount = notificationLogs.filter(
+        (entry) => entry.event_id === publishedEvent?.id,
+      ).length;
+
+      publishDuplicate(publishedEvent);
+      publishDuplicate(publishedEvent);
+      publishDuplicate(publishedEvent);
+
+      await waitUntil(
+        async () => (await brokerChannel.checkQueue(NOTIFICATION_QUEUE)).messageCount >= 1,
+        'RabbitMQ backlog khi Notification slowdown bật',
+      );
+      await waitUntil(
+        () =>
+          notificationLogs.filter((entry) => entry.event_id === publishedEvent?.id).length ===
+          initialCount + 3,
+        'Notification xử lý hết backlog',
+      );
+      await waitUntil(
+        async () => (await brokerChannel.checkQueue(NOTIFICATION_QUEUE)).messageCount === 0,
+        'Notification queue drain sau slowdown',
+      );
+    },
+    15_000,
+  );
 
   it('keeps the seeded grade readable and rejects a second grade for the seeded Submission', async () => {
     const instructor = await login('instructor@example.test');
@@ -379,14 +603,20 @@ describe('W5 Gateway → Grading → Submission → PostgreSQL', () => {
       .post('/api/v1/grades')
       .set('Authorization', `Bearer ${instructor.token}`)
       .send({ score: 10, submission_id: 'submission-001' })
-      .expect(409);
+      .expect(409)
+      .expect(({ body }) => expectErrorEnvelope(body, 'CONFLICT'));
   });
 
   it('rejects requests without a valid JWT before reaching Grading', async () => {
-    await request(gatewayApp.getHttpServer()).post('/api/v1/grades').send({}).expect(401);
+    await request(gatewayApp.getHttpServer())
+      .post('/api/v1/grades')
+      .send({})
+      .expect(401)
+      .expect(({ body }) => expectErrorEnvelope(body, 'UNAUTHORIZED'));
     await request(gatewayApp.getHttpServer())
       .get(`/api/v1/grades/${SEED_GRADE_ID}`)
       .set('Authorization', 'Bearer invalid')
-      .expect(401);
+      .expect(401)
+      .expect(({ body }) => expectErrorEnvelope(body, 'UNAUTHORIZED'));
   });
 });

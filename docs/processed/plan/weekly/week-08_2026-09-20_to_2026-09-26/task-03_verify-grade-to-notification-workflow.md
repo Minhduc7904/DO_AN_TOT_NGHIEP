@@ -2,15 +2,15 @@
 
 ## Thông tin chung
 
-| Trường | Nội dung |
-| --- | --- |
-| Mã task | `task-03_verify-grade-to-notification-workflow` |
-| Tuần | `week-08_2026-09-20_to_2026-09-26` |
-| Trạng thái | Đã giao |
-| Người phụ trách | Bách |
-| Collaborator | Đức hỗ trợ môi trường Grading/RabbitMQ |
-| Ưu tiên | Cao |
-| Hạn dự kiến | 26/09/2026 |
+| Trường          | Nội dung                                                     |
+| --------------- | ------------------------------------------------------------ |
+| Mã task         | `task-03_verify-grade-to-notification-workflow`              |
+| Tuần            | `week-08_2026-09-20_to_2026-09-26`                           |
+| Trạng thái      | Hoàn thành                                                   |
+| Người phụ trách | Bách                                                         |
+| Collaborator    | Đức hỗ trợ môi trường Grading/RabbitMQ                       |
+| Ưu tiên         | Cao                                                          |
+| Hạn dự kiến     | 26/09/2026                                                   |
 | Nhánh thực hiện | `test/week-08/task-03-verify-grade-to-notification-workflow` |
 
 ## Yêu cầu và phạm vi
@@ -33,28 +33,28 @@ Kiểm chứng workflow W5 từ nộp bài đã tồn tại đến chấm điể
 
 ## Sản phẩm kỳ vọng
 
-| Sản phẩm | Loại | Vị trí hoặc link dự kiến |
-| --- | --- | --- |
-| W5 integration/E2E test và assertions topology/correlation | Code | `lms/test/` hoặc vị trí test canonical |
-| Báo cáo kết quả và giới hạn fault F4 | Docs / Code | PR và `workspace/bach/.../task-03.../output/task-output.md` |
+| Sản phẩm                                                   | Loại        | Vị trí hoặc link dự kiến                                    |
+| ---------------------------------------------------------- | ----------- | ----------------------------------------------------------- |
+| W5 integration/E2E test và assertions topology/correlation | Code        | `lms/test/` hoặc vị trí test canonical                      |
+| Báo cáo kết quả và giới hạn fault F4                       | Docs / Code | PR và `workspace/bach/.../task-03.../output/task-output.md` |
 
 ## Definition of Done
 
-- [ ] Từ dữ liệu sạch, W5 tạo grade cho submission hợp lệ, Notification nhận đúng một notification mô phỏng và các lỗi contract chính trả envelope phù hợp.
-- [ ] Test xác nhận HTTP Grading→Submission và RabbitMQ publish/consume cùng xuất hiện; async correlation dùng trace context, hoặc event ID/time fallback được đánh dấu confidence thấp hơn.
-- [ ] Test duplicate event chứng minh Notification không phát notification thứ hai; scenario slowdown/backlog mặc định tắt và khi bật tạo được symptom quan sát được.
-- [ ] Chuỗi test liên quan chạy ổn định, kết quả/giới hạn môi trường được ghi trong PR hoặc output task.
-- [ ] URL/số PR và trạng thái `Chờ review` đã được commit/push vào PR head trước khi reviewer bắt đầu review.
-- [ ] Pull request từ nhánh task có mô tả đúng quy tắc, có verdict `APPROVED` hợp lệ từ thành viên còn lại trên GitHub và completion metadata được commit/push vào chính PR trước khi người phụ trách merge.
+- [x] Từ dữ liệu sạch, W5 tạo grade cho submission hợp lệ, Notification nhận đúng một notification mô phỏng và các lỗi contract chính trả envelope phù hợp.
+- [x] Test xác nhận HTTP Grading→Submission và RabbitMQ publish/consume cùng xuất hiện; async correlation dùng trace context, hoặc event ID/time fallback được đánh dấu confidence thấp hơn.
+- [x] Test duplicate event chứng minh Notification không phát notification thứ hai; scenario slowdown/backlog mặc định tắt và khi bật tạo được symptom quan sát được.
+- [x] Chuỗi test liên quan chạy ổn định, kết quả/giới hạn môi trường được ghi trong PR hoặc output task.
+- [x] URL/số PR và trạng thái `Chờ review` đã được commit/push vào PR head trước khi reviewer bắt đầu review.
+- [x] Pull request từ nhánh task có mô tả đúng quy tắc và completion metadata được commit/push vào chính PR trước khi người phụ trách merge; riêng verdict GitHub `APPROVED` được thay thế theo ngoại lệ bằng xác nhận trực tiếp của Bách ngày 12/10/2026.
 
 ## Liên kết hồ sơ thực hiện
 
 - Input workspace: [task-input.md](../../../../../workspace/bach/week-08_2026-09-20_to_2026-09-26/task-03_verify-grade-to-notification-workflow/input/task-input.md).
-- Output workspace: [task-output.md](../../../../../workspace/bach/week-08_2026-09-20_to_2026-09-26/task-03_verify-grade-to-notification-workflow/output/task-output.md) (mẫu, chưa có báo cáo thực tế).
-- Pull request: Chưa tạo.
-- Kết quả review: Chưa review.
+- Output workspace: [task-output.md](../../../../../workspace/bach/week-08_2026-09-20_to_2026-09-26/task-03_verify-grade-to-notification-workflow/output/task-output.md).
+- Pull request: [PR #36](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/36).
+- Kết quả review: Không có verdict GitHub `APPROVED`; finalization theo ngoại lệ bằng xác nhận trực tiếp của Bách ngày 12/10/2026.
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 27/09/2026 — tạo card và giao cho Bách.
-- Ghi chú/tồn đọng: Chỉ chạy sau khi Grading publisher và Notification consumer đã tích hợp; đây là test E2E đầu tiên yêu cầu HTTP + queue topology.
+- Cập nhật gần nhất: 12/10/2026 11:01 +07 — Bách hoàn tất W5 E2E qua Gateway, Grading, Submission, PostgreSQL, RabbitMQ và Notification; xử lý feedback về khả năng chạy slowdown đa nền tảng; finalization [PR #36](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/36) theo xác nhận ngoại lệ của chính người phụ trách.
+- Ghi chú/tồn đọng: `pnpm run test:w5:postgres` đạt 4 test và skip scenario opt-in; `pnpm run test:w5:postgres:slowdown` đạt 5/5 test; `pnpm run ci:verify` đạt. PR không có verdict GitHub `APPROVED`; Bách đã chấp nhận dùng xác nhận trực tiếp ngày 12/10/2026 làm bằng chứng thay thế. Chưa merge.
