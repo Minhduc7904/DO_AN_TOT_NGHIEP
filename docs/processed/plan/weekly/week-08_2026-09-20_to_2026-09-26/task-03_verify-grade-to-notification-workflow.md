@@ -57,4 +57,4 @@ Kiểm chứng workflow W5 từ nộp bài đã tồn tại đến chấm điể
 ## Cập nhật tiến độ
 
 - Cập nhật gần nhất: 12/10/2026 — Bách khởi tạo branch và hồ sơ để bắt đầu Task 03; chưa triển khai task chính.
-- Ghi chú/tồn đọng: Task-02, task-04 và task-05 đã hoàn thành trên `main`, nên dependency triển khai đã sẵn sàng. Đồng bộ JSON/timeline đang chờ vì môi trường setup không có PowerShell; Bách xác nhận tiếp tục theo ngoại lệ ngày 12/10/2026.
+- Ghi chú/tồn đọng: Task-02, task-04 và task-05 đã hoàn thành trên `main`, nên dependency triển khai đã sẵn sàng.

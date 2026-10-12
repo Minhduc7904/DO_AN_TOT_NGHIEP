@@ -42,7 +42,7 @@
 ## Thay đổi, tồn đọng và bước tiếp theo
 
 - Thay đổi so với input: Chưa có thay đổi phạm vi.
-- Việc chưa hoàn thành hoặc trở ngại: Toàn bộ work và bằng chứng DoD chưa thực hiện. Đồng bộ JSON/timeline chưa chạy được vì môi trường thiếu PowerShell; Bách đã xác nhận tiếp tục setup theo ngoại lệ.
+- Việc chưa hoàn thành hoặc trở ngại: Toàn bộ work và bằng chứng DoD chưa thực hiện.
 - Bước tiếp theo: Khảo sát baseline W5 hiện có, triển khai kiểm chứng tích hợp đầy đủ, chạy các cổng test phù hợp, rồi tạo PR và cập nhật trạng thái `Chờ review` trên chính PR head.
 
 > `Hoàn thành thực tế` là thời điểm người phụ trách đã hoàn tất work, DoD, nhận `APPROVED` hợp lệ từ thành viên còn lại và finalization; không ghi merge time. URL/số PR cùng trạng thái **Chờ review** phải được commit/push vào PR head trước review. Sau approval, người phụ trách dùng `task-completion-recording` để cập nhật hồ sơ và chuyển **Hoàn thành** trên chính branch/PR trước khi tự merge. Task chỉ canonically hoàn thành khi commit đó vào nhánh canonical. `Chờ xử lý` chỉ dùng cho blocker/dependency thực sự, không dùng chỉ vì PR đang chờ merge.
