@@ -2,15 +2,15 @@
 
 ## Thông tin chung
 
-| Trường | Nội dung |
-| --- | --- |
-| Mã task | `task-03_verify-grade-to-notification-workflow` |
-| Tuần | `week-08_2026-09-20_to_2026-09-26` |
-| Trạng thái | Đang thực hiện |
-| Người phụ trách | Bách |
-| Collaborator | Đức hỗ trợ môi trường Grading/RabbitMQ |
-| Ưu tiên | Cao |
-| Hạn dự kiến | 26/09/2026 |
+| Trường          | Nội dung                                                     |
+| --------------- | ------------------------------------------------------------ |
+| Mã task         | `task-03_verify-grade-to-notification-workflow`              |
+| Tuần            | `week-08_2026-09-20_to_2026-09-26`                           |
+| Trạng thái      | Đang thực hiện                                               |
+| Người phụ trách | Bách                                                         |
+| Collaborator    | Đức hỗ trợ môi trường Grading/RabbitMQ                       |
+| Ưu tiên         | Cao                                                          |
+| Hạn dự kiến     | 26/09/2026                                                   |
 | Nhánh thực hiện | `test/week-08/task-03-verify-grade-to-notification-workflow` |
 
 ## Yêu cầu và phạm vi
@@ -33,17 +33,17 @@ Kiểm chứng workflow W5 từ nộp bài đã tồn tại đến chấm điể
 
 ## Sản phẩm kỳ vọng
 
-| Sản phẩm | Loại | Vị trí hoặc link dự kiến |
-| --- | --- | --- |
-| W5 integration/E2E test và assertions topology/correlation | Code | `lms/test/` hoặc vị trí test canonical |
-| Báo cáo kết quả và giới hạn fault F4 | Docs / Code | PR và `workspace/bach/.../task-03.../output/task-output.md` |
+| Sản phẩm                                                   | Loại        | Vị trí hoặc link dự kiến                                    |
+| ---------------------------------------------------------- | ----------- | ----------------------------------------------------------- |
+| W5 integration/E2E test và assertions topology/correlation | Code        | `lms/test/` hoặc vị trí test canonical                      |
+| Báo cáo kết quả và giới hạn fault F4                       | Docs / Code | PR và `workspace/bach/.../task-03.../output/task-output.md` |
 
 ## Definition of Done
 
-- [ ] Từ dữ liệu sạch, W5 tạo grade cho submission hợp lệ, Notification nhận đúng một notification mô phỏng và các lỗi contract chính trả envelope phù hợp.
-- [ ] Test xác nhận HTTP Grading→Submission và RabbitMQ publish/consume cùng xuất hiện; async correlation dùng trace context, hoặc event ID/time fallback được đánh dấu confidence thấp hơn.
-- [ ] Test duplicate event chứng minh Notification không phát notification thứ hai; scenario slowdown/backlog mặc định tắt và khi bật tạo được symptom quan sát được.
-- [ ] Chuỗi test liên quan chạy ổn định, kết quả/giới hạn môi trường được ghi trong PR hoặc output task.
+- [x] Từ dữ liệu sạch, W5 tạo grade cho submission hợp lệ, Notification nhận đúng một notification mô phỏng và các lỗi contract chính trả envelope phù hợp.
+- [x] Test xác nhận HTTP Grading→Submission và RabbitMQ publish/consume cùng xuất hiện; async correlation dùng trace context, hoặc event ID/time fallback được đánh dấu confidence thấp hơn.
+- [x] Test duplicate event chứng minh Notification không phát notification thứ hai; scenario slowdown/backlog mặc định tắt và khi bật tạo được symptom quan sát được.
+- [x] Chuỗi test liên quan chạy ổn định, kết quả/giới hạn môi trường được ghi trong PR hoặc output task.
 - [ ] URL/số PR và trạng thái `Chờ review` đã được commit/push vào PR head trước khi reviewer bắt đầu review.
 - [ ] Pull request từ nhánh task có mô tả đúng quy tắc, có verdict `APPROVED` hợp lệ từ thành viên còn lại trên GitHub và completion metadata được commit/push vào chính PR trước khi người phụ trách merge.
 
@@ -56,5 +56,5 @@ Kiểm chứng workflow W5 từ nộp bài đã tồn tại đến chấm điể
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 12/10/2026 — Bách khởi tạo branch và hồ sơ để bắt đầu Task 03; chưa triển khai task chính.
-- Ghi chú/tồn đọng: Task-02, task-04 và task-05 đã hoàn thành trên `main`, nên dependency triển khai đã sẵn sàng.
+- Cập nhật gần nhất: 12/10/2026 — Bách đã hoàn thiện cục bộ W5 E2E qua Gateway, Grading, Submission, PostgreSQL, RabbitMQ và Notification; kiểm chứng duplicate cùng fault slowdown/backlog đều đạt.
+- Ghi chú/tồn đọng: `pnpm run test:w5:postgres` đạt 4 test và skip scenario opt-in; `pnpm run test:w5:postgres:slowdown` đạt 5/5 test; `pnpm run test` đạt. Thay đổi chưa commit/push, chưa tạo PR nên task vẫn `Đang thực hiện`.
