@@ -6,7 +6,7 @@
 | --------------- | ------------------------------------------------------------ |
 | Mã task         | `task-03_verify-grade-to-notification-workflow`              |
 | Tuần            | `week-08_2026-09-20_to_2026-09-26`                           |
-| Trạng thái      | Đang thực hiện                                               |
+| Trạng thái      | Chờ review                                                   |
 | Người phụ trách | Bách                                                         |
 | Collaborator    | Đức hỗ trợ môi trường Grading/RabbitMQ                       |
 | Ưu tiên         | Cao                                                          |
@@ -44,17 +44,17 @@ Kiểm chứng workflow W5 từ nộp bài đã tồn tại đến chấm điể
 - [x] Test xác nhận HTTP Grading→Submission và RabbitMQ publish/consume cùng xuất hiện; async correlation dùng trace context, hoặc event ID/time fallback được đánh dấu confidence thấp hơn.
 - [x] Test duplicate event chứng minh Notification không phát notification thứ hai; scenario slowdown/backlog mặc định tắt và khi bật tạo được symptom quan sát được.
 - [x] Chuỗi test liên quan chạy ổn định, kết quả/giới hạn môi trường được ghi trong PR hoặc output task.
-- [ ] URL/số PR và trạng thái `Chờ review` đã được commit/push vào PR head trước khi reviewer bắt đầu review.
+- [x] URL/số PR và trạng thái `Chờ review` đã được commit/push vào PR head trước khi reviewer bắt đầu review.
 - [ ] Pull request từ nhánh task có mô tả đúng quy tắc, có verdict `APPROVED` hợp lệ từ thành viên còn lại trên GitHub và completion metadata được commit/push vào chính PR trước khi người phụ trách merge.
 
 ## Liên kết hồ sơ thực hiện
 
 - Input workspace: [task-input.md](../../../../../workspace/bach/week-08_2026-09-20_to_2026-09-26/task-03_verify-grade-to-notification-workflow/input/task-input.md).
 - Output workspace: [task-output.md](../../../../../workspace/bach/week-08_2026-09-20_to_2026-09-26/task-03_verify-grade-to-notification-workflow/output/task-output.md).
-- Pull request: Chưa tạo.
+- Pull request: [PR #36](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/36).
 - Kết quả review: Chưa review.
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 12/10/2026 — Bách đã hoàn thiện cục bộ W5 E2E qua Gateway, Grading, Submission, PostgreSQL, RabbitMQ và Notification; kiểm chứng duplicate cùng fault slowdown/backlog đều đạt.
-- Ghi chú/tồn đọng: `pnpm run test:w5:postgres` đạt 4 test và skip scenario opt-in; `pnpm run test:w5:postgres:slowdown` đạt 5/5 test; `pnpm run test` đạt. Thay đổi chưa commit/push, chưa tạo PR nên task vẫn `Đang thực hiện`.
+- Cập nhật gần nhất: 12/10/2026 — Bách đã push W5 E2E qua Gateway, Grading, Submission, PostgreSQL, RabbitMQ và Notification, tạo [PR #36](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/36) và chuyển task sang `Chờ review`.
+- Ghi chú/tồn đọng: `pnpm run test:w5:postgres` đạt 4 test và skip scenario opt-in; `pnpm run test:w5:postgres:slowdown` đạt 5/5 test; `pnpm run test` đạt. Đang chờ Đức review và gửi verdict trên GitHub.
