@@ -58,5 +58,5 @@ Xây một regression entrypoint cho Testbed MVP chạy từ dữ liệu sạch,
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 12/10/2026 — Bách khởi tạo branch và hồ sơ để bắt đầu Task 04; chưa triển khai regression suite.
+- Cập nhật gần nhất: 12/10/2026 — hoàn tất đợt 1: entrypoint `test:regression`, harness và 5 test (hai workflow, topology, timeout, unavailable) pass local.
 - Ghi chú/tồn đọng: W8 task-03 và W9 task-01 đã hoàn thành trên `main`; còn chờ W9 task-02 và task-03 của Đức trước khi hoàn tất và merge. Không bắt đầu bằng cách sao chép các script test rời rạc.
