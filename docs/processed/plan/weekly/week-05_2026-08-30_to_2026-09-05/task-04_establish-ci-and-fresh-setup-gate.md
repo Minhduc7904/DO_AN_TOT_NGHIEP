@@ -60,6 +60,6 @@ Thiết lập CI baseline cho phần code tuần 5 và đóng gate M1 bằng m�
 ## Cập nhật tiến độ
 
 - Cập nhật gần nhất: 11/09/2026 — Đức chạy lại fresh setup Windows trên clone mới, xác minh sửa lỗi đa nền tảng và gửi GitHub `APPROVED`; Bách finalization metadata trước merge.
-- Ghi chú/tồn đọng: không còn blocker. GitHub Actions run [34504525346](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/actions/runs/34504525346) pass cả job quality và Compose; full stack được xác minh qua fresh setup độc lập của Đức. JSON/timeline đang chờ đồng bộ vì môi trường không có PowerShell; Bách xác nhận tiếp tục finalization Markdown ngày 11/09/2026.
+- Ghi chú/tồn đọng: không còn blocker. GitHub Actions run [34504525346](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/actions/runs/34504525346) pass cả job quality và Compose; full stack được xác minh qua fresh setup độc lập của Đức.
 
 > Ngoại lệ được Bách xác nhận trực tiếp ngày 10/09/2026 chỉ dùng để đưa PR #18 vào `Chờ review` trước fresh setup. Đức đã hoàn tất fresh setup và gửi GitHub `APPROVED`, nên ngoại lệ không còn ảnh hưởng đến DoD hay M1.

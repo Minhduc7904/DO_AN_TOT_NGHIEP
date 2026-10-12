@@ -110,23 +110,11 @@ validate, start, verify, logs và reset tại [docker-compose/README.md](docker-
   </tr>
 </table>
 
-## Timeline kế hoạch dự án
+## Kiểm tra kế hoạch và tiến độ
 
-Timeline trực quan hiển thị toàn bộ lộ trình 24 tuần, các task đã được break, người phụ trách, trạng thái, phụ thuộc, sản phẩm và Definition of Done. Markdown trong `docs/processed/plan/` vẫn là nguồn canonical; dữ liệu trong `docs/processed/plan/json/` và HTML timeline được sinh tự động, không chỉnh sửa trực tiếp.
+Markdown trong `docs/processed/plan/` và hồ sơ `workspace/` là nguồn canonical cho kế hoạch, phân công, trạng thái và bằng chứng DoD.
 
-Đồng bộ lại JSON và timeline sau khi thay đổi kế hoạch hoặc task:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File .\tools\sync-plan-json-and-timeline.ps1
-```
-
-Đồng bộ rồi mở timeline bằng trình duyệt mặc định:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File .\tools\open-project-timeline.ps1
-```
-
-Có thể mở trực tiếp `docs/processed/plan/timeline/project-timeline.html` mà không cần web server hoặc kết nối mạng. Các skill lập task tuần và finalization task bắt buộc chạy bước đồng bộ trước khi workflow được coi là hoàn tất.
+Khi tạo hoặc cập nhật tuần/task, agent đối chiếu trực tiếp `weekly-overview.md`, các card `task-*.md`, input/output của người phụ trách và trạng thái GitHub liên quan. Việc kiểm tra phải xác nhận tối thiểu người phụ trách, trạng thái, nhánh, liên kết hồ sơ, PR/review và bằng chứng DoD khớp nhau trước khi báo workflow hoàn tất.
 
 ## Lưu ý
 

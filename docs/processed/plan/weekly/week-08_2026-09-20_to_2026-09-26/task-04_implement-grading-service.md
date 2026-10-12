@@ -57,4 +57,4 @@ Triển khai Grading service MVP: API tạo/cập nhật grade cho submission h�
 ## Cập nhật tiến độ
 
 - Cập nhật gần nhất: 08/10/2026 — xử lý feedback review nội bộ vòng 1, cập nhật contract v1 §10; finalization theo ngoại lệ do Đức xác nhận.
-- Ghi chú/tồn đọng: Task sẵn sàng merge theo ngoại lệ của Đức; GitHub chưa có `APPROVED` từ thành viên còn lại. Timeline/JSON chờ đồng bộ bằng Windows PowerShell (script không chạy được trên Linux); Đức chỉ thị tiếp tục, không sửa tay đầu ra.
+- Ghi chú/tồn đọng: Task sẵn sàng merge theo ngoại lệ của Đức; GitHub chưa có `APPROVED` từ thành viên còn lại.

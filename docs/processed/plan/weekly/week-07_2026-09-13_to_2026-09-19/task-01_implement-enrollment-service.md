@@ -61,4 +61,4 @@ Triển khai Enrollment service ở mức MVP: tạo enrollment (student ghi dan
 - Cập nhật gần nhất: 22/09/2026 — Đức bắt đầu triển khai trên nhánh `feat/week-07/task-01-implement-enrollment-service` (base `main`); tạo hồ sơ input trong `workspace/duc/`.
 - Cập nhật gần nhất: 22/09/2026 — Code, unit test và PostgreSQL integration test đạt; đã mở PR [#25](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/25), chuyển `Chờ review`, chờ Bách review contract Enrollment↔Course.
 - Cập nhật gần nhất: 22/09/2026 — Bách không thể review; Đức tự thực hiện review thay Bách, phát hiện và sửa 3 vấn đề (contract `check` sai yêu cầu header, endpoint list thiếu trong contract catalogue, Enrollment chưa wire vào build/lint/test/CI) qua commit `76c7c90`, rồi finalization theo ngoại lệ workflow và chuyển `Hoàn thành`.
-- Ghi chú/tồn đọng: `tools/sync-plan-json-and-timeline.ps1` cần `pwsh`, không sẵn có trong môi trường thực hiện; timeline đang chờ đồng bộ, giống ngoại lệ đã ghi nhận ở Week 6 (`task-03_verify-login-workflow.md`).
+- Ghi chú/tồn đọng: Không còn blocker trong phạm vi task.

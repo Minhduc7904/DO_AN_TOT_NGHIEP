@@ -61,4 +61,4 @@ Bổ sung resilience cơ bản (timeout rõ ràng và retry hoặc circuit-break
 - Cập nhật gần nhất: 22/09/2026 — Đức bắt đầu triển khai trên nhánh `feat/week-07/task-02-add-enrollment-resilience-and-propagation`, base trực tiếp lên nhánh task-01 (PR #25, chưa merge) theo chỉ thị Đức về stacked branch.
 - Cập nhật gần nhất: 22/09/2026 — Code, unit test và telemetry test đạt; đã mở PR [#26](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/26) (xếp chồng trên #25), chuyển `Chờ review`, chờ Bách review resilience policy.
 - Cập nhật gần nhất: 22/09/2026 — PR #25 (task-01) đã merge vào `main`; Bách không thể review nên Đức tự thực hiện review thay Bách, phát hiện và sửa half-open circuit breaker cho phép nhiều request đồng thời (trái docstring) và wire telemetry test còn thiếu vào CI qua commit `3f34a39`, rồi finalization theo ngoại lệ workflow và chuyển `Hoàn thành`.
-- Ghi chú/tồn đọng: `tools/sync-plan-json-and-timeline.ps1` cần `pwsh`, không sẵn có trong môi trường thực hiện; timeline đang chờ đồng bộ.
+- Ghi chú/tồn đọng: Không còn blocker trong phạm vi task.

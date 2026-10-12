@@ -6,7 +6,7 @@
 
 ## Thay đổi vận hành dùng chung
 
-Skill, rule, guide, template, break task tuần, timeline sinh từ thay đổi dùng chung và metadata quản trị repository không thuộc task cụ thể có thể commit/push trực tiếp lên `main` theo ngoại lệ trong [quy tắc Git và pull request](../rules/git-and-pull-request-rules.md#ngoại-lệ-cho-thay-đổi-vận-hành-dùng-chung), khi người dùng đã yêu cầu rõ Git write.
+Skill, rule, guide, template, break task tuần và metadata quản trị repository không thuộc task cụ thể có thể commit/push trực tiếp lên `main` theo ngoại lệ trong [quy tắc Git và pull request](../rules/git-and-pull-request-rules.md#ngoại-lệ-cho-thay-đổi-vận-hành-dùng-chung), khi người dùng đã yêu cầu rõ Git write.
 
 Trước khi commit trực tiếp, xác minh diff không chứa code/artifact/lifecycle của task cụ thể, đồng bộ `main` theo cách fast-forward an toàn và chạy kiểm tra phù hợp. Nếu diff bị trộn, tách phần task sang đúng branch/PR; không dùng ngoại lệ để đưa sản phẩm task lên `main`.
 

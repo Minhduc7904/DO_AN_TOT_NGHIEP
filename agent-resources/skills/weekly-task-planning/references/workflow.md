@@ -19,8 +19,8 @@
 - Phân công cân bằng theo vai trò primary/collaborator, độ phức tạp, phụ thuộc và khả năng review chéo. Không gán trái plan canonical hoặc phân công người dùng đã nêu. Nếu chưa đủ dữ kiện, để `Chưa phân công` và hỏi lại.
 - Cập nhật bảng overview khớp với mọi file task. Chỉ dùng trạng thái: `Chưa phân công`, `Đã giao`, `Đang thực hiện`, `Chờ xử lý`, `Chờ review`, `Hoàn thành`.
 - Không đánh dấu hoàn thành chỉ vì plan nói cần làm. Quy trình chuẩn dùng `task-completion-recording` sau GitHub `APPROVED`; nếu đúng người phụ trách xác nhận ngoại lệ sau cảnh báo, được cập nhật theo nguồn xác nhận thay thế và phải ghi trung thực sai lệch workflow.
-- Sau khi tạo/cập nhật `weekly-overview.md` hoặc card task, chạy `powershell -NoProfile -ExecutionPolicy Bypass -File .\tools\sync-plan-json-and-timeline.ps1`. Nếu thiếu runtime hoặc đồng bộ lỗi, cảnh báo; đúng người phụ trách có thể xác nhận tiếp tục theo ngoại lệ, khi đó commit Markdown và báo timeline đang chờ đồng bộ. Không chỉnh tay đầu ra.
-- Việc break task/lập bảng tuần và timeline sinh tương ứng là thay đổi vận hành dùng chung, có thể commit/push trực tiếp lên `main` khi người dùng yêu cầu rõ và diff không chứa code, artifact, hồ sơ hoặc lifecycle của task cụ thể. Khi đã bắt đầu một task, mọi thay đổi thuộc task vẫn dùng branch/PR riêng theo quy tắc canonical.
+- Sau khi tạo/cập nhật `weekly-overview.md` hoặc card task, đọc lại toàn bộ overview/card của tuần và đối chiếu trực tiếp mã task, người phụ trách, trạng thái, nhánh, liên kết hồ sơ, dependency và PR/review liên quan.
+- Việc break task/lập bảng tuần là thay đổi vận hành dùng chung, có thể commit/push trực tiếp lên `main` khi người dùng yêu cầu rõ và diff không chứa code, artifact, hồ sơ hoặc lifecycle của task cụ thể. Khi đã bắt đầu một task, mọi thay đổi thuộc task vẫn dùng branch/PR riêng theo quy tắc canonical.
 
 ## Trả lời “tuần này tôi phải làm gì?”
 
