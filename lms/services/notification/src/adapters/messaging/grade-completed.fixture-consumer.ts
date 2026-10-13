@@ -1,6 +1,6 @@
 import { gradeCompletedEventSchema, type GradeCompletedEvent } from '@aiops-lms/contracts';
-import { Injectable, Optional } from '@nestjs/common';
-import type { ConfigService } from '@nestjs/config';
+import { Inject, Injectable, Optional } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 
 import {
   DEFAULT_NOTIFICATION_DEDUP_MAX_EVENT_IDS,
@@ -20,7 +20,7 @@ export class GradeCompletedFixtureConsumer {
   private readonly processedEventIds = new Map<string, number>();
   private readonly ttlMs: number;
 
-  constructor(@Optional() config?: Pick<ConfigService, 'get'>) {
+  constructor(@Optional() @Inject(ConfigService) config?: ConfigService) {
     this.maxEventIds =
       config?.get<number>('NOTIFICATION_DEDUP_MAX_EVENT_IDS') ??
       DEFAULT_NOTIFICATION_DEDUP_MAX_EVENT_IDS;

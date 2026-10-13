@@ -4,10 +4,13 @@ import {
   gradeCompletedV1Fixture,
 } from '@aiops-lms/contracts';
 import { jest } from '@jest/globals';
+import { ConfigService } from '@nestjs/config';
+import { Test, type TestingModule } from '@nestjs/testing';
 
 import { validateEnvironment } from '../../src/config/env.schema.js';
 import { GradeCompletedFixtureConsumer } from '../../src/adapters/messaging/grade-completed.fixture-consumer.js';
 import { createRabbitMqGradeCompletedBinding } from '../../src/adapters/messaging/rabbitmq-grade-completed.binding.js';
+import { AppModule } from '../../src/app.module.js';
 
 describe('Notification grade.completed skeleton', () => {
   it('uses the local Compose RabbitMQ URL by default', () => {
@@ -44,16 +47,34 @@ describe('Notification grade.completed skeleton', () => {
     });
   });
 
-  it('expires dedup entries after TTL and evicts the oldest entry at the capacity limit', () => {
+  it('wires custom dedup TTL and capacity through the Nest ConfigService provider', async () => {
+    let moduleReference: TestingModule | undefined;
     try {
       jest.useFakeTimers().setSystemTime(new Date('2026-10-13T00:00:00.000Z'));
       const values = {
+        NOTIFICATION_CONSUMER_PREFETCH: 1,
+        NOTIFICATION_CONSUMER_SLOWDOWN_ENABLED: false,
+        NOTIFICATION_CONSUMER_SLOWDOWN_MS: 0,
         NOTIFICATION_DEDUP_MAX_EVENT_IDS: 1,
         NOTIFICATION_DEDUP_TTL_SECONDS: 2,
+        NOTIFICATION_GRADE_COMPLETED_EXCHANGE: 'lms.events',
+        NOTIFICATION_GRADE_COMPLETED_QUEUE: 'notification.grade-completed.di-test',
+        NOTIFICATION_RABBITMQ_URL: 'amqp://rabbitmq.test:5672',
+        NOTIFICATION_RECONNECT_DELAY_MS: 100,
       };
-      const consumer = new GradeCompletedFixtureConsumer({
+      const config = {
         get: <Key extends keyof typeof values>(key: Key): (typeof values)[Key] => values[key],
-      } as never);
+        getOrThrow: <Key extends keyof typeof values>(key: Key): (typeof values)[Key] => {
+          const value = values[key];
+          if (value === undefined) throw new Error(`Missing test config: ${key}`);
+          return value;
+        },
+      };
+      moduleReference = await Test.createTestingModule({ imports: [AppModule] })
+        .overrideProvider(ConfigService)
+        .useValue(config)
+        .compile();
+      const consumer = moduleReference.get(GradeCompletedFixtureConsumer);
       const second = {
         ...gradeCompletedV1Fixture,
         event_id: '018f4e60-4e21-7d38-b1f4-842d4f2e9999',
@@ -64,8 +85,12 @@ describe('Notification grade.completed skeleton', () => {
       expect(consumer.consume(gradeCompletedV1Fixture).status).toBe('accepted');
       jest.advanceTimersByTime(2_001);
       expect(consumer.consume(gradeCompletedV1Fixture).status).toBe('accepted');
+      expect(Reflect.getMetadata('design:paramtypes', GradeCompletedFixtureConsumer)).toEqual([
+        ConfigService,
+      ]);
     } finally {
       jest.useRealTimers();
+      await moduleReference?.close();
     }
   });
 
