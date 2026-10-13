@@ -29,7 +29,7 @@ const baseArguments = [
   project,
   '--confirm',
   project,
-  '--env-file',
+  '--compose-env-file',
   envFile,
 ];
 const composeArguments = [

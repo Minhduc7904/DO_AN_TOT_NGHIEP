@@ -18,7 +18,7 @@
 
 ### Task cần làm gì?
 
-Tạo entrypoint Node đa nền tảng để reset project Compose local/test đã xác nhận, dựng lại Testbed MVP, kiểm tra health và tạo fingerprint seed xác định cho năm database, Redis, RabbitMQ, Storage Mock và Notification. Lệnh phải fail closed, gọi process bằng argument array, dừng ngay khi lỗi và có kiểm thử reset hai lần cho cùng fingerprint.
+Tạo entrypoint Node đa nền tảng để reset project Compose local/test đã xác nhận, dựng lại Testbed MVP, kiểm tra health và tạo fingerprint seed xác định cho năm database, Redis, RabbitMQ, Storage Mock và Notification. Command canonical từ repository root dùng `--compose-env-file`; `--env-file` chỉ là alias tương thích. Lệnh phải fail closed, gọi process bằng argument array, dừng ngay khi lỗi và có kiểm thử reset hai lần cho cùng fingerprint.
 
 ### Phạm vi không thực hiện
 
@@ -45,7 +45,7 @@ Tạo entrypoint Node đa nền tảng để reset project Compose local/test đ
 ## Definition of Done
 
 - [x] Một lệnh duy nhất reset năm database, Redis, RabbitMQ, Storage Mock và Notification của đúng project local/test đã xác nhận.
-- [x] Guard từ chối thiếu/mismatch confirm, production, project ngoài allowlist và Compose/env path ngoài repository; child process luôn dùng argument array, không qua shell.
+- [x] Guard từ chối thiếu/mismatch confirm, production, project ngoài allowlist và Compose/env path ngoài repository; command canonical `--compose-env-file` chạy qua PowerShell/POSIX; child process luôn dùng argument array, không qua shell.
 - [x] Student/instructor Auth dùng UUID cố định; Enrollment, Submission và Grading dùng cùng principal seed; password hash không nằm trong fingerprint.
 - [x] Sau `down --volumes --remove-orphans` và `up --build -d --wait`, health/fingerprint được xác minh; lỗi bất kỳ bước nào trả exit code khác 0 và không báo thành công giả.
 - [x] Unit test guard và failure semantics pass; Compose smoke reset hai lần cho fingerprint đã sort giống nhau, Redis sạch và RabbitMQ queue ở baseline.

@@ -17,7 +17,7 @@
 
 ### Cần thực hiện
 
-Tạo một entrypoint reset/seed có kiểm soát cho môi trường local/test, tái lập dữ liệu của Auth, Course, Enrollment, Submission và Grading, dọn cache Redis và trạng thái RabbitMQ/Notification liên quan theo thứ tự dependency. Lệnh phải có guard môi trường, output rõ, chạy lặp lại cho kết quả xác định và được dùng lại bởi regression suite.
+Tạo một entrypoint reset/seed có kiểm soát cho môi trường local/test, tái lập dữ liệu của Auth, Course, Enrollment, Submission và Grading, dọn cache Redis và trạng thái RabbitMQ/Notification liên quan theo thứ tự dependency. Giao diện canonical chạy từ repository root dùng `--compose-env-file` để tương thích PowerShell/POSIX. Lệnh phải có guard môi trường, output rõ, chạy lặp lại cho kết quả xác định và được dùng lại bởi regression suite.
 
 ### Không thực hiện
 
@@ -40,7 +40,7 @@ Tạo một entrypoint reset/seed có kiểm soát cho môi trường local/test
 
 ## Definition of Done
 
-- [x] Một lệnh duy nhất reset/seed đúng năm database và trạng thái Redis/RabbitMQ cần thiết trong project local/test được chỉ định.
+- [x] Một lệnh duy nhất với `--compose-env-file` reset/seed đúng năm database và trạng thái Redis/RabbitMQ cần thiết trong project local/test được chỉ định.
 - [x] Có guard chống chạy nhầm môi trường hoặc target rộng; log không chứa credential và báo rõ từng bước/thất bại.
 - [x] Chạy từ trạng thái sạch và chạy lặp lại đều tạo cùng tập dữ liệu định danh phục vụ ít nhất hai workflow E2E.
 - [x] Khi một bước lỗi, lệnh dừng với exit code khác 0 và không báo thành công giả; hướng dẫn recovery được tài liệu hóa.

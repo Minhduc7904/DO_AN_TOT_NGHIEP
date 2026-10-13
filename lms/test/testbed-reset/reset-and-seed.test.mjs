@@ -22,7 +22,7 @@ const validArguments = [
   'aiops-lms-local',
   '--confirm',
   'aiops-lms-local',
-  '--env-file',
+  '--compose-env-file',
   exampleEnv,
 ];
 
@@ -35,7 +35,7 @@ test('parse và validate target local fail-closed hợp lệ', () => {
 });
 
 for (const [name, args, expected] of [
-  ['thiếu project', ['--environment', 'local', '--env-file', exampleEnv], /--project/u],
+  ['thiếu project', ['--environment', 'local', '--compose-env-file', exampleEnv], /--project/u],
   [
     'confirm không khớp',
     validArguments.map((value, index) =>
@@ -123,31 +123,58 @@ test('CLI guard lỗi trả nonzero và không báo thành công giả', () => {
   assert.doesNotMatch(`${result.stdout}${result.stderr}`, /Hoàn tất reset\/seed/u);
 });
 
-test('canonical pnpm command từ repository root chuyển tiếp --env-file tới CLI guard', () => {
-  assert.ok(process.env.npm_execpath, 'pnpm phải cung cấp npm_execpath cho regression test');
-  const result = spawnSync(
-    process.execPath,
-    [
-      process.env.npm_execpath,
-      '--dir',
-      'lms',
-      'run',
-      'testbed:reset',
-      '--',
-      '--environment',
-      'production',
-      '--project',
-      'aiops-lms-local',
-      '--confirm',
-      'aiops-lms-local',
-      '--env-file',
-      '../docker-compose/.env',
-    ],
-    { cwd: REPOSITORY_ROOT, encoding: 'utf8' },
-  );
+test('canonical pnpm command từ repository root đi qua command resolution tới CLI guard', () => {
+  const args = [
+    '--dir',
+    'lms',
+    'run',
+    'testbed:reset',
+    '--',
+    '--environment',
+    'production',
+    '--project',
+    'aiops-lms-local',
+    '--confirm',
+    'aiops-lms-local',
+    '--compose-env-file',
+    '../docker-compose/.env',
+  ];
+  const result =
+    process.platform === 'win32'
+      ? spawnSync(
+          'powershell.exe',
+          [
+            '-NoProfile',
+            '-NonInteractive',
+            '-Command',
+            `pnpm ${args.map((argument) => `'${argument}'`).join(' ')}`,
+          ],
+          { cwd: REPOSITORY_ROOT, encoding: 'utf8' },
+        )
+      : spawnSync('pnpm', args, { cwd: REPOSITORY_ROOT, encoding: 'utf8' });
   const output = `${result.stdout}${result.stderr}`;
+  assert.ifError(result.error);
   assert.equal(result.status, 1);
   assert.match(output, /Từ chối reset môi trường production/u);
-  assert.doesNotMatch(output, /env: not found|không tìm thấy env file/iu);
+  assert.doesNotMatch(output, /not found|không tìm thấy env file/iu);
   assert.doesNotMatch(output, /Hoàn tất reset\/seed/u);
+});
+
+test('--env-file cũ chỉ là alias tương thích cho direct invocation', () => {
+  const parsed = parseArguments([
+    '--environment',
+    'local',
+    '--project',
+    'aiops-lms-local',
+    '--confirm',
+    'aiops-lms-local',
+    '--env-file',
+    exampleEnv,
+  ]);
+  assert.equal(parsed.envFile, exampleEnv);
+  assert.equal(parsed.legacyEnvFile, true);
+  assert.throws(
+    () => parseArguments(['--compose-env-file', exampleEnv, '--env-file', exampleEnv]),
+    /Không truyền đồng thời/u,
+  );
 });

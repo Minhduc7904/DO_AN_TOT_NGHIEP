@@ -36,7 +36,11 @@ export function parseArguments(argv) {
     // Accept exactly one leading separator, while keeping every real option fail-closed.
     if (index === 0 && argument === '--') continue;
     if (!argument.startsWith('--')) fail(`Tham số không hợp lệ: ${argument}`);
-    if (!['--environment', '--project', '--confirm', '--env-file'].includes(argument)) {
+    if (
+      !['--environment', '--project', '--confirm', '--compose-env-file', '--env-file'].includes(
+        argument,
+      )
+    ) {
       fail(`Tham số không được hỗ trợ: ${argument}`);
     }
     if (values.has(argument)) fail(`Tham số bị lặp: ${argument}`);
@@ -46,10 +50,17 @@ export function parseArguments(argv) {
     index += 1;
   }
 
+  const composeEnvFile = values.get('--compose-env-file');
+  const legacyEnvFile = values.get('--env-file');
+  if (composeEnvFile && legacyEnvFile) {
+    fail('Không truyền đồng thời --compose-env-file và --env-file.');
+  }
+
   return {
     confirm: values.get('--confirm'),
-    envFile: values.get('--env-file'),
+    envFile: composeEnvFile ?? legacyEnvFile,
     environment: values.get('--environment'),
+    legacyEnvFile: Boolean(legacyEnvFile),
     project: values.get('--project'),
   };
 }
@@ -77,7 +88,7 @@ export function validateOptions(raw, context = {}) {
   if (!raw.confirm || raw.confirm !== raw.project) {
     fail('--confirm phải khớp chính xác --project.');
   }
-  if (!raw.envFile) fail('Bắt buộc truyền --env-file.');
+  if (!raw.envFile) fail('Bắt buộc truyền --compose-env-file.');
 
   const resolvedRepository = realpathSync(repositoryRoot);
   const envCandidate = resolve(process.cwd(), raw.envFile);
@@ -357,7 +368,13 @@ export async function resetAndSeed(options, dependencies = {}) {
 
 export async function main(argv = process.argv.slice(2)) {
   try {
-    const options = validateOptions(parseArguments(argv));
+    const parsed = parseArguments(argv);
+    if (parsed.legacyEnvFile) {
+      console.warn(
+        '[testbed:reset] CẢNH BÁO: --env-file chỉ còn là alias tương thích; hãy dùng --compose-env-file.',
+      );
+    }
+    const options = validateOptions(parsed);
     await resetAndSeed(options);
   } catch (error) {
     console.error(
