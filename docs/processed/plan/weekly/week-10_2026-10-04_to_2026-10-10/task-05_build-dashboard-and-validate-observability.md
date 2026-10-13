@@ -1,0 +1,64 @@
+# Task tuần: Dựng dashboard và nghiệm thu observability baseline
+
+## Thông tin chung
+
+| Trường | Nội dung |
+| --- | --- |
+| Mã task | `task-05_build-dashboard-and-validate-observability` |
+| Tuần | `week-10_2026-10-04_to_2026-10-10` |
+| Trạng thái | Chờ xử lý |
+| Người phụ trách | Bách |
+| Collaborator | Đức hỗ trợ topology, telemetry và smoke test |
+| Ưu tiên | Cao |
+| Hạn dự kiến | 24/10/2026 — mốc bù tiến độ, phụ thuộc người phụ trách quay lại |
+| Nhánh thực hiện | `feat/week-10/task-05-build-dashboard-and-validate-observability` |
+
+## Yêu cầu và phạm vi
+
+### Cần thực hiện
+
+Provision Grafana datasource/dashboard cho service overview và tạo bộ query nghiệm thu W10 trên dữ liệu thật. Dashboard/query phải liên kết service metrics, Tempo traces và Loki logs để điều tra healthy/error/timeout; kiểm tra HTTP status, error type, dependency identity, resource identity, UTC timestamp và correlation. Chạy ít nhất một workflow HTTP xuyên service và luồng async `grade.completed`, ghi bằng chứng truy vết từ symptom tới service/dependency liên quan.
+
+### Không thực hiện
+
+- Không xây detector ML, feature pipeline, data contract export hoặc RCA automation của các tuần sau.
+- Không coi dashboard hiển thị panel là bằng chứng nếu query trả dữ liệu mẫu/static hoặc thiếu provenance workflow.
+- Không sửa substantive instrumentation của task-02 đến task-04 trong branch này; lỗi phát hiện phải trả về đúng task/branch phụ trách.
+
+## Đầu vào và phụ thuộc
+
+- Tài liệu/task cần có trước: task-01 đến task-04; regression workflow W9 khi khả dụng.
+- Người hoặc phần việc cần phối hợp: Đức cung cấp topology, query endpoint và hỗ trợ chạy workflow/fault; Bách chịu trách nhiệm dashboard và diagnosis validation.
+- Rủi ro/giả định: Bách hiện chưa tham gia nên task đang `Chờ xử lý`; task không thể nghiệm thu đủ khi structured logs/Loki task-04 chưa hoàn thành.
+
+## Sản phẩm kỳ vọng
+
+| Sản phẩm | Loại | Vị trí hoặc link dự kiến |
+| --- | --- | --- |
+| Grafana datasource/dashboard provisioned | Config | `docker-compose/observability/grafana/` hoặc vị trí phù hợp |
+| Query/smoke test nghiệm thu ba modality | Test / Script | `lms/test/` hoặc `tools/` theo quy tắc repository |
+| Báo cáo bằng chứng baseline W10 | Docs | output task và tài liệu observability liên quan |
+
+## Definition of Done
+
+- [ ] Grafana tự provision Prometheus, Tempo và Loki datasource; dashboard service overview hiển thị request rate, error rate và latency theo service/route bounded.
+- [ ] Từ một HTTP 5xx/timeout có thể đi từ metric panel tới trace liên quan rồi tìm structured log bằng `trace_id`, với HTTP status, error type và dependency identity nhất quán.
+- [ ] Luồng `grade.completed` hiển thị producer/consumer trace context và log Notification; query chứng minh correlation xuyên RabbitMQ.
+- [ ] Timestamp hiển thị/so sánh theo UTC ISO-8601; resource identity của mọi business service khớp catalogue canonical và không bị thay bằng container name.
+- [ ] Smoke/acceptance test chạy trên dữ liệu phát sinh thật, lưu query/kết quả/commit làm bằng chứng và thất bại rõ khi thiếu một modality hoặc field bắt buộc.
+- [ ] Dashboard/query không phụ thuộc secret, ID người dùng hoặc label high-cardinality; giới hạn MVP và tồn đọng sang W11 được ghi rõ.
+- [ ] URL/số PR và trạng thái `Chờ review` được commit/push vào PR head trước review; finalization tuân thủ vòng đời task canonical.
+
+## Liên kết hồ sơ thực hiện
+
+- Input workspace: Chưa tạo.
+- Output workspace: Chưa tạo.
+- Pull request: Chưa tạo.
+- Kết quả review: Chưa review.
+
+> URL/số PR và `Chờ review` phải được commit/push vào PR head trước review. Thành viên còn lại phải gửi `APPROVED` hợp lệ trên GitHub; sau đó người phụ trách finalization metadata, ghi `Hoàn thành` trên chính branch/PR và tự merge task của mình. Card chỉ canonically hoàn thành khi commit đó vào nhánh canonical; xem [vòng đời task canonical](../../../rules/git-and-pull-request-rules.md#vòng-đời-task-canonical).
+
+## Cập nhật tiến độ
+
+- Cập nhật gần nhất: 13/10/2026 — lập task bù tiến độ W10.
+- Ghi chú/tồn đọng: Chờ Bách tiếp tục công việc và task-01 đến task-04 có dữ liệu thật; không dùng dashboard rỗng hoặc dữ liệu mẫu để xác nhận DoD.

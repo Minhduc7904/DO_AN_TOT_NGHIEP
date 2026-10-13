@@ -1,0 +1,64 @@
+# Task tuần: Hoàn thiện distributed tracing toàn topology
+
+## Thông tin chung
+
+| Trường | Nội dung |
+| --- | --- |
+| Mã task | `task-02_complete-distributed-tracing` |
+| Tuần | `week-10_2026-10-04_to_2026-10-10` |
+| Trạng thái | Đã giao |
+| Người phụ trách | Đức |
+| Collaborator | Bách kiểm tra field phục vụ diagnosis |
+| Ưu tiên | Cao |
+| Hạn dự kiến | 20/10/2026 — mốc bù tiến độ |
+| Nhánh thực hiện | `feat/week-10/task-02-complete-distributed-tracing` |
+
+## Yêu cầu và phạm vi
+
+### Cần thực hiện
+
+Hoàn thiện tracing trên sáu business service, Gateway và storage mock để workflow đồng bộ/async tạo trace liên tục. Kiểm tra và bổ sung span cho inbound/outbound HTTP, PostgreSQL, Redis, storage và RabbitMQ; chuẩn hóa `service.name`, `service.version`, `service.instance.id`, dependency identity, status/error/timeout semantics và W3C Trace Context. Baseline controlled run phải dùng 100% sampling và có test/query chứng minh trace context qua `grade.completed` tới Notification.
+
+### Không thực hiện
+
+- Không dựng backend observability; thuộc task-01.
+- Không triển khai metrics dashboard hoặc structured-log pipeline; thuộc task-03 đến task-05.
+- Không capture payload, authorization header, credential, PII, fault label hoặc ground-truth label vào span.
+
+## Đầu vào và phụ thuộc
+
+- Tài liệu/task cần có trước: task-01; tracing primitive hiện có trong `@aiops-lms/observability`; HTTP/event contract và telemetry schema canonical.
+- Người hoặc phần việc cần phối hợp: Bách xác nhận field tối thiểu dùng cho diagnosis; Đức giữ quyết định instrumentation kỹ thuật.
+- Rủi ro/giả định: auto-instrumentation có thể không bao phủ wrapper/custom client; bổ sung manual span có kiểm soát và tránh tạo span trùng.
+
+## Sản phẩm kỳ vọng
+
+| Sản phẩm | Loại | Vị trí hoặc link dự kiến |
+| --- | --- | --- |
+| Instrumentation/config tracing đầy đủ | Code / Config | `lms/packages/observability/`, `lms/services/` |
+| Test trace xuyên HTTP, dependency và RabbitMQ | Test | `lms/test/`, test telemetry của service |
+| Tài liệu span/resource/error semantics | Docs | README observability hoặc tài liệu architecture liên quan |
+
+## Definition of Done
+
+- [ ] Mọi service runtime phát resource có `service.name`, `service.version`, `service.instance.id` đúng catalogue; test chặn identity thiếu hoặc sai.
+- [ ] Workflow `login → course → enroll → submit` cho thấy parent/child trace liên tục qua Gateway và outbound HTTP; span dependency có identity/operation/status hữu ích.
+- [ ] Workflow `submit → grade → grade.completed → notification` giữ cùng trace context qua RabbitMQ; producer/consumer/process span có event/dependency identity bounded.
+- [ ] PostgreSQL, Redis và storage có span hoặc manual instrumentation kiểm chứng được; timeout/unavailable đặt status/error semantics đúng contract mà không lộ dữ liệu nhạy cảm.
+- [ ] Baseline controlled run dùng `AlwaysOn`/100% sampling; test/query Tempo chứng minh trace có thể tìm theo trace ID và service.
+- [ ] Test liên quan, `pnpm run ci:verify` và Compose smoke pass; không tạo duplicate span ngoài chủ đích.
+- [ ] URL/số PR và trạng thái `Chờ review` được commit/push vào PR head trước review; finalization tuân thủ vòng đời task canonical.
+
+## Liên kết hồ sơ thực hiện
+
+- Input workspace: Chưa tạo.
+- Output workspace: Chưa tạo.
+- Pull request: Chưa tạo.
+- Kết quả review: Chưa review.
+
+> URL/số PR và `Chờ review` phải được commit/push vào PR head trước review. Thành viên còn lại phải gửi `APPROVED` hợp lệ trên GitHub; sau đó người phụ trách finalization metadata, ghi `Hoàn thành` trên chính branch/PR và tự merge task của mình. Card chỉ canonically hoàn thành khi commit đó vào nhánh canonical; xem [vòng đời task canonical](../../../rules/git-and-pull-request-rules.md#vòng-đời-task-canonical).
+
+## Cập nhật tiến độ
+
+- Cập nhật gần nhất: 13/10/2026 — lập task bù tiến độ W10.
+- Ghi chú/tồn đọng: Bắt đầu sau task-01; không gộp task-03 metrics vào cùng branch.
