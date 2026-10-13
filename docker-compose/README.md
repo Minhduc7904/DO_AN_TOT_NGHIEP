@@ -102,15 +102,10 @@ Entrypoint canonical chạy từ repository root:
 pnpm --dir lms run testbed:reset -- --environment local --project aiops-lms-local --confirm aiops-lms-local --env-file ../docker-compose/.env
 ```
 
-Nếu Corepack/Node trên Windows resolve `--env-file` trước khi pnpm áp dụng `--dir`, chạy cùng interface từ thư mục `lms` để đường dẫn vẫn fail closed và trỏ đúng file trong repository:
+Nếu PowerShell đang ưu tiên global shim `pnpm.ps1` của Corepack và shim đó nuốt nhầm `--env-file` trước pnpm, gọi executable Windows tương đương với nguyên interface và arguments:
 
 ```powershell
-Push-Location lms
-try {
-  pnpm run testbed:reset -- --environment local --project aiops-lms-local --confirm aiops-lms-local --env-file ../docker-compose/.env
-} finally {
-  Pop-Location
-}
+pnpm.cmd --dir lms run testbed:reset -- --environment local --project aiops-lms-local --confirm aiops-lms-local --env-file ../docker-compose/.env
 ```
 
 Lệnh chỉ chấp nhận `local`, hoặc `test` với project `aiops-lms-test-*`; project local phải là `aiops-lms-local`. `--confirm` phải khớp chính xác project, còn env file và Compose file phải nằm trong repository. `production`, target rộng, file ngoài repository hoặc tham số thiếu đều bị từ chối trước khi gọi Docker.

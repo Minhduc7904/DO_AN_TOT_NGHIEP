@@ -219,24 +219,37 @@ describe('W1–W3 Gateway → Auth/Course/Enrollment/Submission → PostgreSQL',
   it('logs in, enrolls and submits through Gateway while preserving trace context end to end', async () => {
     exporter.reset();
     const token = await login();
+    const instructorToken = createAccessToken(
+      '22222222-2222-4222-8222-222222222222',
+      'instructor',
+      JWT_SECRET,
+      3_600,
+    );
+    const course = await request(gatewayApp.getHttpServer())
+      .post('/api/v1/courses')
+      .set('Authorization', `Bearer ${instructorToken}`)
+      .set('traceparent', TRACEPARENT)
+      .send({ title: 'W3 isolated enrollment course' })
+      .expect(201);
+    const courseId = course.body.id as string;
 
     const created = await request(gatewayApp.getHttpServer())
       .post('/api/v1/enrollments')
       .set('Authorization', `Bearer ${token}`)
       .set('traceparent', TRACEPARENT)
-      .send({ course_id: 'course-001' })
+      .send({ course_id: courseId })
       .expect(201);
-    expect(created.body).toMatchObject({ course_id: 'course-001' });
+    expect(created.body).toMatchObject({ course_id: courseId });
     expect(created.body.principal_id).toEqual(expect.any(String));
 
     const submission = await request(gatewayApp.getHttpServer())
       .post('/api/v1/submissions')
       .set('Authorization', `Bearer ${token}`)
       .set('traceparent', TRACEPARENT)
-      .send({ content: 'e2e-answer', course_id: 'course-001' })
+      .send({ content: 'e2e-answer', course_id: courseId })
       .expect(201);
     expect(submission.body).toMatchObject({
-      course_id: 'course-001',
+      course_id: courseId,
       principal_id: created.body.principal_id,
     });
     await request(gatewayApp.getHttpServer())
@@ -293,7 +306,7 @@ describe('W1–W3 Gateway → Auth/Course/Enrollment/Submission → PostgreSQL',
       await request(gatewayApp.getHttpServer())
         .post('/api/v1/submissions')
         .set('Authorization', `Bearer ${token}`)
-        .send({ content: 'storage-failure', course_id: 'course-001' })
+        .send({ content: 'storage-failure', course_id: courseId })
         .expect(503)
         .expect(({ body }) =>
           expect(body).toMatchObject({ code: 'DEPENDENCY_UNAVAILABLE', details: null }),

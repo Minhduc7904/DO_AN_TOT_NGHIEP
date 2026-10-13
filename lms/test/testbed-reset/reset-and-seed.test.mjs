@@ -122,3 +122,32 @@ test('CLI guard lỗi trả nonzero và không báo thành công giả', () => {
   assert.match(result.stderr, /THẤT BẠI/u);
   assert.doesNotMatch(`${result.stdout}${result.stderr}`, /Hoàn tất reset\/seed/u);
 });
+
+test('canonical pnpm command từ repository root chuyển tiếp --env-file tới CLI guard', () => {
+  assert.ok(process.env.npm_execpath, 'pnpm phải cung cấp npm_execpath cho regression test');
+  const result = spawnSync(
+    process.execPath,
+    [
+      process.env.npm_execpath,
+      '--dir',
+      'lms',
+      'run',
+      'testbed:reset',
+      '--',
+      '--environment',
+      'production',
+      '--project',
+      'aiops-lms-local',
+      '--confirm',
+      'aiops-lms-local',
+      '--env-file',
+      '../docker-compose/.env',
+    ],
+    { cwd: REPOSITORY_ROOT, encoding: 'utf8' },
+  );
+  const output = `${result.stdout}${result.stderr}`;
+  assert.equal(result.status, 1);
+  assert.match(output, /Từ chối reset môi trường production/u);
+  assert.doesNotMatch(output, /env: not found|không tìm thấy env file/iu);
+  assert.doesNotMatch(output, /Hoàn tất reset\/seed/u);
+});

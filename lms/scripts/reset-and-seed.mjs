@@ -32,6 +32,9 @@ export function parseArguments(argv) {
   const values = new Map();
   for (let index = 0; index < argv.length; index += 1) {
     const argument = argv[index];
+    // `pnpm run <script> -- ...` forwards its separator on some platforms.
+    // Accept exactly one leading separator, while keeping every real option fail-closed.
+    if (index === 0 && argument === '--') continue;
     if (!argument.startsWith('--')) fail(`Tham số không hợp lệ: ${argument}`);
     if (!['--environment', '--project', '--confirm', '--env-file'].includes(argument)) {
       fail(`Tham số không được hỗ trợ: ${argument}`);
