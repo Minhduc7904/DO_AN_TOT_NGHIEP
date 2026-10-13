@@ -58,7 +58,8 @@ interface TestApplication {
 
 interface NotificationConsumer {
   onModuleDestroy(): Promise<void>;
-  onModuleInit(): Promise<void>;
+  onModuleInit(): void;
+  waitUntilConnected(): Promise<void>;
 }
 
 interface NotificationLog {
@@ -204,11 +205,13 @@ describe('W5 Gateway → Grading → Submission → PostgreSQL → RabbitMQ → 
       exchange: EVENT_EXCHANGE,
       prefetch: 1,
       queue: NOTIFICATION_QUEUE,
+      reconnect_delay_ms: 100,
       routing_key: 'grade.completed' as const,
       url: process.env.GRADING_RABBITMQ_URL,
     };
     const processor = new GradeCompletedFixtureConsumer();
     notificationHasProcessed = processor.hasProcessed.bind(processor);
+    const notificationTelemetry = new NotificationMessagingTelemetry(notificationBinding);
     const handler = new RabbitMqGradeCompletedMessageHandler(
       processor,
       new NotificationConsumerFault({
@@ -218,12 +221,13 @@ describe('W5 Gateway → Grading → Submission → PostgreSQL → RabbitMQ → 
             NOTIFICATION_CONSUMER_SLOWDOWN_MS: SLOWDOWN_ENABLED ? SLOWDOWN_MS : 0,
           })[key] as boolean | number,
       } as never),
-      new NotificationMessagingTelemetry(notificationBinding),
+      notificationTelemetry,
     );
     notificationConsumer = new RabbitMqGradeCompletedConsumer(
       notificationBinding,
       handler,
       connectRabbitMq,
+      notificationTelemetry,
     );
     console.info = (...values: unknown[]): void => {
       try {
@@ -247,7 +251,8 @@ describe('W5 Gateway → Grading → Submission → PostgreSQL → RabbitMQ → 
       }
       originalConsoleInfo(...values);
     };
-    await notificationConsumer.onModuleInit();
+    notificationConsumer.onModuleInit();
+    await notificationConsumer.waitUntilConnected();
     // Course và Enrollment chỉ cần trả lời hợp lệ để Submission tạo bài nộp mới.
     dependencyServer = createServer((incoming, response) => {
       response.setHeader('content-type', 'application/json');

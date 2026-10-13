@@ -12,9 +12,10 @@ export type RabbitMqChannel = Pick<
   | 'close'
   | 'consume'
   | 'nack'
+  | 'on'
   | 'prefetch'
 >;
-export type RabbitMqConnection = Pick<ChannelModel, 'close' | 'createChannel'>;
+export type RabbitMqConnection = Pick<ChannelModel, 'close' | 'createChannel' | 'on'>;
 export type RabbitMqConnect = (url: string) => Promise<RabbitMqConnection>;
 export type RabbitMqConsumeMessage = ConsumeMessage;
 

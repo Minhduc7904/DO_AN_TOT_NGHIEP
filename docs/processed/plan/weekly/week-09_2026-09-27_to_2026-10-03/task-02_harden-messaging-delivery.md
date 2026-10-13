@@ -2,15 +2,15 @@
 
 ## Thông tin chung
 
-| Trường | Nội dung |
-| --- | --- |
-| Mã task | `task-02_harden-messaging-delivery` |
-| Tuần | `week-09_2026-09-27_to_2026-10-03` |
-| Trạng thái | Chờ xử lý |
-| Người phụ trách | Đức |
-| Collaborator | Không có |
-| Ưu tiên | Cao |
-| Hạn dự kiến | 14/10/2026 — mốc bù tiến độ |
+| Trường          | Nội dung                                         |
+| --------------- | ------------------------------------------------ |
+| Mã task         | `task-02_harden-messaging-delivery`              |
+| Tuần            | `week-09_2026-09-27_to_2026-10-03`               |
+| Trạng thái      | Hoàn thành                                       |
+| Người phụ trách | Đức                                              |
+| Collaborator    | Không có                                         |
+| Ưu tiên         | Cao                                              |
+| Hạn dự kiến     | 14/10/2026 — mốc bù tiến độ                      |
 | Nhánh thực hiện | `test/week-09/task-02-harden-messaging-delivery` |
 
 ## Yêu cầu và phạm vi
@@ -29,34 +29,34 @@ Kiểm chứng và hardening luồng `grade.completed` trên publisher/consumer 
 
 - Tài liệu/task cần có trước: W8 task-01, task-02 và task-05 đã merge; event contract `grade.completed` v1.
 - Người hoặc phần việc cần phối hợp: Người phụ trách W8 task-02 cung cấp trạng thái consumer; hiện chưa có collaborator khả dụng.
-- Rủi ro/giả định: Task đang bị chặn đến khi Notification consumer W8 hoàn thành và merge vào `main`.
+- Rủi ro/giả định: Dependency Notification consumer W8 đã merge; stability test cần Docker và RabbitMQ thật.
 
 ## Sản phẩm kỳ vọng
 
-| Sản phẩm | Loại | Vị trí hoặc link dự kiến |
-| --- | --- | --- |
-| Messaging hardening tests và lỗi được sửa | Code | `lms/services/grading/`, `lms/services/notification/`, `lms/test/` |
-| Tài liệu semantics/giới hạn delivery MVP | Docs | README của Grading/Notification hoặc tài liệu architecture canonical |
+| Sản phẩm                                  | Loại | Vị trí hoặc link dự kiến                                             |
+| ----------------------------------------- | ---- | -------------------------------------------------------------------- |
+| Messaging hardening tests và lỗi được sửa | Code | `lms/services/grading/`, `lms/services/notification/`, `lms/test/`   |
+| Tài liệu semantics/giới hạn delivery MVP  | Docs | README của Grading/Notification hoặc tài liệu architecture canonical |
 
 ## Definition of Done
 
-- [ ] Publish/consume dùng cùng exchange, routing key, schema và trace headers; queue tồn tại trước khi test publish.
-- [ ] Duplicate delivery cùng `event_id` không tạo notification thứ hai; retry/reconnect không tạo event logic mới.
-- [ ] Broker unavailable, confirm timeout, consumer restart và slowdown/backlog có test recovery với fault hook mặc định tắt.
-- [ ] Span/metrics/logs của publish, consume và process giữ correlation, dependency identity và error semantics; không lộ credential/PII.
-- [ ] Test RabbitMQ integration chạy ổn định ít nhất ba lần liên tiếp và `pnpm run ci:verify` pass.
-- [ ] URL/số PR và trạng thái `Chờ review` được commit/push vào PR head trước review; finalization tuân thủ vòng đời task canonical.
+- [x] Publish/consume dùng cùng exchange, routing key, schema và trace headers; queue tồn tại trước khi test publish.
+- [x] Duplicate delivery cùng `event_id` không tạo notification thứ hai; retry/reconnect không tạo event logic mới.
+- [x] Broker unavailable, confirm timeout, consumer restart và slowdown/backlog có test recovery với fault hook mặc định tắt.
+- [x] Span/metrics/logs của publish, consume và process giữ correlation, dependency identity và error semantics; không lộ credential/PII.
+- [x] Test RabbitMQ integration chạy ổn định ít nhất ba lần liên tiếp và `pnpm run ci:verify` pass.
+- [x] URL/số PR và trạng thái `Chờ review` được commit/push vào PR head trước review; finalization được ghi nhận trước merge theo ngoại lệ do người phụ trách xác nhận trực tiếp.
 
 ## Liên kết hồ sơ thực hiện
 
-- Input workspace: Chưa tạo.
-- Output workspace: Chưa tạo.
-- Pull request: Chưa tạo.
-- Kết quả review: Chưa review.
+- Input workspace: [task-input.md](../../../../../workspace/duc/week-09_2026-09-27_to_2026-10-03/task-02_harden-messaging-delivery/input/task-input.md).
+- Output workspace: [task-output.md](../../../../../workspace/duc/week-09_2026-09-27_to_2026-10-03/task-02_harden-messaging-delivery/output/task-output.md).
+- Pull request: [#37](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/37).
+- Kết quả review: Reviewer agent độc lập yêu cầu sửa runtime DI tại SHA `cb5249d`; focused re-review diff `cb5249d..ce8cc14` kết luận `APPROVED` nội bộ. Đây không phải GitHub `APPROVED`; Đức đã chỉ thị trực tiếp tiếp tục finalization theo ngoại lệ.
 
 > URL/số PR và `Chờ review` phải được commit/push vào PR head trước review. Thành viên còn lại phải gửi `APPROVED` hợp lệ trên GitHub; sau đó người phụ trách finalization metadata, ghi `Hoàn thành` trên chính branch/PR và tự merge task của mình. Card chỉ canonically hoàn thành khi commit đó vào nhánh canonical; xem [vòng đời task canonical](../../../rules/git-and-pull-request-rules.md#vòng-đời-task-canonical).
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 11/10/2026 — lập task bù tiến độ W9.
-- Ghi chú/tồn đọng: Blocker hiện tại là W8 task-02 chưa có PR/merge; không dùng task này để làm thay phần W8.
+- Cập nhật gần nhất: 13/10/2026 — focused re-review nội bộ không còn blocking finding; CI run `38366297418` xanh toàn bộ và finalization đã được ghi nhận trước merge.
+- Ghi chú/tồn đọng: Không còn blocker kỹ thuật. GitHub không có `APPROVED`; finalization dùng ngoại lệ từ chỉ thị trực tiếp của Đức. Trạng thái `Hoàn thành` hiện nằm trên branch/PR và chỉ trở thành canonical sau khi merge vào `main`.

@@ -6,6 +6,7 @@ export interface RabbitMqGradeCompletedBinding {
   exchange: string;
   prefetch: number;
   queue: string;
+  reconnect_delay_ms: number;
   routing_key: 'grade.completed';
   url: string;
 }
@@ -17,6 +18,7 @@ export function createRabbitMqGradeCompletedBinding(
     exchange: config.getOrThrow<string>('NOTIFICATION_GRADE_COMPLETED_EXCHANGE'),
     prefetch: config.getOrThrow<number>('NOTIFICATION_CONSUMER_PREFETCH'),
     queue: config.getOrThrow<string>('NOTIFICATION_GRADE_COMPLETED_QUEUE'),
+    reconnect_delay_ms: config.getOrThrow<number>('NOTIFICATION_RECONNECT_DELAY_MS'),
     routing_key: 'grade.completed',
     url: config.getOrThrow<string>('NOTIFICATION_RABBITMQ_URL'),
   };

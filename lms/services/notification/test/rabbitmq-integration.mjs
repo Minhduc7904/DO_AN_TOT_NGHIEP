@@ -75,6 +75,7 @@ const binding = {
   exchange: EXCHANGE,
   prefetch: 1,
   queue: QUEUE,
+  reconnect_delay_ms: 100,
   routing_key: ROUTING_KEY,
   url: brokerUrl,
 };
@@ -105,12 +106,18 @@ await adminChannel.bindQueue(QUEUE, EXCHANGE, ROUTING_KEY);
 await adminChannel.purgeQueue(QUEUE);
 
 const processor = new GradeCompletedFixtureConsumer();
+const notificationTelemetry = new NotificationMessagingTelemetry(binding);
 const handler = new RabbitMqGradeCompletedMessageHandler(
   processor,
   new NotificationConsumerFault(notificationConfig),
-  new NotificationMessagingTelemetry(binding),
+  notificationTelemetry,
 );
-const consumer = new RabbitMqGradeCompletedConsumer(binding, handler, connectRabbitMq);
+const consumer = new RabbitMqGradeCompletedConsumer(
+  binding,
+  handler,
+  connectRabbitMq,
+  notificationTelemetry,
+);
 const publisher = new RabbitMqGradeCompletedPublisher(publisherConfig);
 const infoLines = [];
 const errorLines = [];
@@ -120,7 +127,8 @@ console.info = (...values) => infoLines.push(values.map(String).join(' '));
 console.error = (...values) => errorLines.push(values.map(String).join(' '));
 
 try {
-  await consumer.onModuleInit();
+  consumer.onModuleInit();
+  await consumer.waitUntilConnected();
   assert.equal((await adminChannel.checkQueue(QUEUE)).consumerCount, 1);
 
   await publisher.publish(snapshot);
