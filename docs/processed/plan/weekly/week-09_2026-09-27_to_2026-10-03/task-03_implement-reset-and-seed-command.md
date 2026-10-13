@@ -6,7 +6,7 @@
 | --------------- | ------------------------------------------------------- |
 | Mã task         | `task-03_implement-reset-and-seed-command`              |
 | Tuần            | `week-09_2026-09-27_to_2026-10-03`                      |
-| Trạng thái      | Chờ review                                              |
+| Trạng thái      | Hoàn thành                                              |
 | Người phụ trách | Đức                                                     |
 | Collaborator    | Không có                                                |
 | Ưu tiên         | Cao                                                     |
@@ -44,7 +44,7 @@ Tạo một entrypoint reset/seed có kiểm soát cho môi trường local/test
 - [x] Có guard chống chạy nhầm môi trường hoặc target rộng; log không chứa credential và báo rõ từng bước/thất bại.
 - [x] Chạy từ trạng thái sạch và chạy lặp lại đều tạo cùng tập dữ liệu định danh phục vụ ít nhất hai workflow E2E.
 - [x] Khi một bước lỗi, lệnh dừng với exit code khác 0 và không báo thành công giả; hướng dẫn recovery được tài liệu hóa.
-- [ ] Test hoặc smoke tự động chứng minh reset/seed hoạt động trên Compose; `pnpm run ci:verify` và Compose config pass.
+- [x] Test hoặc smoke tự động chứng minh reset/seed hoạt động trên Compose; `pnpm run ci:verify` và Compose config pass.
 - [x] URL/số PR và trạng thái `Chờ review` được commit/push vào PR head trước review; finalization tuân thủ vòng đời task canonical.
 
 ## Liên kết hồ sơ thực hiện
@@ -52,11 +52,11 @@ Tạo một entrypoint reset/seed có kiểm soát cho môi trường local/test
 - Input workspace: [task-input.md](../../../../../workspace/duc/week-09_2026-09-27_to_2026-10-03/task-03_implement-reset-and-seed-command/input/task-input.md).
 - Output workspace: [task-output.md](../../../../../workspace/duc/week-09_2026-09-27_to_2026-10-03/task-03_implement-reset-and-seed-command/output/task-output.md).
 - Pull request: [#38](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/38).
-- Kết quả review: Chưa review.
+- Kết quả review: Reviewer agent độc lập `APPROVED` nội bộ sau ba vòng focused re-review; không phải GitHub `APPROVED` hợp lệ. Đức đã trực tiếp cho phép dùng review nội bộ làm bằng chứng thay thế trong kế hoạch triển khai khép kín.
 
 > URL/số PR và `Chờ review` phải được commit/push vào PR head trước review. Thành viên còn lại phải gửi `APPROVED` hợp lệ trên GitHub; sau đó người phụ trách finalization metadata, ghi `Hoàn thành` trên chính branch/PR và tự merge task của mình. Card chỉ canonically hoàn thành khi commit đó vào nhánh canonical; xem [vòng đời task canonical](../../../rules/git-and-pull-request-rules.md#vòng-đời-task-canonical).
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 13/10/2026 — substantive work đã push, PR #38 đã mở và task chuyển `Chờ review` trên PR head.
-- Ghi chú/tồn đọng: Fingerprint hai vòng cùng SHA-256 `c0222dc2c158f2f46368db43fe77752a044832ef76a218b9836da2fa5256f522`. Local `ci:verify` còn ghi nhận baseline Prettier ngoài diff và W1 timeout; CI Linux sẽ là bằng chứng canonical.
+- Cập nhật gần nhất: 13/10/2026 — finalization trước merge theo ngoại lệ review nội bộ do Đức xác nhận trực tiếp; CI run `38421051675` xanh toàn bộ.
+- Ghi chú/tồn đọng: Fingerprint hai vòng cùng SHA-256 `c0222dc2c158f2f46368db43fe77752a044832ef76a218b9836da2fa5256f522`. Local `ci:verify` từng ghi nhận baseline Prettier ngoài diff và W1 timeout; clean-install CI Linux là bằng chứng canonical. Giao diện canonical dùng `--compose-env-file`; `--env-file` chỉ còn là alias deprecated cho direct invocation.

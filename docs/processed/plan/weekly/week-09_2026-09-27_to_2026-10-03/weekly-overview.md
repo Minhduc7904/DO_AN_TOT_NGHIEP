@@ -17,7 +17,7 @@
 | ----------------------------------------------------------------------------------------- | ----------------------------------------------------------------- | --------------- | ---------------------------------------- | ---------- | ---------- |
 | [task-01_standardize-dependency-resilience](task-01_standardize-dependency-resilience.md) | Chuẩn hóa timeout, retry và error propagation cho dependency HTTP | Đức             | Không có                                 | Cao        | Hoàn thành |
 | [task-02_harden-messaging-delivery](task-02_harden-messaging-delivery.md)                 | Hardening publisher/consumer idempotency và failure handling      | Đức             | Không có                                 | Cao        | Hoàn thành |
-| [task-03_implement-reset-and-seed-command](task-03_implement-reset-and-seed-command.md)   | Tạo lệnh reset/seed thống nhất cho Testbed MVP                    | Đức             | Không có                                 | Cao        | Chờ review |
+| [task-03_implement-reset-and-seed-command](task-03_implement-reset-and-seed-command.md)   | Tạo lệnh reset/seed thống nhất cho Testbed MVP                    | Đức             | Không có                                 | Cao        | Hoàn thành |
 | [task-04_build-mvp-regression-suite](task-04_build-mvp-regression-suite.md)               | Xây regression E2E và telemetry assertions cho các workflow chính | Bách            | Đức hỗ trợ môi trường testbed            | Cao        | Chờ xử lý  |
 | [task-05_validate-fresh-setup-and-m2-gate](task-05_validate-fresh-setup-and-m2-gate.md)   | Xác minh fresh setup và Gate M2                                   | Bách            | Đức hỗ trợ vận hành và đối chiếu Gate M2 | Trung bình | Chờ xử lý  |
 
@@ -38,10 +38,10 @@
 
 ## Tiêu chí kết thúc tuần
 
-- [ ] Sáu business service `Auth`, `Course`, `Enrollment`, `Submission`, `Grading`, `Notification` và Gateway chạy trong topology MVP cùng PostgreSQL, Redis và RabbitMQ.
+- [x] Sáu business service `Auth`, `Course`, `Enrollment`, `Submission`, `Grading`, `Notification` và Gateway chạy trong topology MVP cùng PostgreSQL, Redis và RabbitMQ.
 - [x] Timeout, retry và error propagation của dependency HTTP có policy thống nhất, test được và không nhân retry ngoài chủ đích.
 - [x] Publisher/consumer `grade.completed` chứng minh semantics at-least-once, deduplicate theo `event_id`, giữ correlation và xử lý failure/recovery quan sát được.
-- [ ] Có một lệnh reset/seed tái lập dữ liệu Testbed MVP từ trạng thái sạch và chạy lặp lại cho kết quả xác định.
+- [x] Có một lệnh reset/seed tái lập dữ liệu Testbed MVP từ trạng thái sạch và chạy lặp lại cho kết quả xác định.
 - [ ] Regression suite bao phủ ít nhất hai workflow xuyên service, các nhánh error/latency quan trọng và telemetry assertions tương ứng.
 - [ ] Fresh setup chạy được theo tài liệu; Gate M2 có bằng chứng và ghi rõ giới hạn nếu chưa có người kiểm chứng thứ hai.
 - [ ] Mỗi task có PR riêng, bằng chứng DoD và trạng thái theo vòng đời task canonical.
