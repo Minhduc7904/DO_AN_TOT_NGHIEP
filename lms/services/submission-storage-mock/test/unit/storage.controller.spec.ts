@@ -62,6 +62,18 @@ describe('Storage Mock HTTP contract', () => {
       .expect(200);
   });
 
+  it('reports a safe internal state for reset verification', async () => {
+    await request(app.getHttpServer())
+      .get('/internal/v1/state')
+      .expect(200)
+      .expect({ fault: { error_mode: 'none', latency_ms: 0 }, object_count: 0 });
+    await storage.store('submissions/one', 'answer');
+    await request(app.getHttpServer())
+      .get('/internal/v1/state')
+      .expect(200)
+      .expect({ fault: { error_mode: 'none', latency_ms: 0 }, object_count: 1 });
+  });
+
   it('applies deterministic latency configured by the control plane', async () => {
     storage.configure({ error_mode: 'none', latency_ms: 10 });
     const started = performance.now();

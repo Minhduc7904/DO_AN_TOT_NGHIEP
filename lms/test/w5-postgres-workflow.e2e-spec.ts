@@ -46,6 +46,7 @@ const JWT_SECRET = 'w5-postgres-workflow-test-secret-with-at-least-thirty-two-ch
 const TRACE_ID = '77777777777777777777777777777777';
 const TRACEPARENT = `00-${TRACE_ID}-8888888888888888-01`;
 const SEED_GRADE_ID = '7d1f3a52-0c4e-4b8a-9d36-5a2e8f10c001';
+const SEED_STUDENT_ID = '11111111-1111-4111-8111-111111111111';
 
 interface TestApplication {
   close(): Promise<void>;
@@ -598,7 +599,7 @@ describe('W5 Gateway → Grading → Submission → PostgreSQL → RabbitMQ → 
       .get(`/api/v1/grades/${SEED_GRADE_ID}`)
       .set(
         'Authorization',
-        `Bearer ${createAccessToken('student-001', 'student', JWT_SECRET, 600)}`,
+        `Bearer ${createAccessToken(SEED_STUDENT_ID, 'student', JWT_SECRET, 600)}`,
       )
       .expect(200)
       .expect(({ body }) =>

@@ -25,6 +25,10 @@ export class StorageMockService {
     return { ...this.fault };
   }
 
+  getState(): { fault: StorageFaultControl; object_count: number } {
+    return { fault: this.getControl(), object_count: this.objects.size };
+  }
+
   async store(objectKey: string, content: string, signal?: AbortSignal): Promise<StoredObject> {
     await this.applyFault(signal);
     signal?.throwIfAborted();

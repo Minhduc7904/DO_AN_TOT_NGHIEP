@@ -29,7 +29,13 @@ try {
 
   const repository = new PostgresSubmissionRepository({ getOrThrow: () => submissionUrl });
   try {
-    assert.equal((await repository.findById('submission-001'))?.course_id, 'course-001');
+    assert.deepEqual(await repository.findById('submission-001'), {
+      course_id: 'course-001',
+      id: 'submission-001',
+      principal_id: '11111111-1111-4111-8111-111111111111',
+      storage_object_key: 'submissions/submission-001',
+      submitted_at: '2026-08-27T10:10:00.000Z',
+    });
     const id = randomUUID();
     const created = await repository.create({
       courseId: 'course-001',

@@ -1,5 +1,3 @@
-import { randomUUID } from 'node:crypto';
-
 import { Pool } from 'pg';
 
 import { validateEnvironment } from '../config/env.schema.js';
@@ -32,19 +30,29 @@ try {
   );
 
   const seedUsers = [
-    { email: 'student@example.test', role: 'student' },
-    { email: 'instructor@example.test', role: 'instructor' },
+    {
+      createdAt: '2026-08-27T09:00:00Z',
+      email: 'student@example.test',
+      id: '11111111-1111-4111-8111-111111111111',
+      role: 'student',
+    },
+    {
+      createdAt: '2026-08-27T09:00:00Z',
+      email: 'instructor@example.test',
+      id: '22222222-2222-4222-8222-222222222222',
+      role: 'instructor',
+    },
   ];
-  for (const { email, role } of seedUsers) {
+  for (const { createdAt, email, id, role } of seedUsers) {
     const existing = await pool.query<{ id: string }>(
       'SELECT id FROM auth_users WHERE email = $1',
       [email],
     );
     if (!existing.rows[0]) {
       await pool.query(
-        `INSERT INTO auth_users (id, email, password_hash, role)
-         VALUES ($1, $2, $3, $4)`,
-        [randomUUID(), email, await hashPassword('example-password'), role],
+        `INSERT INTO auth_users (id, email, password_hash, role, created_at)
+         VALUES ($1, $2, $3, $4, $5)`,
+        [id, email, await hashPassword('example-password'), role, createdAt],
       );
     }
   }
