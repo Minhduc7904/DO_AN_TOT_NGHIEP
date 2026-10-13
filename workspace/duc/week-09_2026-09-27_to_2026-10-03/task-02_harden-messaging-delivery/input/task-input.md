@@ -8,7 +8,7 @@
 | Tên task             | Hardening messaging delivery                                                |
 | Người phụ trách      | Đức                                                                         |
 | Tuần thực hiện       | `week-09_2026-09-27_to_2026-10-03`                                          |
-| Trạng thái           | Đang thực hiện                                                              |
+| Trạng thái           | Chờ review                                                                  |
 | Ngày tạo             | 13/10/2026                                                                  |
 | Thời gian dự kiến    | 13/10/2026–14/10/2026                                                       |
 | Nhánh thực hiện      | `test/week-09/task-02-harden-messaging-delivery`                            |
@@ -44,13 +44,13 @@ Hardening luồng RabbitMQ `grade.completed` giữa Grading và Notification đ�
 
 ## Definition of Done
 
-- [ ] Publish/consume dùng cùng exchange, routing key, schema và trace headers; queue durable tồn tại trước khi publish.
-- [ ] Consumer có đúng một reconnect loop, delay mặc định 1.000 ms, startup không fail khi broker unavailable và shutdown dừng sạch.
-- [ ] Accepted/duplicate chỉ ack sau xử lý; message/header invalid bị reject không requeue; connection loss trước ack cho phép RabbitMQ redeliver.
-- [ ] Dedup in-memory có TTL 24 giờ, tối đa 10.000 event ID và tài liệu ghi rõ không phải exactly-once, không bền qua process restart.
-- [ ] Telemetry phân biệt `accepted`, `duplicate`, `rejected`, `unavailable`, giữ correlation publisher→consumer→process và metric label không chứa event ID/credential.
-- [ ] `test:notification:rabbitmq` và `test:messaging:stability` kiểm tra RabbitMQ thật; stability chạy ba vòng gồm duplicate, broker down/up, reconnect, redelivery và slowdown tạo backlog rồi drain.
+- [x] Publish/consume dùng cùng exchange, routing key, schema và trace headers; queue durable tồn tại trước khi publish.
+- [x] Consumer có đúng một reconnect loop, delay mặc định 1.000 ms, startup không fail khi broker unavailable và shutdown dừng sạch.
+- [x] Accepted/duplicate chỉ ack sau xử lý; message/header invalid bị reject không requeue; connection loss trước ack cho phép RabbitMQ redeliver.
+- [x] Dedup in-memory có TTL 24 giờ, tối đa 10.000 event ID và tài liệu ghi rõ không phải exactly-once, không bền qua process restart.
+- [x] Telemetry phân biệt `accepted`, `duplicate`, `rejected`, `unavailable`, giữ correlation publisher→consumer→process và metric label không chứa event ID/credential.
+- [x] `test:notification:rabbitmq` và `test:messaging:stability` kiểm tra RabbitMQ thật; stability chạy ba vòng gồm duplicate, broker down/up, reconnect, redelivery và slowdown tạo backlog rồi drain.
 - [ ] `format:check`, build, lint, unit test, telemetry, `ci:verify`, `git diff --check` và Compose config pass.
-- [ ] Sản phẩm đã được commit/push trên nhánh task và có thể truy cập.
-- [ ] URL/số PR và trạng thái `Chờ review` đã được commit/push vào PR head trước khi reviewer bắt đầu review.
+- [x] Sản phẩm đã được commit/push trên nhánh task và có thể truy cập.
+- [x] URL/số PR và trạng thái `Chờ review` đã được commit/push vào PR head trước khi reviewer bắt đầu review.
 - [ ] Pull request từ nhánh task có mô tả đúng quy tắc; review và finalization thực hiện ở giai đoạn riêng theo vòng đời canonical hoặc ngoại lệ được ghi nhận trung thực.

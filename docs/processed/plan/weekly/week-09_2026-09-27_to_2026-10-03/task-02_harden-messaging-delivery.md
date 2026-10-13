@@ -6,7 +6,7 @@
 | --------------- | ------------------------------------------------ |
 | Mã task         | `task-02_harden-messaging-delivery`              |
 | Tuần            | `week-09_2026-09-27_to_2026-10-03`               |
-| Trạng thái      | Đang thực hiện                                   |
+| Trạng thái      | Chờ review                                       |
 | Người phụ trách | Đức                                              |
 | Collaborator    | Không có                                         |
 | Ưu tiên         | Cao                                              |
@@ -40,10 +40,10 @@ Kiểm chứng và hardening luồng `grade.completed` trên publisher/consumer 
 
 ## Definition of Done
 
-- [ ] Publish/consume dùng cùng exchange, routing key, schema và trace headers; queue tồn tại trước khi test publish.
-- [ ] Duplicate delivery cùng `event_id` không tạo notification thứ hai; retry/reconnect không tạo event logic mới.
-- [ ] Broker unavailable, confirm timeout, consumer restart và slowdown/backlog có test recovery với fault hook mặc định tắt.
-- [ ] Span/metrics/logs của publish, consume và process giữ correlation, dependency identity và error semantics; không lộ credential/PII.
+- [x] Publish/consume dùng cùng exchange, routing key, schema và trace headers; queue tồn tại trước khi test publish.
+- [x] Duplicate delivery cùng `event_id` không tạo notification thứ hai; retry/reconnect không tạo event logic mới.
+- [x] Broker unavailable, confirm timeout, consumer restart và slowdown/backlog có test recovery với fault hook mặc định tắt.
+- [x] Span/metrics/logs của publish, consume và process giữ correlation, dependency identity và error semantics; không lộ credential/PII.
 - [ ] Test RabbitMQ integration chạy ổn định ít nhất ba lần liên tiếp và `pnpm run ci:verify` pass.
 - [ ] URL/số PR và trạng thái `Chờ review` được commit/push vào PR head trước review; finalization tuân thủ vòng đời task canonical.
 
@@ -51,12 +51,12 @@ Kiểm chứng và hardening luồng `grade.completed` trên publisher/consumer 
 
 - Input workspace: [task-input.md](../../../../../workspace/duc/week-09_2026-09-27_to_2026-10-03/task-02_harden-messaging-delivery/input/task-input.md).
 - Output workspace: [task-output.md](../../../../../workspace/duc/week-09_2026-09-27_to_2026-10-03/task-02_harden-messaging-delivery/output/task-output.md).
-- Pull request: Chưa tạo.
+- Pull request: [#37](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/37).
 - Kết quả review: Chưa review.
 
 > URL/số PR và `Chờ review` phải được commit/push vào PR head trước review. Thành viên còn lại phải gửi `APPROVED` hợp lệ trên GitHub; sau đó người phụ trách finalization metadata, ghi `Hoàn thành` trên chính branch/PR và tự merge task của mình. Card chỉ canonically hoàn thành khi commit đó vào nhánh canonical; xem [vòng đời task canonical](../../../rules/git-and-pull-request-rules.md#vòng-đời-task-canonical).
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 13/10/2026 — W8 task-02 đã merge; Đức bắt đầu triển khai hardening trên nhánh task riêng.
-- Ghi chú/tồn đọng: Không còn blocker từ W8 task-02; cần Docker/RabbitMQ thật để kiểm chứng recovery và stability ba vòng.
+- Cập nhật gần nhất: 13/10/2026 — substantive work đã push, PR #37 đã mở và task chuyển `Chờ review` trên PR head.
+- Ghi chú/tồn đọng: RabbitMQ integration và stability 3/3 vòng đã pass; CI Linux của PR đang chạy. Local `ci:verify` bị chặn tại baseline Prettier trên checkout Windows và được ghi nguyên trong output.
