@@ -3,6 +3,7 @@ import {
   gradeCompletedEventSchema,
   gradeCompletedV1Fixture,
 } from '@aiops-lms/contracts';
+import { jest } from '@jest/globals';
 
 import { validateEnvironment } from '../../src/config/env.schema.js';
 import { GradeCompletedFixtureConsumer } from '../../src/adapters/messaging/grade-completed.fixture-consumer.js';
@@ -10,9 +11,14 @@ import { createRabbitMqGradeCompletedBinding } from '../../src/adapters/messagin
 
 describe('Notification grade.completed skeleton', () => {
   it('uses the local Compose RabbitMQ URL by default', () => {
-    expect(validateEnvironment({}).NOTIFICATION_RABBITMQ_URL).toBe(
-      'amqp://lms:lms-local-only@localhost:5672',
-    );
+    const environment = validateEnvironment({});
+
+    expect(environment.NOTIFICATION_RABBITMQ_URL).toBe('amqp://lms:lms-local-only@localhost:5672');
+    expect(environment.NOTIFICATION_RECONNECT_DELAY_MS).toBe(1_000);
+    expect(environment.NOTIFICATION_DEDUP_TTL_SECONDS).toBe(86_400);
+    expect(environment.NOTIFICATION_DEDUP_MAX_EVENT_IDS).toBe(10_000);
+    expect(() => validateEnvironment({ NOTIFICATION_RECONNECT_DELAY_MS: 99 })).toThrow();
+    expect(() => validateEnvironment({ NOTIFICATION_DEDUP_MAX_EVENT_IDS: 100_001 })).toThrow();
   });
 
   it('accepts the published version 1 fixture without exposing payload fields', () => {
@@ -36,6 +42,31 @@ describe('Notification grade.completed skeleton', () => {
       schema_version: 1,
       status: 'duplicate',
     });
+  });
+
+  it('expires dedup entries after TTL and evicts the oldest entry at the capacity limit', () => {
+    try {
+      jest.useFakeTimers().setSystemTime(new Date('2026-10-13T00:00:00.000Z'));
+      const values = {
+        NOTIFICATION_DEDUP_MAX_EVENT_IDS: 1,
+        NOTIFICATION_DEDUP_TTL_SECONDS: 2,
+      };
+      const consumer = new GradeCompletedFixtureConsumer({
+        get: <Key extends keyof typeof values>(key: Key): (typeof values)[Key] => values[key],
+      } as never);
+      const second = {
+        ...gradeCompletedV1Fixture,
+        event_id: '018f4e60-4e21-7d38-b1f4-842d4f2e9999',
+      };
+
+      expect(consumer.consume(gradeCompletedV1Fixture).status).toBe('accepted');
+      expect(consumer.consume(second).status).toBe('accepted');
+      expect(consumer.consume(gradeCompletedV1Fixture).status).toBe('accepted');
+      jest.advanceTimersByTime(2_001);
+      expect(consumer.consume(gradeCompletedV1Fixture).status).toBe('accepted');
+    } finally {
+      jest.useRealTimers();
+    }
   });
 
   it('rejects an event with an incompatible name or missing correlation', () => {
@@ -65,6 +96,7 @@ describe('Notification grade.completed skeleton', () => {
       NOTIFICATION_GRADE_COMPLETED_EXCHANGE: 'lms.events',
       NOTIFICATION_GRADE_COMPLETED_QUEUE: 'notification.grade-completed.v1',
       NOTIFICATION_CONSUMER_PREFETCH: 1,
+      NOTIFICATION_RECONNECT_DELAY_MS: 1_000,
       NOTIFICATION_RABBITMQ_URL: 'amqp://rabbitmq:5672',
     };
     const binding = createRabbitMqGradeCompletedBinding({
@@ -75,6 +107,7 @@ describe('Notification grade.completed skeleton', () => {
       exchange: 'lms.events',
       prefetch: 1,
       queue: 'notification.grade-completed.v1',
+      reconnect_delay_ms: 1_000,
       routing_key: 'grade.completed',
       url: 'amqp://rabbitmq:5672',
     });

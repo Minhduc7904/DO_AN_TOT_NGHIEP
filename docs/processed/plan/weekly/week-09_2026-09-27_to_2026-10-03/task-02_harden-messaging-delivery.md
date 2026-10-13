@@ -2,15 +2,15 @@
 
 ## Thông tin chung
 
-| Trường | Nội dung |
-| --- | --- |
-| Mã task | `task-02_harden-messaging-delivery` |
-| Tuần | `week-09_2026-09-27_to_2026-10-03` |
-| Trạng thái | Chờ xử lý |
-| Người phụ trách | Đức |
-| Collaborator | Không có |
-| Ưu tiên | Cao |
-| Hạn dự kiến | 14/10/2026 — mốc bù tiến độ |
+| Trường          | Nội dung                                         |
+| --------------- | ------------------------------------------------ |
+| Mã task         | `task-02_harden-messaging-delivery`              |
+| Tuần            | `week-09_2026-09-27_to_2026-10-03`               |
+| Trạng thái      | Đang thực hiện                                   |
+| Người phụ trách | Đức                                              |
+| Collaborator    | Không có                                         |
+| Ưu tiên         | Cao                                              |
+| Hạn dự kiến     | 14/10/2026 — mốc bù tiến độ                      |
 | Nhánh thực hiện | `test/week-09/task-02-harden-messaging-delivery` |
 
 ## Yêu cầu và phạm vi
@@ -29,14 +29,14 @@ Kiểm chứng và hardening luồng `grade.completed` trên publisher/consumer 
 
 - Tài liệu/task cần có trước: W8 task-01, task-02 và task-05 đã merge; event contract `grade.completed` v1.
 - Người hoặc phần việc cần phối hợp: Người phụ trách W8 task-02 cung cấp trạng thái consumer; hiện chưa có collaborator khả dụng.
-- Rủi ro/giả định: Task đang bị chặn đến khi Notification consumer W8 hoàn thành và merge vào `main`.
+- Rủi ro/giả định: Dependency Notification consumer W8 đã merge; stability test cần Docker và RabbitMQ thật.
 
 ## Sản phẩm kỳ vọng
 
-| Sản phẩm | Loại | Vị trí hoặc link dự kiến |
-| --- | --- | --- |
-| Messaging hardening tests và lỗi được sửa | Code | `lms/services/grading/`, `lms/services/notification/`, `lms/test/` |
-| Tài liệu semantics/giới hạn delivery MVP | Docs | README của Grading/Notification hoặc tài liệu architecture canonical |
+| Sản phẩm                                  | Loại | Vị trí hoặc link dự kiến                                             |
+| ----------------------------------------- | ---- | -------------------------------------------------------------------- |
+| Messaging hardening tests và lỗi được sửa | Code | `lms/services/grading/`, `lms/services/notification/`, `lms/test/`   |
+| Tài liệu semantics/giới hạn delivery MVP  | Docs | README của Grading/Notification hoặc tài liệu architecture canonical |
 
 ## Definition of Done
 
@@ -49,8 +49,8 @@ Kiểm chứng và hardening luồng `grade.completed` trên publisher/consumer 
 
 ## Liên kết hồ sơ thực hiện
 
-- Input workspace: Chưa tạo.
-- Output workspace: Chưa tạo.
+- Input workspace: [task-input.md](../../../../../workspace/duc/week-09_2026-09-27_to_2026-10-03/task-02_harden-messaging-delivery/input/task-input.md).
+- Output workspace: [task-output.md](../../../../../workspace/duc/week-09_2026-09-27_to_2026-10-03/task-02_harden-messaging-delivery/output/task-output.md).
 - Pull request: Chưa tạo.
 - Kết quả review: Chưa review.
 
@@ -58,5 +58,5 @@ Kiểm chứng và hardening luồng `grade.completed` trên publisher/consumer 
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 11/10/2026 — lập task bù tiến độ W9.
-- Ghi chú/tồn đọng: Blocker hiện tại là W8 task-02 chưa có PR/merge; không dùng task này để làm thay phần W8.
+- Cập nhật gần nhất: 13/10/2026 — W8 task-02 đã merge; Đức bắt đầu triển khai hardening trên nhánh task riêng.
+- Ghi chú/tồn đọng: Không còn blocker từ W8 task-02; cần Docker/RabbitMQ thật để kiểm chứng recovery và stability ba vòng.
