@@ -2,17 +2,17 @@
 
 ## Thông tin hoàn thành
 
-| Trường             | Nội dung                                   |
-| ------------------ | ------------------------------------------ |
-| Mã task            | `task-03_implement-reset-and-seed-command` |
-| Người phụ trách    | Đức                                        |
-| Trạng thái         | Đang thực hiện                             |
-| Bắt đầu thực tế    | 13/10/2026 15:17 (UTC+7)                   |
-| Hoàn thành thực tế | Chưa hoàn thành                            |
-| Tổng thời lượng    | Đang thực hiện                             |
-| Pull request       | Chưa tạo                                   |
-| Người review       | Chưa review                                |
-| Kết quả review     | Chưa review                                |
+| Trường             | Nội dung                                                       |
+| ------------------ | -------------------------------------------------------------- |
+| Mã task            | `task-03_implement-reset-and-seed-command`                     |
+| Người phụ trách    | Đức                                                            |
+| Trạng thái         | Chờ review                                                     |
+| Bắt đầu thực tế    | 13/10/2026 15:17 (UTC+7)                                       |
+| Hoàn thành thực tế | Chưa hoàn thành                                                |
+| Tổng thời lượng    | Đang thực hiện                                                 |
+| Pull request       | [#38](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/38) |
+| Người review       | Chưa review                                                    |
+| Kết quả review     | Chưa review                                                    |
 
 ## Báo cáo công việc đã làm
 
@@ -44,9 +44,10 @@
 | Health và failure semantics                        | Đạt                | 11 service healthy; process timeout hữu hạn; CLI negative case exit 1 và không chứa thông báo hoàn tất.                                                                                                                             |
 | Reset hai lần, Redis/Rabbit/Storage baseline       | Đạt                | `test:testbed:reset:compose` pass; hai SHA-256 đều `c0222dc2c158f2f46368db43fe77752a044832ef76a218b9836da2fa5256f522`; Redis `DBSIZE=0`, queue Notification durable/rỗng, Storage `object_count=0`.                                 |
 | Gate chung                                         | Đạt một phần local | Build PASS; lint PASS; unit suites đến W1 PASS; telemetry PASS; Compose config và `git diff --check` PASS. Local full test gặp W1 Gateway timeout 504; local `ci:verify` dừng ở 34 file Prettier baseline ngoài diff; chờ CI Linux. |
+| PR head ghi URL và trạng thái `Chờ review`         | Đạt                | PR #38; transition được commit/push trên chính PR head trước review.                                                                                                                                                                |
 
 ## Thay đổi, tồn đọng và bước tiếp theo
 
 - Thay đổi so với input: Thêm endpoint nội bộ chỉ đọc của Storage Mock để fingerprint xác minh state in-memory; không thêm persistence hoặc API public.
 - Việc chưa hoàn thành hoặc trở ngại: Local Windows chạy cú pháp `pnpm --dir ... --env-file ../...` có thể bị Corepack/Node resolve env path trước `--dir`; README ghi workaround chạy cùng interface từ thư mục `lms`. CI Linux và review chưa có.
-- Bước tiếp theo: Commit/push substantive work, mở PR, ghi URL + `Chờ review` trên PR head rồi chờ reviewer độc lập.
+- Bước tiếp theo: Chờ CI Linux và reviewer độc lập thực hiện full review PR #38; implementer chỉ xử lý blocking finding trước finalization riêng.

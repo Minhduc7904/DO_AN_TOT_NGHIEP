@@ -8,7 +8,7 @@
 | Tên task             | Tạo lệnh reset và seed Testbed MVP                              |
 | Người phụ trách      | Đức                                                             |
 | Tuần thực hiện       | `week-09_2026-09-27_to_2026-10-03`                              |
-| Trạng thái           | Đang thực hiện                                                  |
+| Trạng thái           | Chờ review                                                      |
 | Ngày tạo             | 13/10/2026                                                      |
 | Thời gian dự kiến    | 13/10/2026                                                      |
 | Nhánh thực hiện      | `feat/week-09/task-03-implement-reset-and-seed-command`         |
@@ -50,6 +50,6 @@ Tạo entrypoint Node đa nền tảng để reset project Compose local/test đ
 - [x] Sau `down --volumes --remove-orphans` và `up --build -d --wait`, health/fingerprint được xác minh; lỗi bất kỳ bước nào trả exit code khác 0 và không báo thành công giả.
 - [x] Unit test guard và failure semantics pass; Compose smoke reset hai lần cho fingerprint đã sort giống nhau, Redis sạch và RabbitMQ queue ở baseline.
 - [ ] `format:check`, build, lint, unit test, telemetry, `ci:verify`, Compose config và `git diff --check` pass.
-- [ ] Sản phẩm đã được commit/push trên nhánh task và có thể truy cập.
-- [ ] URL/số PR và trạng thái `Chờ review` đã được commit/push vào PR head trước khi reviewer bắt đầu review.
+- [x] Sản phẩm đã được commit/push trên nhánh task và có thể truy cập.
+- [x] URL/số PR và trạng thái `Chờ review` đã được commit/push vào PR head trước khi reviewer bắt đầu review.
 - [ ] Pull request có mô tả đúng template; review/finalization được thực hiện ở giai đoạn riêng theo vòng đời canonical hoặc ngoại lệ được ghi nhận trung thực.
