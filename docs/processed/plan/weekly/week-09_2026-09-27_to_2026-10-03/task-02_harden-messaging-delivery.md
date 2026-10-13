@@ -6,7 +6,7 @@
 | --------------- | ------------------------------------------------ |
 | Mã task         | `task-02_harden-messaging-delivery`              |
 | Tuần            | `week-09_2026-09-27_to_2026-10-03`               |
-| Trạng thái      | Chờ review                                       |
+| Trạng thái      | Hoàn thành                                       |
 | Người phụ trách | Đức                                              |
 | Collaborator    | Không có                                         |
 | Ưu tiên         | Cao                                              |
@@ -44,19 +44,19 @@ Kiểm chứng và hardening luồng `grade.completed` trên publisher/consumer 
 - [x] Duplicate delivery cùng `event_id` không tạo notification thứ hai; retry/reconnect không tạo event logic mới.
 - [x] Broker unavailable, confirm timeout, consumer restart và slowdown/backlog có test recovery với fault hook mặc định tắt.
 - [x] Span/metrics/logs của publish, consume và process giữ correlation, dependency identity và error semantics; không lộ credential/PII.
-- [ ] Test RabbitMQ integration chạy ổn định ít nhất ba lần liên tiếp và `pnpm run ci:verify` pass.
-- [ ] URL/số PR và trạng thái `Chờ review` được commit/push vào PR head trước review; finalization tuân thủ vòng đời task canonical.
+- [x] Test RabbitMQ integration chạy ổn định ít nhất ba lần liên tiếp và `pnpm run ci:verify` pass.
+- [x] URL/số PR và trạng thái `Chờ review` được commit/push vào PR head trước review; finalization được ghi nhận trước merge theo ngoại lệ do người phụ trách xác nhận trực tiếp.
 
 ## Liên kết hồ sơ thực hiện
 
 - Input workspace: [task-input.md](../../../../../workspace/duc/week-09_2026-09-27_to_2026-10-03/task-02_harden-messaging-delivery/input/task-input.md).
 - Output workspace: [task-output.md](../../../../../workspace/duc/week-09_2026-09-27_to_2026-10-03/task-02_harden-messaging-delivery/output/task-output.md).
 - Pull request: [#37](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/37).
-- Kết quả review: Chưa review.
+- Kết quả review: Reviewer agent độc lập yêu cầu sửa runtime DI tại SHA `cb5249d`; focused re-review diff `cb5249d..ce8cc14` kết luận `APPROVED` nội bộ. Đây không phải GitHub `APPROVED`; Đức đã chỉ thị trực tiếp tiếp tục finalization theo ngoại lệ.
 
 > URL/số PR và `Chờ review` phải được commit/push vào PR head trước review. Thành viên còn lại phải gửi `APPROVED` hợp lệ trên GitHub; sau đó người phụ trách finalization metadata, ghi `Hoàn thành` trên chính branch/PR và tự merge task của mình. Card chỉ canonically hoàn thành khi commit đó vào nhánh canonical; xem [vòng đời task canonical](../../../rules/git-and-pull-request-rules.md#vòng-đời-task-canonical).
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 13/10/2026 — substantive work đã push, PR #37 đã mở và task chuyển `Chờ review` trên PR head.
-- Ghi chú/tồn đọng: RabbitMQ integration và stability 3/3 vòng đã pass; CI Linux của PR đang chạy. Local `ci:verify` bị chặn tại baseline Prettier trên checkout Windows và được ghi nguyên trong output.
+- Cập nhật gần nhất: 13/10/2026 — focused re-review nội bộ không còn blocking finding; CI run `38366297418` xanh toàn bộ và finalization đã được ghi nhận trước merge.
+- Ghi chú/tồn đọng: Không còn blocker kỹ thuật. GitHub không có `APPROVED`; finalization dùng ngoại lệ từ chỉ thị trực tiếp của Đức. Trạng thái `Hoàn thành` hiện nằm trên branch/PR và chỉ trở thành canonical sau khi merge vào `main`.

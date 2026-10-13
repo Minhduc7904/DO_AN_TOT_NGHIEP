@@ -8,7 +8,7 @@
 | Tên task             | Hardening messaging delivery                                                |
 | Người phụ trách      | Đức                                                                         |
 | Tuần thực hiện       | `week-09_2026-09-27_to_2026-10-03`                                          |
-| Trạng thái           | Chờ review                                                                  |
+| Trạng thái           | Hoàn thành                                                                  |
 | Ngày tạo             | 13/10/2026                                                                  |
 | Thời gian dự kiến    | 13/10/2026–14/10/2026                                                       |
 | Nhánh thực hiện      | `test/week-09/task-02-harden-messaging-delivery`                            |
@@ -50,7 +50,9 @@ Hardening luồng RabbitMQ `grade.completed` giữa Grading và Notification đ�
 - [x] Dedup in-memory có TTL 24 giờ, tối đa 10.000 event ID và tài liệu ghi rõ không phải exactly-once, không bền qua process restart.
 - [x] Telemetry phân biệt `accepted`, `duplicate`, `rejected`, `unavailable`, giữ correlation publisher→consumer→process và metric label không chứa event ID/credential.
 - [x] `test:notification:rabbitmq` và `test:messaging:stability` kiểm tra RabbitMQ thật; stability chạy ba vòng gồm duplicate, broker down/up, reconnect, redelivery và slowdown tạo backlog rồi drain.
-- [ ] `format:check`, build, lint, unit test, telemetry, `ci:verify`, `git diff --check` và Compose config pass.
+- [x] `format:check`, build, lint, unit test, telemetry, `ci:verify`, `git diff --check` và Compose config pass.
 - [x] Sản phẩm đã được commit/push trên nhánh task và có thể truy cập.
 - [x] URL/số PR và trạng thái `Chờ review` đã được commit/push vào PR head trước khi reviewer bắt đầu review.
-- [ ] Pull request từ nhánh task có mô tả đúng quy tắc; review và finalization thực hiện ở giai đoạn riêng theo vòng đời canonical hoặc ngoại lệ được ghi nhận trung thực.
+- [x] Pull request từ nhánh task có mô tả đúng quy tắc; review và finalization thực hiện ở giai đoạn riêng, với ngoại lệ được ghi nhận trung thực.
+
+> Reviewer agent độc lập đã kết luận `APPROVED` nội bộ sau vòng sửa; kết luận này không phải GitHub `APPROVED`. Đức chỉ thị trực tiếp dùng bằng chứng review nội bộ và tiếp tục finalization theo ngoại lệ trước merge.
