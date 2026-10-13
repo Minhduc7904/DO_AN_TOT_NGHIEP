@@ -103,6 +103,23 @@ jobs:
       - name: Validate Compose with committed example configuration
         run: docker compose --env-file docker-compose/.env.example -f docker-compose/compose.yaml config --quiet
 
+  testbed-reset:
+    name: Reset/seed Testbed twice with stable fingerprint
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v6
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.19.0
+          run_install: false
+      - name: Run reset guard tests
+        run: pnpm --dir lms run test:testbed:reset
+      - name: Reset twice and compare fingerprint
+        run: pnpm --dir lms run test:testbed:reset:compose
+
   w7-compose:
     name: Fresh Compose W1–W7 smoke
     runs-on: ubuntu-latest

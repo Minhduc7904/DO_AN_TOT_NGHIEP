@@ -15,7 +15,7 @@ try {
   )`);
   await pool.query(
     `INSERT INTO enrollments (id, principal_id, course_id, created_at)
-     VALUES ('enrollment-001', 'student-001', 'course-001', '2026-08-27T10:05:00Z')
+     VALUES ('enrollment-001', '11111111-1111-4111-8111-111111111111', 'course-001', '2026-08-27T10:05:00Z')
      ON CONFLICT (id) DO NOTHING`,
   );
 } finally {

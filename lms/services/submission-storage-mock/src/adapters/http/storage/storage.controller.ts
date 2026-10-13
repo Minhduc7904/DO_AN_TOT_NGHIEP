@@ -69,4 +69,9 @@ export class StorageController {
   reset(): StorageFaultControl {
     return this.storage.reset();
   }
+
+  @Get('internal/v1/state')
+  state(): { fault: StorageFaultControl; object_count: number } {
+    return this.storage.getState();
+  }
 }

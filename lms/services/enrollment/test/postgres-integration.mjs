@@ -31,7 +31,10 @@ try {
     getOrThrow: () => enrollmentUrl,
   });
   try {
-    const seedCheck = await repository.findByPrincipalAndCourse('student-001', 'course-001');
+    const seedCheck = await repository.findByPrincipalAndCourse(
+      '11111111-1111-4111-8111-111111111111',
+      'course-001',
+    );
     assert.equal(seedCheck?.id, 'enrollment-001');
     const created = await repository.create('student-002', randomUUID());
     assert.equal(
@@ -44,7 +47,7 @@ try {
       ),
     );
     assert.equal(await repository.findByPrincipalAndCourse('student-002', 'missing'), null);
-    await assert.rejects(repository.create('student-001', 'course-001'));
+    await assert.rejects(repository.create('11111111-1111-4111-8111-111111111111', 'course-001'));
   } finally {
     await repository.onModuleDestroy();
   }

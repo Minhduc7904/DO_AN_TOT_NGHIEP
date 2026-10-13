@@ -2,15 +2,15 @@
 
 ## Thông tin chung
 
-| Trường | Nội dung |
-| --- | --- |
-| Mã task | `task-03_implement-reset-and-seed-command` |
-| Tuần | `week-09_2026-09-27_to_2026-10-03` |
-| Trạng thái | Đã giao |
-| Người phụ trách | Đức |
-| Collaborator | Không có |
-| Ưu tiên | Cao |
-| Hạn dự kiến | 13/10/2026 — mốc bù tiến độ |
+| Trường          | Nội dung                                                |
+| --------------- | ------------------------------------------------------- |
+| Mã task         | `task-03_implement-reset-and-seed-command`              |
+| Tuần            | `week-09_2026-09-27_to_2026-10-03`                      |
+| Trạng thái      | Đang thực hiện                                          |
+| Người phụ trách | Đức                                                     |
+| Collaborator    | Không có                                                |
+| Ưu tiên         | Cao                                                     |
+| Hạn dự kiến     | 13/10/2026 — mốc bù tiến độ                             |
 | Nhánh thực hiện | `feat/week-09/task-03-implement-reset-and-seed-command` |
 
 ## Yêu cầu và phạm vi
@@ -33,24 +33,24 @@ Tạo một entrypoint reset/seed có kiểm soát cho môi trường local/test
 
 ## Sản phẩm kỳ vọng
 
-| Sản phẩm | Loại | Vị trí hoặc link dự kiến |
-| --- | --- | --- |
-| Entry point reset/seed và script hỗ trợ | Code | `lms/scripts/`, `lms/package.json` hoặc vị trí canonical phù hợp |
-| Hướng dẫn sử dụng và dữ liệu seed canonical | Docs / Config | `docker-compose/README.md`, README service liên quan |
+| Sản phẩm                                    | Loại          | Vị trí hoặc link dự kiến                                         |
+| ------------------------------------------- | ------------- | ---------------------------------------------------------------- |
+| Entry point reset/seed và script hỗ trợ     | Code          | `lms/scripts/`, `lms/package.json` hoặc vị trí canonical phù hợp |
+| Hướng dẫn sử dụng và dữ liệu seed canonical | Docs / Config | `docker-compose/README.md`, README service liên quan             |
 
 ## Definition of Done
 
-- [ ] Một lệnh duy nhất reset/seed đúng năm database và trạng thái Redis/RabbitMQ cần thiết trong project local/test được chỉ định.
-- [ ] Có guard chống chạy nhầm môi trường hoặc target rộng; log không chứa credential và báo rõ từng bước/thất bại.
-- [ ] Chạy từ trạng thái sạch và chạy lặp lại đều tạo cùng tập dữ liệu định danh phục vụ ít nhất hai workflow E2E.
-- [ ] Khi một bước lỗi, lệnh dừng với exit code khác 0 và không báo thành công giả; hướng dẫn recovery được tài liệu hóa.
+- [x] Một lệnh duy nhất reset/seed đúng năm database và trạng thái Redis/RabbitMQ cần thiết trong project local/test được chỉ định.
+- [x] Có guard chống chạy nhầm môi trường hoặc target rộng; log không chứa credential và báo rõ từng bước/thất bại.
+- [x] Chạy từ trạng thái sạch và chạy lặp lại đều tạo cùng tập dữ liệu định danh phục vụ ít nhất hai workflow E2E.
+- [x] Khi một bước lỗi, lệnh dừng với exit code khác 0 và không báo thành công giả; hướng dẫn recovery được tài liệu hóa.
 - [ ] Test hoặc smoke tự động chứng minh reset/seed hoạt động trên Compose; `pnpm run ci:verify` và Compose config pass.
 - [ ] URL/số PR và trạng thái `Chờ review` được commit/push vào PR head trước review; finalization tuân thủ vòng đời task canonical.
 
 ## Liên kết hồ sơ thực hiện
 
-- Input workspace: Chưa tạo.
-- Output workspace: Chưa tạo.
+- Input workspace: [task-input.md](../../../../../workspace/duc/week-09_2026-09-27_to_2026-10-03/task-03_implement-reset-and-seed-command/input/task-input.md).
+- Output workspace: [task-output.md](../../../../../workspace/duc/week-09_2026-09-27_to_2026-10-03/task-03_implement-reset-and-seed-command/output/task-output.md).
 - Pull request: Chưa tạo.
 - Kết quả review: Chưa review.
 
@@ -58,5 +58,5 @@ Tạo một entrypoint reset/seed có kiểm soát cho môi trường local/test
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 11/10/2026 — lập task bù tiến độ W9.
-- Ghi chú/tồn đọng: Có thể bắt đầu ngay; cần tái sử dụng migration/seed hiện có thay vì tạo nguồn dữ liệu cạnh tranh.
+- Cập nhật gần nhất: 13/10/2026 — substantive work và Compose reset smoke hai vòng đã hoàn tất; đang chuẩn bị PR.
+- Ghi chú/tồn đọng: Fingerprint hai vòng cùng SHA-256 `c0222dc2c158f2f46368db43fe77752a044832ef76a218b9836da2fa5256f522`. Local `ci:verify` còn ghi nhận baseline Prettier ngoài diff và W1 timeout; CI Linux sẽ là bằng chứng canonical.
