@@ -46,6 +46,7 @@ const JWT_SECRET = 'w5-postgres-workflow-test-secret-with-at-least-thirty-two-ch
 const TRACE_ID = '77777777777777777777777777777777';
 const TRACEPARENT = `00-${TRACE_ID}-8888888888888888-01`;
 const SEED_GRADE_ID = '7d1f3a52-0c4e-4b8a-9d36-5a2e8f10c001';
+const SEED_STUDENT_ID = '11111111-1111-4111-8111-111111111111';
 
 interface TestApplication {
   close(): Promise<void>;
@@ -58,7 +59,8 @@ interface TestApplication {
 
 interface NotificationConsumer {
   onModuleDestroy(): Promise<void>;
-  onModuleInit(): Promise<void>;
+  onModuleInit(): void;
+  waitUntilConnected(): Promise<void>;
 }
 
 interface NotificationLog {
@@ -204,11 +206,13 @@ describe('W5 Gateway → Grading → Submission → PostgreSQL → RabbitMQ → 
       exchange: EVENT_EXCHANGE,
       prefetch: 1,
       queue: NOTIFICATION_QUEUE,
+      reconnect_delay_ms: 100,
       routing_key: 'grade.completed' as const,
       url: process.env.GRADING_RABBITMQ_URL,
     };
     const processor = new GradeCompletedFixtureConsumer();
     notificationHasProcessed = processor.hasProcessed.bind(processor);
+    const notificationTelemetry = new NotificationMessagingTelemetry(notificationBinding);
     const handler = new RabbitMqGradeCompletedMessageHandler(
       processor,
       new NotificationConsumerFault({
@@ -218,12 +222,13 @@ describe('W5 Gateway → Grading → Submission → PostgreSQL → RabbitMQ → 
             NOTIFICATION_CONSUMER_SLOWDOWN_MS: SLOWDOWN_ENABLED ? SLOWDOWN_MS : 0,
           })[key] as boolean | number,
       } as never),
-      new NotificationMessagingTelemetry(notificationBinding),
+      notificationTelemetry,
     );
     notificationConsumer = new RabbitMqGradeCompletedConsumer(
       notificationBinding,
       handler,
       connectRabbitMq,
+      notificationTelemetry,
     );
     console.info = (...values: unknown[]): void => {
       try {
@@ -247,7 +252,8 @@ describe('W5 Gateway → Grading → Submission → PostgreSQL → RabbitMQ → 
       }
       originalConsoleInfo(...values);
     };
-    await notificationConsumer.onModuleInit();
+    notificationConsumer.onModuleInit();
+    await notificationConsumer.waitUntilConnected();
     // Course và Enrollment chỉ cần trả lời hợp lệ để Submission tạo bài nộp mới.
     dependencyServer = createServer((incoming, response) => {
       response.setHeader('content-type', 'application/json');
@@ -593,7 +599,7 @@ describe('W5 Gateway → Grading → Submission → PostgreSQL → RabbitMQ → 
       .get(`/api/v1/grades/${SEED_GRADE_ID}`)
       .set(
         'Authorization',
-        `Bearer ${createAccessToken('student-001', 'student', JWT_SECRET, 600)}`,
+        `Bearer ${createAccessToken(SEED_STUDENT_ID, 'student', JWT_SECRET, 600)}`,
       )
       .expect(200)
       .expect(({ body }) =>

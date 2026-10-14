@@ -83,7 +83,7 @@ try {
   try {
     const seed = await repository.findById('7d1f3a52-0c4e-4b8a-9d36-5a2e8f10c001');
     assert.equal(seed?.submission_id, 'submission-001');
-    assert.equal(seed?.principal_id, 'student-001');
+    assert.equal(seed?.principal_id, '11111111-1111-4111-8111-111111111111');
     assert.equal(seed?.course_id, 'course-001');
     assert.equal(seed?.score, 85.5);
     assert.equal(seed?.completed_at, '2026-08-27T10:15:00.000Z');

@@ -15,7 +15,7 @@ try {
   )`);
   await pool.query(
     `INSERT INTO submissions (id, principal_id, course_id, storage_object_key, submitted_at)
-     VALUES ('submission-001', 'student-001', 'course-001', 'submissions/submission-001', '2026-08-27T10:10:00Z')
+     VALUES ('submission-001', '11111111-1111-4111-8111-111111111111', 'course-001', 'submissions/submission-001', '2026-08-27T10:10:00Z')
      ON CONFLICT (id) DO NOTHING`,
   );
 } finally {

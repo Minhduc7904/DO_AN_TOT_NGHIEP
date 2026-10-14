@@ -32,8 +32,13 @@ function errorType(error: unknown): string {
   return error instanceof Error && error.name ? error.name : 'processing_error';
 }
 
+export type NotificationDeliveryOutcome = 'accepted' | 'duplicate' | 'rejected' | 'unavailable';
+
 @Injectable()
 export class NotificationMessagingTelemetry {
+  private readonly connectionCount = metrics
+    .getMeter('@aiops-lms/notification')
+    .createCounter('notification.rabbitmq.connection.count');
   private readonly consumeCount = metrics
     .getMeter('@aiops-lms/notification')
     .createCounter('notification.rabbitmq.consume.count');
@@ -81,7 +86,7 @@ export class NotificationMessagingTelemetry {
     );
     const consumeContext = trace.setSpan(parentContext, consumeSpan);
     const consumeStartedAt = performance.now();
-    let consumeStatus = 'ok';
+    let consumeStatus: NotificationDeliveryOutcome = 'accepted';
     let event: GradeCompletedEvent | undefined;
 
     try {
@@ -93,12 +98,17 @@ export class NotificationMessagingTelemetry {
           'messaging.message.id': receivedEvent.event_id,
         });
         validate(receivedEvent);
-        return this.observeProcessing(receivedEvent, () => run(receivedEvent));
+        const result = await this.observeProcessing(receivedEvent, () => run(receivedEvent));
+        consumeStatus = this.deliveryOutcome(result);
+        consumeSpan.setAttribute('notification.delivery.outcome', consumeStatus);
+        return result;
       });
     } catch (error) {
-      consumeStatus = errorType(error);
+      consumeStatus = this.isRejected(error) ? 'rejected' : 'unavailable';
+      const failureType = errorType(error);
       consumeSpan.recordException(error instanceof Error ? error : String(error));
-      consumeSpan.setAttribute('error.type', consumeStatus);
+      consumeSpan.setAttribute('error.type', failureType);
+      consumeSpan.setAttribute('notification.delivery.outcome', consumeStatus);
       consumeSpan.setStatus({ code: SpanStatusCode.ERROR });
       context.with(consumeContext, () => this.logConsumeError(error, event));
       throw error;
@@ -109,12 +119,31 @@ export class NotificationMessagingTelemetry {
         status: consumeStatus,
       };
       this.consumeCount.add(1, labels);
-      if (consumeStatus !== 'ok') {
+      if (consumeStatus === 'rejected' || consumeStatus === 'unavailable') {
         this.consumeErrorCount.add(1, labels);
       }
       this.consumeDuration.record((performance.now() - consumeStartedAt) / 1_000, labels);
       consumeSpan.end();
     }
+  }
+
+  recordUnavailable(error: unknown): void {
+    const labels = {
+      dependency_identity: 'notification-rabbitmq',
+      operation_name: 'connect',
+      status: 'unavailable',
+    };
+    this.connectionCount.add(1, labels);
+    console.error(
+      JSON.stringify({
+        error_type: errorType(error),
+        event: 'grade.completed',
+        level: 'error',
+        operation_name: 'connect',
+        outcome: 'unavailable',
+        service_name: 'notification',
+      }),
+    );
   }
 
   private logConsumeError(error: unknown, event: GradeCompletedEvent | undefined): void {
@@ -151,24 +180,43 @@ export class NotificationMessagingTelemetry {
     );
     const processContext: Context = trace.setSpan(context.active(), processSpan);
     const processStartedAt = performance.now();
-    let processStatus = 'ok';
+    let processStatus: NotificationDeliveryOutcome = 'accepted';
 
     try {
-      return await context.with(processContext, run);
+      const result = await context.with(processContext, run);
+      processStatus = this.deliveryOutcome(result);
+      processSpan.setAttribute('notification.delivery.outcome', processStatus);
+      return result;
     } catch (error) {
-      processStatus = errorType(error);
+      processStatus = 'unavailable';
       processSpan.recordException(error instanceof Error ? error : String(error));
-      processSpan.setAttribute('error.type', processStatus);
+      processSpan.setAttribute('error.type', errorType(error));
+      processSpan.setAttribute('notification.delivery.outcome', processStatus);
       processSpan.setStatus({ code: SpanStatusCode.ERROR });
       throw error;
     } finally {
       const labels = { operation_name: 'process', status: processStatus };
       this.processCount.add(1, labels);
-      if (processStatus !== 'ok') {
+      if (processStatus === 'unavailable') {
         this.processErrorCount.add(1, labels);
       }
       this.processDuration.record((performance.now() - processStartedAt) / 1_000, labels);
       processSpan.end();
     }
+  }
+
+  private deliveryOutcome(value: unknown): 'accepted' | 'duplicate' {
+    return typeof value === 'object' && value !== null && 'status' in value
+      ? value.status === 'duplicate'
+        ? 'duplicate'
+        : 'accepted'
+      : 'accepted';
+  }
+
+  private isRejected(error: unknown): boolean {
+    return (
+      error instanceof Error &&
+      (error.name === 'InvalidGradeCompletedMessageError' || error.name === 'ZodError')
+    );
   }
 }

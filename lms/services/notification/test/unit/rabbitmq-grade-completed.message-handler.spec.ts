@@ -196,6 +196,6 @@ describe('RabbitMqGradeCompletedMessageHandler', () => {
     const metrics = JSON.stringify(metricExporter.getMetrics());
     expect(metrics).toContain('notification.rabbitmq.consume.error.count');
     expect(metrics).toContain('notification.rabbitmq.consume.duration');
-    expect(metrics).toContain(scenario.expectedErrorType);
+    expect(metrics).toContain('rejected');
   });
 });
