@@ -6,7 +6,7 @@
 | --------------- | ------------------------------------------------- |
 | Mã task         | `task-04_build-mvp-regression-suite`              |
 | Tuần            | `week-09_2026-09-27_to_2026-10-03`                |
-| Trạng thái      | Chờ review                                        |
+| Trạng thái      | Hoàn thành                                        |
 | Người phụ trách | Bách                                              |
 | Collaborator    | Đức hỗ trợ môi trường testbed                     |
 | Ưu tiên         | Cao                                               |
@@ -52,11 +52,11 @@ Xây một regression entrypoint cho Testbed MVP chạy từ dữ liệu sạch,
 - Input workspace: [task-input.md](../../../../../workspace/bach/week-09_2026-09-27_to_2026-10-03/task-04_build-mvp-regression-suite/input/task-input.md).
 - Output workspace: [task-output.md](../../../../../workspace/bach/week-09_2026-09-27_to_2026-10-03/task-04_build-mvp-regression-suite/output/task-output.md).
 - Pull request: [#39](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/39).
-- Kết quả review: Chưa review.
+- Kết quả review: Reviewer agent `APPROVED` ngoài GitHub trên head `a2fd0c3`, không có blocking issue; không phải GitHub `APPROVED` hợp lệ. Bách xác nhận Đức cho phép review theo ngoại lệ của repository.
 
 > URL/số PR và `Chờ review` phải được commit/push vào PR head trước review. Thành viên còn lại phải gửi `APPROVED` hợp lệ trên GitHub; sau đó người phụ trách finalization metadata, ghi `Hoàn thành` trên chính branch/PR và tự merge task của mình. Card chỉ canonically hoàn thành khi commit đó vào nhánh canonical; xem [vòng đời task canonical](../../../rules/git-and-pull-request-rules.md#vòng-đời-task-canonical).
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 14/10/2026 — PR #39 đã mở; toàn bộ sáu checks GitHub xanh trên toolchain pinned, gồm regression, quality gate, reset/seed, fresh Compose và secret scan. Task chuyển `Chờ review`.
-- Ghi chú/tồn đọng: Chờ Đức review PR #39. Sau `APPROVED`, Bách thực hiện finalization metadata trước khi tự merge theo vòng đời canonical.
+- Cập nhật gần nhất: 14/10/2026 — finalization trước merge theo ngoại lệ review ngoài GitHub do Bách xác nhận; CI run `38504554203` trên head `a2fd0c3` xanh toàn bộ sáu checks.
+- Ghi chú/tồn đọng: Góp ý không blocking: regression chạy song song container ứng dụng Compose dùng chung `grading_db`/broker; test topology phụ thuộc thứ tự hai test workflow. Task-05 tái sử dụng `pnpm run test:regression`.
