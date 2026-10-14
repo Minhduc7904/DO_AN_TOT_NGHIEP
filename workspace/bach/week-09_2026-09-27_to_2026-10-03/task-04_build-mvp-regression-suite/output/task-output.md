@@ -2,17 +2,17 @@
 
 ## Thông tin hoàn thành
 
-| Trường             | Nội dung                             |
-| ------------------ | ------------------------------------ |
-| Mã task            | `task-04_build-mvp-regression-suite` |
-| Người phụ trách    | Bách                                 |
-| Trạng thái         | Đang thực hiện                       |
-| Bắt đầu thực tế    | 12/10/2026                           |
-| Hoàn thành thực tế | Chưa hoàn thành                      |
-| Tổng thời lượng    | Chưa xác định                        |
-| Pull request       | Chưa tạo                             |
-| Người review       | Chưa có                              |
-| Kết quả review     | Chưa review                          |
+| Trường             | Nội dung                                                       |
+| ------------------ | -------------------------------------------------------------- |
+| Mã task            | `task-04_build-mvp-regression-suite`                           |
+| Người phụ trách    | Bách                                                           |
+| Trạng thái         | Chờ review                                                     |
+| Bắt đầu thực tế    | 12/10/2026                                                     |
+| Hoàn thành thực tế | Chưa hoàn thành                                                |
+| Tổng thời lượng    | Chưa xác định                                                  |
+| Pull request       | [#39](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/39) |
+| Người review       | Đức                                                            |
+| Kết quả review     | Chưa review                                                    |
 
 ## Báo cáo công việc đã làm
 
@@ -29,6 +29,7 @@
   - Tạo course riêng cho từng kịch bản để không xung đột seed canonical và giữ span `course-postgres` trong trace của workflow.
   - Thêm job `Testbed MVP regression` vào GitHub Actions, có log khi lỗi và cleanup volume/project trong bước `always()`.
   - Bỏ qua `.omc` khỏi Prettier để artifact công cụ đã được Git ignore không làm nhiễu quality gate local.
+  - Mở PR #39; squash commit để xử lý false positive của GitGuardian và xác minh lại toàn bộ sáu checks đều xanh.
 
 ## Sản phẩm thực tế
 
@@ -42,20 +43,20 @@
 
 ## Đối chiếu Definition of Done
 
-| Điều kiện từ input                                                               | Kết quả      | Bằng chứng                                                                                                                                                                                                                                                                     |
-| -------------------------------------------------------------------------------- | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Một command reset/seed rồi kiểm chứng hai workflow từ trạng thái sạch            | Đạt (local)  | `pnpm run test:regression -- --compose-env-file ../docker-compose/.env.example` gọi reset/seed canonical, fingerprint `c0222dc2c158f2f46368db43fe77752a044832ef76a218b9836da2fa5256f522`, 11 service healthy và E2E `5/5` pass                                                 |
-| Bao phủ timeout HTTP, dependency unavailable và failure/recovery messaging       | Đạt (local)  | Timeout Storage → `504 DEPENDENCY_TIMEOUT`, Storage unavailable → `503 DEPENDENCY_UNAVAILABLE`; messaging stability đạt `3/3` vòng reconnect, redelivery, duplicate và backlog drain                                                                                           |
-| Assertions topology và trace correlation sync/async                              | Đạt (local)  | Test topology kiểm 18 dependency identity của sáu business service + Gateway, PostgreSQL, Redis, RabbitMQ; chuỗi span Gateway → Grading → publish → consume → process cùng trace                                                                                               |
-| Async polling có timeout, ổn định ba lần liên tiếp, có diagnostics               | Đạt (local)  | Sau đợt 2, E2E `5/5` và messaging stability `3/3` cùng pass ba lượt liên tiếp; polling dùng timeout hữu hạn và `step` gắn workflow/bước/service vào lỗi                                                                                                                        |
-| Chạy trong CI hoặc có lý do tách job; `pnpm run ci:verify` và Compose smoke pass | Đạt một phần | Đã thêm job CI `mvp-regression`; Compose config pass. `ci:verify` local qua format/build/lint và 10/11 reset guard, còn subtest command-resolution thất bại vì Corepack từ repository root dùng pnpm `9.15.9` thay vì pinned `11.19.0`; chờ GitHub CI xác minh toolchain chuẩn |
-| URL/số PR và `Chờ review` được commit/push vào PR head trước review              | Chưa đạt     | Chưa tạo PR                                                                                                                                                                                                                                                                    |
-| `APPROVED` hợp lệ và finalization trước merge                                    | Chưa đạt     | Chưa review                                                                                                                                                                                                                                                                    |
+| Điều kiện từ input                                                               | Kết quả     | Bằng chứng                                                                                                                                                                                                                        |
+| -------------------------------------------------------------------------------- | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Một command reset/seed rồi kiểm chứng hai workflow từ trạng thái sạch            | Đạt (local) | `pnpm run test:regression -- --compose-env-file ../docker-compose/.env.example` gọi reset/seed canonical, fingerprint `c0222dc2c158f2f46368db43fe77752a044832ef76a218b9836da2fa5256f522`, 11 service healthy và E2E `5/5` pass    |
+| Bao phủ timeout HTTP, dependency unavailable và failure/recovery messaging       | Đạt (local) | Timeout Storage → `504 DEPENDENCY_TIMEOUT`, Storage unavailable → `503 DEPENDENCY_UNAVAILABLE`; messaging stability đạt `3/3` vòng reconnect, redelivery, duplicate và backlog drain                                              |
+| Assertions topology và trace correlation sync/async                              | Đạt (local) | Test topology kiểm 18 dependency identity của sáu business service + Gateway, PostgreSQL, Redis, RabbitMQ; chuỗi span Gateway → Grading → publish → consume → process cùng trace                                                  |
+| Async polling có timeout, ổn định ba lần liên tiếp, có diagnostics               | Đạt (local) | Sau đợt 2, E2E `5/5` và messaging stability `3/3` cùng pass ba lượt liên tiếp; polling dùng timeout hữu hạn và `step` gắn workflow/bước/service vào lỗi                                                                           |
+| Chạy trong CI hoặc có lý do tách job; `pnpm run ci:verify` và Compose smoke pass | Đạt         | [GitHub Actions run 38503909927](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/actions/runs/38503909927): regression, quality gate, reset/seed, fresh Compose, Compose validation và GitGuardian đều xanh trên Node/pnpm pinned |
+| URL/số PR và `Chờ review` được commit/push vào PR head trước review              | Đạt         | PR [#39](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/39); card, overview và output được chuyển `Chờ review` trên PR head                                                                                                 |
+| `APPROVED` hợp lệ và finalization trước merge                                    | Chưa đạt    | Chưa review                                                                                                                                                                                                                       |
 
 ## Thay đổi, tồn đọng và bước tiếp theo
 
 - Thay đổi so với input: Không có.
-- Việc chưa hoàn thành hoặc trở ngại: Chưa tạo PR; GitHub CI chưa có kết quả. Máy local không tái hiện được đúng pnpm `11.19.0` khi reset guard spawn command từ repository root nên không dùng lần `ci:verify` local làm bằng chứng gate đầy đủ.
-- Bước tiếp theo: Commit/push substantive work, tạo PR, ghi URL PR và chuyển `Chờ review` trên PR head sau khi GitHub CI xanh.
+- Việc chưa hoàn thành hoặc trở ngại: Chưa có `APPROVED` hợp lệ từ Đức; chưa thực hiện finalization và merge.
+- Bước tiếp theo: Đức review PR #39; sau `APPROVED`, Bách cập nhật hồ sơ hoàn thành trên PR head rồi tự merge.
 
 > `Hoàn thành thực tế` là thời điểm người phụ trách đã hoàn tất work, DoD, nhận `APPROVED` hợp lệ từ thành viên còn lại và finalization; không ghi merge time. URL/số PR cùng trạng thái **Chờ review** phải được commit/push vào PR head trước review. Sau approval, người phụ trách dùng `task-completion-recording` để cập nhật hồ sơ và chuyển **Hoàn thành** trên chính branch/PR trước khi tự merge. Task chỉ canonically hoàn thành khi commit đó vào nhánh canonical. `Chờ xử lý` chỉ dùng cho blocker/dependency thực sự, không dùng chỉ vì PR đang chờ merge.

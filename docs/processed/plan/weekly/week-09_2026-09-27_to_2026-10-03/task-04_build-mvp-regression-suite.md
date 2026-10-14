@@ -6,7 +6,7 @@
 | --------------- | ------------------------------------------------- |
 | Mã task         | `task-04_build-mvp-regression-suite`              |
 | Tuần            | `week-09_2026-09-27_to_2026-10-03`                |
-| Trạng thái      | Đang thực hiện                                    |
+| Trạng thái      | Chờ review                                        |
 | Người phụ trách | Bách                                              |
 | Collaborator    | Đức hỗ trợ môi trường testbed                     |
 | Ưu tiên         | Cao                                               |
@@ -44,19 +44,19 @@ Xây một regression entrypoint cho Testbed MVP chạy từ dữ liệu sạch,
 - [x] Suite bao phủ tối thiểu một timeout HTTP, một dependency unavailable và một failure/recovery messaging; error propagation đúng contract.
 - [x] Assertions xác minh topology có sáu business service + Gateway, PostgreSQL/Redis/RabbitMQ liên quan và trace correlation xuyên sync/async.
 - [x] Async test dùng polling có timeout hữu hạn, chạy ổn định ít nhất ba lần liên tiếp và in diagnostics đủ xác định bước lỗi.
-- [ ] Regression entrypoint chạy trong CI hoặc có lý do/tách job rõ; `pnpm run ci:verify` và Compose smoke pass.
-- [ ] URL/số PR và trạng thái `Chờ review` được commit/push vào PR head trước review; finalization tuân thủ vòng đời task canonical.
+- [x] Regression entrypoint chạy trong CI hoặc có lý do/tách job rõ; `pnpm run ci:verify` và Compose smoke pass.
+- [x] URL/số PR và trạng thái `Chờ review` được commit/push vào PR head trước review; finalization tuân thủ vòng đời task canonical.
 
 ## Liên kết hồ sơ thực hiện
 
 - Input workspace: [task-input.md](../../../../../workspace/bach/week-09_2026-09-27_to_2026-10-03/task-04_build-mvp-regression-suite/input/task-input.md).
 - Output workspace: [task-output.md](../../../../../workspace/bach/week-09_2026-09-27_to_2026-10-03/task-04_build-mvp-regression-suite/output/task-output.md).
-- Pull request: Chưa tạo.
+- Pull request: [#39](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/39).
 - Kết quả review: Chưa review.
 
 > URL/số PR và `Chờ review` phải được commit/push vào PR head trước review. Thành viên còn lại phải gửi `APPROVED` hợp lệ trên GitHub; sau đó người phụ trách finalization metadata, ghi `Hoàn thành` trên chính branch/PR và tự merge task của mình. Card chỉ canonically hoàn thành khi commit đó vào nhánh canonical; xem [vòng đời task canonical](../../../rules/git-and-pull-request-rules.md#vòng-đời-task-canonical).
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 14/10/2026 — hoàn tất substantive work đợt 2: một command dùng reset/seed canonical, E2E `5/5`, messaging recovery `3/3` và ba lượt liên tiếp pass local; đã thêm job CI riêng.
-- Ghi chú/tồn đọng: Cần tạo PR và chờ GitHub CI xác minh trên toolchain pinned. `ci:verify` local qua format/build/lint và 10/11 reset guard; subtest command-resolution còn lại bị chặn do Corepack tại repository root chọn pnpm `9.15.9` thay vì `11.19.0`, không phải assertion của regression. Compose config pass.
+- Cập nhật gần nhất: 14/10/2026 — PR #39 đã mở; toàn bộ sáu checks GitHub xanh trên toolchain pinned, gồm regression, quality gate, reset/seed, fresh Compose và secret scan. Task chuyển `Chờ review`.
+- Ghi chú/tồn đọng: Chờ Đức review PR #39. Sau `APPROVED`, Bách thực hiện finalization metadata trước khi tự merge theo vòng đời canonical.
