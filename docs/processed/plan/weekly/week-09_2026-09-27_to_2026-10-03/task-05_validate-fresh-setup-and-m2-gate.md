@@ -2,15 +2,15 @@
 
 ## Thông tin chung
 
-| Trường | Nội dung |
-| --- | --- |
-| Mã task | `task-05_validate-fresh-setup-and-m2-gate` |
-| Tuần | `week-09_2026-09-27_to_2026-10-03` |
-| Trạng thái | Chờ xử lý |
-| Người phụ trách | Bách |
-| Collaborator | Đức hỗ trợ vận hành và đối chiếu Gate M2 |
-| Ưu tiên | Trung bình |
-| Hạn dự kiến | 17/10/2026 — mốc bù tiến độ |
+| Trường          | Nội dung                                                |
+| --------------- | ------------------------------------------------------- |
+| Mã task         | `task-05_validate-fresh-setup-and-m2-gate`              |
+| Tuần            | `week-09_2026-09-27_to_2026-10-03`                      |
+| Trạng thái      | Đang thực hiện                                          |
+| Người phụ trách | Bách                                                    |
+| Collaborator    | Đức hỗ trợ vận hành và đối chiếu Gate M2                |
+| Ưu tiên         | Trung bình                                              |
+| Hạn dự kiến     | 17/10/2026 — mốc bù tiến độ                             |
 | Nhánh thực hiện | `test/week-09/task-05-validate-fresh-setup-and-m2-gate` |
 
 ## Yêu cầu và phạm vi
@@ -29,13 +29,13 @@ Từ checkout/môi trường sạch, làm theo tài liệu để dựng Testbed 
 
 - Tài liệu/task cần có trước: W9 task-04 và Quick Start/Compose README hiện hành.
 - Người hoặc phần việc cần phối hợp: Đức cùng vận hành hai workflow và cung cấp trạng thái các task hardening; Bách thực hiện fresh setup độc lập.
-- Rủi ro/giả định: Bách hiện không tham gia nên task và Gate M2 đang `Chờ xử lý`; không dùng kiểm chứng một người để thay thế yêu cầu canonical của hai thành viên.
+- Rủi ro/giả định: W9 task-04 đã merge (PR #39) nên task bắt đầu từ 14/10/2026. Gate M2 cần Đức kiểm chứng độc lập trước khi chuyển `Chờ review`; không dùng kiểm chứng một người để thay thế yêu cầu canonical của hai thành viên.
 
 ## Sản phẩm kỳ vọng
 
-| Sản phẩm | Loại | Vị trí hoặc link dự kiến |
-| --- | --- | --- |
-| Báo cáo fresh setup và Gate M2 | Docs | `docs/processed/` hoặc output task |
+| Sản phẩm                                      | Loại | Vị trí hoặc link dự kiến                |
+| --------------------------------------------- | ---- | --------------------------------------- |
+| Báo cáo fresh setup và Gate M2                | Docs | `docs/processed/` hoặc output task      |
 | Sửa tài liệu setup phát hiện trong validation | Docs | `README.md`, `docker-compose/README.md` |
 
 ## Definition of Done
@@ -49,8 +49,8 @@ Từ checkout/môi trường sạch, làm theo tài liệu để dựng Testbed 
 
 ## Liên kết hồ sơ thực hiện
 
-- Input workspace: Chưa tạo.
-- Output workspace: Chưa tạo.
+- Input workspace: [task-input.md](../../../../../workspace/bach/week-09_2026-09-27_to_2026-10-03/task-05_validate-fresh-setup-and-m2-gate/input/task-input.md).
+- Output workspace: [task-output.md](../../../../../workspace/bach/week-09_2026-09-27_to_2026-10-03/task-05_validate-fresh-setup-and-m2-gate/output/task-output.md).
 - Pull request: Chưa tạo.
 - Kết quả review: Chưa review.
 
@@ -58,5 +58,5 @@ Từ checkout/môi trường sạch, làm theo tài liệu để dựng Testbed 
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 11/10/2026 — lập task bù tiến độ W9.
-- Ghi chú/tồn đọng: Chờ Bách tiếp tục công việc và task-04 hoàn thành; chưa thể xác nhận Gate M2 đạt.
+- Cập nhật gần nhất: 14/10/2026 — Bách khởi tạo branch và hồ sơ để bắt đầu Task 05; chưa chạy fresh setup.
+- Ghi chú/tồn đọng: Task-04 đã hoàn thành trên `main`. Tài liệu setup hiện chưa nhắc `pnpm run test:regression`; chưa thể xác nhận Gate M2 đạt khi chưa có kiểm chứng độc lập của Đức.
