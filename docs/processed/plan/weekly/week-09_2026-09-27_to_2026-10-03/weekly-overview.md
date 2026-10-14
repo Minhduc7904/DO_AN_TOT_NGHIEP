@@ -18,7 +18,7 @@
 | [task-01_standardize-dependency-resilience](task-01_standardize-dependency-resilience.md) | Chuẩn hóa timeout, retry và error propagation cho dependency HTTP | Đức             | Không có                                 | Cao        | Hoàn thành |
 | [task-02_harden-messaging-delivery](task-02_harden-messaging-delivery.md)                 | Hardening publisher/consumer idempotency và failure handling      | Đức             | Không có                                 | Cao        | Hoàn thành |
 | [task-03_implement-reset-and-seed-command](task-03_implement-reset-and-seed-command.md)   | Tạo lệnh reset/seed thống nhất cho Testbed MVP                    | Đức             | Không có                                 | Cao        | Hoàn thành |
-| [task-04_build-mvp-regression-suite](task-04_build-mvp-regression-suite.md)               | Xây regression E2E và telemetry assertions cho các workflow chính | Bách            | Đức hỗ trợ môi trường testbed            | Cao        | Chờ xử lý  |
+| [task-04_build-mvp-regression-suite](task-04_build-mvp-regression-suite.md)               | Xây regression E2E và telemetry assertions cho các workflow chính | Bách            | Đức hỗ trợ môi trường testbed            | Cao        | Hoàn thành |
 | [task-05_validate-fresh-setup-and-m2-gate](task-05_validate-fresh-setup-and-m2-gate.md)   | Xác minh fresh setup và Gate M2                                   | Bách            | Đức hỗ trợ vận hành và đối chiếu Gate M2 | Trung bình | Chờ xử lý  |
 
 > Khi đọc tiến độ project-wide, chỉ coi hàng có trạng thái `Hoàn thành` trên nhánh canonical là hoàn thành; trạng thái đã finalization trên task branch chưa thay thế nguồn này.
@@ -26,7 +26,7 @@
 ## Phụ thuộc, rủi ro và quyết định
 
 - Phụ thuộc: W8 task-02 phải hoàn thiện Notification consumer trước task-02 W9; W8 task-03 phải có workflow `grade → notification` trước regression W9; task-04 W9 phụ thuộc task-01, task-02 và task-03 W9; task-05 chạy sau task-04.
-- Rủi ro: Bách hiện không tham gia nên task-04 và task-05 chưa thể bắt đầu; Gate M2 canonical yêu cầu hai thành viên cùng vận hành/giải thích, vì vậy chưa thể xác nhận đạt nếu thiếu phần kiểm chứng của Bách hoặc ngoại lệ được ghi nhận đúng quy trình.
+- Rủi ro: Task-04 đã finalization trên PR #39 theo ngoại lệ review ngoài GitHub (chưa có GitHub `APPROVED` của Đức); chỉ hoàn thành canonical sau khi merge. Task-05 chạy sau task-04. Gate M2 canonical yêu cầu hai thành viên cùng vận hành/giải thích, vì vậy chưa thể xác nhận đạt khi chưa có phần kiểm chứng của Bách ở task-05.
 - Quyết định cần chốt: Đức phụ trách task-01 đến task-03 theo vai trò Backend/Platform primary; Bách phụ trách task-04 và task-05 theo vai trò Backend collaborator. Ưu tiên task-01 và task-03 trong lúc chờ hoàn tất dependency W8; mỗi task dùng branch và PR riêng.
 
 ## Thứ tự thực hiện đề xuất
@@ -42,6 +42,6 @@
 - [x] Timeout, retry và error propagation của dependency HTTP có policy thống nhất, test được và không nhân retry ngoài chủ đích.
 - [x] Publisher/consumer `grade.completed` chứng minh semantics at-least-once, deduplicate theo `event_id`, giữ correlation và xử lý failure/recovery quan sát được.
 - [x] Có một lệnh reset/seed tái lập dữ liệu Testbed MVP từ trạng thái sạch và chạy lặp lại cho kết quả xác định.
-- [ ] Regression suite bao phủ ít nhất hai workflow xuyên service, các nhánh error/latency quan trọng và telemetry assertions tương ứng.
+- [x] Regression suite bao phủ ít nhất hai workflow xuyên service, các nhánh error/latency quan trọng và telemetry assertions tương ứng.
 - [ ] Fresh setup chạy được theo tài liệu; Gate M2 có bằng chứng và ghi rõ giới hạn nếu chưa có người kiểm chứng thứ hai.
 - [ ] Mỗi task có PR riêng, bằng chứng DoD và trạng thái theo vòng đời task canonical.

@@ -31,6 +31,7 @@
     "test:notification:rabbitmq": "pnpm --filter @aiops-lms/contracts build && pnpm --filter @aiops-lms/observability build && pnpm --filter @aiops-lms/grading build && pnpm --filter @aiops-lms/notification build && node services/notification/test/rabbitmq-integration.mjs",
     "test:messaging:stability": "pnpm --filter @aiops-lms/contracts build && pnpm --filter @aiops-lms/observability build && pnpm --filter @aiops-lms/grading build && pnpm --filter @aiops-lms/notification build && node services/notification/test/messaging-stability.mjs",
     "test:w5:postgres": "pnpm run build && node services/auth/test/reset-w1-postgres.mjs && node services/submission/test/reset-submission-postgres.mjs && node services/grading/test/reset-grading-postgres.mjs && node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config jest.w5-postgres.config.ts",
+    "test:regression": "node test/regression/run-regression.mjs --environment test --project aiops-lms-test-regression --confirm aiops-lms-test-regression",
     "test:w5:postgres:slowdown": "cross-env W5_NOTIFICATION_SLOWDOWN_ENABLED=true pnpm run test:w5:postgres",
     "test:submission:postgres": "pnpm --filter @aiops-lms/observability build && pnpm --filter @aiops-lms/submission build && node services/submission/test/postgres-integration.mjs",
     "testbed:reset": "node scripts/reset-and-seed.mjs",
