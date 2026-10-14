@@ -120,6 +120,42 @@ jobs:
       - name: Reset twice and compare fingerprint
         run: pnpm --dir lms run test:testbed:reset:compose
 
+  mvp-regression:
+    name: Testbed MVP regression
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v6
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.19.0
+          run_install: false
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22.13.1
+      - name: Clean install
+        working-directory: lms
+        run: pnpm install --frozen-lockfile
+      - name: Run regression from canonical reset/seed
+        run: >-
+          pnpm --dir lms run test:regression --
+          --compose-env-file ../docker-compose/.env.example
+      - name: Show logs on failure
+        if: failure()
+        run: >-
+          docker compose --project-name aiops-lms-test-regression
+          --env-file docker-compose/.env.example
+          --file docker-compose/compose.yaml logs --no-color
+      - name: Stop stack
+        if: always()
+        run: >-
+          docker compose --project-name aiops-lms-test-regression
+          --env-file docker-compose/.env.example
+          --file docker-compose/compose.yaml down --volumes --remove-orphans
+
   w7-compose:
     name: Fresh Compose W1–W7 smoke
     runs-on: ubuntu-latest

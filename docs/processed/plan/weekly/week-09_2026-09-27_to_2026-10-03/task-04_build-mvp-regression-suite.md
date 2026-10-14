@@ -2,15 +2,15 @@
 
 ## Thông tin chung
 
-| Trường | Nội dung |
-| --- | --- |
-| Mã task | `task-04_build-mvp-regression-suite` |
-| Tuần | `week-09_2026-09-27_to_2026-10-03` |
-| Trạng thái | Đang thực hiện |
-| Người phụ trách | Bách |
-| Collaborator | Đức hỗ trợ môi trường testbed |
-| Ưu tiên | Cao |
-| Hạn dự kiến | 16/10/2026 — mốc bù tiến độ |
+| Trường          | Nội dung                                          |
+| --------------- | ------------------------------------------------- |
+| Mã task         | `task-04_build-mvp-regression-suite`              |
+| Tuần            | `week-09_2026-09-27_to_2026-10-03`                |
+| Trạng thái      | Đang thực hiện                                    |
+| Người phụ trách | Bách                                              |
+| Collaborator    | Đức hỗ trợ môi trường testbed                     |
+| Ưu tiên         | Cao                                               |
+| Hạn dự kiến     | 16/10/2026 — mốc bù tiến độ                       |
 | Nhánh thực hiện | `test/week-09/task-04-build-mvp-regression-suite` |
 
 ## Yêu cầu và phạm vi
@@ -29,21 +29,21 @@ Xây một regression entrypoint cho Testbed MVP chạy từ dữ liệu sạch,
 
 - Tài liệu/task cần có trước: W8 task-03; W9 task-01, task-02 và task-03 đã merge.
 - Người hoặc phần việc cần phối hợp: Đức hỗ trợ cấu hình Gateway, Grading, RabbitMQ và reset/seed; kết quả cần đủ rõ để chạy độc lập ở task-05.
-- Rủi ro/giả định: Bách tham gia lại từ 12/10/2026 và bắt đầu dựng khung suite trên `main` hiện tại; bước reset/seed và ca failure/recovery messaging chỉ hoàn thiện sau khi W9 task-02 và task-03 merge. Async assertions dễ flaky, mọi poll/retry của test phải có timeout, interval và failure diagnostics rõ.
+- Rủi ro/giả định: W9 task-02 và task-03 đã merge; regression đã dùng reset/seed canonical và messaging stability thật. Async assertions dễ flaky, mọi poll/retry của test phải có timeout, interval và failure diagnostics rõ.
 
 ## Sản phẩm kỳ vọng
 
-| Sản phẩm | Loại | Vị trí hoặc link dự kiến |
-| --- | --- | --- |
-| Regression E2E entrypoint và test suite | Code | `lms/test/`, `lms/package.json` |
-| Báo cáo coverage workflow/failure/telemetry | Docs | PR và output task |
+| Sản phẩm                                    | Loại | Vị trí hoặc link dự kiến        |
+| ------------------------------------------- | ---- | ------------------------------- |
+| Regression E2E entrypoint và test suite     | Code | `lms/test/`, `lms/package.json` |
+| Báo cáo coverage workflow/failure/telemetry | Docs | PR và output task               |
 
 ## Definition of Done
 
-- [ ] Một command chạy reset/seed rồi kiểm chứng hai workflow xuyên service qua Gateway và RabbitMQ từ trạng thái sạch.
-- [ ] Suite bao phủ tối thiểu một timeout HTTP, một dependency unavailable và một failure/recovery messaging; error propagation đúng contract.
-- [ ] Assertions xác minh topology có sáu business service + Gateway, PostgreSQL/Redis/RabbitMQ liên quan và trace correlation xuyên sync/async.
-- [ ] Async test dùng polling có timeout hữu hạn, chạy ổn định ít nhất ba lần liên tiếp và in diagnostics đủ xác định bước lỗi.
+- [x] Một command chạy reset/seed rồi kiểm chứng hai workflow xuyên service qua Gateway và RabbitMQ từ trạng thái sạch.
+- [x] Suite bao phủ tối thiểu một timeout HTTP, một dependency unavailable và một failure/recovery messaging; error propagation đúng contract.
+- [x] Assertions xác minh topology có sáu business service + Gateway, PostgreSQL/Redis/RabbitMQ liên quan và trace correlation xuyên sync/async.
+- [x] Async test dùng polling có timeout hữu hạn, chạy ổn định ít nhất ba lần liên tiếp và in diagnostics đủ xác định bước lỗi.
 - [ ] Regression entrypoint chạy trong CI hoặc có lý do/tách job rõ; `pnpm run ci:verify` và Compose smoke pass.
 - [ ] URL/số PR và trạng thái `Chờ review` được commit/push vào PR head trước review; finalization tuân thủ vòng đời task canonical.
 
@@ -58,5 +58,5 @@ Xây một regression entrypoint cho Testbed MVP chạy từ dữ liệu sạch,
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 12/10/2026 — hoàn tất đợt 1: entrypoint `test:regression`, harness và 5 test (hai workflow, topology, timeout, unavailable) pass local.
-- Ghi chú/tồn đọng: W8 task-03 và W9 task-01 đã hoàn thành trên `main`; còn chờ W9 task-02 và task-03 của Đức trước khi hoàn tất và merge. Không bắt đầu bằng cách sao chép các script test rời rạc.
+- Cập nhật gần nhất: 14/10/2026 — hoàn tất substantive work đợt 2: một command dùng reset/seed canonical, E2E `5/5`, messaging recovery `3/3` và ba lượt liên tiếp pass local; đã thêm job CI riêng.
+- Ghi chú/tồn đọng: Cần tạo PR và chờ GitHub CI xác minh trên toolchain pinned. `ci:verify` local qua format/build/lint và 10/11 reset guard; subtest command-resolution còn lại bị chặn do Corepack tại repository root chọn pnpm `9.15.9` thay vì `11.19.0`, không phải assertion của regression. Compose config pass.

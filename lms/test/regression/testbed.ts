@@ -62,7 +62,8 @@ export interface TestApplication {
 
 interface NotificationConsumer {
   onModuleDestroy(): Promise<void>;
-  onModuleInit(): Promise<void>;
+  onModuleInit(): void;
+  waitUntilConnected(timeoutMs?: number): Promise<void>;
 }
 
 export interface NotificationLog {
@@ -206,10 +207,12 @@ export async function startTestbed(): Promise<Testbed> {
     exchange: EVENT_EXCHANGE,
     prefetch: 1,
     queue: NOTIFICATION_QUEUE,
+    reconnect_delay_ms: 100,
     routing_key: 'grade.completed' as const,
     url: env.GRADING_RABBITMQ_URL,
   };
   const processor = new GradeCompletedFixtureConsumer();
+  const notificationTelemetry = new NotificationMessagingTelemetry(notificationBinding);
   const notificationConsumer: NotificationConsumer = new RabbitMqGradeCompletedConsumer(
     notificationBinding,
     new RabbitMqGradeCompletedMessageHandler(
@@ -221,9 +224,10 @@ export async function startTestbed(): Promise<Testbed> {
             NOTIFICATION_CONSUMER_SLOWDOWN_MS: 0,
           })[key] as boolean | number,
       } as never),
-      new NotificationMessagingTelemetry(notificationBinding),
+      notificationTelemetry,
     ),
     connectRabbitMq,
+    notificationTelemetry,
   );
 
   // Notification chỉ báo kết quả xử lý qua structured log, nên thu log để assert outcome và trace_id.
@@ -251,7 +255,8 @@ export async function startTestbed(): Promise<Testbed> {
     }
     originalConsoleInfo(...values);
   };
-  await notificationConsumer.onModuleInit();
+  notificationConsumer.onModuleInit();
+  await notificationConsumer.waitUntilConnected();
 
   const auth = await createApp(AuthModule, new AuthFilter(), {
     AUTH_DATABASE_URL: env.W1_AUTH_DATABASE_URL,

@@ -10,7 +10,6 @@ import {
   type Testbed,
 } from './testbed.js';
 
-const COURSE_ID = 'course-001';
 const STUDENT_EMAIL = 'student@example.test';
 const INSTRUCTOR_EMAIL = 'instructor@example.test';
 const PASSWORD = 'example-password';
@@ -98,22 +97,43 @@ describe('Testbed MVP regression: hai workflow xuyên service, lỗi dependency 
   }
 
   /** Bảo đảm student đã ghi danh mà không phụ thuộc thứ tự chạy của các test khác. */
-  async function ensureEnrolled(workflow: string, token: string): Promise<void> {
+  async function createCourse(
+    workflow: string,
+    token: string,
+    traceparent?: string,
+  ): Promise<string> {
+    return step(workflow, 'tạo khóa học riêng cho kịch bản', 'gateway → course', async () => {
+      const call = gateway()
+        .post('/api/v1/courses')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ title: `Regression ${workflow} ${Date.now()}` });
+      if (traceparent) call.set('traceparent', traceparent);
+      const response = await call.expect(201);
+      return response.body.id as string;
+    });
+  }
+
+  async function ensureEnrolled(workflow: string, token: string, courseId: string): Promise<void> {
     await step(workflow, 'bảo đảm đã ghi danh', 'gateway → enrollment', async () => {
       const response = await gateway()
         .post('/api/v1/enrollments')
         .set('Authorization', `Bearer ${token}`)
-        .send({ course_id: COURSE_ID });
+        .send({ course_id: courseId });
       expect([201, 409]).toContain(response.status);
     });
   }
 
-  async function submit(workflow: string, token: string, content: string): Promise<string> {
+  async function submit(
+    workflow: string,
+    token: string,
+    courseId: string,
+    content: string,
+  ): Promise<string> {
     return step(workflow, 'nộp bài', 'gateway → submission', async () => {
       const response = await gateway()
         .post('/api/v1/submissions')
         .set('Authorization', `Bearer ${token}`)
-        .send({ content, course_id: COURSE_ID })
+        .send({ content, course_id: courseId })
         .expect(201);
       return response.body.id as string;
     });
@@ -135,15 +155,17 @@ describe('Testbed MVP regression: hai workflow xuyên service, lỗi dependency 
     const traceId = '9a000000000000000000000000000001';
     const traceparent = traceparentFor(traceId);
 
+    const instructor = await login(workflow, INSTRUCTOR_EMAIL);
+    const courseId = await createCourse(workflow, instructor.token, traceparent);
     const student = await login(workflow, STUDENT_EMAIL, traceparent);
 
     await step(workflow, 'xem khóa học', 'gateway → course', async () => {
       await gateway()
-        .get(`/api/v1/courses/${COURSE_ID}`)
+        .get(`/api/v1/courses/${courseId}`)
         .set('Authorization', `Bearer ${student.token}`)
         .set('traceparent', traceparent)
         .expect(200)
-        .expect(({ body }) => expect(body.id).toBe(COURSE_ID));
+        .expect(({ body }) => expect(body.id).toBe(courseId));
     });
 
     const enrollment = await step(workflow, 'ghi danh', 'gateway → enrollment → course', () =>
@@ -151,10 +173,10 @@ describe('Testbed MVP regression: hai workflow xuyên service, lỗi dependency 
         .post('/api/v1/enrollments')
         .set('Authorization', `Bearer ${student.token}`)
         .set('traceparent', traceparent)
-        .send({ course_id: COURSE_ID })
+        .send({ course_id: courseId })
         .expect(201),
     );
-    expect(enrollment.body).toMatchObject({ course_id: COURSE_ID, principal_id: student.id });
+    expect(enrollment.body).toMatchObject({ course_id: courseId, principal_id: student.id });
 
     const submission = await step(
       workflow,
@@ -165,10 +187,10 @@ describe('Testbed MVP regression: hai workflow xuyên service, lỗi dependency 
           .post('/api/v1/submissions')
           .set('Authorization', `Bearer ${student.token}`)
           .set('traceparent', traceparent)
-          .send({ content: 'regression-secret-answer', course_id: COURSE_ID })
+          .send({ content: 'regression-secret-answer', course_id: courseId })
           .expect(201),
     );
-    expect(submission.body).toMatchObject({ course_id: COURSE_ID, principal_id: student.id });
+    expect(submission.body).toMatchObject({ course_id: courseId, principal_id: student.id });
 
     await step(workflow, 'đọc lại bài nộp', 'gateway → submission', async () => {
       await gateway()
@@ -227,8 +249,9 @@ describe('Testbed MVP regression: hai workflow xuyên service, lỗi dependency 
 
     const student = await login(workflow, STUDENT_EMAIL);
     const instructor = await login(workflow, INSTRUCTOR_EMAIL);
-    await ensureEnrolled(workflow, student.token);
-    const submissionId = await submit(workflow, student.token, 'regression-grade-answer');
+    const courseId = await createCourse(workflow, instructor.token);
+    await ensureEnrolled(workflow, student.token, courseId);
+    const submissionId = await submit(workflow, student.token, courseId, 'regression-grade-answer');
 
     const grade = await step(workflow, 'chấm điểm', 'gateway → grading → submission', () =>
       gateway()
@@ -336,7 +359,9 @@ describe('Testbed MVP regression: hai workflow xuyên service, lỗi dependency 
     const workflow = 'timeout Submission → Storage';
     const traceId = '9a000000000000000000000000000003';
     const student = await login(workflow, STUDENT_EMAIL);
-    await ensureEnrolled(workflow, student.token);
+    const instructor = await login(workflow, INSTRUCTOR_EMAIL);
+    const courseId = await createCourse(workflow, instructor.token);
+    await ensureEnrolled(workflow, student.token, courseId);
 
     await setStorageFault('none', SUBMISSION_DEPENDENCY_TIMEOUT_MS * 3);
     try {
@@ -346,7 +371,7 @@ describe('Testbed MVP regression: hai workflow xuyên service, lỗi dependency 
           .post('/api/v1/submissions')
           .set('Authorization', `Bearer ${student.token}`)
           .set('traceparent', traceparentFor(traceId))
-          .send({ content: 'timeout-answer', course_id: COURSE_ID })
+          .send({ content: 'timeout-answer', course_id: courseId })
           .expect(504)
           .expect(({ body }) => expectErrorEnvelope(body, 'DEPENDENCY_TIMEOUT')),
       );
@@ -365,13 +390,15 @@ describe('Testbed MVP regression: hai workflow xuyên service, lỗi dependency 
       spans.filter((span) => span.attributes.dependency_identity === 'gateway-submission'),
     ).toHaveLength(1);
 
-    await submit(`${workflow} (phục hồi)`, student.token, 'timeout-recovered-answer');
+    await submit(`${workflow} (phục hồi)`, student.token, courseId, 'timeout-recovered-answer');
   });
 
   it('dependency unavailable: Storage lỗi làm Submission trả DEPENDENCY_UNAVAILABLE qua Gateway, rồi phục hồi', async () => {
     const workflow = 'unavailable Submission → Storage';
     const student = await login(workflow, STUDENT_EMAIL);
-    await ensureEnrolled(workflow, student.token);
+    const instructor = await login(workflow, INSTRUCTOR_EMAIL);
+    const courseId = await createCourse(workflow, instructor.token);
+    await ensureEnrolled(workflow, student.token, courseId);
 
     await setStorageFault('unavailable', 0);
     try {
@@ -379,7 +406,7 @@ describe('Testbed MVP regression: hai workflow xuyên service, lỗi dependency 
         gateway()
           .post('/api/v1/submissions')
           .set('Authorization', `Bearer ${student.token}`)
-          .send({ content: 'unavailable-answer', course_id: COURSE_ID })
+          .send({ content: 'unavailable-answer', course_id: courseId })
           .expect(503)
           .expect(({ body }) => expectErrorEnvelope(body, 'DEPENDENCY_UNAVAILABLE')),
       );
@@ -387,6 +414,6 @@ describe('Testbed MVP regression: hai workflow xuyên service, lỗi dependency 
       await clearStorageFault();
     }
 
-    await submit(`${workflow} (phục hồi)`, student.token, 'unavailable-recovered-answer');
+    await submit(`${workflow} (phục hồi)`, student.token, courseId, 'unavailable-recovered-answer');
   });
 });
