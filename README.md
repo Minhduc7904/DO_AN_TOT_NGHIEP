@@ -71,8 +71,14 @@ Repository chỉ scaffold các module khi bắt đầu triển khai. Cây source
 
 ## Quick Start Docker Compose
 
-Baseline hiện tại khởi động Course service, PostgreSQL, Redis và RabbitMQ. Xem quy trình
-validate, start, verify, logs và reset tại [docker-compose/README.md](docker-compose/README.md).
+Testbed MVP v0.1 gồm Gateway, sáu business service (Auth, Course, Enrollment, Submission, Grading,
+Notification), Storage Mock, PostgreSQL, Redis và RabbitMQ. Thứ tự dựng từ checkout sạch:
+
+1. Cài toolchain và dependency theo [lms/README.md](lms/README.md#cài-đặt-và-kiểm-tra): Node.js `22.13.1`,
+   pnpm `11.19.0` qua Corepack, rồi `pnpm install --frozen-lockfile` trong `lms/`.
+2. Validate, khởi động, kiểm tra, xem log và reset stack theo [docker-compose/README.md](docker-compose/README.md).
+3. Chạy reset/seed có kiểm soát và regression Testbed MVP theo
+   [docker-compose/README.md](docker-compose/README.md#regression-testbed-mvp).
 
 ## Tài liệu canonical
 
