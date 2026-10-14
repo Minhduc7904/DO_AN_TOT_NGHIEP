@@ -31,7 +31,22 @@ npm @corepackPnpm run ci:verify
 Pop-Location
 ```
 
-Các lệnh dùng trực tiếp Corepack `0.34.0`, không gọi `corepack` hoặc `pnpm`
+Bash trên Linux/macOS (đã kiểm chứng với nvm và Corepack đi kèm Node `22.13.1`):
+
+```bash
+cd lms
+nvm use # đọc lms/.nvmrc; hoặc cài Node.js 22.13.1 bằng cách khác
+node --version # phải là v22.13.1
+corepack enable
+pnpm --version # phải là 11.19.0 khi chạy trong lms/
+pnpm install --frozen-lockfile
+```
+
+Chạy các lệnh `pnpm` từ trong `lms/`. Corepack chọn phiên bản pnpm theo `packageManager` của thư mục
+hiện tại; repository root không có `package.json` nên `pnpm --dir lms ...` gọi từ root có thể dùng pnpm
+mặc định khác và bị chặn bởi `ERR_PNPM_UNSUPPORTED_ENGINE`.
+
+Các lệnh PowerShell ở trên dùng trực tiếp Corepack `0.34.0`, không gọi `corepack` hoặc `pnpm`
 qua shim đã có trong `PATH`. Cách này tránh trường hợp Windows vẫn resolve
 `corepack.cmd` cũ từ thư mục cài Node. Corepack đọc `packageManager` của `lms/`
 để chạy đúng pnpm `11.19.0`; hãy xác minh phiên bản trước khi cài dependency.
