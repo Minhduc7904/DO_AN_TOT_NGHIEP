@@ -58,5 +58,5 @@ Từ checkout/môi trường sạch, làm theo tài liệu để dựng Testbed 
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 14/10/2026 — Bách khởi tạo branch và hồ sơ để bắt đầu Task 05; chưa chạy fresh setup.
-- Ghi chú/tồn đọng: Task-04 đã hoàn thành trên `main`. Tài liệu setup hiện chưa nhắc `pnpm run test:regression`; chưa thể xác nhận Gate M2 đạt khi chưa có kiểm chứng độc lập của Đức.
+- Cập nhật gần nhất: 14/10/2026 — hai lượt fresh setup trên máy Bách pass (11 service healthy, reset/seed cùng fingerprint, regression E2E `5/5` và messaging ba vòng); sửa bảy lỗi tài liệu setup và kiểm tra lại từ clone mới.
+- Ghi chú/tồn đọng: Gate M2 `Chờ xử lý` đến khi Bách ghi nhận phần giải thích hai workflow và Đức kiểm chứng độc lập trên PR.
