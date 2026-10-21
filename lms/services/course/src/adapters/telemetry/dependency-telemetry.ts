@@ -18,6 +18,10 @@ export async function observeDependency<T>(
     kind: SpanKind.CLIENT,
     attributes,
   });
+  span.setAttributes({
+    'db.system.name': dependency === 'course-redis' ? 'redis' : 'postgresql',
+    'db.operation.name': operation,
+  });
   const start = performance.now();
   let status = 'ok';
   try {

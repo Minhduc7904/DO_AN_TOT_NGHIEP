@@ -1,4 +1,5 @@
-import { context, propagation } from '@opentelemetry/api';
+import { context, propagation, trace } from '@opentelemetry/api';
+import { setHttpClientSpanAttributes } from '@aiops-lms/observability';
 
 import {
   SubmissionDependencyError,
@@ -23,6 +24,7 @@ export function requestDependency<Result = Response>(
   input: DependencyRequest<Result>,
 ): Promise<Result> {
   return observeDependency(input.dependency, input.operation, async () => {
+    setHttpClientSpanAttributes(trace.getActiveSpan(), input.dependency, input.method);
     const controller = new AbortController();
     let timedOut = false;
     const timeout = setTimeout(() => {
@@ -39,6 +41,12 @@ export function requestDependency<Result = Response>(
       }
       propagation.inject(context.active(), headers);
       const response = await fetch(new URL(input.path, input.baseUrl), init);
+      setHttpClientSpanAttributes(
+        trace.getActiveSpan(),
+        input.dependency,
+        input.method,
+        response.status,
+      );
       if (!response.ok && !input.allowedStatuses?.includes(response.status)) {
         throw new SubmissionDependencyError(input.dependency, dependencyKind(response));
       }

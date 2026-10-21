@@ -9,6 +9,14 @@ const validConfig = {
 };
 
 describe('defineTelemetryConfig', () => {
+  it.each(['submission-storage-mock', 'gateway-container', 'not-a-service'])(
+    'rejects a container name or unknown resource identity: %s',
+    (serviceName) => {
+      expect(() => defineTelemetryConfig({ ...validConfig, serviceName })).toThrow(
+        'runtime catalogue',
+      );
+    },
+  );
   it('normalizes and freezes valid configuration', () => {
     const config = defineTelemetryConfig(validConfig);
 

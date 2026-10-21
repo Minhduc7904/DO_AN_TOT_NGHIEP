@@ -21,6 +21,9 @@ export async function observeDependency<T>(
     attributes,
     kind: SpanKind.CLIENT,
   });
+  if (dependency === 'submission-postgres') {
+    span.setAttributes({ 'db.system.name': 'postgresql', 'db.operation.name': operation });
+  }
   const start = performance.now();
   let status = 'ok';
   try {

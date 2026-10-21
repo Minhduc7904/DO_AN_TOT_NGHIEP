@@ -183,6 +183,9 @@ describe('RabbitMqGradeCompletedMessageHandler', () => {
     expect(newSpans.some((span) => span.name === 'notification process grade.completed')).toBe(
       false,
     );
+    expect(JSON.stringify(newSpans.map((span) => [span.attributes, span.events]))).not.toMatch(
+      /top-secret-password|sensitive\.student@example\.com|amqp:\/\//u,
+    );
 
     const correlatedLog = errorLog.mock.calls
       .map(([value]) => String(value))

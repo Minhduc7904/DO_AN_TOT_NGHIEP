@@ -18,6 +18,9 @@ export async function observeDependency<T>(
     kind: SpanKind.CLIENT,
     attributes,
   });
+  if (dependency === 'enrollment-postgres') {
+    span.setAttributes({ 'db.system.name': 'postgresql', 'db.operation.name': operation });
+  }
   const start = performance.now();
   let status = 'ok';
   try {

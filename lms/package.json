@@ -37,7 +37,8 @@
     "testbed:reset": "node scripts/reset-and-seed.mjs",
     "test:testbed:reset": "node --test test/testbed-reset/reset-and-seed.test.mjs",
     "test:testbed:reset:compose": "node test/testbed-reset/compose-reset-smoke.mjs",
-    "test:observability:stack": "node test/observability/stack-smoke.mjs"
+    "test:observability:stack": "node test/observability/stack-smoke.mjs",
+    "test:observability:tracing": "node test/observability/tracing-smoke.mjs"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",

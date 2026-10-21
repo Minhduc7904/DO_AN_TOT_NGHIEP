@@ -492,8 +492,12 @@ describe('W5 Gateway → Grading → Submission → PostgreSQL → RabbitMQ → 
       ).toBe(true);
     }
     const gatewayClient = spans.find(
-      (span) => span.kind === SpanKind.CLIENT && span.name === 'POST /api/v1/grades',
+      (span) =>
+        span.kind === SpanKind.CLIENT &&
+        span.attributes.dependency_identity === 'gateway-grading' &&
+        span.attributes['http.request.method'] === 'POST',
     );
+    expect(gatewayClient).toBeDefined();
     const gradingServer = servers.find((span) => span.name.includes('/api/v1/grades'));
     expect(gradingServer?.parentSpanContext?.spanId).toBe(gatewayClient?.spanContext().spanId);
     const gradingSubmission = spans.find(

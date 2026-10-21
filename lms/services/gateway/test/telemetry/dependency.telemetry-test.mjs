@@ -99,13 +99,17 @@ try {
   assert.deepEqual(
     spans.map((span) => span.name),
     [
-      'POST /api/v1/auth/login',
-      'GET /api/v1/courses/course-001',
-      'GET /api/v1/enrollments',
-      'GET /api/v1/submissions/submission-001',
-      'GET /api/v1/grades/grade-001',
+      'gateway-auth POST',
+      'gateway-course GET',
+      'gateway-enrollment GET',
+      'gateway-submission GET',
+      'gateway-grading GET',
     ],
-    'Gateway client span name phải giữ contract method + path cho regression E2E',
+    'Gateway client span dùng dependency + method, không ghi path có ID động',
+  );
+  assert.doesNotMatch(
+    JSON.stringify(spans.map((span) => [span.name, span.attributes, span.events])),
+    /course-001|submission-001|grade-001/u,
   );
   assert.notEqual(spans[0].status.code, SpanStatusCode.ERROR);
   assert.notEqual(spans[1].status.code, SpanStatusCode.ERROR);
