@@ -28,7 +28,7 @@ Các credential trong `.env.example` chỉ dùng cho local development, không p
 
 `COMPOSE_PROJECT_NAME=aiops-lms` trong `.env.example` quyết định tên container, network và volume. Nếu máy đã có stack hoặc volume `aiops-lms_*` cần giữ, đổi `COMPOSE_PROJECT_NAME` trong `.env` (ví dụ `aiops-lms-fresh-setup`) trước khi kiểm chứng fresh setup; nếu không, `up` dùng lại volume cũ và lệnh reset `down --volumes` bên dưới xóa dữ liệu đó.
 
-Cả 8 application runtime gửi OTLP HTTP tới `http://otel-collector:4318/v1/traces` qua network nội bộ. Collector và các backend được bật mặc định, không cần profile. Lỗi export không làm service dừng hoặc làm `/health` thất bại. Đặt `OTEL_SDK_DISABLED=true` để tắt SDK; không dùng `localhost` làm endpoint container tới container.
+Cả 8 application runtime gửi OTLP HTTP tới `http://otel-collector:4318/v1/traces` qua network nội bộ. Collector và các backend được bật mặc định, không cần profile. Lỗi export không làm service dừng hoặc làm `/health` thất bại. Đặt `OTEL_SDK_DISABLED=true` để tắt SDK; không dùng `localhost` làm endpoint container tới container. Nếu `.env` được sao chép trước W10, đổi `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT` từ loopback cũ sang hostname Collector ở trên; giá trị trong env local ghi đè mặc định Compose.
 
 ## Validate và khởi động
 

@@ -7,6 +7,7 @@ const endpoints = {
   prometheus: `http://127.0.0.1:${process.env.PROMETHEUS_PORT ?? 9090}`,
   tempo: `http://127.0.0.1:${process.env.TEMPO_PORT ?? 3200}`,
   loki: `http://127.0.0.1:${process.env.LOKI_PORT ?? 3100}`,
+  grafana: `http://127.0.0.1:${process.env.GRAFANA_PORT ?? 3008}`,
 };
 const service = 'observability-smoke';
 const marker = randomBytes(12).toString('hex');
@@ -144,5 +145,22 @@ await poll('Loki query theo service và marker', async () => {
   assert.ok(
     result.data.result.some((stream) => stream.values.some((line) => line[1].includes(marker))),
   );
+});
+await poll('Grafana provision ba datasource nội bộ', async () => {
+  const credential = Buffer.from(
+    `${process.env.GRAFANA_ADMIN_USER ?? 'admin'}:${process.env.GRAFANA_ADMIN_PASSWORD ?? 'grafana-local-only'}`,
+  ).toString('base64');
+  const result = await (
+    await request(`${endpoints.grafana}/api/datasources`, {
+      headers: { authorization: `Basic ${credential}` },
+    })
+  ).json();
+  for (const [uid, url] of [
+    ['prometheus', 'http://prometheus:9090'],
+    ['tempo', 'http://tempo:3200'],
+    ['loki', 'http://loki:3100'],
+  ]) {
+    assert.ok(result.some((datasource) => datasource.uid === uid && datasource.url === url));
+  }
 });
 console.info(JSON.stringify({ service, traceId, marker, metricValue, result: 'pass' }));

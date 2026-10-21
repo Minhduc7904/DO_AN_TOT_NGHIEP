@@ -15,7 +15,7 @@
 
 | Mã task | Task | Người phụ trách | Collaborator | Ưu tiên | Trạng thái |
 | --- | --- | --- | --- | --- | --- |
-| [task-01_deploy-observability-stack](task-01_deploy-observability-stack.md) | Dựng OTel Collector, Prometheus, Tempo, Loki và Grafana trong Compose | Đức | Bách góp ý nhu cầu query/retention | Cao | Đang thực hiện |
+| [task-01_deploy-observability-stack](task-01_deploy-observability-stack.md) | Dựng OTel Collector, Prometheus, Tempo, Loki và Grafana trong Compose | Đức | Bách góp ý nhu cầu query/retention | Cao | Chờ review |
 | [task-02_complete-distributed-tracing](task-02_complete-distributed-tracing.md) | Hoàn thiện distributed tracing và resource identity toàn topology | Đức | Bách kiểm tra field phục vụ diagnosis | Cao | Đã giao |
 | [task-03_export-service-metrics](task-03_export-service-metrics.md) | Xuất service metrics và thêm kiểm chứng metrics baseline | Đức | Bách kiểm tra khả năng query cho anomaly | Cao | Đã giao |
 | [task-04_correlate-structured-logs](task-04_correlate-structured-logs.md) | Chuẩn hóa structured logs, correlation và Loki ingestion | Bách | Đức hỗ trợ Collector/Compose và trace context | Cao | Chờ xử lý |
@@ -45,3 +45,7 @@
 - [ ] Structured logs dùng timestamp UTC ISO-8601, có `service.name`, severity, message và `trace_id`/`span_id` khi có active span; Loki truy vấn được theo trace.
 - [ ] Grafana có service overview và query kiểm chứng error status, HTTP status, error type, dependency identity và timeout semantics.
 - [ ] Mỗi task có PR riêng, bằng chứng DoD và trạng thái theo vòng đời task canonical.
+
+## Tiến độ task-01 ngày 21/10/2026
+
+[PR #41](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/41) có stack16 thành phần, reset hai lần cùng fingerprint và smoke/query ba backend. [Output Đức](../../../../../workspace/duc/week-10_2026-10-04_to_2026-10-10/task-01_deploy-observability-stack/output/task-output.md) ghi bằng chứng, giới hạn Windows và ngoại lệ review agent độc lập Đức đã xác nhận. Readiness `Chờ review` phải được push trên PR head trước review; chưa finalization/merge. Task-02/03 chưa triển khai, task-04/05 giữ nguyên.

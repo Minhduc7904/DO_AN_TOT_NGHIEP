@@ -8,11 +8,11 @@
 | Tên task | Dựng observability stack trong Compose |
 | Người phụ trách | Đức |
 | Tuần thực hiện | `week-10_2026-10-04_to_2026-10-10` |
-| Trạng thái | Đang thực hiện |
+| Trạng thái | Chờ review |
 | Ngày tạo | 21/10/2026 |
 | Thời gian dự kiến | Một phiên triển khai và kiểm chứng, thực hiện bù tiến độ |
 | Nhánh thực hiện | `feat/week-10/task-01-deploy-observability-stack` |
-| Pull request dự kiến | PR riêng vào `main`, bổ sung URL sau khi tạo |
+| Pull request dự kiến | [PR #41](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/41) vào `main` |
 
 ## Mục tiêu và phạm vi
 
@@ -40,10 +40,10 @@ Không hoàn thiện tracing/metrics service của task-02/03; không làm struc
 
 ## Definition of Done
 
-- [ ] Compose hợp lệ; toàn bộ 16 thành phần healthy với image pin version.
-- [ ] 8 runtime gửi OTLP tới Collector nội bộ; Collector có receiver HTTP/gRPC và pipeline traces/metrics/logs.
-- [ ] Smoke gửi telemetry mẫu qua Collector và query được marker tương ứng tại Prometheus, Tempo và Loki.
-- [ ] Cấu hình không có credential production; port loopback, volume, retention/resource limit và cách tắt/reset được tài liệu hóa.
-- [ ] `ci:verify`, Compose smoke, regression W9 và reset hai lần có fingerprint ổn định đạt; mọi giới hạn được ghi trung thực.
-- [ ] PR dùng template canonical; URL và `Chờ review` được commit/push trước review.
+- [x] Compose hợp lệ; toàn bộ 16 thành phần healthy với image pin version.
+- [x] 8 runtime gửi OTLP tới Collector nội bộ; Collector có receiver HTTP/gRPC và pipeline traces/metrics/logs.
+- [x] Smoke gửi telemetry mẫu qua Collector và query được marker tương ứng tại Prometheus, Tempo và Loki.
+- [x] Cấu hình không có credential production; port loopback, volume, retention/resource limit và cách tắt/reset được tài liệu hóa.
+- [x] `ci:verify`, Compose smoke, regression W9 và reset hai lần có fingerprint ổn định đạt; mọi giới hạn được ghi trung thực.
+- [x] PR dùng template canonical; URL và `Chờ review` được commit/push trước review.
 - [ ] Điều phối viên finalization/merge sau review nội bộ độc lập theo ngoại lệ Đức xác nhận, không giả GitHub approval.

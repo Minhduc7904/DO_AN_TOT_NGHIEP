@@ -60,7 +60,7 @@ Target có thể thêm Assignment, MinIO và expanded robustness evaluation vớ
 - `lms/services/`: API Gateway và LMS business services.
 - `lms/packages/observability/`: shared application instrumentation.
 - `lms/contracts/`: published HTTP/event contracts của LMS.
-- `lms/infrastructure/observability/`: Collector, Prometheus, Tempo, Loki và Grafana runtime/config.
+- `docker-compose/observability/`: Collector, Prometheus, Tempo, Loki và Grafana runtime/config, cùng root manifest orchestration.
 - `docker-compose/`: Compose manifest root để khởi động LMS service và dependency cục bộ.
 - `load/`: workload implementation.
 - `faults/`: reusable fault mechanisms.

@@ -87,6 +87,9 @@ try {
   });
   assert.equal(oldTrace.status, 404, 'Reset phải xóa telemetry volume của project đã xác nhận.');
   console.log(`Testbed reset hai lần ổn định với fingerprint ${second}.`);
+} catch (error) {
+  process.stderr.write(run('docker', [...composeArguments, 'logs', '--no-color', '--tail', '80']));
+  throw error;
 } finally {
   run('docker', [...composeArguments, 'down', '--volumes', '--remove-orphans'], { inherit: true });
 }
