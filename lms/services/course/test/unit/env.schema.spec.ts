@@ -19,6 +19,7 @@ describe('validateEnvironment', () => {
       COURSE_CACHE_TIMEOUT_MS: DEFAULT_COURSE_CACHE_TIMEOUT_MS,
       NODE_ENV: 'development',
       OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: DEFAULT_OTLP_TRACES_ENDPOINT,
+      OTEL_METRIC_EXPORT_INTERVAL: 5000,
       OTEL_SDK_DISABLED: false,
       OTEL_SERVICE_INSTANCE_ID: DEFAULT_SERVICE_INSTANCE_ID,
       OTEL_SERVICE_VERSION: DEFAULT_SERVICE_VERSION,
@@ -34,6 +35,7 @@ describe('validateEnvironment', () => {
       COURSE_CACHE_TIMEOUT_MS: DEFAULT_COURSE_CACHE_TIMEOUT_MS,
       NODE_ENV: 'production',
       OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: DEFAULT_OTLP_TRACES_ENDPOINT,
+      OTEL_METRIC_EXPORT_INTERVAL: 5000,
       OTEL_SDK_DISABLED: false,
       OTEL_SERVICE_INSTANCE_ID: DEFAULT_SERVICE_INSTANCE_ID,
       OTEL_SERVICE_VERSION: DEFAULT_SERVICE_VERSION,
@@ -45,12 +47,16 @@ describe('validateEnvironment', () => {
     expect(
       validateEnvironment({
         OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: 'http://collector:4318/v1/traces',
+        OTEL_EXPORTER_OTLP_METRICS_ENDPOINT: 'http://metrics:4318/custom',
+        OTEL_METRIC_EXPORT_INTERVAL: '1000',
         OTEL_SDK_DISABLED: 'true',
         OTEL_SERVICE_INSTANCE_ID: 'course-test-2',
         OTEL_SERVICE_VERSION: '1.2.3',
       }),
     ).toMatchObject({
       OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: 'http://collector:4318/v1/traces',
+      OTEL_EXPORTER_OTLP_METRICS_ENDPOINT: 'http://metrics:4318/custom',
+      OTEL_METRIC_EXPORT_INTERVAL: 1000,
       OTEL_SDK_DISABLED: true,
       OTEL_SERVICE_INSTANCE_ID: 'course-test-2',
       OTEL_SERVICE_VERSION: '1.2.3',
@@ -69,6 +75,8 @@ describe('validateEnvironment', () => {
 
   it.each([
     { OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: 'not-a-url' },
+    { OTEL_EXPORTER_OTLP_METRICS_ENDPOINT: 'not-a-url' },
+    { OTEL_METRIC_EXPORT_INTERVAL: '0' },
     { OTEL_SDK_DISABLED: 'yes' },
     { OTEL_SERVICE_INSTANCE_ID: '' },
     { OTEL_SERVICE_VERSION: '' },

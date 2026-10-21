@@ -138,6 +138,19 @@ for (const service of services) {
     assert.ok(p95.length > 0 && p95.every((row) => Number.isFinite(Number(row.value[1]))));
   });
 }
+await poll('Dependency/messaging latency thật', async () => {
+  for (const selector of [
+    'auth_dependency_duration_seconds_count{dependency_identity="auth-postgres"}',
+    'course_dependency_duration_seconds_count{dependency_identity="course-redis"}',
+    'enrollment_dependency_duration_seconds_count{dependency_identity="enrollment-postgres"}',
+    'submission_dependency_duration_seconds_count{dependency_identity="submission-storage"}',
+    'grading_dependency_duration_seconds_count{dependency_identity="grading-postgres"}',
+    'grading_messaging_publish_duration_seconds_count{dependency_identity="grading-rabbitmq"}',
+    'notification_rabbitmq_consume_duration_seconds_count{dependency_identity="notification-rabbitmq"}',
+    'notification_process_duration_seconds_count',
+  ])
+    assert.ok((await scalar(selector)) > 0, `Thiếu latency series ${selector}`);
+});
 const login = await json(`${gateway}/api/v1/auth/login`, {
   method: 'POST',
   headers: { 'content-type': 'application/json' },
