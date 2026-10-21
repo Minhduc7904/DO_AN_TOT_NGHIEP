@@ -260,7 +260,16 @@ try {
   await poll('Broker queue tăng thật', async () => assert.ok((await scalar(queueSelector)) >= 4));
 } finally {
   if (notificationStopped)
-    await compose(['start', '--wait', '--wait-timeout', '120', 'notification']);
+    await compose([
+      'up',
+      '-d',
+      '--no-deps',
+      '--no-recreate',
+      '--wait',
+      '--wait-timeout',
+      '120',
+      'notification',
+    ]);
 }
 await poll('Broker queue drain sau khôi phục consumer', async () => {
   assert.equal((await query(queueSelector)).length, 1);
@@ -279,7 +288,16 @@ try {
   assert.equal(body.id, 'course-001');
 } finally {
   if (collectorStopped)
-    await compose(['start', '--wait', '--wait-timeout', '120', 'otel-collector']);
+    await compose([
+      'up',
+      '-d',
+      '--no-deps',
+      '--no-recreate',
+      '--wait',
+      '--wait-timeout',
+      '120',
+      'otel-collector',
+    ]);
 }
 await poll('Metrics hồi phục sau Collector outage', async () =>
   assert.ok((await scalar(selectors.healthy)) > requestCountBefore),
