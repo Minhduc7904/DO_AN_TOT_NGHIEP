@@ -52,8 +52,21 @@ function reset() {
   return match[1];
 }
 
+function verifyObservability() {
+  const services = run('docker', [...composeArguments, 'ps', '--format', 'json'])
+    .trim()
+    .split(/\r?\n/u)
+    .map((line) => JSON.parse(line));
+  assert.equal(services.length, 16, 'Toàn bộ 16 thành phần phải được khởi động.');
+  for (const service of services) assert.equal(service.Health, 'healthy', service.Service);
+  const output = run(process.execPath, ['test/observability/stack-smoke.mjs'], { cwd: lmsRoot });
+  process.stdout.write(output);
+  return JSON.parse(output.trim().split(/\r?\n/u).at(-1));
+}
+
 try {
   const first = reset();
+  const firstSmoke = verifyObservability();
 
   run('docker', [...composeArguments, 'exec', '-T', 'redis', 'redis-cli', 'SET', 'dirty-key', '1']);
   run('docker', [
@@ -68,6 +81,11 @@ try {
 
   const second = reset();
   assert.equal(second, first, 'Hai lần reset phải tạo cùng fingerprint đã sort.');
+  verifyObservability();
+  const oldTrace = await fetch(`http://127.0.0.1:3200/api/traces/${firstSmoke.traceId}`, {
+    signal: AbortSignal.timeout(5_000),
+  });
+  assert.equal(oldTrace.status, 404, 'Reset phải xóa telemetry volume của project đã xác nhận.');
   console.log(`Testbed reset hai lần ổn định với fingerprint ${second}.`);
 } finally {
   run('docker', [...composeArguments, 'down', '--volumes', '--remove-orphans'], { inherit: true });

@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-01_deploy-observability-stack` |
 | Tuần | `week-10_2026-10-04_to_2026-10-10` |
-| Trạng thái | Đã giao |
+| Trạng thái | Đang thực hiện |
 | Người phụ trách | Đức |
 | Collaborator | Bách góp ý nhu cầu query/retention |
 | Ưu tiên | Cao |
@@ -50,7 +50,7 @@ Bổ sung OTel Collector, Prometheus, Tempo, Loki và Grafana vào topology Dock
 
 ## Liên kết hồ sơ thực hiện
 
-- Input workspace: Chưa tạo.
+- Input workspace: [task-input.md](../../../../../workspace/duc/week-10_2026-10-04_to_2026-10-10/task-01_deploy-observability-stack/input/task-input.md).
 - Output workspace: Chưa tạo.
 - Pull request: Chưa tạo.
 - Kết quả review: Chưa review.

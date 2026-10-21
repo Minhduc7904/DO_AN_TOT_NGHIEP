@@ -12,7 +12,7 @@ services:
       GATEWAY_GRADING_BASE_URL: http://grading:3007
       GATEWAY_JWT_SECRET: "${AUTH_JWT_SECRET:-local-development-only-jwt-secret-change-before-production}"
       GATEWAY_UPSTREAM_TIMEOUT_MS: "${GATEWAY_UPSTREAM_TIMEOUT_MS:-5000}"
-      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: "${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT:-http://127.0.0.1:4318/v1/traces}"
+      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: "${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT:-http://otel-collector:4318/v1/traces}"
       OTEL_SDK_DISABLED: "${OTEL_SDK_DISABLED:-false}"
       OTEL_SERVICE_INSTANCE_ID: "${GATEWAY_SERVICE_INSTANCE_ID:-gateway-compose-1}"
       OTEL_SERVICE_VERSION: "${GATEWAY_SERVICE_VERSION:-0.1.0}"
@@ -56,7 +56,7 @@ services:
       AUTH_JWT_SECRET: "${AUTH_JWT_SECRET:-local-development-only-jwt-secret-change-before-production}"
       AUTH_JWT_TTL_SECONDS: "${AUTH_JWT_TTL_SECONDS:-3600}"
       AUTH_REFRESH_TTL_SECONDS: "${AUTH_REFRESH_TTL_SECONDS:-86400}"
-      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: "${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT:-http://127.0.0.1:4318/v1/traces}"
+      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: "${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT:-http://otel-collector:4318/v1/traces}"
       OTEL_SDK_DISABLED: "${OTEL_SDK_DISABLED:-false}"
       OTEL_SERVICE_INSTANCE_ID: "${AUTH_SERVICE_INSTANCE_ID:-auth-compose-1}"
       OTEL_SERVICE_VERSION: "${AUTH_SERVICE_VERSION:-0.1.0}"
@@ -92,7 +92,7 @@ services:
       COURSE_REDIS_URL: redis://redis:6379
       COURSE_CACHE_TTL_SECONDS: "${COURSE_CACHE_TTL_SECONDS:-60}"
       COURSE_CACHE_TIMEOUT_MS: "${COURSE_CACHE_TIMEOUT_MS:-300}"
-      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: "${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT:-http://127.0.0.1:4318/v1/traces}"
+      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: "${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT:-http://otel-collector:4318/v1/traces}"
       OTEL_SDK_DISABLED: "${OTEL_SDK_DISABLED:-false}"
       OTEL_SERVICE_INSTANCE_ID: "${COURSE_SERVICE_INSTANCE_ID:-course-compose-1}"
       OTEL_SERVICE_VERSION: "${COURSE_SERVICE_VERSION:-0.1.0}"
@@ -133,7 +133,7 @@ services:
       ENROLLMENT_COURSE_TIMEOUT_MS: "${ENROLLMENT_COURSE_TIMEOUT_MS:-3000}"
       ENROLLMENT_COURSE_BREAKER_THRESHOLD: "${ENROLLMENT_COURSE_BREAKER_THRESHOLD:-3}"
       ENROLLMENT_COURSE_BREAKER_COOLDOWN_MS: "${ENROLLMENT_COURSE_BREAKER_COOLDOWN_MS:-5000}"
-      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: "${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT:-http://127.0.0.1:4318/v1/traces}"
+      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: "${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT:-http://otel-collector:4318/v1/traces}"
       OTEL_SDK_DISABLED: "${OTEL_SDK_DISABLED:-false}"
       OTEL_SERVICE_INSTANCE_ID: "${ENROLLMENT_SERVICE_INSTANCE_ID:-enrollment-compose-1}"
       OTEL_SERVICE_VERSION: "${ENROLLMENT_SERVICE_VERSION:-0.1.0}"
@@ -170,7 +170,7 @@ services:
       SUBMISSION_ENROLLMENT_BASE_URL: http://enrollment:3003
       SUBMISSION_STORAGE_BASE_URL: http://submission-storage-mock:3005
       SUBMISSION_DEPENDENCY_TIMEOUT_MS: "${SUBMISSION_DEPENDENCY_TIMEOUT_MS:-3000}"
-      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: "${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT:-http://127.0.0.1:4318/v1/traces}"
+      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: "${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT:-http://otel-collector:4318/v1/traces}"
       OTEL_SDK_DISABLED: "${OTEL_SDK_DISABLED:-false}"
       OTEL_SERVICE_INSTANCE_ID: "${SUBMISSION_SERVICE_INSTANCE_ID:-submission-compose-1}"
       OTEL_SERVICE_VERSION: "${SUBMISSION_SERVICE_VERSION:-0.1.0}"
@@ -217,7 +217,7 @@ services:
       NOTIFICATION_DEDUP_MAX_EVENT_IDS: "${NOTIFICATION_DEDUP_MAX_EVENT_IDS:-10000}"
       NOTIFICATION_CONSUMER_SLOWDOWN_ENABLED: "${NOTIFICATION_CONSUMER_SLOWDOWN_ENABLED:-false}"
       NOTIFICATION_CONSUMER_SLOWDOWN_MS: "${NOTIFICATION_CONSUMER_SLOWDOWN_MS:-0}"
-      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: "${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT:-http://127.0.0.1:4318/v1/traces}"
+      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: "${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT:-http://otel-collector:4318/v1/traces}"
       OTEL_SDK_DISABLED: "${OTEL_SDK_DISABLED:-false}"
       OTEL_SERVICE_INSTANCE_ID: "${NOTIFICATION_SERVICE_INSTANCE_ID:-notification-compose-1}"
       OTEL_SERVICE_VERSION: "${NOTIFICATION_SERVICE_VERSION:-0.1.0}"
@@ -257,7 +257,7 @@ services:
       GRADING_PUBLISH_CONFIRM_TIMEOUT_MS: "${GRADING_PUBLISH_CONFIRM_TIMEOUT_MS:-3000}"
       GRADING_EVENT_RETRY_INTERVAL_MS: "${GRADING_EVENT_RETRY_INTERVAL_MS:-5000}"
       GRADING_EVENT_RETRY_BATCH_SIZE: "${GRADING_EVENT_RETRY_BATCH_SIZE:-20}"
-      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: "${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT:-http://127.0.0.1:4318/v1/traces}"
+      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: "${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT:-http://otel-collector:4318/v1/traces}"
       OTEL_SDK_DISABLED: "${OTEL_SDK_DISABLED:-false}"
       OTEL_SERVICE_INSTANCE_ID: "${GRADING_SERVICE_INSTANCE_ID:-grading-compose-1}"
       OTEL_SERVICE_VERSION: "${GRADING_SERVICE_VERSION:-0.1.0}"
@@ -295,7 +295,7 @@ services:
       NODE_ENV: production
       STORAGE_MOCK_DEFAULT_LATENCY_MS: "${STORAGE_MOCK_DEFAULT_LATENCY_MS:-0}"
       STORAGE_MOCK_DEFAULT_ERROR_MODE: "${STORAGE_MOCK_DEFAULT_ERROR_MODE:-none}"
-      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: "${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT:-http://127.0.0.1:4318/v1/traces}"
+      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: "${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT:-http://otel-collector:4318/v1/traces}"
       OTEL_SDK_DISABLED: "${OTEL_SDK_DISABLED:-false}"
       OTEL_SERVICE_INSTANCE_ID: "${STORAGE_MOCK_SERVICE_INSTANCE_ID:-submission-storage-compose-1}"
       OTEL_SERVICE_VERSION: "${STORAGE_MOCK_SERVICE_VERSION:-0.1.0}"
@@ -387,6 +387,124 @@ services:
     networks:
       - lms-network
 
+
+  otel-collector:
+    build:
+      context: ./observability
+      args:
+        BASE_IMAGE: otel/opentelemetry-collector-contrib:0.163.1
+    command: ["--config=/etc/otelcol-contrib/config.yaml"]
+    ports:
+      - "127.0.0.1:${OTEL_HTTP_PORT:-4318}:4318"
+      - "127.0.0.1:${OTEL_GRPC_PORT:-4317}:4317"
+    volumes:
+      - ./observability/otel-collector.yaml:/etc/otelcol-contrib/config.yaml:ro
+    healthcheck:
+      test: ["CMD", "/health-probe", "http://127.0.0.1:13133/"]
+      interval: 5s
+      timeout: 3s
+      retries: 24
+      start_period: 10s
+    mem_limit: 256m
+    cpus: 0.5
+    networks: [lms-network]
+
+  prometheus:
+    build:
+      context: ./observability
+      args:
+        BASE_IMAGE: prom/prometheus:v3.15.0
+        DATA_UID: "65534"
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/var/observability
+      - --storage.tsdb.retention.time=24h
+      - --storage.tsdb.retention.size=512MB
+    ports:
+      - "127.0.0.1:${PROMETHEUS_PORT:-9090}:9090"
+    volumes:
+      - ./observability/prometheus.yaml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/var/observability
+    healthcheck:
+      test: ["CMD", "/health-probe", "http://127.0.0.1:9090/-/ready"]
+      interval: 5s
+      timeout: 3s
+      retries: 24
+      start_period: 10s
+    mem_limit: 512m
+    cpus: 0.5
+    networks: [lms-network]
+
+  tempo:
+    build:
+      context: ./observability
+      args:
+        BASE_IMAGE: grafana/tempo:3.1.0
+    command: ["-config.file=/etc/tempo.yaml"]
+    ports:
+      - "127.0.0.1:${TEMPO_PORT:-3200}:3200"
+    volumes:
+      - ./observability/tempo.yaml:/etc/tempo.yaml:ro
+      - tempo-data:/var/observability
+    healthcheck:
+      test: ["CMD", "/health-probe", "http://127.0.0.1:3200/ready"]
+      interval: 5s
+      timeout: 3s
+      retries: 24
+      start_period: 20s
+    mem_limit: 512m
+    cpus: 0.5
+    networks: [lms-network]
+
+  loki:
+    build:
+      context: ./observability
+      args:
+        BASE_IMAGE: grafana/loki:3.7.9
+    command: ["-config.file=/etc/loki/local-config.yaml"]
+    ports:
+      - "127.0.0.1:${LOKI_PORT:-3100}:3100"
+    volumes:
+      - ./observability/loki.yaml:/etc/loki/local-config.yaml:ro
+      - loki-data:/var/observability
+    healthcheck:
+      test: ["CMD", "/health-probe", "http://127.0.0.1:3100/ready"]
+      interval: 5s
+      timeout: 3s
+      retries: 24
+      start_period: 20s
+    mem_limit: 512m
+    cpus: 0.5
+    networks: [lms-network]
+
+  grafana:
+    build:
+      context: ./observability
+      args:
+        BASE_IMAGE: grafana/grafana:13.2.4
+        DATA_UID: "472"
+    environment:
+      GF_PATHS_DATA: /var/observability
+      GF_SECURITY_ADMIN_USER: "${GRAFANA_ADMIN_USER:-admin}"
+      GF_SECURITY_ADMIN_PASSWORD: "${GRAFANA_ADMIN_PASSWORD:-grafana-local-only}"
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+      GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
+    ports:
+      - "127.0.0.1:${GRAFANA_PORT:-3008}:3000"
+    volumes:
+      - ./observability/grafana-datasources.yaml:/etc/grafana/provisioning/datasources/baseline.yaml:ro
+      - grafana-data:/var/observability
+    healthcheck:
+      test: ["CMD", "/health-probe", "http://127.0.0.1:3000/api/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 24
+      start_period: 20s
+    mem_limit: 512m
+    cpus: 0.5
+    networks: [lms-network]
+
 networks:
   lms-network:
     driver: bridge
@@ -395,3 +513,7 @@ volumes:
   postgres-data:
   redis-data:
   rabbitmq-data:
+  prometheus-data:
+  tempo-data:
+  loki-data:
+  grafana-data:

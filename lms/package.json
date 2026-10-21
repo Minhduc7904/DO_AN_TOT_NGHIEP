@@ -36,7 +36,8 @@
     "test:submission:postgres": "pnpm --filter @aiops-lms/observability build && pnpm --filter @aiops-lms/submission build && node services/submission/test/postgres-integration.mjs",
     "testbed:reset": "node scripts/reset-and-seed.mjs",
     "test:testbed:reset": "node --test test/testbed-reset/reset-and-seed.test.mjs",
-    "test:testbed:reset:compose": "node test/testbed-reset/compose-reset-smoke.mjs"
+    "test:testbed:reset:compose": "node test/testbed-reset/compose-reset-smoke.mjs",
+    "test:observability:stack": "node test/observability/stack-smoke.mjs"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
