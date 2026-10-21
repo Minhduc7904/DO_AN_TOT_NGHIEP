@@ -6,6 +6,17 @@ export interface TelemetryConfig {
   serviceVersion: string;
 }
 
+const RUNTIME_SERVICE_NAMES = new Set([
+  'gateway',
+  'auth',
+  'course',
+  'enrollment',
+  'submission',
+  'grading',
+  'notification',
+  'submission-storage',
+]);
+
 function requireNonEmpty(value: string, field: keyof TelemetryConfig): string {
   const normalized = value.trim();
 
@@ -17,6 +28,10 @@ function requireNonEmpty(value: string, field: keyof TelemetryConfig): string {
 }
 
 export function defineTelemetryConfig(config: TelemetryConfig): Readonly<TelemetryConfig> {
+  const serviceName = requireNonEmpty(config.serviceName, 'serviceName');
+  if (!RUNTIME_SERVICE_NAMES.has(serviceName)) {
+    throw new Error('Telemetry configuration serviceName must match the runtime catalogue');
+  }
   const endpoint = new URL(config.otlpTracesEndpoint);
 
   if (endpoint.protocol !== 'http:' && endpoint.protocol !== 'https:') {
@@ -27,7 +42,7 @@ export function defineTelemetryConfig(config: TelemetryConfig): Readonly<Telemet
     enabled: config.enabled,
     otlpTracesEndpoint: endpoint.toString(),
     serviceInstanceId: requireNonEmpty(config.serviceInstanceId, 'serviceInstanceId'),
-    serviceName: requireNonEmpty(config.serviceName, 'serviceName'),
+    serviceName,
     serviceVersion: requireNonEmpty(config.serviceVersion, 'serviceVersion'),
   });
 }
