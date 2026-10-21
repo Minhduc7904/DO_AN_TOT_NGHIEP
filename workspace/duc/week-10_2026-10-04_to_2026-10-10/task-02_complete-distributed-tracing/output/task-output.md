@@ -50,3 +50,10 @@ Thêm tracing smoke trên Compose/Tempo thật và CI step tận dụng stack re
 - Chưa finalization/merge. Quy trình áp dụng [vòng đời canonical](../../../../../docs/processed/rules/git-and-pull-request-rules.md#vòng-đời-task-canonical), review nội bộ theo ngoại lệ người phụ trách; không giả GitHub approval của Bách.
 
 Local W1 có lượt504 tại timeout100ms khi Dockerbuild nặngCPU; rerun nguyên test không sửa timeout đạt7/7. Format baseline34fileCRLF ngoài diff giữ nguyên, fullquality dựa clean-checkoutCI. Chưa finalization/merge.
+
+
+## Sửa lỗi teardown CI ngày21/10/2026
+
+CI correction tìm thấy shared lifecycle test có16assertion pass nhưng afterAll SDKshutdown timeout5giây trênLinux. Đã tái hiện trong container Node22.13.1-alpine sạch. Nguyên nhân: NodeSDK0.222 tạo OTLP metric reader mặc định khi caller bỏ metricReader, dù bootstrap intendedmetricsEnabled=false; middleware ghi metrics khiến shutdown flush ngầm tới endpoint unavailable. Sửa truyền `metricReaders: []` khi không bậtmetrics, hoặc danh sách reader đã chỉ định khi có. Không tăng test timeout hoặc bỏ shutdown. Test mới ghi counter và cấu hình HTTP endpoint mock thật, xác nhận shutdown không gửi request khimetricsdisabled. Linux17tests pass3lượt liên tiếp (0.7–1.7giây), không workerforcedexit; test socket dùng agent:false, track/destroy connections và xác nhận socketsetrỗng. Phỏng đoán ban đầu về log exporter bị loại sau kiểm chứng, không thêm sửa logs ngoài phạm vi.
+
+Fullpnpmtestlocal rerun vẫn có W1 timeout100ms transient (6/7), không claimfullsuitepass; standaloneW1 trước đó7/7 và telemetrysuite riêngpass. CIhead cuối vẫn là cổng trước merge.

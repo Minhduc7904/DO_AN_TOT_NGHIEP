@@ -61,7 +61,7 @@ export function startTelemetry(
     resource: createTelemetryResource(config),
     sampler: new AlwaysOnSampler(),
     textMapPropagator: new W3CTraceContextPropagator(),
-    ...(metricReader ? { metricReader } : {}),
+    metricReaders: metricReader ? [metricReader] : [],
     spanProcessors: [spanProcessor],
   });
 

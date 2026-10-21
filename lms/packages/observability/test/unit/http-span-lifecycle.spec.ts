@@ -115,14 +115,21 @@ it('exports an ERROR span when a real HTTP socket disconnects before a response'
   const closed = new Promise<void>((resolve) => {
     closeResponse = resolve;
   });
+  const sockets = new Set<import('node:net').Socket>();
   const server = createServer((request, response) => {
     middleware(request, response, acceptRequest);
     response.once('close', closeResponse);
   });
+  server.on('connection', (socket) => {
+    sockets.add(socket);
+    socket.once('close', () => sockets.delete(socket));
+  });
   await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
   const address = server.address();
   if (!address || typeof address === 'string') throw new Error('Thiếu địa chỉ HTTP test');
-  const client = httpRequest(`http://127.0.0.1:${address.port}/secret-unmatched-path`);
+  const client = httpRequest(`http://127.0.0.1:${address.port}/secret-unmatched-path`, {
+    agent: false,
+  });
   client.on('error', () => undefined);
   try {
     client.end();
@@ -138,7 +145,10 @@ it('exports an ERROR span when a real HTTP socket disconnects before a response'
     expect(spans[0]?.attributes['url.path']).toBeUndefined();
   } finally {
     client.destroy();
+    const serverClosed = new Promise<void>((resolve) => server.close(() => resolve()));
+    for (const socket of sockets) socket.destroy();
     server.closeAllConnections();
-    await new Promise<void>((resolve) => server.close(() => resolve()));
+    await serverClosed;
+    expect(sockets.size).toBe(0);
   }
 });

@@ -38,3 +38,5 @@ pnpm run test:observability:tracing -- --environment test --project aiops-lms-te
 ```
 
 Script xác nhận đúng project test/host ports, tạo khóa học và dữ liệu test riêng, chạy login/course/enroll/submit/grade, query Tempo theo trace ID và từng service, kiểm tra parent chain tám runtime cùng DB/Redis/storage/RabbitMQ. Nó chạy hai lỗi storage timeout/unavailable và khôi phục fault state trong `finally`; không chạy đồng thời workload/fault test khác trên cùng project. Không reset volume hoặc tự restart service. Mỗi request tối đa15 giây, mỗi poll backend tối đa90 giây. CI chạy bước này sau regression khi stack project test vẫn sẵn sàng. Output chỉ chứa trace IDs, service names và số span, không token/password/payload.
+
+Khi không bật metrics hoặc không truyền metric reader, bootstrap truyền `metricReaders: []` tường minh để NodeSDK không tự tạo OTLP reader từ môi trường. Regression test ghi counter và quan sát HTTP exporter endpoint mock, chứng minh shutdown không phát metrics ngoài opt-in; tránh shutdown chờ mạng trong process chỉ dùng tracing.
