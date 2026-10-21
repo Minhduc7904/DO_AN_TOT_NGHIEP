@@ -8,7 +8,7 @@
 | Tên task | Hoàn thiện distributed tracing toàn topology |
 | Người phụ trách | Đức |
 | Tuần thực hiện | `week-10_2026-10-04_to_2026-10-10` |
-| Trạng thái | Chờ review |
+| Trạng thái | Hoàn thành |
 | Ngày tạo | 21/10/2026 |
 | Thời gian dự kiến | Một phiên triển khai, kiểm chứng và review bù tiến độ |
 | Nhánh thực hiện | `feat/week-10/task-02-complete-distributed-tracing` |

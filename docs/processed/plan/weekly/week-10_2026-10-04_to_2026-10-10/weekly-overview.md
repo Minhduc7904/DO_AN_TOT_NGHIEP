@@ -16,7 +16,7 @@
 | Mã task | Task | Người phụ trách | Collaborator | Ưu tiên | Trạng thái |
 | --- | --- | --- | --- | --- | --- |
 | [task-01_deploy-observability-stack](task-01_deploy-observability-stack.md) | Dựng OTel Collector, Prometheus, Tempo, Loki và Grafana trong Compose | Đức | Bách góp ý nhu cầu query/retention | Cao | Hoàn thành |
-| [task-02_complete-distributed-tracing](task-02_complete-distributed-tracing.md) | Hoàn thiện distributed tracing và resource identity toàn topology | Đức | Bách kiểm tra field phục vụ diagnosis | Cao | Chờ review |
+| [task-02_complete-distributed-tracing](task-02_complete-distributed-tracing.md) | Hoàn thiện distributed tracing và resource identity toàn topology | Đức | Bách kiểm tra field phục vụ diagnosis | Cao | Hoàn thành |
 | [task-03_export-service-metrics](task-03_export-service-metrics.md) | Xuất service metrics và thêm kiểm chứng metrics baseline | Đức | Bách kiểm tra khả năng query cho anomaly | Cao | Đã giao |
 | [task-04_correlate-structured-logs](task-04_correlate-structured-logs.md) | Chuẩn hóa structured logs, correlation và Loki ingestion | Bách | Đức hỗ trợ Collector/Compose và trace context | Cao | Chờ xử lý |
 | [task-05_build-dashboard-and-validate-observability](task-05_build-dashboard-and-validate-observability.md) | Dựng dashboard và nghiệm thu baseline observability W10 | Bách | Đức hỗ trợ topology, telemetry và smoke test | Cao | Chờ xử lý |
@@ -39,8 +39,8 @@
 ## Tiêu chí kết thúc tuần
 
 - [x] OTel Collector, Prometheus, Tempo, Loki và Grafana chạy bằng Compose, có healthcheck/config pin version và tài liệu vận hành.
-- [ ] Một request có trace xuyên Gateway và các service liên quan; trace context tiếp tục qua RabbitMQ tới Notification.
-- [ ] Inbound/outbound HTTP, PostgreSQL, Redis, storage và RabbitMQ có span/error semantics đủ phục vụ dependency graph và RCA.
+- [x] Một request có trace xuyên Gateway và các service liên quan; trace context tiếp tục qua RabbitMQ tới Notification.
+- [x] Inbound/outbound HTTP, PostgreSQL, Redis, storage và RabbitMQ có span/error semantics đủ phục vụ dependency graph và RCA.
 - [ ] Service metrics truy vấn được theo label bounded; không dùng correlation/user/run ID làm label.
 - [ ] Structured logs dùng timestamp UTC ISO-8601, có `service.name`, severity, message và `trace_id`/`span_id` khi có active span; Loki truy vấn được theo trace.
 - [ ] Grafana có service overview và query kiểm chứng error status, HTTP status, error type, dependency identity và timeout semantics.
@@ -53,3 +53,5 @@
 ## Tiến độ task-02 ngày21/10/2026
 
 [PR42](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/42) có trace thật51spans8runtime cùng timeout/unavailable; [output Đức](../../../../../workspace/duc/week-10_2026-10-04_to_2026-10-10/task-02_complete-distributed-tracing/output/task-output.md) ghi bằng chứng và CI correction đang chờ. URL+Chờreview push trước agent review theo ngoại lệ Đức xác nhận; chưa finalization/merge. Task03 chưa triển khai, task04/05 giữ nguyên.
+
+Task-02 PR #42: finalization sau agent review độc lập APPROVED nội bộ tại `b7182a4`, CI39626518883 đạt5jobs; ngoại lệ Đức xác nhận không có GitHub approval Bách. Task-03 chưa bắt đầu, task-04/05 giữ nguyên Chờ xử lý; W10 chưa hoàn thành.
