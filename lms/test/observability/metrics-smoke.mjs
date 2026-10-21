@@ -96,7 +96,17 @@ const before = Object.fromEntries(
 );
 const tracing = await runProcess(
   process.execPath,
-  [fileURLToPath(new URL('./tracing-smoke.mjs', import.meta.url)), ...process.argv.slice(2)],
+  [
+    fileURLToPath(new URL('./tracing-smoke.mjs', import.meta.url)),
+    '--environment',
+    options.environment,
+    '--project',
+    options.project,
+    '--confirm',
+    options.confirm,
+    '--compose-env-file',
+    options.envFile,
+  ],
   { capture: true },
 );
 const traceEvidence = JSON.parse(tracing.stdout.trim().split(/\r?\n/u).at(-1));
