@@ -6,11 +6,11 @@
 | --- | --- |
 | Mã task | `task-02_complete-distributed-tracing` |
 | Người phụ trách | Đức |
-| Trạng thái | Đang thực hiện |
+| Trạng thái | Chờ review |
 | Bắt đầu thực tế | 21/10/2026 21:49 (Asia/Saigon) |
 | Hoàn thành thực tế | Chưa finalization |
 | Tổng thời lượng | Đang thực hiện |
-| Pull request | Bổ sung sau khi tạo |
+| Pull request | [PR #42](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/42) |
 | Người review | Agent review độc lập theo yêu cầu Đức, không đại diện Bách |
 | Kết quả review | Chưa review |
 
@@ -33,13 +33,14 @@ Thêm tracing smoke trên Compose/Tempo thật và CI step tận dụng stack re
 
 | Điều kiện từ input | Kết quả | Bằng chứng |
 | --- | --- | --- |
-| Tám resource identity đúng catalogue | Đang kiểm chứng | Smoke kiểm tra đúng ba identity từ runtime/Compose, không dùng resource test giả thay container |
-| HTTP parent-child và không span trùng | Đang kiểm chứng | Smoke kiểm tra từng parent và mỗi HTTP client có đúng một server child |
-| Async producer-consumer-process giữ trace | Đang kiểm chứng | Smoke yêu cầu parent chain thực trên Tempo |
-| DB/Redis/storage và lỗi không lộ dữ liệu | Đang kiểm chứng | Instrumentation và smoke có kiểm tra dependency/error/privacy |
-| HTTP lifecycle/default flush/AlwaysOn | Đạt | Shared unit 13/13 pass, có actual HTTP socket disconnect và batch chưa export → forceFlush → exported trước shutdown |
-| Test/quality/Compose CI | Đang kiểm chứng | Build/lint local pass; full tests và Compose build đang chạy, chưa ghi là đạt |
-| URL/readiness/review/finalization | Chưa đạt | Chưa chuyển Chờ review; chờ test và review agent độc lập theo ngoại lệ Đức đã xác nhận |
+| Tám resource identity đúng catalogue | Đạt | Compose/Tempo healthy trace `73b80b27503a0e89fd7024408ab6a7ec`,51spans8runtime; đối chiếu name/version/instance với cấu hình thực; shared unit chặn identity sai/rỗng |
+| HTTP parent-child và không span trùng | Đạt | Healthy trace có51spanIDs duy nhất; từng parent có mặt, mỗi HTTP client có đúng1server child và peer.service đúng |
+| Async producer-consumer-process giữ trace | Đạt | Healthy trace có Grading producer→Notification consumer→process với parentSpanID đúng; initial CI regression+tracing pass |
+| DB/Redis/storage và lỗi không lộ dữ liệu | Đạt | Đủ9dependency; timeout trace `0b127efee1d64934304b34438a6b1f04` HTTP504/error.timeout; unavailable trace `839de74132dfae453e6bdacd6c7721a9` HTTP503/error.unavailable; privacy toàn trace và AuthDB3tests pass |
+| HTTP lifecycle/default flush/AlwaysOn | Đạt | Shared unit 16/16 pass, có actual HTTP socket disconnect và batch chưa export → forceFlush → exported trước shutdown |
+| Test/quality/Compose CI | Chờ CI cuối | Build/lint, shared16/AuthDB3/W1rerun7/W5direct4 và telemetry local pass;16container healthy, actual tracing smoke pass. Initial CI39622002633 có4jobs pass, quality fail do W5 assertion rawname; correction3021177 sửa lookup dependency/method và giữ parent check. [CI correction](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/actions/runs/39625137332) phải đạt trước merge; full local pnpmtest đang cuối rerun |
+| URL/readiness trước review | Đạt | Card/input/output/overview có PR42 và Chờreview, push trước agent review |
+| Review/finalization | Chưa đạt | Đợi agent reviewer và điều phối viên theo ngoại lệ Đức, không GitHub approval Bách |
 
 ## Thay đổi, tồn đọng và bước tiếp theo
 
@@ -47,3 +48,5 @@ Thêm tracing smoke trên Compose/Tempo thật và CI step tận dụng stack re
 - Chưa triển khai metrics task-03, structured logs hoặc dashboard task-04/05.
 - Background retry thiếu context gốc tạo trace mới, giữ event ID cho fallback; không bịa parent/correlation.
 - Chưa finalization/merge. Quy trình áp dụng [vòng đời canonical](../../../../../docs/processed/rules/git-and-pull-request-rules.md#vòng-đời-task-canonical), review nội bộ theo ngoại lệ người phụ trách; không giả GitHub approval của Bách.
+
+Local W1 có lượt504 tại timeout100ms khi Dockerbuild nặngCPU; rerun nguyên test không sửa timeout đạt7/7. Format baseline34fileCRLF ngoài diff giữ nguyên, fullquality dựa clean-checkoutCI. Chưa finalization/merge.

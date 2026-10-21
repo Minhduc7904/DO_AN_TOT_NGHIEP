@@ -8,11 +8,11 @@
 | Tên task | Hoàn thiện distributed tracing toàn topology |
 | Người phụ trách | Đức |
 | Tuần thực hiện | `week-10_2026-10-04_to_2026-10-10` |
-| Trạng thái | Đang thực hiện |
+| Trạng thái | Chờ review |
 | Ngày tạo | 21/10/2026 |
 | Thời gian dự kiến | Một phiên triển khai, kiểm chứng và review bù tiến độ |
 | Nhánh thực hiện | `feat/week-10/task-02-complete-distributed-tracing` |
-| Pull request dự kiến | PR riêng vào `main`, bổ sung URL sau khi tạo |
+| Pull request dự kiến | [PR #42](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/42) vào `main` |
 
 ## Mục tiêu và phạm vi
 

@@ -16,7 +16,7 @@
 | Mã task | Task | Người phụ trách | Collaborator | Ưu tiên | Trạng thái |
 | --- | --- | --- | --- | --- | --- |
 | [task-01_deploy-observability-stack](task-01_deploy-observability-stack.md) | Dựng OTel Collector, Prometheus, Tempo, Loki và Grafana trong Compose | Đức | Bách góp ý nhu cầu query/retention | Cao | Hoàn thành |
-| [task-02_complete-distributed-tracing](task-02_complete-distributed-tracing.md) | Hoàn thiện distributed tracing và resource identity toàn topology | Đức | Bách kiểm tra field phục vụ diagnosis | Cao | Đang thực hiện |
+| [task-02_complete-distributed-tracing](task-02_complete-distributed-tracing.md) | Hoàn thiện distributed tracing và resource identity toàn topology | Đức | Bách kiểm tra field phục vụ diagnosis | Cao | Chờ review |
 | [task-03_export-service-metrics](task-03_export-service-metrics.md) | Xuất service metrics và thêm kiểm chứng metrics baseline | Đức | Bách kiểm tra khả năng query cho anomaly | Cao | Đã giao |
 | [task-04_correlate-structured-logs](task-04_correlate-structured-logs.md) | Chuẩn hóa structured logs, correlation và Loki ingestion | Bách | Đức hỗ trợ Collector/Compose và trace context | Cao | Chờ xử lý |
 | [task-05_build-dashboard-and-validate-observability](task-05_build-dashboard-and-validate-observability.md) | Dựng dashboard và nghiệm thu baseline observability W10 | Bách | Đức hỗ trợ topology, telemetry và smoke test | Cao | Chờ xử lý |
@@ -49,3 +49,7 @@
 ## Tiến độ task-01 ngày 21/10/2026
 
 [PR #41](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/41) có stack16 thành phần, reset hai lần cùng fingerprint và smoke/query ba backend. [Output Đức](../../../../../workspace/duc/week-10_2026-10-04_to_2026-10-10/task-01_deploy-observability-stack/output/task-output.md) ghi bằng chứng, giới hạn Windows và ngoại lệ review agent độc lập Đức đã xác nhận. Readiness đã push tại `9c4a422`; reviewer agent độc lập APPROVED nội bộ và điều phối viên finalization trước merge theo ngoại lệ Đức xác nhận. Chờ CI head cuối trước merge. Task-02/03 chưa triển khai, task-04/05 giữ nguyên.
+
+## Tiến độ task-02 ngày21/10/2026
+
+[PR42](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/42) có trace thật51spans8runtime cùng timeout/unavailable; [output Đức](../../../../../workspace/duc/week-10_2026-10-04_to_2026-10-10/task-02_complete-distributed-tracing/output/task-output.md) ghi bằng chứng và CI correction đang chờ. URL+Chờreview push trước agent review theo ngoại lệ Đức xác nhận; chưa finalization/merge. Task03 chưa triển khai, task04/05 giữ nguyên.
