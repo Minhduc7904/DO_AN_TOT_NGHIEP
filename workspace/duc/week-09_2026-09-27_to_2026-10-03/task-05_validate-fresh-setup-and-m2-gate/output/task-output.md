@@ -6,17 +6,17 @@
 | ------------------ | ------------------------------------------ |
 | Mã task            | `task-05_validate-fresh-setup-and-m2-gate` |
 | Người phụ trách    | Đức                                       |
-| Trạng thái         | Chờ review                             |
-| Bắt đầu thực tế    | 14/10/2026 11:25 (UTC+7)                   |
-| Hoàn thành thực tế | Chưa hoàn thành                            |
+| Trạng thái         | Hoàn thành                             |
+| Bắt đầu thực tế    | 14/10/2026 11:25 (UTC+7), Bách bắt đầu; Đức tiếp quản 21/10/2026                   |
+| Hoàn thành thực tế | 21/10/2026 21:00 (UTC+7) — finalization theo ngoại lệ; thời điểm ghi hồ sơ                            |
 | Tổng thời lượng    | Chưa xác định                              |
 | Pull request       | [#40](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/40)                                   |
-| Người review       | Chưa có                                    |
-| Kết quả review     | Chưa review                                |
+| Người review       | Không có reviewer độc lập; ngoại lệ Đức xác nhận                                    |
+| Kết quả review     | Không có GitHub APPROVED; ngoại lệ Đức xác nhận                                |
 
 ## Báo cáo công việc đã làm
 
-- 14/10/2026 11:25: Khởi tạo branch, input/output và chuyển task sang `Chờ review`.
+- 14/10/2026 11:25: Bách khởi tạo branch, input/output và chuyển task sang `Đang thực hiện`.
 - 14/10/2026 — lượt 1, fresh setup trên máy Bách từ clone mới commit `53a3cf4`, chỉ dựa vào tài liệu:
   - Toolchain theo `lms/.nvmrc` và `packageManager`: Node.js `v22.13.1`, pnpm `11.19.0` qua Corepack; Docker `29.8.1`, Docker Compose `v5.3.0`, Linux `7.0.0-38-generic`.
   - `.env` tạo từ `.env.example`; đổi `COMPOSE_PROJECT_NAME` thành `aiops-lms-fresh-setup` vì máy đã có volume dev `aiops-lms_*` (giữ nguyên, không dùng làm bằng chứng).
@@ -72,7 +72,7 @@ Phần này không thay thế bằng chứng Bách tự giải thích.
 | Hai workflow gồm async | Đã có mô tả và kiểm chứng được ghi dưới tên Đức; chưa có bằng chứng Bách tự giải thích |
 | Kiểm chứng độc lập thứ hai | Đã có comment Đức trên đúng PR head kỹ thuật |
 | Sửa tài liệu và kiểm tra lại sạch | Đạt theo lượt 2 của Bách; Đức không phát hiện lỗi tài liệu mới |
-| URL PR và Chờ review | PR #40; được cập nhật trong commit readiness trước finalization |
+| URL PR và Chờ review | PR #40; readiness đã push tại `5b1fe85` trước finalization |
 | GitHub APPROVED | Không có; bỏ qua theo xác nhận trực tiếp của Đức sau cảnh báo |
 | Finalization trước merge | Thực hiện trên chính branch PR; không sửa application code |
 
@@ -84,4 +84,4 @@ Phần này không thay thế bằng chứng Bách tự giải thích.
 - PR: [#40](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/40).
 - Reviewer/verdict GitHub: không có review submission; không ghi APPROVED giả.
 - Thời lượng tiếp quản: không có timesheet; không suy diễn tổng thời gian công từ khoảng lịch.
-- Bước tiếp theo: finalization metadata, kiểm tra CI và merge theo chỉ thị Đức; giữ giới hạn Gate M2 trong overview.
+- Finalization metadata được ghi trên branch PR #40 sau readiness commit `5b1fe85`; tiếp theo kiểm tra CI và merge theo chỉ thị Đức. Gate M2 giữ giới hạn trong overview.

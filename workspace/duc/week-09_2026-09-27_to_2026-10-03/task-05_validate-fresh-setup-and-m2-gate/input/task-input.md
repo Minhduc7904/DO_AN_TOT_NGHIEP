@@ -8,7 +8,7 @@
 | Tên task             | Xác minh fresh setup và Gate M2                                                            |
 | Người phụ trách      | Đức                                                                                       |
 | Tuần thực hiện       | `week-09_2026-09-27_to_2026-10-03`                                                         |
-| Trạng thái           | Chờ review                                                                             |
+| Trạng thái           | Hoàn thành                                                                             |
 | Ngày tạo             | 14/10/2026                                                                                 |
 | Thời gian dự kiến    | 14/10/2026–17/10/2026 (mốc bù tiến độ W9)                                                  |
 | Nhánh thực hiện      | `test/week-09/task-05-validate-fresh-setup-and-m2-gate`                                    |

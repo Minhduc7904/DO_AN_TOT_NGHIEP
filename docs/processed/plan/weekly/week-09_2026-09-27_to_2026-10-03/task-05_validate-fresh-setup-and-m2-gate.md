@@ -6,7 +6,7 @@
 | --------------- | ------------------------------------------------------- |
 | Mã task         | `task-05_validate-fresh-setup-and-m2-gate`              |
 | Tuần            | `week-09_2026-09-27_to_2026-10-03`                      |
-| Trạng thái      | Chờ review                                          |
+| Trạng thái      | Hoàn thành                                          |
 | Người phụ trách | Đức                                                    |
 | Collaborator    | Không có; Đức tiếp quản theo chỉ thị trực tiếp                |
 | Ưu tiên         | Trung bình                                              |
@@ -29,7 +29,7 @@ Từ checkout/môi trường sạch, làm theo tài liệu để dựng Testbed 
 
 - Tài liệu/task cần có trước: W9 task-04 và Quick Start/Compose README hiện hành.
 - Người hoặc phần việc cần phối hợp: Đức cùng vận hành hai workflow và cung cấp trạng thái các task hardening; Bách thực hiện fresh setup độc lập.
-- Rủi ro/giả định: W9 task-04 đã merge (PR #39) nên task bắt đầu từ 14/10/2026. Gate M2 cần Đức kiểm chứng độc lập trước khi chuyển `Chờ review`; không dùng kiểm chứng một người để thay thế yêu cầu canonical của hai thành viên.
+- Rủi ro/giả định: W9 task-04 đã merge (PR #39) nên task bắt đầu từ 14/10/2026. Gate M2 cần Đức kiểm chứng độc lập trước khi chuyển `Hoàn thành`; không dùng kiểm chứng một người để thay thế yêu cầu canonical của hai thành viên.
 
 ## Sản phẩm kỳ vọng
 
@@ -38,7 +38,10 @@ Từ checkout/môi trường sạch, làm theo tài liệu để dựng Testbed 
 | Báo cáo fresh setup và Gate M2                | Docs | `docs/processed/` hoặc output task      |
 | Sửa tài liệu setup phát hiện trong validation | Docs | `README.md`, `docker-compose/README.md` |
 
-## Definition of Done
+## Definition of Done ban đầu
+
+Các checkbox dưới đây giữ baseline trước tiếp quản; kết quả hiện hành và ngoại lệ được đối chiếu từng điều kiện tại output Đức. Không xác nhận thay bằng chứng cá nhân của Bách.
+
 
 - [ ] Checkout sạch chỉ dùng dependency/version được tài liệu hóa; Compose dựng đủ sáu business service + Gateway, PostgreSQL, Redis và RabbitMQ healthy.
 - [ ] Reset/seed và regression suite chạy pass, có log/thời lượng/commit làm bằng chứng tái lập.
@@ -54,15 +57,11 @@ Từ checkout/môi trường sạch, làm theo tài liệu để dựng Testbed 
 - Pull request: [#40](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/40).
 - Kết quả review: Không có GitHub APPROVED; Đức xác nhận ngoại lệ sau cảnh báo.
 
-> URL/số PR và `Chờ review` phải được commit/push vào PR head trước review. Thành viên còn lại phải gửi `APPROVED` hợp lệ trên GitHub; sau đó người phụ trách finalization metadata, ghi `Hoàn thành` trên chính branch/PR và tự merge task của mình. Card chỉ canonically hoàn thành khi commit đó vào nhánh canonical; xem [vòng đời task canonical](../../../rules/git-and-pull-request-rules.md#vòng-đời-task-canonical).
+> URL/số PR và `Hoàn thành` phải được commit/push vào PR head trước review. Thành viên còn lại phải gửi `APPROVED` hợp lệ trên GitHub; sau đó người phụ trách finalization metadata, ghi `Hoàn thành` trên chính branch/PR và tự merge task của mình. Card chỉ canonically hoàn thành khi commit đó vào nhánh canonical; xem [vòng đời task canonical](../../../rules/git-and-pull-request-rules.md#vòng-đời-task-canonical).
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 14/10/2026 — hai lượt fresh setup trên máy Bách pass (11 service healthy, reset/seed cùng fingerprint, regression E2E `5/5` và messaging ba vòng); sửa bảy lỗi tài liệu setup và kiểm tra lại từ clone mới.
-- Ghi chú/tồn đọng: Gate M2 `Chờ xử lý` đến khi Bách ghi nhận phần giải thích hai workflow và Đức kiểm chứng độc lập trên PR.
-
-## Tiếp quản và đối chiếu hiện hành
-
-Ngày 21/10/2026, Đức chỉ thị tiếp quản task thay Bách và xác nhận ngoại lệ, cho phép commit/push/merge PR #40 sau cảnh báo. Không có GitHub APPROVED; không xác nhận Gate M2 hai thành viên đạt khi thiếu phần giải thích của Bách.
-
-Kiểm chứng Đức đã có tại [comment PR](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/40#issuecomment-6314205006); các ghi chú chờ Đức phía trên là lịch sử 14/10. Output Đức là bảng DoD hiện hành. Gate M2 canonical vẫn `Chờ xử lý` vì thiếu bằng chứng Bách tự giải thích; task đóng theo ngoại lệ, không sửa tiêu chí milestone.
+- Ngày 21/10/2026: Đức tiếp quản và finalization theo xác nhận ngoại lệ trong cuộc trò chuyện hiện tại.
+- Kiểm chứng độc lập Đức: [comment PR #40](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/40#issuecomment-6314205006); 11/11 healthy, fingerprint trùng, regression pass.
+- Không có GitHub APPROVED; được Đức xác nhận bỏ qua sau cảnh báo. Readiness URL PR + `Chờ review` đã push tại commit `5b1fe85`.
+- Gate M2 canonical vẫn `Chờ xử lý`: thiếu bằng chứng Bách tự giải thích. Trạng thái task `Hoàn thành` theo ngoại lệ chỉ trở thành canonical sau merge.
