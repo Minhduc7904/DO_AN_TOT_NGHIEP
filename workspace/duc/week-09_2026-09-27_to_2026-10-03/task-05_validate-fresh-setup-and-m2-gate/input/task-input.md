@@ -9,7 +9,7 @@
 | Người phụ trách      | Đức                                                                                       |
 | Tuần thực hiện       | `week-09_2026-09-27_to_2026-10-03`                                                         |
 | Trạng thái           | Hoàn thành                                                                             |
-| Ngày tạo             | 14/10/2026                                                                                 |
+| Ngày tạo             | 21/10/2026 — tiếp quản hồi tố; hồ sơ gốc Bách ngày 14/10/2026                                                                                 |
 | Thời gian dự kiến    | 14/10/2026–17/10/2026 (mốc bù tiến độ W9)                                                  |
 | Nhánh thực hiện      | `test/week-09/task-05-validate-fresh-setup-and-m2-gate`                                    |
 | Pull request dự kiến | PR từ nhánh task vào `main` sau khi hoàn tất validation, báo cáo Gate M2 và bằng chứng DoD |
@@ -24,13 +24,13 @@ Từ checkout/môi trường sạch, làm theo tài liệu để dựng Testbed 
 
 - Không sửa substantive code của các task hardening trước dưới danh nghĩa validation.
 - Không dùng cache, volume hoặc cấu hình bí mật từ môi trường phát triển hiện có để làm bằng chứng fresh setup.
-- Không đánh dấu Gate M2 đạt khi chỉ có một thành viên thực hiện, và không ghi kết quả kiểm chứng thay Đức.
+- Không đánh dấu Gate M2 đạt khi chỉ có một thành viên thực hiện, và không ghi phần giải thích thay Bách.
 
 ## Sản phẩm dự kiến
 
 | Sản phẩm                                      | Loại | Vị trí hoặc link dự kiến                                                                                                        |
 | --------------------------------------------- | ---- | ------------------------------------------------------------------------------------------------------------------------------- |
-| Báo cáo fresh setup và Gate M2                | Docs | `workspace/bach/week-09_2026-09-27_to_2026-10-03/task-05_validate-fresh-setup-and-m2-gate/output/task-output.md` và PR của task |
+| Báo cáo fresh setup và Gate M2                | Docs | `workspace/duc/week-09_2026-09-27_to_2026-10-03/task-05_validate-fresh-setup-and-m2-gate/output/task-output.md` và PR của task |
 | Sửa tài liệu setup phát hiện trong validation | Docs | `README.md`, `docker-compose/README.md`                                                                                         |
 
 ## Đầu vào và phụ thuộc

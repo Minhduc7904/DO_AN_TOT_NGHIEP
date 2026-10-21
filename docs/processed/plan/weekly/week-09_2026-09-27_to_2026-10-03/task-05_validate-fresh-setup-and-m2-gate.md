@@ -29,7 +29,7 @@ Từ checkout/môi trường sạch, làm theo tài liệu để dựng Testbed 
 
 - Tài liệu/task cần có trước: W9 task-04 và Quick Start/Compose README hiện hành.
 - Người hoặc phần việc cần phối hợp: Đức cùng vận hành hai workflow và cung cấp trạng thái các task hardening; Bách thực hiện fresh setup độc lập.
-- Rủi ro/giả định: W9 task-04 đã merge (PR #39) nên task bắt đầu từ 14/10/2026. Gate M2 cần Đức kiểm chứng độc lập trước khi chuyển `Hoàn thành`; không dùng kiểm chứng một người để thay thế yêu cầu canonical của hai thành viên.
+- Rủi ro/giả định: W9 task-04 đã merge (PR #39) nên task bắt đầu từ 14/10/2026. Gate M2 cần kiểm chứng độc lập; Đức đã ghi kết quả ngày 21/10/2026; không dùng kiểm chứng một người để thay thế yêu cầu canonical của hai thành viên.
 
 ## Sản phẩm kỳ vọng
 
@@ -57,7 +57,7 @@ Các checkbox dưới đây giữ baseline trước tiếp quản; kết quả h
 - Pull request: [#40](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/40).
 - Kết quả review: Không có GitHub APPROVED; Đức xác nhận ngoại lệ sau cảnh báo.
 
-> URL/số PR và `Hoàn thành` phải được commit/push vào PR head trước review. Thành viên còn lại phải gửi `APPROVED` hợp lệ trên GitHub; sau đó người phụ trách finalization metadata, ghi `Hoàn thành` trên chính branch/PR và tự merge task của mình. Card chỉ canonically hoàn thành khi commit đó vào nhánh canonical; xem [vòng đời task canonical](../../../rules/git-and-pull-request-rules.md#vòng-đời-task-canonical).
+> URL/số PR và `Chờ review` phải được commit/push vào PR head trước review. Thành viên còn lại phải gửi `APPROVED` hợp lệ trên GitHub; sau đó người phụ trách finalization metadata, ghi `Hoàn thành` trên chính branch/PR và tự merge task của mình. Card chỉ canonically hoàn thành khi commit đó vào nhánh canonical; xem [vòng đời task canonical](../../../rules/git-and-pull-request-rules.md#vòng-đời-task-canonical).
 
 ## Cập nhật tiến độ
 
