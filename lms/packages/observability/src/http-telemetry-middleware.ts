@@ -18,10 +18,13 @@ interface HttpRequest {
     path?: string | string[];
   };
   url?: string;
+  once?(event: 'aborted', listener: () => void): unknown;
+  removeListener?(event: 'aborted', listener: () => void): unknown;
 }
 
 interface HttpResponse {
-  once(event: 'finish', listener: () => void): unknown;
+  once(event: 'finish' | 'close', listener: () => void): unknown;
+  removeListener?(event: 'finish' | 'close', listener: () => void): unknown;
   statusCode: number;
 }
 
@@ -39,16 +42,6 @@ const headerGetter: TextMapGetter<HttpRequest['headers']> = {
     return Object.keys(carrier);
   },
 };
-
-function getRequestPath(request: HttpRequest): string {
-  const rawUrl = request.originalUrl ?? request.url ?? '/';
-
-  try {
-    return new URL(rawUrl, 'http://telemetry.local').pathname;
-  } catch {
-    return '/';
-  }
-}
 
 function getMatchedRouteTemplate(request: HttpRequest): string | undefined {
   const routePath = request.route?.path;
@@ -71,30 +64,50 @@ export function createHttpTelemetryMiddleware(): HttpTelemetryMiddleware {
 
   return (request, response, next) => {
     const start = performance.now();
-    const method = request.method?.toUpperCase() ?? 'HTTP';
-    const path = getRequestPath(request);
+    const rawMethod = request.method?.toUpperCase() ?? '';
+    const method = [
+      'GET',
+      'HEAD',
+      'POST',
+      'PUT',
+      'PATCH',
+      'DELETE',
+      'OPTIONS',
+      'CONNECT',
+      'TRACE',
+    ].includes(rawMethod)
+      ? rawMethod
+      : '_OTHER';
     const parentContext = propagation.extract(ROOT_CONTEXT, request.headers, headerGetter);
     const span = tracer.startSpan(
-      `${method} ${path}`,
+      `${method} unmatched`,
       {
         attributes: {
           'http.request.method': method,
-          'url.path': path,
         },
         kind: SpanKind.SERVER,
       },
       parentContext,
     );
 
-    response.once('finish', () => {
+    let ended = false;
+    const finish = (): void => finalize();
+    const close = (): void => finalize('client_aborted');
+    const abort = (): void => finalize('client_aborted');
+    const finalize = (failure?: 'client_aborted' | 'exception'): void => {
+      if (ended) return;
+      ended = true;
+      response.removeListener?.('finish', finish);
+      response.removeListener?.('close', close);
+      request.removeListener?.('aborted', abort);
       const routeTemplate = getMatchedRouteTemplate(request);
       const labels = {
         http_method: method,
         http_route_template: routeTemplate ?? 'unmatched',
-        http_status_class: `${Math.floor(response.statusCode / 100)}xx`,
+        http_status_class: failure ?? `${Math.floor(response.statusCode / 100)}xx`,
       };
       requestCount.add(1, labels);
-      if (response.statusCode >= 500) errorCount.add(1, labels);
+      if (failure || response.statusCode >= 500) errorCount.add(1, labels);
       duration.record((performance.now() - start) / 1_000, labels);
 
       if (routeTemplate) {
@@ -102,21 +115,25 @@ export function createHttpTelemetryMiddleware(): HttpTelemetryMiddleware {
         span.updateName(`${method} ${routeTemplate}`);
       }
 
-      span.setAttribute('http.response.status_code', response.statusCode);
-
-      if (response.statusCode >= 500) {
-        span.setAttribute('error.type', String(response.statusCode));
+      if (!failure) span.setAttribute('http.response.status_code', response.statusCode);
+      if (failure || response.statusCode >= 500) {
+        span.setAttribute('error.type', failure ?? String(response.statusCode));
         span.setStatus({ code: SpanStatusCode.ERROR });
       }
-
       span.end();
-    });
+    };
+    response.once('finish', finish);
+    response.once('close', close);
+    request.once?.('aborted', abort);
 
     try {
       context.with(trace.setSpan(parentContext, span), next);
     } catch (error) {
-      span.recordException(error instanceof Error ? error : String(error));
-      span.setStatus({ code: SpanStatusCode.ERROR });
+      span.addEvent('exception', {
+        'exception.type': 'Error',
+        'exception.message': 'Request handler failed',
+      });
+      finalize('exception');
       throw error;
     }
   };

@@ -9,6 +9,7 @@ import {
 } from '@opentelemetry/api';
 
 import type { Principal } from '../domain/access-token.js';
+import { setHttpClientSpanAttributes } from '@aiops-lms/observability';
 
 const tracer = trace.getTracer('@aiops-lms/gateway');
 const meter = metrics.getMeter('@aiops-lms/gateway');
@@ -66,18 +67,18 @@ export class GatewayProxy {
       operation_name: operation,
     };
     const clientSpan = tracer.startSpan(
-      `${operation} ${targetUrl.pathname}`,
+      `${request.dependency} ${operation}`,
       {
         attributes: {
           ...metricAttributes,
           'http.request.method': operation,
           'server.address': targetUrl.hostname,
-          'url.path': targetUrl.pathname,
         },
         kind: SpanKind.CLIENT,
       },
       context.active(),
     );
+    setHttpClientSpanAttributes(clientSpan, request.dependency, operation);
     const clientContext = trace.setSpan(context.active(), clientSpan);
     const startedAt = performance.now();
     let status = 'ok';
@@ -116,7 +117,10 @@ export class GatewayProxy {
       };
     } catch (error) {
       status = error instanceof DependencyTimeoutError || timedOut ? 'timeout' : 'unavailable';
-      clientSpan.recordException(error instanceof Error ? error : String(error));
+      clientSpan.addEvent('exception', {
+        'exception.type': status,
+        'exception.message': 'HTTP dependency request failed',
+      });
       clientSpan.setAttribute('error.type', status);
       clientSpan.setStatus({ code: SpanStatusCode.ERROR });
       if (error instanceof DependencyTimeoutError || timedOut) {

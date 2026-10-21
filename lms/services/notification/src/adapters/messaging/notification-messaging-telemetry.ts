@@ -76,6 +76,7 @@ export class NotificationMessagingTelemetry {
       'messaging.destination.kind': 'queue',
       'messaging.destination.name': this.binding.queue,
       'messaging.operation': 'receive',
+      'messaging.operation.type': 'receive',
       'messaging.system': 'rabbitmq',
       operation_name: 'consume',
     };
@@ -106,7 +107,10 @@ export class NotificationMessagingTelemetry {
     } catch (error) {
       consumeStatus = this.isRejected(error) ? 'rejected' : 'unavailable';
       const failureType = errorType(error);
-      consumeSpan.recordException(error instanceof Error ? error : String(error));
+      consumeSpan.addEvent('exception', {
+        'exception.type': failureType,
+        'exception.message': 'Message consumption failed',
+      });
       consumeSpan.setAttribute('error.type', failureType);
       consumeSpan.setAttribute('notification.delivery.outcome', consumeStatus);
       consumeSpan.setStatus({ code: SpanStatusCode.ERROR });
@@ -170,9 +174,12 @@ export class NotificationMessagingTelemetry {
       'notification process grade.completed',
       {
         attributes: {
+          dependency_identity: 'notification-rabbitmq',
           event_name: event.event_name,
           'messaging.message.id': event.event_id,
           operation_name: 'process',
+          'messaging.operation.type': 'process',
+          'messaging.system': 'rabbitmq',
         },
         kind: SpanKind.INTERNAL,
       },
@@ -189,7 +196,10 @@ export class NotificationMessagingTelemetry {
       return result;
     } catch (error) {
       processStatus = 'unavailable';
-      processSpan.recordException(error instanceof Error ? error : String(error));
+      processSpan.addEvent('exception', {
+        'exception.type': errorType(error),
+        'exception.message': 'Message processing failed',
+      });
       processSpan.setAttribute('error.type', errorType(error));
       processSpan.setAttribute('notification.delivery.outcome', processStatus);
       processSpan.setStatus({ code: SpanStatusCode.ERROR });

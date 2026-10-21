@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { context, propagation, trace } from '@opentelemetry/api';
+import { setHttpClientSpanAttributes } from '@aiops-lms/observability';
 
 import { EnrollmentDependencyError } from '../../application/enrollment-dependency-error.js';
 import { CourseClient, type CoursePrincipal } from '../../application/ports/course-client.js';
@@ -37,6 +38,7 @@ export class CourseHttpClient extends CourseClient {
   }
 
   private async fetchCourse(courseId: string, principal: CoursePrincipal): Promise<boolean> {
+    setHttpClientSpanAttributes(trace.getActiveSpan(), 'enrollment-course', 'GET');
     const baseUrl = this.config.getOrThrow<string>('ENROLLMENT_COURSE_BASE_URL');
     const timeoutMs = this.config.getOrThrow<number>('ENROLLMENT_COURSE_TIMEOUT_MS');
     const url = new URL(`/api/v1/courses/${encodeURIComponent(courseId)}`, baseUrl);
@@ -56,6 +58,12 @@ export class CourseHttpClient extends CourseClient {
       propagation.inject(context.active(), headers);
 
       const response = await fetch(url, { headers, method: 'GET', signal: controller.signal });
+      setHttpClientSpanAttributes(
+        trace.getActiveSpan(),
+        'enrollment-course',
+        'GET',
+        response.status,
+      );
       if (response.status === 404) return false;
       if (response.status === 504) {
         throw new EnrollmentDependencyError('enrollment-course', 'timeout');

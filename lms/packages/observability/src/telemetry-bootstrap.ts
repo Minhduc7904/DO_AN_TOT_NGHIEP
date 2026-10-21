@@ -2,7 +2,12 @@ import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
 import { OTLPMetricExporter } from '@opentelemetry/exporter-metrics-otlp-http';
 import { W3CTraceContextPropagator } from '@opentelemetry/core';
 import { NodeSDK } from '@opentelemetry/sdk-node';
-import { AlwaysOnSampler, type SpanProcessor } from '@opentelemetry/sdk-trace-base';
+import {
+  AlwaysOnSampler,
+  BatchSpanProcessor,
+  type SpanExporter,
+  type SpanProcessor,
+} from '@opentelemetry/sdk-trace-base';
 import { PeriodicExportingMetricReader, type MetricReader } from '@opentelemetry/sdk-metrics';
 
 import { defineTelemetryConfig, type TelemetryConfig } from './telemetry-config.js';
@@ -17,6 +22,7 @@ export interface TelemetryHandle {
 
 export interface TelemetryStartOptions {
   spanProcessor?: SpanProcessor;
+  traceExporter?: SpanExporter;
   metricsEnabled?: boolean;
   metricReader?: MetricReader;
 }
@@ -45,18 +51,18 @@ export function startTelemetry(
           }),
         })
       : undefined);
+  const spanProcessor =
+    options.spanProcessor ??
+    new BatchSpanProcessor(
+      options.traceExporter ?? new OTLPTraceExporter({ url: config.otlpTracesEndpoint }),
+    );
   const sdk = new NodeSDK({
+    autoDetectResources: false,
     resource: createTelemetryResource(config),
     sampler: new AlwaysOnSampler(),
     textMapPropagator: new W3CTraceContextPropagator(),
     ...(metricReader ? { metricReader } : {}),
-    ...(options.spanProcessor
-      ? { spanProcessors: [options.spanProcessor] }
-      : {
-          traceExporter: new OTLPTraceExporter({
-            url: config.otlpTracesEndpoint,
-          }),
-        }),
+    spanProcessors: [spanProcessor],
   });
 
   sdk.start();
@@ -66,7 +72,7 @@ export function startTelemetry(
     config,
     started: true,
     forceFlush: async () => {
-      await options.spanProcessor?.forceFlush();
+      await spanProcessor.forceFlush();
       await metricReader?.forceFlush();
     },
     shutdown: async () => {

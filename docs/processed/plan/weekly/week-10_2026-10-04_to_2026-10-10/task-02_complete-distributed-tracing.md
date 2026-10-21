@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-02_complete-distributed-tracing` |
 | Tuần | `week-10_2026-10-04_to_2026-10-10` |
-| Trạng thái | Đã giao |
+| Trạng thái | Đang thực hiện |
 | Người phụ trách | Đức |
 | Collaborator | Bách kiểm tra field phục vụ diagnosis |
 | Ưu tiên | Cao |
@@ -51,7 +51,7 @@ Hoàn thiện tracing trên sáu business service, Gateway và storage mock đ�
 
 ## Liên kết hồ sơ thực hiện
 
-- Input workspace: Chưa tạo.
+- Input workspace: [task-input.md](../../../../../workspace/duc/week-10_2026-10-04_to_2026-10-10/task-02_complete-distributed-tracing/input/task-input.md).
 - Output workspace: Chưa tạo.
 - Pull request: Chưa tạo.
 - Kết quả review: Chưa review.

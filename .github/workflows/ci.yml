@@ -143,6 +143,12 @@ jobs:
         run: >-
           pnpm --dir lms run test:regression --
           --compose-env-file ../docker-compose/.env.example
+      - name: Validate Compose traces through Tempo across eight runtimes
+        run: >-
+          pnpm --dir lms run test:observability:tracing --
+          --environment test --project aiops-lms-test-regression
+          --confirm aiops-lms-test-regression
+          --compose-env-file ../docker-compose/.env.example
       - name: Show logs on failure
         if: failure()
         run: >-

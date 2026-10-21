@@ -9,3 +9,4 @@ export {
 } from './telemetry-bootstrap.js';
 export { defineTelemetryConfig, type TelemetryConfig } from './telemetry-config.js';
 export { createTelemetryResource, TELEMETRY_RESOURCE_ATTRIBUTES } from './telemetry-resource.js';
+export { setHttpClientSpanAttributes } from './http-client-span-attributes.js';

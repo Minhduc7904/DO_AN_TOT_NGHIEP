@@ -90,6 +90,7 @@ export class PostgresAuthRepository extends AuthRepository implements OnModuleDe
       kind: SpanKind.CLIENT,
       attributes: labels,
     });
+    span.setAttributes({ 'db.system.name': 'postgresql', 'db.operation.name': operation });
     const start = performance.now();
     let status = 'ok';
     try {
@@ -98,7 +99,11 @@ export class PostgresAuthRepository extends AuthRepository implements OnModuleDe
       );
     } catch (error) {
       status = 'error';
-      span.setAttribute('error.type', 'postgres');
+      const code = error instanceof Error && 'code' in error ? String(error.code) : '';
+      span.setAttribute(
+        'error.type',
+        ['57014', 'ETIMEDOUT'].includes(code) ? 'timeout' : 'unavailable',
+      );
       span.setStatus({ code: SpanStatusCode.ERROR });
       throw error;
     } finally {
