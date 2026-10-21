@@ -191,20 +191,15 @@ DO_AN_TOT_NGHIEP/
 │       ├── postgres/
 │       ├── redis/
 │       ├── rabbitmq/
-│       ├── storage/
-│       │   ├── mock/
-│       │   └── minio/
-│       └── observability/
-│           ├── otel-collector/
-│           ├── prometheus/
-│           ├── tempo/
-│           ├── loki/
-│           └── grafana/
+│       └── storage/
+│           ├── mock/
+│           └── minio/
 │
 ├── docker-compose/
 │   ├── compose.yaml
 │   ├── .env.example
-│   └── README.md
+│   ├── README.md
+│   └── observability/
 │
 ├── analysis/
 │   ├── telemetry/
@@ -251,15 +246,15 @@ DO_AN_TOT_NGHIEP/
 
 ### 4.1. Ý nghĩa các ranh giới quan trọng
 
-`lms/` là backend workspace canonical của LMS testbed. Toolchain Node/pnpm, business services, shared technical packages, published contracts và runtime infrastructure của LMS đều nằm dưới root này.
+`lms/` là backend workspace canonical của LMS testbed. Toolchain Node/pnpm, business services, shared technical packages và published contracts của LMS nằm dưới root này; orchestration/config observability dùng chung đặt tại `docker-compose/`.
 
 `lms/services/` chứa Gateway và LMS business services. Mỗi service deploy độc lập nhưng cùng dùng convention kỹ thuật của monorepo.
 
 `lms/packages/observability/` chứa shared application instrumentation như bootstrap OpenTelemetry, logger correlation và helper metric. Nó **không** chứa Collector, Prometheus, Tempo, Loki hoặc Grafana.
 
-`lms/infrastructure/observability/` chứa runtime/configuration của observability stack. Đây là vị trí duy nhất cho Collector, Prometheus, Tempo, Loki và Grafana.
+`docker-compose/observability/` chứa runtime/configuration duy nhất cho Collector, Prometheus, Tempo, Loki và Grafana, cùng root với manifest Compose đang triển khai. W10 task-01 đồng bộ vị trí này với card task và implementation thực tế; không thay topology hoặc telemetry schema.
 
-`docker-compose/` nằm cùng cấp với `lms/` và chứa manifest orchestration root cho toàn bộ testbed. Cấu hình riêng của từng dependency vẫn đặt dưới `lms/infrastructure/` và được Compose tham chiếu khi xuất hiện.
+`docker-compose/` nằm cùng cấp với `lms/` và chứa manifest orchestration root cho toàn bộ testbed. Cấu hình observability nằm tại `docker-compose/observability/`; các cấu hình dependency khác tiếp tục theo vị trí thực tế được manifest tham chiếu, không tạo bản sao cùng vai trò.
 
 `lms/packages/testing/` chứa test utility kỹ thuật; không chứa business model dùng chung.
 

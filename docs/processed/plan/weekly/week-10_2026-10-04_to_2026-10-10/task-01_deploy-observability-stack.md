@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-01_deploy-observability-stack` |
 | Tuần | `week-10_2026-10-04_to_2026-10-10` |
-| Trạng thái | Đã giao |
+| Trạng thái | Hoàn thành |
 | Người phụ trách | Đức |
 | Collaborator | Bách góp ý nhu cầu query/retention |
 | Ưu tiên | Cao |
@@ -41,23 +41,25 @@ Bổ sung OTel Collector, Prometheus, Tempo, Loki và Grafana vào topology Dock
 
 ## Definition of Done
 
-- [ ] Compose config hợp lệ và khởi động healthy OTel Collector, Prometheus, Tempo, Loki và Grafana bằng image version đã pin.
-- [ ] Service gửi OTLP tới hostname Collector nội bộ Compose; Collector có pipeline traces, metrics và logs, không dùng `127.0.0.1` giữa container.
-- [ ] Smoke test gửi/nhận telemetry mẫu và chứng minh Prometheus, Tempo, Loki đều query được dữ liệu qua endpoint thật.
-- [ ] Config không chứa credential production; port, volume, retention/resource limit MVP và cách tắt stack được tài liệu hóa.
-- [ ] Kiểm tra Compose phù hợp và `pnpm run ci:verify` pass hoặc PR ghi rõ failure baseline ngoài phạm vi kèm bằng chứng.
-- [ ] URL/số PR và trạng thái `Chờ review` được commit/push vào PR head trước review; finalization tuân thủ vòng đời task canonical.
+- [x] Compose config hợp lệ và khởi động healthy OTel Collector, Prometheus, Tempo, Loki và Grafana bằng image version đã pin.
+- [x] Service gửi OTLP tới hostname Collector nội bộ Compose; Collector có pipeline traces, metrics và logs, không dùng `127.0.0.1` giữa container.
+- [x] Smoke test gửi/nhận telemetry mẫu và chứng minh Prometheus, Tempo, Loki đều query được dữ liệu qua endpoint thật.
+- [x] Config không chứa credential production; port, volume, retention/resource limit MVP và cách tắt stack được tài liệu hóa.
+- [x] Kiểm tra Compose phù hợp và `pnpm run ci:verify` pass hoặc PR ghi rõ failure baseline ngoài phạm vi kèm bằng chứng.
+- [x] URL/số PR và trạng thái `Chờ review` được commit/push vào PR head trước review; finalization tuân thủ vòng đời task canonical.
 
 ## Liên kết hồ sơ thực hiện
 
-- Input workspace: Chưa tạo.
-- Output workspace: Chưa tạo.
-- Pull request: Chưa tạo.
-- Kết quả review: Chưa review.
+- Input workspace: [task-input.md](../../../../../workspace/duc/week-10_2026-10-04_to_2026-10-10/task-01_deploy-observability-stack/input/task-input.md).
+- Output workspace: [task-output.md](../../../../../workspace/duc/week-10_2026-10-04_to_2026-10-10/task-01_deploy-observability-stack/output/task-output.md).
+- Pull request: [#41](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/41).
+- Kết quả review: APPROVED nội bộ bởi agent độc lập tại `9c4a422`; không có GitHub APPROVED, finalization theo ngoại lệ Đức xác nhận.
 
 > URL/số PR và `Chờ review` phải được commit/push vào PR head trước review. Thành viên còn lại phải gửi `APPROVED` hợp lệ trên GitHub; sau đó người phụ trách finalization metadata, ghi `Hoàn thành` trên chính branch/PR và tự merge task của mình. Card chỉ canonically hoàn thành khi commit đó vào nhánh canonical; xem [vòng đời task canonical](../../../rules/git-and-pull-request-rules.md#vòng-đời-task-canonical).
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 13/10/2026 — lập task bù tiến độ W10.
-- Ghi chú/tồn đọng: Có thể bắt đầu sau khi tạo input workspace; giữ diff task chỉ gồm hạ tầng/config/tài liệu/smoke test của stack.
+- Cập nhật gần nhất: 21/10/2026 — triển khai, kiểm chứng và push readiness PR #41.
+- Ghi chú/tồn đọng: Stack16/16 healthy và ingest/query ba backend đã kiểm chứng; chi tiết DoD, giới hạn Windows và ngoại lệ review nằm trong output. Agent review trước finalization/merge bởi điều phối viên.
+
+- Finalization ngày 21/10/2026 21:42: output/input/card/overview đồng bộ theo review nội bộ; phải kiểm CI head cuối trước merge, không giả approval Bách.
