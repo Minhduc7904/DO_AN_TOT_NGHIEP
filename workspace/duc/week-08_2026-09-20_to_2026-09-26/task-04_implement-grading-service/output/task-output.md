@@ -32,7 +32,6 @@
 - `GET /api/v1/grades/{id}` với id không phải UUID trả `404` (không thể tồn tại) thay vì để PostgreSQL báo lỗi cast.
 - Test Gateway → Grading → Submission dùng Submission thật trên PostgreSQL (`test/w5-postgres-workflow.e2e-spec.ts`); Course/Enrollment là stub HTTP tối thiểu, Storage Mock thật.
 - Contract v1 §10 ban đầu chưa liệt kê `403 FORBIDDEN` và giới hạn `score` của Grading; đã bổ sung trong vòng review nội bộ vòng 1 (xem mục bên dưới), chỉ phần Grading, không đổi event `grade.completed`.
-- `tools/sync-plan-json-and-timeline.ps1` không chạy nguyên bản được trên Linux (lỗi `MakeRelativeUri` do dùng dấu `\`; `docs/processed/plan/json/` thuộc `root` nên không ghi được; card task-02/task-03 của Bách trỏ tới file workspace chưa tồn tại). Đã chạy bản sao tạm ngoài repo (sửa tính đường dẫn, bỏ kiểm tra tồn tại link, ghi JSON ra thư mục tạm) và nhận `Đồng bộ thành công: 24 tuần, 32 task`; nhưng PowerShell 7 sinh định dạng JSON khác bản đã commit nên timeline sinh lại thay đổi ~9.600 dòng không phản ánh thay đổi thực, vì vậy không commit timeline sinh lại. Timeline đang chờ đồng bộ bằng Windows PowerShell; không sửa tay đầu ra.
 
 ## Sản phẩm thực tế
 
@@ -73,8 +72,8 @@ Bằng chứng chạy cục bộ ngày 08/10/2026 với Node 22.13.1, pnpm 11.19
 ## Thay đổi, tồn đọng và bước tiếp theo
 
 - Thay đổi so với input: grade create-only (card nêu "tạo/cập nhật" nhưng kế hoạch đã chốt chỉ tạo); thêm `403` và giới hạn `score` so với ví dụ contract v1.
-- Việc chưa hoàn thành hoặc trở ngại: Không có blocker substantive trong phạm vi task-04. GitHub chưa có `APPROVED` hợp lệ từ thành viên còn lại — cổng chuẩn được Đức yêu cầu bỏ qua theo ngoại lệ. Timeline đang chờ đồng bộ bằng Windows PowerShell (xem ghi chú trên); Đức chỉ thị tiếp tục.
-- Bước tiếp theo: Đức kiểm tra branch protection rồi merge PR #32 theo ngoại lệ; đồng bộ timeline bằng Windows PowerShell; bắt đầu task-05 từ `main` mới.
+- Việc chưa hoàn thành hoặc trở ngại: Không có blocker substantive trong phạm vi task-04. GitHub chưa có `APPROVED` hợp lệ từ thành viên còn lại — cổng chuẩn được Đức yêu cầu bỏ qua theo ngoại lệ. Đức chỉ thị tiếp tục.
+- Bước tiếp theo: Đức kiểm tra branch protection rồi merge PR #32 theo ngoại lệ; bắt đầu task-05 từ `main` mới.
 
 ## Vòng review nội bộ vòng 1 (ngày 08/10/2026)
 

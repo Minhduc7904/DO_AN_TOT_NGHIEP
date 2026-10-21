@@ -1,63 +1,39 @@
 # Quy trình dùng Git và pull request
 
-> Quy trình này hướng dẫn cách thực hiện. Các điều kiện bắt buộc nằm tại [quy tắc Git và pull request](../rules/git-and-pull-request-rules.md).
-
-> Commit/push được nêu trong guide là điều kiện để transition hợp lệ trên remote, không tự cấp quyền cho agent chạy Git write. Chỉ thực hiện lệnh khi yêu cầu hiện tại của người dùng cho phép; nếu chưa cho phép, chuẩn bị thay đổi và báo rõ bước còn thiếu.
+> Guide này chỉ hướng dẫn thao tác. Mọi điều kiện bắt buộc (vòng đời task, approval, finalization, quyền merge, quyền Git write, ngoại lệ vận hành dùng chung và ngoại lệ theo chỉ thị người phụ trách) nằm tại [quy tắc Git và pull request](../rules/git-and-pull-request-rules.md). Chỉ chạy lệnh Git write khi yêu cầu hiện tại của người dùng cho phép.
 
 ## Thay đổi vận hành dùng chung
 
-Skill, rule, guide, template, break task tuần và metadata quản trị repository không thuộc task cụ thể có thể commit/push trực tiếp lên `main` theo ngoại lệ trong [quy tắc Git và pull request](../rules/git-and-pull-request-rules.md#ngoại-lệ-cho-thay-đổi-vận-hành-dùng-chung), khi người dùng đã yêu cầu rõ Git write.
-
-Trước khi commit trực tiếp, xác minh diff không chứa code/artifact/lifecycle của task cụ thể, đồng bộ `main` theo cách fast-forward an toàn và chạy kiểm tra phù hợp. Nếu diff bị trộn, tách phần task sang đúng branch/PR; không dùng ngoại lệ để đưa sản phẩm task lên `main`.
+Thay đổi thuộc [ngoại lệ vận hành dùng chung](../rules/git-and-pull-request-rules.md#ngoại-lệ-cho-thay-đổi-vận-hành-dùng-chung) có thể commit/push trực tiếp lên `main` khi người dùng yêu cầu rõ Git write. Trước khi commit, xác minh diff không chứa code/artifact/lifecycle của task cụ thể, đồng bộ `main` bằng fast-forward và chạy kiểm tra phù hợp; diff bị trộn thì tách phần task sang đúng branch/PR.
 
 ## 1. Bắt đầu một task
 
 1. Mở file task trong `docs/processed/plan/weekly/week-.../` để lấy đúng tên nhánh đã được giao.
-2. Đồng bộ nhánh `main` trước khi tạo nhánh:
+2. Đồng bộ `main` rồi tạo nhánh của task:
 
    ```bash
    git switch main
    git pull --ff-only origin main
-   ```
-
-3. Tạo và chuyển sang nhánh của task:
-
-   ```bash
    git switch -c <task-branch>
    ```
 
-4. Cập nhật card task thành `Đang thực hiện` nếu người phụ trách đã bắt đầu.
+3. Cập nhật card task thành `Đang thực hiện` nếu người phụ trách đã bắt đầu.
 
 ## 2. Trong khi làm
 
-- Chỉ đưa thay đổi phục vụ task vào nhánh; nếu phát sinh việc độc lập, tạo task và nhánh mới.
-- Commit theo lát thay đổi có thể review. Dùng [mẫu commit message](../../../.github/commit-message-template.md): ưu tiên tóm tắt tiếng Việt, ví dụ `docs: chốt phạm vi MVP`; dùng tiếng Anh khi thuật ngữ kỹ thuật, tên riêng hoặc ngữ cảnh rõ hơn. Khi cần mô tả thêm, dùng phần `Tổng quan:` với 1–3 gạch đầu dòng ngắn.
-- Trước khi push, chạy các kiểm tra phù hợp với thay đổi và xem lại `git diff`.
+- Chỉ đưa thay đổi phục vụ task vào nhánh; việc độc lập phát sinh thì tạo task và nhánh mới.
+- Commit theo lát thay đổi có thể review, dùng [mẫu commit message](../../../.github/commit-message-template.md) (ví dụ `docs: chốt phạm vi MVP`).
+- Trước khi push, chạy các kiểm tra phù hợp và xem lại `git diff`.
 
-## 3. Tạo pull request
+## 3. Tạo pull request và chờ review
 
-1. Push nhánh lên remote:
+1. Push nhánh: `git push -u origin <task-branch>`.
+2. Tạo PR từ nhánh task vào `main` bằng [PR template](../../../.github/pull_request_template.md), không xóa các heading bắt buộc.
+3. Ghi URL/số PR vào card task chung, `output/task-output.md` và `weekly-overview.md`, chuyển task sang `Chờ review`, rồi commit/push vào chính branch/PR.
+4. Chỉ sau khi PR head ở remote đã chứa `Chờ review`, yêu cầu thành viên còn lại review đúng phần ghi trong mục **Cần review** của PR.
 
-   ```bash
-   git push -u origin <task-branch>
-   ```
+## 4. Sau review
 
-2. Tạo một pull request từ nhánh task vào `main`. Dùng [PR template](../../../.github/pull_request_template.md), không xóa các heading bắt buộc.
-3. Gắn URL/số PR vào file task chung, `output/task-output.md` và `weekly-overview.md` khi có; chuyển task sang `Chờ review`.
-4. Commit/push URL PR và trạng thái `Chờ review` vào chính branch/PR. Đây là điều kiện bắt buộc trước review; nếu user chưa cho phép Git write, không request/bắt đầu review và báo rõ transition vẫn chỉ ở local.
-5. Chỉ sau khi kiểm tra PR head ở remote đã chứa `Chờ review`, yêu cầu collaborator hoặc thành viên còn lại review đúng phần đã ghi trong mục **Cần review** của PR.
-6. Reviewer thực hiện một vòng review đầy đủ. Nếu review yêu cầu thay đổi, người phụ trách dùng `pr-review-response` để xử lý, kiểm chứng, push và reply từng thread; reviewer sau đó chỉ kiểm tra tập trung phần đã sửa và gửi `APPROVED`, không review lại toàn bộ PR.
-
-## 4. Sau review: approval, finalization rồi người phụ trách merge
-
-- Nếu verdict ban đầu là `CHANGES_REQUESTED`, người phụ trách phải xử lý đầy đủ feedback blocking bằng `pr-review-response`, commit/push thay đổi và reply đúng thread. Reviewer kiểm tra diff xử lý feedback rồi gửi `APPROVED` trên GitHub.
-- Trước finalization, xác minh review submissions trên GitHub cho thấy `APPROVED` còn hiệu lực từ đúng thành viên còn lại; self-approval, `COMMENTED` hoặc approval stale/dismissed không hợp lệ.
-- Người phụ trách dùng `task-completion-recording` **trước merge** để ghi reviewer/verdict, sản phẩm, link PR và bằng chứng DoD trong output/card/weekly overview, rồi chuyển task sang `Hoàn thành` trên chính branch/PR.
-- Finalization metadata (output, card, weekly overview, trạng thái và tham chiếu PR/review) **phải** được commit/push vào chính branch PR trước merge. Không thay đổi substantive artifact/code trong commit này; mọi sửa đổi theo feedback phải nằm trong commit xử lý feedback trước đó. Agent chỉ trực tiếp chạy commit/push khi user đã cho phép; nếu không, báo rõ finalization chưa sẵn sàng merge trên remote.
-- Người phụ trách task là người duy nhất yêu cầu hoặc thực hiện merge sau finalization; reviewer không merge thay. Agent chỉ merge khi người dùng hiện tại nói rõ họ là người phụ trách task và yêu cầu merge.
-- Nếu commit xử lý feedback hoặc finalization làm approval stale/dismissed, reviewer chỉ kiểm tra diff mới rồi re-approve; không cần review lại toàn bộ PR. Không bypass branch protection.
-- Khi PR merge vào `main`, cùng commit đưa substantive work và trạng thái `Hoàn thành` vào nguồn project-wide canonical. Không tạo commit hậu-merge để ghi `Đã merge`, merge SHA, merge timestamp hoặc đóng task.
-
-## Xử lý ngoại lệ
-
-Nếu không thể tuân thủ quy trình chuẩn, cảnh báo rõ cổng bị thiếu và hệ quả. Khi đúng người phụ trách xác nhận tiếp tục, thực hiện theo chỉ thị, dùng bằng chứng thay thế họ cung cấp và ghi nguồn trung thực. Với PR đã merge trước finalization, có thể tạo commit correction trên `main`; không giả mạo GitHub approval hoặc kết quả kiểm tra.
+1. Có `CHANGES_REQUESTED`: người phụ trách dùng `pr-review-response`, push và reply từng thread; reviewer kiểm tra phần đã sửa rồi gửi `APPROVED`.
+2. Xác minh `APPROVED` còn hiệu lực trên GitHub, rồi dùng `task-completion-recording` để finalization và commit/push metadata vào chính branch/PR.
+3. Người phụ trách merge PR sau finalization. Khi merge, `main` nhận cùng lúc substantive work và trạng thái `Hoàn thành`; không tạo commit hậu-merge để ghi `Đã merge`, merge SHA hay merge timestamp.

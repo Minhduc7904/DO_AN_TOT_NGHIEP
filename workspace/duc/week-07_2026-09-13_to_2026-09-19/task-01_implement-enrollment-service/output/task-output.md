@@ -47,7 +47,7 @@
 ## Thay đổi, tồn đọng và bước tiếp theo
 
 - Thay đổi so với input: Không có thay đổi phạm vi; toàn bộ DoD input giữ nguyên.
-- Việc chưa hoàn thành hoặc trở ngại: Bách không thể review (theo xác nhận của người phụ trách ngày 22/09/2026) nên không có `APPROVED` GitHub — Đức tự thực hiện review thay Bách theo ngoại lệ đã xác nhận; `tools/sync-plan-json-and-timeline.ps1` không chạy được trong môi trường hiện tại (thiếu `pwsh`), timeline JSON/HTML đang chờ đồng bộ — không sửa tay các file sinh tự động.
+- Việc chưa hoàn thành hoặc trở ngại: Bách không thể review (theo xác nhận của người phụ trách ngày 22/09/2026) nên không có `APPROVED` GitHub — Đức tự thực hiện review thay Bách theo ngoại lệ đã xác nhận.
 - Bước tiếp theo: Finalization theo ngoại lệ đã hoàn tất trong output này; người phụ trách (Đức) merge PR #25 vào `main`.
 
 > Ngoại lệ workflow: GitHub không ghi nhận `APPROVED` vì Bách không thể review. Người phụ trách (Đức) xác nhận trực tiếp ngày 22/09/2026 rằng Đức đã tự thực hiện review thay Bách và chấp nhận bỏ qua cổng GitHub `APPROVED` để finalization. Không diễn giải ngoại lệ này thành GitHub approval hay review độc lập từ Bách. `Hoàn thành thực tế` là thời điểm work, DoD và finalization đã hoàn tất; không ghi merge time.

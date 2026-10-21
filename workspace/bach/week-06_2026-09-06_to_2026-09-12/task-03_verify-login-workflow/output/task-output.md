@@ -46,7 +46,7 @@ Head PR `98bfa9c` có ba checks GitHub xanh: quality gate, validate Compose và 
 ## Thay đổi, tồn đọng và bước tiếp theo
 
 - Thay đổi so với input: Bổ sung suite PostgreSQL sạch ngoài suite in-memory để kiểm chứng persistence/seed tự động trong CI.
-- Việc chưa hoàn thành hoặc trở ngại: Auth chưa có PostgreSQL instrumentation nên chưa có dependency span để kiểm chứng; điều kiện chỉ áp dụng khi instrumentation được hỗ trợ. Runtime PowerShell không khả dụng nên timeline sinh tự động chưa đồng bộ; không sửa tay đầu ra này theo quy định.
+- Việc chưa hoàn thành hoặc trở ngại: Auth chưa có PostgreSQL instrumentation nên chưa có dependency span để kiểm chứng; điều kiện chỉ áp dụng khi instrumentation được hỗ trợ.
 - Bước tiếp theo: Bách có thể merge PR khi đã tự kiểm tra lại mọi yêu cầu branch protection. Nếu bổ sung PostgreSQL instrumentation ở task phù hợp, mở rộng assertion với identity `auth-postgres`.
 
 > `Hoàn thành thực tế` là thời điểm Bách đã hoàn tất work, DoD và finalization; không ghi merge time. Quy trình chuẩn cần `APPROVED` GitHub từ Đức, nhưng bản ghi này dùng ngoại lệ theo xác nhận trực tiếp của Bách ngày 18/09/2026 và không trình bày ngoại lệ như verdict GitHub.

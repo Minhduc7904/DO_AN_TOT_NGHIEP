@@ -1,26 +1,28 @@
 # Hướng dẫn bắt buộc cho AI agent
 
-Trước khi tạo, sửa hoặc đánh giá code, tài liệu, kế hoạch, tuần hoặc task, hãy đọc đầy đủ:
+Đây là nguồn quy ước ngắn gọn duy nhất cho agent. `CLAUDE.md` và `.github/copilot-instructions.md` chỉ trỏ về đây. Chỉ đọc thêm đúng file cần cho loại việc đang làm (bảng bên dưới); không đọc cả bộ quy ước cho mọi việc.
 
-1. `agent-resources/skills/graduation-workspace/SKILL.md`
-2. `agent-resources/skills/graduation-workspace/references/workspace-standard.md`
+## Quy tắc luôn áp dụng
 
-Áp dụng các quy tắc trong đó. Đặc biệt: tôn trọng quyền sở hữu `workspace/duc/` và `workspace/bach/`, dùng tiếng Việt cho nội dung diễn giải, dùng tên file/thư mục mới bằng tiếng Anh, và không đánh dấu task hoàn thành khi chưa có output chứng minh DoD.
+- Tôn trọng quyền sở hữu `workspace/duc/` và `workspace/bach/`; không tự sửa, di chuyển hoặc xóa `docs/raw/` hay công việc của thành viên còn lại nếu không có yêu cầu rõ.
+- Nội dung diễn giải (tài liệu, báo cáo, README, comment cần thiết) viết bằng tiếng Việt. Tên file/thư mục mới dùng tiếng Anh, chữ thường, ASCII, `kebab-case`. Định danh kỹ thuật trong code giữ tiếng Anh.
+- Không đánh dấu task hoàn thành khi chưa có output chứng minh từng DoD.
+- Chỉ nhận diện người dùng là Đức hay Bách theo lời nói rõ “tôi là Đức/Bách” trong yêu cầu hiện tại. Chưa rõ thì hỏi lại; không đoán từ lịch sử, tài khoản, tên nhánh, thư mục hoặc task cũ.
+- Kế hoạch và tiến độ lấy từ Markdown canonical trong `docs/processed/plan/` cùng hồ sơ `workspace/`. Sau mỗi thay đổi tuần/task, đối chiếu trực tiếp overview, card, input/output và trạng thái GitHub (người phụ trách, trạng thái, nhánh, PR, bằng chứng DoD).
+- Yêu cầu commit/push/merge trong workflow không tự cấp quyền Git write. Chưa được yêu cầu rõ thì chỉ chuẩn bị thay đổi và báo transition chưa hợp lệ trên remote.
 
-Kế hoạch và tiến độ dùng Markdown canonical trong `docs/processed/plan/` cùng hồ sơ `workspace/`. Sau khi tạo hoặc cập nhật tuần/task, agent phải đối chiếu trực tiếp overview, card, input/output và trạng thái GitHub liên quan để kiểm tra người phụ trách, trạng thái, nhánh, liên kết, PR và bằng chứng DoD.
+## Đọc gì cho loại việc nào
 
-Khi yêu cầu cần biết người dùng là ai để lọc task, tạo/sửa workspace, ghi nhận hoàn thành hoặc review, chỉ nhận diện theo việc người dùng nói rõ “tôi là Đức” hoặc “tôi là Bách” trong yêu cầu hiện tại. Nếu chưa có thông tin này, phải hỏi lại; không suy đoán từ lịch sử hội thoại, tên tài khoản, tên nhánh, thư mục hoặc task cũ.
+| Loại việc | Đọc |
+| --- | --- |
+| Tạo/sửa hồ sơ `workspace/`, tài liệu, input/output, biên bản họp | `agent-resources/skills/graduation-workspace/SKILL.md` (link sang `workspace-standard.md`) |
+| Tạo branch, sửa code, mở PR | `docs/processed/rules/naming-rules.md`, `docs/processed/rules/git-and-pull-request-rules.md`; `docs/processed/guides/git-workflow.md` chỉ khi cần lệnh; PR dùng `.github/pull_request_template.md` |
+| Lập/chia task tuần, hỏi công việc tuần | `agent-resources/skills/weekly-task-planning/SKILL.md` |
+| Review task/PR của người khác | `agent-resources/skills/task-code-review/SKILL.md` |
+| Xử lý feedback/comment trên PR của chính task | `agent-resources/skills/pr-review-response/SKILL.md` |
+| Finalization/ghi nhận hoàn thành (trước merge) | `agent-resources/skills/task-completion-recording/SKILL.md` |
+| Tạo/gợi ý commit message | `.github/commit-message-template.md` |
 
-Khi lập/chia task tuần hoặc trả lời “tuần này tôi phải làm gì”, đọc thêm `agent-resources/skills/weekly-task-planning/SKILL.md`. Khi review task/PR của người khác, dùng `agent-resources/skills/task-code-review/SKILL.md`. Khi người dùng là người phụ trách và muốn xử lý feedback/comment/review trên PR của chính task, dùng `agent-resources/skills/pr-review-response/SKILL.md`. Reviewer thực hiện một vòng review đầy đủ; nếu có feedback, người phụ trách sửa và reviewer chỉ cần kiểm tra phần sửa trước khi gửi verdict `APPROVED`. Mặc định chỉ sau khi GitHub ghi nhận `APPROVED` hợp lệ từ thành viên còn lại, người phụ trách mới dùng `agent-resources/skills/task-completion-recording/SKILL.md` **trước merge**; ngoại lệ theo chỉ thị trực tiếp của người phụ trách tuân theo mục “Ưu tiên chỉ thị trực tiếp và ghi nhận ngoại lệ” trong `docs/processed/rules/git-and-pull-request-rules.md`.
+## Vòng đời task và Git
 
-Trước khi tạo branch, vibe code, hard code hoặc mở pull request, bắt buộc đọc:
-
-1. `docs/processed/rules/naming-rules.md`
-2. `docs/processed/rules/git-and-pull-request-rules.md`
-3. `docs/processed/guides/git-workflow.md`
-
-Mỗi task phải có nhánh riêng và pull request trước khi chuyển sang `Chờ review`. URL/số PR và `Chờ review` phải được commit/push vào PR head trước review; reviewer lấy readiness từ PR head, không từ `main`. Vòng đời task canonical nằm tại `docs/processed/rules/git-and-pull-request-rules.md`: quy trình chuẩn yêu cầu thành viên còn lại gửi `APPROVED` hợp lệ trên GitHub, sau đó người phụ trách finalization và là người duy nhất có quyền yêu cầu/thực hiện merge PR của task mình. Khi đúng người phụ trách chỉ thị rõ tiếp tục sau khi đã được cảnh báo về sai lệch workflow, agent thực hiện ngoại lệ và ghi nguồn xác nhận trung thực thay vì từ chối. Requirement commit/push/merge không tự cho phép agent chạy Git write hoặc merge khi người dùng chưa yêu cầu rõ. Pull request phải dùng template `.github/pull_request_template.md`.
-
-Thay đổi vận hành dùng chung không thuộc task cụ thể — như skill/rule/guide/template, break task tuần và metadata quản trị repository — được phép commit/push trực tiếp lên `main` khi người dùng yêu cầu rõ Git write. Ngoại lệ không áp dụng cho code/artifact/DoD/lifecycle của task hoặc shared application code; diff trộn hai loại phải được tách theo `docs/processed/rules/git-and-pull-request-rules.md`.
-
-Không tự sửa, di chuyển hoặc xóa tài liệu trong `docs/raw/` hay công việc của thành viên còn lại nếu không có yêu cầu rõ ràng.
+Quy tắc canonical về branch, PR, review, finalization, merge, ngoại lệ theo chỉ thị trực tiếp của người phụ trách và thay đổi vận hành dùng chung được phép commit trực tiếp lên `main` nằm duy nhất tại `docs/processed/rules/git-and-pull-request-rules.md`. Không sao chép lại các quy tắc đó vào file khác; chỉ link.

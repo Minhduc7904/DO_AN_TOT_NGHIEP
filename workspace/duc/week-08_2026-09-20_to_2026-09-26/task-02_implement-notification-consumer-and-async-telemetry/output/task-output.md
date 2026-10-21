@@ -44,5 +44,4 @@
 - Thay đổi so với input: Tiếp quản từ Bách theo chỉ thị trực tiếp của Đức; provenance substantive commits `9043ee1`, `3d574ec`.
 - Việc chưa hoàn thành hoặc trở ngại:
   - GitHub CI tại head `b19afe2` xanh toàn bộ; lần chạy `ci:verify` cục bộ trước review từng dừng vì format baseline ngoài diff, nhưng focused Prettier, build, lint, full test và RabbitMQ integration đều đạt.
-  - Đồng bộ plan/timeline dừng vì liên kết `workspace/bach/week-08_2026-09-20_to_2026-09-26/task-03_verify-grade-to-notification-workflow/input/task-input.md` chưa tồn tại; không tự tạo hoặc sửa workspace của Bách.
 - Bước tiếp theo: Merge PR #34 theo ngoại lệ đã được Đức xác nhận; W9 task-02 có thể dùng consumer này làm dependency.

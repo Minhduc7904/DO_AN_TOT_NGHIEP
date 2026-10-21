@@ -37,7 +37,7 @@ Triển khai Enrollment service ở mức MVP tại `lms/services/enrollment/`: 
 
 - Tài liệu, dữ liệu hoặc task cần có trước: Course service (task-04/05 Week 6) đã merge vào `main`; HTTP contract v1 (`docs/processed/architecture/http-and-event-contracts-v1.md` §7); data ownership matrix (`docs/processed/architecture/data-ownership-and-fault-matrix-v1.md`); Gateway/Auth (task-01/02 Week 6) đã merge.
 - Người cần phối hợp: Bách review HTTP contract Enrollment↔Course và data ownership `enrollment_db` (khi Bách rảnh trở lại).
-- Rủi ro hoặc giả định: schema Enrollment chỉ chứa field tối thiểu (`principal_id`, `course_id`, `created_at`); ID giữ opaque string tại boundary, khớp quy ước Course Week 6; môi trường thực thi không có `pwsh` nên `tools/sync-plan-json-and-timeline.ps1` không chạy được — timeline sẽ ghi nhận đang chờ đồng bộ, giống ngoại lệ đã dùng ở Week 6 (`task-03_verify-login-workflow.md`).
+- Rủi ro hoặc giả định: schema Enrollment chỉ chứa field tối thiểu (`principal_id`, `course_id`, `created_at`); ID giữ opaque string tại boundary, khớp quy ước Course Week 6.
 
 ## Definition of Done
 

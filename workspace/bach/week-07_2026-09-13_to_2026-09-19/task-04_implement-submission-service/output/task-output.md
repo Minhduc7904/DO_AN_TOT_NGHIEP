@@ -47,7 +47,7 @@
 ## Thay đổi, tồn đọng và bước tiếp theo
 
 - Thay đổi so với input: Không thêm endpoint danh sách; giữ đúng HTTP contract v1 với endpoint đọc theo ID. Bổ sung control plane nội bộ `PUT/DELETE /internal/v1/fault` để test điều khiển và reset Storage Mock mà không đưa fault truth vào business payload.
-- Việc chưa hoàn thành hoặc trở ngại: Không có GitHub `APPROVED`; finalization thực hiện theo ngoại lệ Bách xác nhận trực tiếp. Runtime đồng bộ plan/timeline thiếu `powershell`, nên timeline sinh tự động vẫn chờ đồng bộ. Môi trường local dùng Node 22.22.0 thay vì bản pin 22.13.1; production Docker build đã dùng đúng Node 22.13.1 và pass.
+- Việc chưa hoàn thành hoặc trở ngại: Không có GitHub `APPROVED`; finalization thực hiện theo ngoại lệ Bách xác nhận trực tiếp. Môi trường local dùng Node 22.22.0 thay vì bản pin 22.13.1; production Docker build đã dùng đúng Node 22.13.1 và pass.
 - Bước tiếp theo: Bách chỉ merge PR #28 sau khi GitHub checks của PR head đạt và branch protection cho phép; ngoại lệ approval đã được ghi nhận trung thực ở trên.
 
 > Quy trình mặc định yêu cầu `APPROVED` hợp lệ trước finalization và không ghi merge time. Hồ sơ này áp dụng ngoại lệ do Bách xác nhận trực tiếp: không có GitHub `APPROVED`, và nguồn thay thế được ghi rõ trong bảng kết quả review/DoD. URL/số PR cùng trạng thái **Chờ review** đã có trên PR head trước review; metadata **Hoàn thành** được ghi trên branch PR trước merge. Task chỉ canonically hoàn thành khi commit đó vào nhánh canonical.

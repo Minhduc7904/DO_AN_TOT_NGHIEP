@@ -47,5 +47,4 @@
 - Thay đổi so với input: Không có.
 - Việc chưa hoàn thành hoặc trở ngại:
   - `pnpm run format:check` và do đó `pnpm run ci:verify` cục bộ từ working tree Windows dừng ở bước đầu do 34 file baseline ngoài diff chưa khớp Prettier. Không sửa lan ngoài task; scoped Prettier, build/lint/full test cục bộ pass và GitHub clean-install quality gate xanh.
-  - Đồng bộ plan/timeline dừng vì thiếu `workspace/bach/week-08_2026-09-20_to_2026-09-26/task-03_verify-grade-to-notification-workflow/input/task-input.md`; không tự tạo hoặc sửa workspace của Bách theo ngoại lệ Đức đã xác nhận.
 - Bước tiếp theo: Reviewer kiểm tra focused diff finalization; sau đó Đức merge PR #35 theo ngoại lệ đã xác nhận.

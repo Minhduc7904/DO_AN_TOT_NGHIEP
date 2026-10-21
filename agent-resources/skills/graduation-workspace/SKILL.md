@@ -5,7 +5,7 @@ description: "Tổ chức workspace đồ án: task cá nhân, kế hoạch tu�
 
 # Graduation Workspace
 
-Trước khi thực hiện, đọc [AGENTS.md](../../../AGENTS.md), [quy chuẩn workspace](references/workspace-standard.md), [quy trình vận hành](references/workflow.md) và [bảng template canonical](templates/canonical-templates.md).
+Trước khi thực hiện, đọc [quy chuẩn workspace](references/workspace-standard.md). Đọc thêm [quy trình vận hành](references/workflow.md) và [bảng template canonical](templates/canonical-templates.md) chỉ khi tạo hoặc chuyển trạng thái hồ sơ task.
 
 Chỉ dùng template ở các đường dẫn canonical được liệt kê trong `templates/`; không sao chép hoặc duy trì template thứ hai trong skill.
 

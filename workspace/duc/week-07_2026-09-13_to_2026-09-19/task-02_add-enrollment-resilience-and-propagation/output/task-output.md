@@ -47,7 +47,7 @@
 ## Thay đổi, tồn đọng và bước tiếp theo
 
 - Thay đổi so với input: Bỏ tham số `context` (traceparent/tracestate) khỏi `CourseClient.exists()` — thêm ở task-01 nhưng không cần thiết vì `context.active()` đã đủ; không ảnh hưởng DoD.
-- Việc chưa hoàn thành hoặc trở ngại: Bách không thể review (theo xác nhận của người phụ trách ngày 22/09/2026) nên không có `APPROVED` GitHub — Đức tự thực hiện review thay Bách theo ngoại lệ đã xác nhận; trace propagation qua Gateway thật (không chỉ ở mức unit test) được kiểm chứng ở task-03; `tools/sync-plan-json-and-timeline.ps1` không chạy được (thiếu `pwsh`), timeline đang chờ đồng bộ.
+- Việc chưa hoàn thành hoặc trở ngại: Bách không thể review (theo xác nhận của người phụ trách ngày 22/09/2026) nên không có `APPROVED` GitHub — Đức tự thực hiện review thay Bách theo ngoại lệ đã xác nhận; trace propagation qua Gateway thật (không chỉ ở mức unit test) được kiểm chứng ở task-03.
 - Bước tiếp theo: Finalization theo ngoại lệ đã hoàn tất trong output này; người phụ trách (Đức) merge PR #26 vào `main` sau khi PR #25 đã merge.
 
 > Ngoại lệ workflow: GitHub không ghi nhận `APPROVED` vì Bách không thể review. Người phụ trách (Đức) xác nhận trực tiếp ngày 22/09/2026 rằng Đức đã tự thực hiện review thay Bách và chấp nhận bỏ qua cổng GitHub `APPROVED` để finalization. Không diễn giải ngoại lệ này thành GitHub approval hay review độc lập từ Bách. `Hoàn thành thực tế` là thời điểm work, DoD và finalization đã hoàn tất; không ghi merge time.

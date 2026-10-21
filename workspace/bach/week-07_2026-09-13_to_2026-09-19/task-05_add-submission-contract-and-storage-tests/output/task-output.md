@@ -46,7 +46,7 @@
 ## Thay đổi, tồn đọng và bước tiếp theo
 
 - Thay đổi so với input: Không thay đổi phạm vi. Dùng Course/Enrollment HTTP stub và Storage Mock process thật để test contract; không chạy PostgreSQL trong suite mới.
-- Việc chưa hoàn thành hoặc trở ngại: Không có GitHub `APPROVED`; finalization thực hiện theo ngoại lệ do Bách yêu cầu. Đồng bộ JSON/timeline chưa chạy được vì thiếu runtime PowerShell; timeline đang chờ đồng bộ và không được sửa tay.
+- Việc chưa hoàn thành hoặc trở ngại: Không có GitHub `APPROVED`; finalization thực hiện theo ngoại lệ do Bách yêu cầu.
 - Bước tiếp theo: Bách xem lại trạng thái PR #29 và tự yêu cầu/thực hiện merge theo giới hạn branch protection; chưa có merge metadata nào được ghi nhận.
 
 > `Hoàn thành thực tế` chỉ điền sau khi đủ bằng chứng DoD và finalization hợp lệ; không ghi merge time.

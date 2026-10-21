@@ -24,7 +24,7 @@
 - Full review tại SHA `cb5249d` phát hiện runtime DI của `ConfigService`; implementer sửa tại `ce8cc14` và thêm Nest app-level test chứng minh custom TTL/capacity được inject thật.
 - Focused re-review diff `cb5249d..ce8cc14` kết luận không còn blocking finding (`APPROVED` nội bộ, không phải GitHub `APPROVED`).
 - CI run [38366297418](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/actions/runs/38366297418) xanh toàn bộ trước finalization.
-- Repo hiện tại không còn lệnh sync plan/timeline; đã đối chiếu trực tiếp bốn hồ sơ Markdown canonical và không sửa JSON/HTML sinh tự động.
+- Đã đối chiếu trực tiếp bốn hồ sơ Markdown canonical.
 
 ## Sản phẩm thực tế
 

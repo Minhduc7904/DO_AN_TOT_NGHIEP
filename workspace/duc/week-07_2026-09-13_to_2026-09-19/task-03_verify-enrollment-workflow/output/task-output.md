@@ -50,7 +50,7 @@
 ## Thay đổi, tồn đọng và bước tiếp theo
 
 - Thay đổi so với input: Không có thay đổi phạm vi; toàn bộ DoD input giữ nguyên.
-- Việc chưa hoàn thành hoặc trở ngại: Bách không thể review hay chạy độc lập (theo xác nhận của người phụ trách ngày 22/09/2026) nên không có `APPROVED` GitHub — Đức tự thực hiện review thay Bách theo ngoại lệ đã xác nhận; `tools/sync-plan-json-and-timeline.ps1` không chạy được (thiếu `pwsh`), timeline đang chờ đồng bộ.
+- Việc chưa hoàn thành hoặc trở ngại: Bách không thể review hay chạy độc lập (theo xác nhận của người phụ trách ngày 22/09/2026) nên không có `APPROVED` GitHub — Đức tự thực hiện review thay Bách theo ngoại lệ đã xác nhận.
 - Bước tiếp theo: Finalization theo ngoại lệ đã hoàn tất cho cả task-01/02/03 trong cùng phiên; người phụ trách (Đức) merge PR #27 vào `main` sau khi PR #25/#26 đã merge, sau đó track Submission (task-04/05/06, Bách phụ trách) đủ điều kiện bắt đầu. Gateway 404-code-mapping gap đã ghi nhận qua `spawn_task` riêng, không nằm trong phạm vi task này.
 
 > Ngoại lệ workflow: GitHub không ghi nhận `APPROVED` vì Bách không thể review hay chạy độc lập. Người phụ trách (Đức) xác nhận trực tiếp ngày 22/09/2026 rằng Đức đã tự thực hiện review thay Bách cho cả 3 task (task-01/02/03) và chấp nhận bỏ qua cổng GitHub `APPROVED` để finalization. Không diễn giải ngoại lệ này thành GitHub approval hay review độc lập từ Bách. `Hoàn thành thực tế` là thời điểm work, DoD và finalization đã hoàn tất; không ghi merge time.

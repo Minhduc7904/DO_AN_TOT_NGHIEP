@@ -53,7 +53,6 @@
 
 - Thay đổi so với input: không đổi phạm vi; bổ sung các sửa chữa đa nền tảng phát hiện từ fresh setup Windows.
 - Không còn blocker. Giới hạn được ghi nhận: CI chỉ validate cấu hình Compose; việc khởi động full stack vẫn được kiểm chứng qua fresh setup độc lập.
-- Đồng bộ JSON/timeline chưa chạy được vì môi trường không có PowerShell. Bách xác nhận trực tiếp ngày 11/09/2026 tiếp tục commit/push Markdown finalization; timeline sẽ được đồng bộ sau, không sửa tay đầu ra.
 - Bước tiếp theo: push finalization metadata; nếu approval vẫn hiệu lực và branch protection cho phép, Bách merge PR #18 vào `main`.
 
 > Ngoại lệ ngày 10/09/2026 chỉ áp dụng cho việc đưa PR vào `Chờ review` trước fresh setup. Ngoại lệ đã được khép lại: Đức đã hoàn tất fresh setup độc lập và gửi GitHub `APPROVED`; completion metadata này được ghi trước merge.

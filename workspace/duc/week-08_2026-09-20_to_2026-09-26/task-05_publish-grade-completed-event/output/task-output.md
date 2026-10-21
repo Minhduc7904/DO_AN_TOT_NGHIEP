@@ -16,7 +16,7 @@
 
 ## Báo cáo công việc đã làm
 
-- Khởi tạo hồ sơ task, chuyển card và `weekly-overview.md` sang `Đang thực hiện`. Timeline/JSON chờ đồng bộ bằng Windows PowerShell: `tools/sync-plan-json-and-timeline.ps1` không chạy được trên Linux (đã biết từ task-04); Đức chỉ thị tiếp tục, không sửa tay JSON/timeline và không commit timeline sinh lại.
+- Khởi tạo hồ sơ task, chuyển card và `weekly-overview.md` sang `Đang thực hiện`.
 - **Publication state bền vững trong `grades`** (không có outbox riêng): migration idempotent trong một transaction thêm `event_id uuid UNIQUE NOT NULL`, `publish_status` (`pending`/`published`, CHECK), `publish_attempts` (CHECK `>= 0`), `last_publish_error_code`, `published_at` và index một phần cho row `pending`. Grade có sẵn trước migration (kể cả seed) được backfill `event_id`, `published`, `published_at = completed_at` và không bị phát lại. Grade mới được insert cùng `event_id` UUID ổn định và `pending`.
 - **Request flow**: `POST /api/v1/grades` validate Submission, insert grade + `event_id` + `pending`, publish ngay một lần; broker confirm thì đánh dấu `published` và trả `201`. Publish lỗi/timeout thì grade vẫn tồn tại, `publish_attempts` tăng, lưu `last_publish_error_code` hữu hạn (`BROKER_UNAVAILABLE`, `PUBLISH_TIMEOUT`, `PUBLISH_NACKED`, `EVENT_INVALID`), request trả `503 DEPENDENCY_UNAVAILABLE` ("Grade đã được lưu nhưng event chưa publish; hệ thống sẽ tự thử lại"). `GET` vẫn đọc được, `POST` lại cùng Submission vẫn `409`.
 - **Publisher RabbitMQ** (`amqplib 2.2.0`, có sẵn TypeScript definitions): confirm channel; assert exchange `lms.events` (topic, durable); routing key `grade.completed`; message persistent, `application/json`, `message-id = event_id`; timeout confirm `GRADING_PUBLISH_CONFIRM_TIMEOUT_MS`; connection/channel lỗi hoặc timeout được bỏ và tạo lại ở lần publish sau; broker chưa sẵn sàng không làm Grading fail khi khởi động; đóng channel/connection ở shutdown; không log URL/credential. Event được dựng và validate bằng `gradeCompletedEventSchema`, headers bằng `createGradeCompletedRabbitMqHeaders` (không sửa contract v1). `event_id`, `occurred_at`, payload không đổi giữa các retry; `correlation` theo từng attempt.
@@ -95,5 +95,5 @@ Kiểm chứng sau khi sửa (08/10/2026, Node 22.13.1, pnpm 11.19.0; PostgreSQL
 ## Thay đổi, tồn đọng và bước tiếp theo
 
 - Thay đổi so với input: không đổi phạm vi; các điều chỉnh kỹ thuật nằm ở mục "Quyết định/điều chỉnh so với kế hoạch".
-- Việc chưa hoàn thành hoặc trở ngại: không có blocker substantive; GitHub chưa có `APPROVED` từ thành viên còn lại (Đức yêu cầu bỏ qua theo ngoại lệ); timeline/JSON chờ đồng bộ bằng Windows PowerShell; CI GitHub chưa chạy; Bách chưa kiểm tra tương thích consumer.
-- Bước tiếp theo: Đức merge PR #33 theo ngoại lệ; Notification task-02 phải declare/bind queue `grade.completed` và deduplicate theo `event_id`; đồng bộ timeline bằng Windows PowerShell.
+- Việc chưa hoàn thành hoặc trở ngại: không có blocker substantive; GitHub chưa có `APPROVED` từ thành viên còn lại (Đức yêu cầu bỏ qua theo ngoại lệ); CI GitHub chưa chạy; Bách chưa kiểm tra tương thích consumer.
+- Bước tiếp theo: Đức merge PR #33 theo ngoại lệ; Notification task-02 phải declare/bind queue `grade.completed` và deduplicate theo `event_id`.

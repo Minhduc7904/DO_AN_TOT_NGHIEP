@@ -42,11 +42,11 @@ docs/processed/plan/weekly/
 
 - Mỗi tuần có đúng một `weekly-overview.md`: nguồn plan canonical, mục tiêu tuần, bảng tất cả task và người phụ trách, phụ thuộc/rủi ro, cùng tiêu chí kết thúc tuần.
 - Mỗi file `task-<02-so-thu-tu>_<short-title>.md` là một task nhỏ, ghi người phụ trách duy nhất, collaborator (nếu có), yêu cầu/phạm vi, đầu vào, sản phẩm kỳ vọng, DoD, trạng thái và link đến hồ sơ cá nhân khi đã có.
-- Mỗi task được giao phải có một nhánh Git riêng và một pull request vào `main`; card task ghi tên nhánh và link PR. Khi người phụ trách xác nhận đã làm xong và DoD có bằng chứng, người phụ trách ghi URL/số PR, chuyển card sang **Chờ review** và commit/push transition này vào PR head trước review.
+- Mỗi task được giao có một nhánh Git riêng và một pull request vào `main`; card task ghi tên nhánh và link PR.
 - Trạng thái card task chỉ dùng một trong: `Chưa phân công`, `Đã giao`, `Đang thực hiện`, `Chờ xử lý`, `Chờ review`, `Hoàn thành`.
-- Thứ tự review, merge và ghi nhận hoàn thành mặc định dùng [vòng đời task canonical](../../../../docs/processed/rules/git-and-pull-request-rules.md#vòng-đời-task-canonical). Nếu đúng người phụ trách yêu cầu ngoại lệ sau khi đã được cảnh báo, áp dụng mục ưu tiên chỉ thị trực tiếp và ghi nguồn xác nhận trung thực.
+- Thứ tự chuyển trạng thái, review, merge, ghi nhận hoàn thành và ngoại lệ theo chỉ thị người phụ trách: xem [vòng đời task canonical](../../../../docs/processed/rules/git-and-pull-request-rules.md#vòng-đời-task-canonical).
 - Khi hỏi “tuần này tôi làm gì?”, ưu tiên card trên nhánh canonical có **Người phụ trách** là người hỏi và trạng thái khác `Hoàn thành`. Với task/PR cần review, kiểm tra card ở PR head/task branch trên remote có `Chờ review` và người hỏi là collaborator/reviewer; không suy diễn readiness từ `main`. Nếu task branch đã finalization `Hoàn thành` nhưng PR chưa merge, nêu rõ nó mới sẵn sàng merge, chưa hoàn thành project-wide.
-- Bảng task chỉ là bản phân công. Quy trình chuẩn chỉ chuyển card sang **Hoàn thành** khi mọi DoD có bằng chứng, có hồ sơ, URL PR và GitHub `APPROVED`. Khi người phụ trách xác nhận ngoại lệ, card có thể hoàn thành với bằng chứng thay thế nhưng phải ghi rõ nguồn và sai lệch workflow.
+- Bảng task chỉ là bản phân công; điều kiện chuyển card sang **Hoàn thành** nằm ở vòng đời task canonical.
 - Đây là thư mục dùng chung, nhưng chỉ thay đổi người phụ trách/trạng thái của card khi người sở hữu task hoặc nhóm đã yêu cầu rõ ràng.
 
 ## Biên bản họp dùng chung
@@ -131,6 +131,6 @@ DoD phải kiểm chứng được, không dùng câu mơ hồ như “hoàn thi
 
 Với mọi task mới, output phải ghi link pull request, reviewer và verdict review lấy từ GitHub. Mô tả PR phải tuân thủ `docs/processed/rules/git-and-pull-request-rules.md`; không ghi trạng thái mutable của PR hoặc merge metadata có thể suy ra từ Git/GitHub.
 
-Mặc định chỉ đặt trạng thái **Hoàn thành** theo [vòng đời task canonical](../../../../docs/processed/rules/git-and-pull-request-rules.md#vòng-đời-task-canonical). Nếu đúng người phụ trách xác nhận tiếp tục dù thiếu review/approval hoặc cần correction hậu-merge, cảnh báo rồi cập nhật theo chỉ thị và ghi rõ bằng chứng nào là xác nhận thay thế; không giả mạo GitHub verdict.
+Chỉ đặt trạng thái **Hoàn thành** theo [vòng đời task canonical](../../../../docs/processed/rules/git-and-pull-request-rules.md#vòng-đời-task-canonical), gồm cả cách ghi nguồn xác nhận thay thế khi người phụ trách chỉ thị ngoại lệ; không giả mạo GitHub verdict.
 
 Thông thường tạo `input/task-input.md` ngay khi task được giao, trước khi bắt đầu làm. Nếu người dùng chỉ thông báo task sau khi đã hoàn thành, được phép tạo hồ sơ **ghi nhận hồi tố**: input phải ghi rõ đây là ghi nhận hồi tố và dùng thông tin người dùng cung cấp; output vẫn phải có thời gian, sản phẩm, DoD và bằng chứng đầy đủ. Không được ghi nhận hồi tố khi người dùng chưa xác nhận sản phẩm và từng DoD.

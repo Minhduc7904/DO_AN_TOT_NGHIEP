@@ -57,4 +57,4 @@ Triển khai Notification consumer cho `grade.completed`, xử lý duplicate the
 ## Cập nhật tiến độ
 
 - Cập nhật gần nhất: 11/10/2026 — finalization theo ngoại lệ review nội bộ do Đức xác nhận; hai blocking finding đã được sửa và focused re-review không còn blocking.
-- Ghi chú/tồn đọng: Giữ nguyên hồ sơ `workspace/bach/`; provenance substantive commits trước takeover là `9043ee1`, `3d574ec`. GitHub CI tại head `b19afe2` xanh toàn bộ. Sync plan/timeline còn bị chặn bởi liên kết input task-03 trong workspace Bách chưa tồn tại.
+- Ghi chú/tồn đọng: Giữ nguyên hồ sơ `workspace/bach/`; provenance substantive commits trước takeover là `9043ee1`, `3d574ec`. GitHub CI tại head `b19afe2` xanh toàn bộ.
