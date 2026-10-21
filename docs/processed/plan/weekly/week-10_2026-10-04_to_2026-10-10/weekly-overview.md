@@ -48,10 +48,10 @@
 
 ## Tiến độ task-01 ngày 21/10/2026
 
-[PR #41](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/41) có stack16 thành phần, reset hai lần cùng fingerprint và smoke/query ba backend. [Output Đức](../../../../../workspace/duc/week-10_2026-10-04_to_2026-10-10/task-01_deploy-observability-stack/output/task-output.md) ghi bằng chứng, giới hạn Windows và ngoại lệ review agent độc lập Đức đã xác nhận. Readiness đã push tại `9c4a422`; reviewer agent độc lập APPROVED nội bộ và điều phối viên finalization trước merge theo ngoại lệ Đức xác nhận. Chờ CI head cuối trước merge. Task-02/03 chưa triển khai, task-04/05 giữ nguyên.
+[PR #41](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/41) có stack16 thành phần, reset hai lần cùng fingerprint và smoke/query ba backend. [Output Đức](../../../../../workspace/duc/week-10_2026-10-04_to_2026-10-10/task-01_deploy-observability-stack/output/task-output.md) ghi bằng chứng, giới hạn Windows và ngoại lệ review agent độc lập Đức đã xác nhận. Readiness đã push tại `9c4a422`; reviewer agent độc lập APPROVED nội bộ và điều phối viên finalization trước merge theo ngoại lệ Đức xác nhận. Task-01 đã hoàn tất trên main. Task-02 đã triển khai như phần tiến độ dưới đây; task-03 chưa bắt đầu, task-04/05 giữ nguyên.
 
 ## Tiến độ task-02 ngày21/10/2026
 
-[PR42](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/42) có trace thật51spans8runtime cùng timeout/unavailable; [output Đức](../../../../../workspace/duc/week-10_2026-10-04_to_2026-10-10/task-02_complete-distributed-tracing/output/task-output.md) ghi bằng chứng và CI correction đang chờ. URL+Chờreview push trước agent review theo ngoại lệ Đức xác nhận; chưa finalization/merge. Task03 chưa triển khai, task04/05 giữ nguyên.
+[PR42](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/42) có trace thật51spans8runtime cùng timeout/unavailable; [output Đức](../../../../../workspace/duc/week-10_2026-10-04_to_2026-10-10/task-02_complete-distributed-tracing/output/task-output.md) ghi bằng chứng và CI39626518883 đạt cả5jobs. URL+Chờreview đã push trước agent review; full/focused APPROVED nội bộ, finalization trước merge theo ngoại lệ Đức xác nhận. Task03 chưa triển khai, task04/05 giữ nguyên.
 
 Task-02 PR #42: finalization sau agent review độc lập APPROVED nội bộ tại `b7182a4`, CI39626518883 đạt5jobs; ngoại lệ Đức xác nhận không có GitHub approval Bách. Task-03 chưa bắt đầu, task-04/05 giữ nguyên Chờ xử lý; W10 chưa hoàn thành.

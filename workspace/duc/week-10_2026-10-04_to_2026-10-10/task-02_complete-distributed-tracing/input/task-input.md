@@ -41,10 +41,10 @@ Không đổi business API/event payload/database schema; không bật auto-inst
 
 ## Definition of Done
 
-- [ ] Tám runtime có đúng ba resource identity; test chặn thiếu/sai tên canonical.
-- [ ] Workflow HTTP có parent-child hợp lệ qua Gateway/client/dependency và không span trùng.
-- [ ] Luồng Grading → RabbitMQ → Notification giữ trace/producer-consumer-process identity thực tế.
-- [ ] PostgreSQL, Redis, storage có span đúng dependency; timeout/unavailable có error status/type phù hợp, không secret/PII/payload/fault label.
-- [ ] HTTP finish/close/abort/exception kết thúc span đúng một lần; default SDK processor thực sự flush; baseline AlwaysOn/W3C giữ nguyên.
-- [ ] Unit/integration phù hợp, full quality gates và actual Compose/Tempo smoke đạt; CI chạy tracing smoke trên stack đã sẵn sàng.
-- [ ] URL PR và `Chờ review` được push trước review; điều phối viên finalization/merge sau verdict agent độc lập theo ngoại lệ đã xác nhận.
+- [x] Tám runtime có đúng ba resource identity; test chặn thiếu/sai tên canonical.
+- [x] Workflow HTTP có parent-child hợp lệ qua Gateway/client/dependency và không span trùng.
+- [x] Luồng Grading → RabbitMQ → Notification giữ trace/producer-consumer-process identity thực tế.
+- [x] PostgreSQL, Redis, storage có span đúng dependency; timeout/unavailable có error status/type phù hợp, không secret/PII/payload/fault label.
+- [x] HTTP finish/close/abort/exception kết thúc span đúng một lần; default SDK processor thực sự flush; baseline AlwaysOn/W3C giữ nguyên.
+- [x] Unit/integration phù hợp, full quality gates và actual Compose/Tempo smoke đạt; CI chạy tracing smoke trên stack đã sẵn sàng.
+- [x] URL PR và `Chờ review` được push trước review; điều phối viên finalization/merge sau verdict agent độc lập theo ngoại lệ đã xác nhận.
