@@ -22,6 +22,8 @@ const environmentSchema = z.object({
   AUTH_JWT_TTL_SECONDS: z.coerce.number().int().min(60).max(86_400).default(3_600),
   AUTH_REFRESH_TTL_SECONDS: z.coerce.number().int().min(300).max(2_592_000).default(86_400),
   OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: z.url().default(DEFAULT_OTLP_TRACES_ENDPOINT),
+  OTEL_EXPORTER_OTLP_METRICS_ENDPOINT: z.url().optional(),
+  OTEL_METRIC_EXPORT_INTERVAL: z.coerce.number().int().min(1_000).max(60_000).default(5_000),
   OTEL_SDK_DISABLED: environmentBoolean.default(false),
   OTEL_SERVICE_INSTANCE_ID: z.string().trim().min(1).default(DEFAULT_SERVICE_INSTANCE_ID),
   OTEL_SERVICE_VERSION: z.string().trim().min(1).default(DEFAULT_SERVICE_VERSION),

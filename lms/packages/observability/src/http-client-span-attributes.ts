@@ -13,6 +13,15 @@ const HTTP_DEPENDENCY_PEERS: Readonly<Record<string, string>> = {
   'grading-submission': 'submission',
 };
 
+export function normalizeHttpMethod(rawMethod: string | undefined): string {
+  const method = rawMethod?.toUpperCase() ?? '';
+  return ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'CONNECT', 'TRACE'].includes(
+    method,
+  )
+    ? method
+    : '_OTHER';
+}
+
 /** Chỉ ghi metadata HTTP đã xác định; không nhận raw URL, header hoặc payload. */
 export function setHttpClientSpanAttributes(
   span: Span | undefined,

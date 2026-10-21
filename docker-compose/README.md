@@ -202,3 +202,12 @@ pnpm run test:testbed:reset:compose
 ```
 
 Test reset hai lần trên `aiops-lms-test-reset-seed`, so fingerprint, xác nhận 16 thành phần healthy, chạy smoke sau mỗi reset và xác nhận trace cũ trả 404 sau reset. Test tự dọn đúng project test cùng volume trong `finally`. Khi RAM/build cache hạn chế, đặt `COMPOSE_PARALLEL_LIMIT=1` trước các lệnh Compose/reset/regression để tránh build đồng thời.
+
+
+## Metrics runtime và broker W10
+
+Cả8application runtime bật metrics với `OTEL_EXPORTER_OTLP_METRICS_ENDPOINT=http://otel-collector:4318/v1/metrics`, `OTEL_METRIC_EXPORT_INTERVAL=5000`. Nếu envlocal cũ chưa có biến, Compose dùng mặc định; endpoint traces riêng vẫn giữ tương thích. Không tắt metrics tự động khi Collectorunavailable; SDK export ngoài requestpath và có thể mất dữ liệu khi buffer/retry hết.
+
+Collector có thêm pipeline broker scrape nội bộ15692 từ plugin RabbitMQ đã bật; chỉ queuecanonical `notification.grade-completed.v1` và ba depthgauges. Nếu thay tên queue, phải cập nhật mappingexactqueue trước dùng sốliệu; không coi missing là0. TámapplicationCPU/RSS đo từ process; broker gauge enrich ownership Notification, không giả resourceidentity của applicationprocess.
+
+Registry/labels/buckets/query và giới hạn nằm tại [metrics baseline](../lms/packages/observability/README.md#metrics-baseline-w10). `test:observability:metrics` chỉ chấp nhận projecttest đã xác nhận, tạm stopNotification/Collector và restorefinally, không chạy cùng testfault khác. CI chạy sau regression/tracing khi Compose đã sẵn sàng.

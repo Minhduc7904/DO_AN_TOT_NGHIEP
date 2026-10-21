@@ -10,8 +10,13 @@ import {
 } from '@opentelemetry/sdk-trace-base';
 import { PeriodicExportingMetricReader, type MetricReader } from '@opentelemetry/sdk-metrics';
 
-import { defineTelemetryConfig, type TelemetryConfig } from './telemetry-config.js';
+import {
+  defineTelemetryConfig,
+  resolveMetricsEndpoint,
+  type TelemetryConfig,
+} from './telemetry-config.js';
 import { createTelemetryResource } from './telemetry-resource.js';
+import { createServiceMetricViews, registerProcessMetrics } from './service-metrics.js';
 
 export interface TelemetryHandle {
   readonly config: Readonly<TelemetryConfig>;
@@ -47,8 +52,10 @@ export function startTelemetry(
     (options.metricsEnabled
       ? new PeriodicExportingMetricReader({
           exporter: new OTLPMetricExporter({
-            url: config.otlpTracesEndpoint.replace(/\/v1\/traces$/, '/v1/metrics'),
+            url: resolveMetricsEndpoint(config),
           }),
+          exportIntervalMillis: config.metricExportIntervalMillis ?? 5_000,
+          exportTimeoutMillis: Math.min(config.metricExportIntervalMillis ?? 5_000, 3_000),
         })
       : undefined);
   const spanProcessor =
@@ -62,10 +69,12 @@ export function startTelemetry(
     sampler: new AlwaysOnSampler(),
     textMapPropagator: new W3CTraceContextPropagator(),
     metricReaders: metricReader ? [metricReader] : [],
+    views: createServiceMetricViews(),
     spanProcessors: [spanProcessor],
   });
 
   sdk.start();
+  if (metricReader) registerProcessMetrics();
   let stopped = false;
 
   return {

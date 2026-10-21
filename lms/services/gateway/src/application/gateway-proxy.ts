@@ -9,7 +9,7 @@ import {
 } from '@opentelemetry/api';
 
 import type { Principal } from '../domain/access-token.js';
-import { setHttpClientSpanAttributes } from '@aiops-lms/observability';
+import { setHttpClientSpanAttributes, normalizeHttpMethod } from '@aiops-lms/observability';
 
 const tracer = trace.getTracer('@aiops-lms/gateway');
 const meter = metrics.getMeter('@aiops-lms/gateway');
@@ -61,7 +61,7 @@ export class GatewayProxy {
       controller.abort();
     }, timeoutMs);
     const targetUrl = new URL(request.path, request.targetBaseUrl);
-    const operation = request.method.toUpperCase();
+    const operation = normalizeHttpMethod(request.method);
     const metricAttributes = {
       dependency_identity: request.dependency,
       operation_name: operation,

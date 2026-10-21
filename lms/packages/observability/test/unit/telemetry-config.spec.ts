@@ -1,4 +1,4 @@
-import { defineTelemetryConfig } from '../../src/telemetry-config.js';
+import { defineTelemetryConfig, resolveMetricsEndpoint } from '../../src/telemetry-config.js';
 
 const validConfig = {
   enabled: true,
@@ -9,6 +9,40 @@ const validConfig = {
 };
 
 describe('defineTelemetryConfig', () => {
+  it('derives the metric endpoint without losing an existing proxy path prefix', () => {
+    expect(
+      resolveMetricsEndpoint({
+        ...validConfig,
+        otlpTracesEndpoint: 'http://collector:4318/proxy/v1/traces',
+      }),
+    ).toBe('http://collector:4318/proxy/v1/metrics');
+    expect(
+      resolveMetricsEndpoint({
+        ...validConfig,
+        otlpMetricsEndpoint: 'http://other:4318/custom-metrics',
+      }),
+    ).toBe('http://other:4318/custom-metrics');
+  });
+  it('keeps an explicit metric endpoint and export interval', () => {
+    expect(
+      defineTelemetryConfig({
+        ...validConfig,
+        otlpMetricsEndpoint: 'http://metrics:4318/custom',
+        metricExportIntervalMillis: 5_000,
+      }),
+    ).toMatchObject({
+      otlpMetricsEndpoint: 'http://metrics:4318/custom',
+      metricExportIntervalMillis: 5_000,
+    });
+  });
+  it('rejects a metric endpoint outside HTTP or an invalid interval', () => {
+    expect(() =>
+      defineTelemetryConfig({ ...validConfig, otlpMetricsEndpoint: 'file:///metrics' }),
+    ).toThrow('otlpMetricsEndpoint');
+    expect(() => defineTelemetryConfig({ ...validConfig, metricExportIntervalMillis: 0 })).toThrow(
+      'metricExportIntervalMillis',
+    );
+  });
   it.each(['submission-storage-mock', 'gateway-container', 'not-a-service'])(
     'rejects a container name or unknown resource identity: %s',
     (serviceName) => {
