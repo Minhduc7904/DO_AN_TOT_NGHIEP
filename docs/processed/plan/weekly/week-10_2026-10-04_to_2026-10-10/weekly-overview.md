@@ -17,7 +17,7 @@
 | --- | --- | --- | --- | --- | --- |
 | [task-01_deploy-observability-stack](task-01_deploy-observability-stack.md) | Dựng OTel Collector, Prometheus, Tempo, Loki và Grafana trong Compose | Đức | Bách góp ý nhu cầu query/retention | Cao | Hoàn thành |
 | [task-02_complete-distributed-tracing](task-02_complete-distributed-tracing.md) | Hoàn thiện distributed tracing và resource identity toàn topology | Đức | Bách kiểm tra field phục vụ diagnosis | Cao | Hoàn thành |
-| [task-03_export-service-metrics](task-03_export-service-metrics.md) | Xuất service metrics và thêm kiểm chứng metrics baseline | Đức | Bách kiểm tra khả năng query cho anomaly | Cao | Đang thực hiện |
+| [task-03_export-service-metrics](task-03_export-service-metrics.md) | Xuất service metrics và thêm kiểm chứng metrics baseline | Đức | Bách kiểm tra khả năng query cho anomaly | Cao | Chờ review |
 | [task-04_correlate-structured-logs](task-04_correlate-structured-logs.md) | Chuẩn hóa structured logs, correlation và Loki ingestion | Bách | Đức hỗ trợ Collector/Compose và trace context | Cao | Chờ xử lý |
 | [task-05_build-dashboard-and-validate-observability](task-05_build-dashboard-and-validate-observability.md) | Dựng dashboard và nghiệm thu baseline observability W10 | Bách | Đức hỗ trợ topology, telemetry và smoke test | Cao | Chờ xử lý |
 
@@ -55,3 +55,7 @@
 [PR42](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/42) có trace thật51spans8runtime cùng timeout/unavailable; [output Đức](../../../../../workspace/duc/week-10_2026-10-04_to_2026-10-10/task-02_complete-distributed-tracing/output/task-output.md) ghi bằng chứng và CI39626518883 đạt cả5jobs. URL+Chờreview đã push trước agent review; full/focused APPROVED nội bộ, finalization trước merge theo ngoại lệ Đức xác nhận. Task03 chưa triển khai, task04/05 giữ nguyên.
 
 Task-02 PR #42: finalization sau agent review độc lập APPROVED nội bộ tại `b7182a4`, CI39626518883 đạt5jobs; ngoại lệ Đức xác nhận không có GitHub approval Bách. Task-03 chưa bắt đầu, task-04/05 giữ nguyên Chờ xử lý; W10 chưa hoàn thành.
+
+## Tiến độ task-03 ngày21/10/2026
+
+[PR43](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/43) có actualmetrics8runtime/CPU/RSS, freshRED/error/durationdeltas, cardinalityguard, brokerqueuepeak4→drain0 vàCollectoroutage businessrequest/exportrecovery PASS. [Output Đức](../../../../../workspace/duc/week-10_2026-10-04_to_2026-10-10/task-03_export-service-metrics/output/task-output.md) ghi test vàCIcorrection đangchờ. URL+Chờreview pushtrướcreview theo ngoại lệ đãxácnhận; chưafinalization/merge, task04/05 giữnguyên.

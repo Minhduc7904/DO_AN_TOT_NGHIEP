@@ -72,7 +72,9 @@ async function poll(label, check) {
   let lastError;
   do {
     try {
-      return await check();
+      const result = await check();
+      console.info(`[metrics] ${label}: đạt`);
+      return result;
     } catch (error) {
       lastError = error;
       await delay(1_000);
@@ -89,26 +91,43 @@ const selectors = {
   unavailable:
     'sum(submission_dependency_error_count_total{dependency_identity="submission-storage",status="unavailable"})',
 };
-const before = Object.fromEntries(
-  await Promise.all(
-    Object.entries(selectors).map(async ([name, selector]) => [name, await scalar(selector)]),
-  ),
-);
-const tracing = await runProcess(
-  process.execPath,
-  [
-    fileURLToPath(new URL('./tracing-smoke.mjs', import.meta.url)),
-    '--environment',
-    options.environment,
-    '--project',
-    options.project,
-    '--confirm',
-    options.confirm,
-    '--compose-env-file',
-    options.envFile,
-  ],
-  { capture: true },
-);
+async function runTracing() {
+  return runProcess(
+    process.execPath,
+    [
+      fileURLToPath(new URL('./tracing-smoke.mjs', import.meta.url)),
+      '--environment',
+      options.environment,
+      '--project',
+      options.project,
+      '--confirm',
+      options.confirm,
+      '--compose-env-file',
+      options.envFile,
+    ],
+    { capture: true },
+  );
+}
+// Khởi tạo cả error series của process hiện tại trước baseline; tránh counter cũ còn trong
+// Collector/Prometheus sau application restart. SDK5s + batch1s + scrape5s đều phải đi qua.
+await runTracing();
+const warmupFinishedAt = Date.now() / 1_000;
+await delay(12_000);
+const before = await poll('Baseline counter có sample mới sau warmup', async () => {
+  const values = Object.fromEntries(
+    await Promise.all(
+      Object.entries(selectors).map(async ([name, selector]) => [name, await scalar(selector)]),
+    ),
+  );
+  for (const value of Object.values(values)) assert.ok(value > 0, 'Warmup phải tạo series thật.');
+  const samples = await query(
+    'timestamp(submission_dependency_error_count_total{dependency_identity="submission-storage",status=~"timeout|unavailable"})',
+  );
+  assert.equal(samples.length, 2);
+  for (const sample of samples) assert.ok(Number(sample.value[1]) > warmupFinishedAt);
+  return values;
+});
+const tracing = await runTracing();
 const traceEvidence = JSON.parse(tracing.stdout.trim().split(/\r?\n/u).at(-1));
 assert.equal(traceEvidence.result, 'pass');
 const deltas = await poll('Fresh RED và dependency deltas', async () => {

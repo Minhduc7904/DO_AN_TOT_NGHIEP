@@ -6,11 +6,11 @@
 | --- | --- |
 | Mã task | `task-03_export-service-metrics` |
 | Người phụ trách | Đức |
-| Trạng thái | Đang thực hiện |
+| Trạng thái | Chờ review |
 | Bắt đầu thực tế | 21/10/2026 22:48 (Asia/Saigon) |
 | Hoàn thành thực tế | Chưa finalization |
 | Tổng thời lượng | Đang thực hiện |
-| Pull request | Bổ sung sau khi tạo |
+| Pull request | [PR #43](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/43) |
 | Người review | Agent review độc lập theo ngoại lệ Đức xác nhận, không đại diện Bách |
 | Kết quả review | Chưa review |
 
@@ -33,13 +33,14 @@ Thêm actual Prometheus acceptance và CI reuse stack regression: kiểm freshde
 
 | Điều kiện từ input | Kết quả | Bằng chứng |
 | --- | --- | --- |
-| Tám resource metrics qua Collector | Đang kiểm chứng | Instrumentation/config sẵn; actualPrometheus acceptance đang chạy |
-| RED/cardinality/buckets/denyIDs | Đạt unit, chờ integration | Shared20tests pass trước bổ sung proxy-prefix test; exported datapoint guard chặn ID/faulttruth/rawURL, routeIDcollapse, exactbucket và CPU/RSSpositive |
-| Dependency/messaging/backlog/limits | Đang kiểm chứng | Broker receiver khởi động healthy; query thật có `rabbitmq_detailed_queue_messages`, service_name Notification/dependency đúng; chờ peak/drain |
-| CPU/RSS thực | Đạt unit, chờ integration | process.cpuUsage cumulative user+systemseconds và memoryUsage.rss, không fake0 |
-| ActualPrometheus deltas/outage | Đang kiểm chứng | Chưa kết luận pass trước khi script hoàn tất |
-| Test/quality/CI | Đang kiểm chứng | Build local pass sau sửa optionalendpoint type; Dockerbuild/CI chưa hoàn tất |
-| PR/readiness/review/finalization | Chưa đạt | Chưa Chờreview; đợi test, review agent và điều phối viên |
+| Tám resource metrics qua Collector | Đạt | ActualPrometheus acceptance PASS cả8resource name/version/instance, trace `c8dd1743344a14a1328a39edad65f81d` |
+| RED/cardinality/buckets/denyIDs | Đạt | Shared21tests PASS; actual1000series khôngID/PII/faulttruth;10dynamicIDs khôngtăngseries; exact11buckets/p95 của8runtime pass |
+| Dependency/messaging/backlog/limits | Đạt | Actual dependency/messaging latency queries pass; stopconsumer publish4validfixtureevents, queue>=4; startconsumer currentqueue0; observerownership Notification/dependency đúng, không nhầm outbox |
+| CPU/RSS thực | Đạt | QueryCPU/RSS>0 thực ở8runtime, unitguards pass; khôngfake0/network/disk signals |
+| ActualPrometheus deltas/outage | Đạt | Freshdeltas healthy16/serverErrors1/timeout1/unavailable1; Collectorstop6giây→businesscourse request200→start/exportrecovered. Baselinewarmup tránh countercũ sau apprestart, timestamp samplefresh được kiểm |
+| Test/quality/CI | Chờ CIhead cuối | Local fullbuild→fullpnpmtest/lint pass,21sharedtests pass,16componentshealthy. InitialCIquality fail Courseenvstrictdefaults do thêm interval5000; correctiona690fd1 giữtoEqual+thêm envcoercion/invalidtests. Nestedtracingenvpath lỗi đã sửa dùngabsoluteoptionsenv; chờCIhead cuối trướcmerge |
+| URL/readiness trước review | Đạt | Card/input/output/overview cóPR43+Chờreview vàpush trướcreview |
+| Review/finalization | Chưa đạt | Đợi agentreview độc lập/root theo ngoại lệ Đức xác nhận, khôngGitHubapproval Bách |
 
 ## Thay đổi, tồn đọng và bước tiếp theo
 
@@ -47,3 +48,5 @@ Thêm actual Prometheus acceptance và CI reuse stack regression: kiểm freshde
 - Broker gauges resource là observerRabbitMQ mappedownership Notification; không giả applicationprocess identity. Outboxpending khác queuedepth.
 - Không triển khai structuredlogger/dashboard của Bách; task04/05 giữ nguyên.
 - Chưa finalization/merge. Review/finalization theo [quy tắc canonical](../../../../../docs/processed/rules/git-and-pull-request-rules.md#vòng-đời-task-canonical) và ngoại lệ Đức xác nhận; không giả GitHub approval Bách.
+
+Acceptance phát hiện lỗi testharness counters cũ sau restart (before1/after1) vàfail đúng; đã thêmwarmup+12giây cho pipeline5+1+5s cùngsampletimestamp mới trướcbaseline, sau đó freshdelta>0. Không dùng or0 hoặc nớiđiềukiện. Fullmetricsacceptance runtime chỉdừng projecttestxácnhận, cảNotification/Collector đãrestorefinally.

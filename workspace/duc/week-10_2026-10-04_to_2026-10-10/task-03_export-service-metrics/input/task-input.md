@@ -8,11 +8,11 @@
 | Tên task | Xuất metrics toàn topology và kiểm chứng Prometheus |
 | Người phụ trách | Đức |
 | Tuần thực hiện | `week-10_2026-10-04_to_2026-10-10` |
-| Trạng thái | Đang thực hiện |
+| Trạng thái | Chờ review |
 | Ngày tạo | 21/10/2026 (Asia/Saigon) |
 | Thời gian dự kiến | Phiên triển khai/kiểm chứng bù tiến độ |
 | Nhánh thực hiện | `feat/week-10/task-03-export-service-metrics` |
-| Pull request dự kiến | PR riêng vào `main`, bổ sung URL sau khi tạo |
+| Pull request dự kiến | [PR #43](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/43) vào `main` |
 
 ## Mục tiêu và phạm vi
 

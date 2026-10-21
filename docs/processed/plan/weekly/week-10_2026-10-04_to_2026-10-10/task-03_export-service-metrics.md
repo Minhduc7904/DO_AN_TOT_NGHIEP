@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-03_export-service-metrics` |
 | Tuần | `week-10_2026-10-04_to_2026-10-10` |
-| Trạng thái | Đang thực hiện |
+| Trạng thái | Chờ review |
 | Người phụ trách | Đức |
 | Collaborator | Bách kiểm tra khả năng query cho anomaly |
 | Ưu tiên | Cao |
@@ -52,13 +52,13 @@ Hoàn thiện export metrics từ toàn bộ service qua OTel Collector tới Pr
 ## Liên kết hồ sơ thực hiện
 
 - Input workspace: [task-input.md](../../../../../workspace/duc/week-10_2026-10-04_to_2026-10-10/task-03_export-service-metrics/input/task-input.md).
-- Output workspace: Chưa tạo.
-- Pull request: Chưa tạo.
-- Kết quả review: Chưa review.
+- Output workspace: [task-output.md](../../../../../workspace/duc/week-10_2026-10-04_to_2026-10-10/task-03_export-service-metrics/output/task-output.md).
+- Pull request: [#43](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/43).
+- Kết quả review: Chưa review; agentreview độc lập theo ngoại lệ Đức xác nhận, không GitHubapproval Bách.
 
 > URL/số PR và `Chờ review` phải được commit/push vào PR head trước review. Thành viên còn lại phải gửi `APPROVED` hợp lệ trên GitHub; sau đó người phụ trách finalization metadata, ghi `Hoàn thành` trên chính branch/PR và tự merge task của mình. Card chỉ canonically hoàn thành khi commit đó vào nhánh canonical; xem [vòng đời task canonical](../../../rules/git-and-pull-request-rules.md#vòng-đời-task-canonical).
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 13/10/2026 — lập task bù tiến độ W10.
+- Cập nhật gần nhất: 21/10/2026 — push readinessPR43; actualPrometheus evidence trongoutput.
 - Ghi chú/tồn đọng: Có thể triển khai song song task-02 sau khi task-01 ổn định; giữ contract resource/export tương thích giữa hai branch.
