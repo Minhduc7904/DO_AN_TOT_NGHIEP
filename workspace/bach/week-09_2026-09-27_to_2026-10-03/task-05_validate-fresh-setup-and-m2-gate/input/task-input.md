@@ -49,3 +49,9 @@ Từ checkout/môi trường sạch, làm theo tài liệu để dựng Testbed 
 - [ ] Sản phẩm đã được lưu/đẩy lên vị trí dự kiến và có thể truy cập.
 - [ ] URL/số PR và trạng thái `Chờ review` đã được commit/push vào PR head trước khi reviewer bắt đầu review.
 - [ ] Pull request từ nhánh task có mô tả đúng quy tắc, có verdict `APPROVED` hợp lệ từ thành viên còn lại trên GitHub và completion metadata được commit/push vào chính PR trước khi người phụ trách merge.
+
+## Bàn giao ngày 21/10/2026
+
+Ngày 21/10/2026, Đức chỉ thị tiếp quản task thay Bách và xác nhận ngoại lệ, cho phép commit/push/merge PR #40 sau cảnh báo. Không có GitHub APPROVED; không xác nhận Gate M2 hai thành viên đạt khi thiếu phần giải thích của Bách.
+
+Hồ sơ trên giữ làm lịch sử công việc Bách; trạng thái hiện hành nằm trong [hồ sơ Đức](../../../../duc/week-09_2026-09-27_to_2026-10-03/task-05_validate-fresh-setup-and-m2-gate/input/task-input.md). Các mục “Chưa tạo PR”/“Chờ Đức” phía trên phản ánh thời điểm báo cáo 14/10, không phải trạng thái hiện tại. PR hiện hành: [#40](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/40).

@@ -19,7 +19,7 @@
 | [task-02_harden-messaging-delivery](task-02_harden-messaging-delivery.md)                 | Hardening publisher/consumer idempotency và failure handling      | Đức             | Không có                                 | Cao        | Hoàn thành     |
 | [task-03_implement-reset-and-seed-command](task-03_implement-reset-and-seed-command.md)   | Tạo lệnh reset/seed thống nhất cho Testbed MVP                    | Đức             | Không có                                 | Cao        | Hoàn thành     |
 | [task-04_build-mvp-regression-suite](task-04_build-mvp-regression-suite.md)               | Xây regression E2E và telemetry assertions cho các workflow chính | Bách            | Đức hỗ trợ môi trường testbed            | Cao        | Hoàn thành     |
-| [task-05_validate-fresh-setup-and-m2-gate](task-05_validate-fresh-setup-and-m2-gate.md)   | Xác minh fresh setup và Gate M2                                   | Bách            | Đức hỗ trợ vận hành và đối chiếu Gate M2 | Trung bình | Đang thực hiện |
+| [task-05_validate-fresh-setup-and-m2-gate](task-05_validate-fresh-setup-and-m2-gate.md)   | Xác minh fresh setup và Gate M2                                   | Đức            | Không có; tiếp quản theo chỉ thị Đức | Trung bình | Chờ review |
 
 > Khi đọc tiến độ project-wide, chỉ coi hàng có trạng thái `Hoàn thành` trên nhánh canonical là hoàn thành; trạng thái đã finalization trên task branch chưa thay thế nguồn này.
 
@@ -45,3 +45,9 @@
 - [x] Regression suite bao phủ ít nhất hai workflow xuyên service, các nhánh error/latency quan trọng và telemetry assertions tương ứng.
 - [ ] Fresh setup chạy được theo tài liệu; Gate M2 có bằng chứng và ghi rõ giới hạn nếu chưa có người kiểm chứng thứ hai.
 - [ ] Mỗi task có PR riêng, bằng chứng DoD và trạng thái theo vòng đời task canonical.
+
+## Đối chiếu ngày 21/10/2026
+
+Ngày 21/10/2026, Đức chỉ thị tiếp quản task thay Bách và xác nhận ngoại lệ, cho phép commit/push/merge PR #40 sau cảnh báo. Không có GitHub APPROVED; không xác nhận Gate M2 hai thành viên đạt khi thiếu phần giải thích của Bách.
+
+Task-01–04 đã merge qua PR #35, #37, #38, #39. Task-05 tiếp quản bởi Đức tại [PR #40](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/40); [kiểm chứng độc lập](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/40#issuecomment-6314205006) pass. Các ghi chú chờ kiểm chứng phía trên là lịch sử kế hoạch. Gate M2 canonical vẫn `Chờ xử lý`; thiếu phần giải thích của Bách.

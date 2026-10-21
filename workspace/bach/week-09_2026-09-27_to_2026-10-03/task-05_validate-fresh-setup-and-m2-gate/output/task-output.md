@@ -83,3 +83,9 @@ Kết luận hiện tại: Gate M2 `Chờ xử lý`.
 - Bước tiếp theo: Mở PR; Đức chạy theo tài liệu đã sửa trên máy mình và comment kết quả lên PR; Bách ghi nhận phần giải thích hai workflow, cập nhật kết luận Gate M2 rồi chuyển `Chờ review`.
 
 > `Hoàn thành thực tế` là thời điểm người phụ trách đã hoàn tất work, DoD, nhận `APPROVED` hợp lệ từ thành viên còn lại và finalization; không ghi merge time. URL/số PR cùng trạng thái **Chờ review** phải được commit/push vào PR head trước review. Sau approval, người phụ trách dùng `task-completion-recording` để cập nhật hồ sơ và chuyển **Hoàn thành** trên chính branch/PR trước khi tự merge. Task chỉ canonically hoàn thành khi commit đó vào nhánh canonical. `Chờ xử lý` chỉ dùng cho blocker/dependency thực sự, không dùng chỉ vì PR đang chờ merge.
+
+## Bàn giao ngày 21/10/2026
+
+Ngày 21/10/2026, Đức chỉ thị tiếp quản task thay Bách và xác nhận ngoại lệ, cho phép commit/push/merge PR #40 sau cảnh báo. Không có GitHub APPROVED; không xác nhận Gate M2 hai thành viên đạt khi thiếu phần giải thích của Bách.
+
+Hồ sơ trên giữ làm lịch sử công việc Bách; trạng thái hiện hành nằm trong [hồ sơ Đức](../../../../duc/week-09_2026-09-27_to_2026-10-03/task-05_validate-fresh-setup-and-m2-gate/output/task-output.md). Các mục “Chưa tạo PR”/“Chờ Đức” phía trên phản ánh thời điểm báo cáo 14/10, không phải trạng thái hiện tại. PR hiện hành: [#40](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/40).
