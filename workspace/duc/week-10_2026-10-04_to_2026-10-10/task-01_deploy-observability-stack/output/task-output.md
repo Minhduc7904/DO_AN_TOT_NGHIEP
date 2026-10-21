@@ -6,13 +6,13 @@
 | --- | --- |
 | Mã task | `task-01_deploy-observability-stack` |
 | Người phụ trách | Đức |
-| Trạng thái | Chờ review |
+| Trạng thái | Hoàn thành |
 | Bắt đầu thực tế | 21/10/2026 21:20 (Asia/Saigon) |
-| Hoàn thành thực tế | Chưa finalization |
-| Tổng thời lượng | Đang thực hiện |
+| Hoàn thành thực tế | 21/10/2026 21:42 (Asia/Saigon) — finalization theo ngoại lệ |
+| Tổng thời lượng | Khoảng 22 phút lịch từ thời điểm bắt đầu ghi hồ sơ; không phải timesheet |
 | Pull request | [PR #41](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/41) |
 | Người review | Agent review độc lập theo yêu cầu Đức; không đại diện Bách |
-| Kết quả review | Chưa review |
+| Kết quả review | APPROVED nội bộ tại `9c4a422`; không có GitHub APPROVED |
 
 ## Báo cáo công việc đã làm
 
@@ -39,10 +39,14 @@ Kiểm chứng thực tế phát hiện Tempo 3.1 dùng `backend_worker.compacti
 | Docs port/volume/retention/resource/stop/reset | Đạt | README và `.env.example`; chỉ bind observability host ports loopback |
 | CI, regression, reset hai lần | Đạt | Build/lint/full `pnpm test` local pass; Linux clean quality (gồm `ci:verify`), fresh Compose và regression pass trong [CI run39617474360](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/actions/runs/39617474360). Reset enhanced local2x cùng fingerprint `c0222dc2c158f2f46368db43fe77752a044832ef76a218b9836da2fa5256f522`,16healthy mỗi lượt, query3 backend+Grafana pass và trace cũ404 sau reset |
 | URL PR và Chờ review trên remote | Đạt | Card/input/output/overview đồng bộ [PR #41](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/41), push readiness trước khi reviewer bắt đầu |
-| Review độc lập/finalization theo ngoại lệ | Chưa đạt | Đợi review agent và điều phối viên; ngoại lệ do Đức xác nhận, không có GitHub approval của Bách |
+| Review độc lập/finalization theo ngoại lệ | Đạt theo ngoại lệ | Reviewer agent độc lập APPROVED tại `9c4a422`; Đức xác nhận dùng review nội bộ và ủy quyền điều phối viên commit/push/merge; không có GitHub approval của Bách |
 
 ## Thay đổi, tồn đọng và bước tiếp theo
 
 - Giữ phạm vi task-01; task-04/05 của Bách vẫn `Chờ xử lý`.
-- Chưa finalization/merge. `ci:verify` local dừng format với34 file baseline CRLF giống origin/main sau normalize; clean Linux quality pass. Windows wrapper `test:regression` gặp baseline `spawn EINVAL` ở pnpm.cmd, Linux wrapper regression đã pass. Một lượt local startup Enrollment exited1 không lưu đủ log trước cleanup; manual startup và hai lượt reset sau đó đều pass; reset-smoke nay lưu log khi fail trước cleanup để điều tra nếu tái diễn.
+- Finalization trước merge sau review nội bộ; CI của head cuối phải đạt trước merge. `ci:verify` local dừng format với34 file baseline CRLF giống origin/main sau normalize; clean Linux quality pass. Windows wrapper `test:regression` gặp baseline `spawn EINVAL` ở pnpm.cmd, Linux wrapper regression đã pass. Một lượt local startup Enrollment exited1 không lưu đủ log trước cleanup; manual startup và hai lượt reset sau đó đều pass; reset-smoke nay lưu log khi fail trước cleanup để điều tra nếu tái diễn.
 - Sau kiểm chứng cập nhật PR/URL/readiness, agent review độc lập kiểm tra rồi điều phối viên finalization/merge theo [quy tắc canonical](../../../../../docs/processed/rules/git-and-pull-request-rules.md#vòng-đời-task-canonical).
+
+## Review độc lập và finalization
+
+Reviewer kiểm Compose/syntax/diff, reset guard 11/11, smoke ba backend và Grafana, OTLP gRPC thực tế, runtime nonroot/resource/loopback labels và negative health probe. Trace độc lập HTTP `c2ade414827dd8eaf6c54c4dd91b2f14`, gRPC `727ea401aab57f8c2801b9b2bc0280ef`. Không có blocker. Góp ý không chặn: reset smoke đang dùng Tempo port canonical 3200; chưa hỗ trợ override port tùy chỉnh tại assertion trace cũ. Không có GitHub review submission; nguồn thay thế là review agent và xác nhận ngoại lệ của Đức trong cuộc trò chuyện triển khai W10.
