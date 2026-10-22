@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-03_export-service-metrics` |
 | Tuần | `week-10_2026-10-04_to_2026-10-10` |
-| Trạng thái | Chờ review |
+| Trạng thái | Hoàn thành |
 | Người phụ trách | Đức |
 | Collaborator | Bách kiểm tra khả năng query cho anomaly |
 | Ưu tiên | Cao |
@@ -41,24 +41,26 @@ Hoàn thiện export metrics từ toàn bộ service qua OTel Collector tới Pr
 
 ## Definition of Done
 
-- [ ] Gateway, sáu business service và storage mock export service metrics qua Collector; Prometheus query được series có `service.name` đúng canonical.
-- [ ] RED metrics dùng route template, method, status class và bucket/label bounded; endpoint động không tạo một series cho từng ID.
-- [ ] Outbound HTTP/dependency và RabbitMQ có signal latency/error/retry/backlog hoặc giới hạn quan sát được tài liệu hóa rõ.
-- [ ] Test tự động chặn `trace_id`, `span_id`, request/user/event ID và `run_id` xuất hiện trong metric labels.
-- [ ] Query mẫu chứng minh phân biệt healthy, HTTP 5xx, timeout và dependency unavailable ở mức service/dependency.
-- [ ] Test liên quan, `pnpm run ci:verify` và Compose smoke pass; metrics export failure không làm application request path thất bại.
-- [ ] URL/số PR và trạng thái `Chờ review` được commit/push vào PR head trước review; finalization tuân thủ vòng đời task canonical.
+- [x] Gateway, sáu business service và storage mock export service metrics qua Collector; Prometheus query được series có `service.name` đúng canonical.
+- [x] RED metrics dùng route template, method, status class và bucket/label bounded; endpoint động không tạo một series cho từng ID.
+- [x] Outbound HTTP/dependency và RabbitMQ có signal latency/error/retry/backlog hoặc giới hạn quan sát được tài liệu hóa rõ.
+- [x] Test tự động chặn `trace_id`, `span_id`, request/user/event ID và `run_id` xuất hiện trong metric labels.
+- [x] Query mẫu chứng minh phân biệt healthy, HTTP 5xx, timeout và dependency unavailable ở mức service/dependency.
+- [x] Test liên quan, `pnpm run ci:verify` và Compose smoke pass; metrics export failure không làm application request path thất bại.
+- [x] URL/số PR và trạng thái `Chờ review` được commit/push vào PR head trước review; finalization tuân thủ vòng đời task canonical.
 
 ## Liên kết hồ sơ thực hiện
 
 - Input workspace: [task-input.md](../../../../../workspace/duc/week-10_2026-10-04_to_2026-10-10/task-03_export-service-metrics/input/task-input.md).
 - Output workspace: [task-output.md](../../../../../workspace/duc/week-10_2026-10-04_to_2026-10-10/task-03_export-service-metrics/output/task-output.md).
 - Pull request: [#43](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/43).
-- Kết quả review: Chưa review; agentreview độc lập theo ngoại lệ Đức xác nhận, không GitHubapproval Bách.
+- Kết quả review: APPROVED nội bộ bởi agent độc lập tại `c132d82`; không có GitHub APPROVED của Bách, finalization theo ngoại lệ Đức xác nhận.
 
 > URL/số PR và `Chờ review` phải được commit/push vào PR head trước review. Thành viên còn lại phải gửi `APPROVED` hợp lệ trên GitHub; sau đó người phụ trách finalization metadata, ghi `Hoàn thành` trên chính branch/PR và tự merge task của mình. Card chỉ canonically hoàn thành khi commit đó vào nhánh canonical; xem [vòng đời task canonical](../../../rules/git-and-pull-request-rules.md#vòng-đời-task-canonical).
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 21/10/2026 — push readinessPR43; actualPrometheus evidence trongoutput.
-- Ghi chú/tồn đọng: Có thể triển khai song song task-02 sau khi task-01 ổn định; giữ contract resource/export tương thích giữa hai branch.
+- Cập nhật gần nhất: 22/10/2026 20:23 — finalization trước merge sau review độc lập và CI substantive head đạt.
+- Reviewer kiểm chứng 29 tests và acceptance Prometheus đủ tám runtime; cold DB khi Collector dừng trả 200, export phục hồi. Chi tiết DoD, feedback DNS và trace nằm trong output.
+- CI39784597102 đạt cả 5 jobs; CI head finalization phải đạt trước merge. Không có GitHub approval Bách; dùng ngoại lệ Đức đã xác nhận.
+- Task-04/05 giữ nguyên; task-03 chỉ hoàn thành canonical sau khi metadata và code vào main.

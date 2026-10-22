@@ -8,7 +8,7 @@
 | Tên task | Xuất metrics toàn topology và kiểm chứng Prometheus |
 | Người phụ trách | Đức |
 | Tuần thực hiện | `week-10_2026-10-04_to_2026-10-10` |
-| Trạng thái | Chờ review |
+| Trạng thái | Hoàn thành |
 | Ngày tạo | 21/10/2026 (Asia/Saigon) |
 | Thời gian dự kiến | Phiên triển khai/kiểm chứng bù tiến độ |
 | Nhánh thực hiện | `feat/week-10/task-03-export-service-metrics` |
@@ -41,10 +41,10 @@ Không đổi business API/event/database; không dashboard/structured applicati
 
 ## Definition of Done
 
-- [ ] Prometheus query được metrics tám service identity qua Collector.
-- [ ] RED dùng method/route/status bounded và histogram buckets đúng; exported datapoint tests chặn ID/high-cardinality/fault truth.
-- [ ] Dependency/messaging có latency/error/publish/consume/process/outbox và broker backlog thật, giới hạn retry/lag ghi rõ.
-- [ ] Process CPU cumulative seconds và memory RSS thật có dữ liệu; không fake network/disk optional signals.
-- [ ] Actual Prometheus acceptance dùng baseline/delta chứng minh healthy/5xx/timeout/unavailable, queue backlog tăng/drain, cardinality động và Collector down không phá request.
-- [ ] Unit/quality/Compose/regression/tracing/metrics CI phù hợp đạt, mọi failure/giới hạn ghi trung thực.
-- [ ] PR URL+Chờreview push trước review; root finalization/merge sau verdict độc lập theo ngoại lệ đã xác nhận.
+- [x] Prometheus query được metrics tám service identity qua Collector.
+- [x] RED dùng method/route/status bounded và histogram buckets đúng; exported datapoint tests chặn ID/high-cardinality/fault truth.
+- [x] Dependency/messaging có latency/error/publish/consume/process/outbox và broker backlog thật, giới hạn retry/lag ghi rõ.
+- [x] Process CPU cumulative seconds và memory RSS thật có dữ liệu; không fake network/disk optional signals.
+- [x] Actual Prometheus acceptance dùng baseline/delta chứng minh healthy/5xx/timeout/unavailable, queue backlog tăng/drain, cardinality động và Collector down không phá request.
+- [x] Unit/quality/Compose/regression/tracing/metrics CI phù hợp đạt, mọi failure/giới hạn ghi trung thực.
+- [x] PR URL+Chờreview push trước review; root finalization/merge sau verdict độc lập theo ngoại lệ đã xác nhận.
