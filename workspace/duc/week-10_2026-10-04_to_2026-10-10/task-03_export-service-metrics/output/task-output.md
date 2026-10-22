@@ -37,7 +37,7 @@ Thêm actual Prometheus acceptance và CI reuse stack regression: kiểm freshde
 | RED/cardinality/buckets/denyIDs | Đạt | Shared21tests PASS; actual1000series khôngID/PII/faulttruth;10dynamicIDs khôngtăngseries; exact11buckets/p95 của8runtime pass |
 | Dependency/messaging/backlog/limits | Đạt | Actual dependency/messaging latency queries pass; stopconsumer publish4validfixtureevents, queue>=4; startconsumer currentqueue0; observerownership Notification/dependency đúng, không nhầm outbox |
 | CPU/RSS thực | Đạt | QueryCPU/RSS>0 thực ở8runtime, unitguards pass; khôngfake0/network/disk signals |
-| ActualPrometheus deltas/outage | Đạt | Freshdeltas healthy16/serverErrors1/timeout1/unavailable1; Collectorstop6giây→businesscourse request200→start/exportrecovered. Baselinewarmup tránh countercũ sau apprestart, timestamp samplefresh được kiểm |
+| ActualPrometheus deltas/outage | Chờ kiểm chứng sửa lỗi review | Freshdeltas healthy16/serverErrors1/timeout1/unavailable1; Collectorstop6giây→businesscourse request200→start/exportrecovered. Baselinewarmup tránh countercũ sau apprestart, timestamp samplefresh được kiểm |
 | Test/quality/CI | Chờ CIhead cuối | Local fullbuild→fullpnpmtest/lint pass,21sharedtests pass,16componentshealthy. InitialCIquality fail Courseenvstrictdefaults do thêm interval5000; correctiona690fd1 giữtoEqual+thêm envcoercion/invalidtests. Nestedtracingenvpath lỗi đã sửa dùngabsoluteoptionsenv; chờCIhead cuối trướcmerge |
 | URL/readiness trước review | Đạt | Card/input/output/overview cóPR43+Chờreview vàpush trướcreview |
 | Review/finalization | Chưa đạt | Đợi agentreview độc lập/root theo ngoại lệ Đức xác nhận, khôngGitHubapproval Bách |
@@ -50,3 +50,5 @@ Thêm actual Prometheus acceptance và CI reuse stack regression: kiểm freshde
 - Chưa finalization/merge. Review/finalization theo [quy tắc canonical](../../../../../docs/processed/rules/git-and-pull-request-rules.md#vòng-đời-task-canonical) và ngoại lệ Đức xác nhận; không giả GitHub approval Bách.
 
 Acceptance phát hiện lỗi testharness counters cũ sau restart (before1/after1) vàfail đúng; đã thêmwarmup+12giây cho pipeline5+1+5s cùngsampletimestamp mới trướcbaseline, sau đó freshdelta>0. Không dùng or0 hoặc nớiđiềukiện. Fullmetricsacceptance runtime chỉdừng projecttestxácnhận, cảNotification/Collector đãrestorefinally.
+
+Review độc lập và CI tại head f2d00d7 phát hiện Collector outage gây HTTP504 dù các bước metrics trước đó đạt. Ngày22/10 đã tái hiện2/2 khi cachemiss và PGpool idle: Gateway1261/4594ms, directCourse~989ms, DEPENDENCY_TIMEOUT. Diagnostic trong cùng Nodeprocess: dns.resolve4(postgres)0ms nhưng dns.lookup(postgres)5733ms khi4lookup Collector mấtDNS chiếm libuvpool. Sửa chỉ transport telemetry sang c-ares và giới hạn request/socket/timeout; không tăng business timeout. Smoke bổ sung cachemiss+idle12giây, errorcode/elapsed; chờ actualrerun và CI mới, chưa đủ điều kiện merge.

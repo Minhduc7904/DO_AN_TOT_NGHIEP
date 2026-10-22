@@ -17,6 +17,7 @@ import {
 } from './telemetry-config.js';
 import { createTelemetryResource } from './telemetry-resource.js';
 import { createServiceMetricViews, registerProcessMetrics } from './service-metrics.js';
+import { telemetryHttpTransportOptions } from './telemetry-http-transport.js';
 
 export interface TelemetryHandle {
   readonly config: Readonly<TelemetryConfig>;
@@ -52,6 +53,7 @@ export function startTelemetry(
     (options.metricsEnabled
       ? new PeriodicExportingMetricReader({
           exporter: new OTLPMetricExporter({
+            ...telemetryHttpTransportOptions(),
             url: resolveMetricsEndpoint(config),
           }),
           exportIntervalMillis: config.metricExportIntervalMillis ?? 5_000,
@@ -61,7 +63,12 @@ export function startTelemetry(
   const spanProcessor =
     options.spanProcessor ??
     new BatchSpanProcessor(
-      options.traceExporter ?? new OTLPTraceExporter({ url: config.otlpTracesEndpoint }),
+      options.traceExporter ??
+        new OTLPTraceExporter({
+          ...telemetryHttpTransportOptions(),
+          url: config.otlpTracesEndpoint,
+        }),
+      { exportTimeoutMillis: 2_000 },
     );
   const sdk = new NodeSDK({
     autoDetectResources: false,

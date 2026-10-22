@@ -53,10 +53,15 @@ const forbiddenKeys =
   /^(trace_id|span_id|request_id|user_id|principal_id|event_id|run_id|fault_type|fault_id|root_cause_service|url_path|url|path)$/u;
 const dynamicIds = [];
 async function json(url, init = {}) {
+  const started = Date.now();
   const response = await fetch(url, { ...init, signal: AbortSignal.timeout(15_000) });
-  assert.ok(response.ok, `HTTP status ${response.status}`);
   const text = await response.text();
-  return text ? JSON.parse(text) : undefined;
+  const body = text ? JSON.parse(text) : undefined;
+  assert.ok(
+    response.ok,
+    `HTTP status ${response.status}; elapsedMs=${Date.now() - started}; code=${body?.error?.code ?? body?.code ?? 'unknown'}`,
+  );
+  return body;
 }
 async function query(expression) {
   const data = await json(`${prometheus}/api/v1/query?query=${encodeURIComponent(expression)}`);
@@ -277,6 +282,9 @@ await poll('Broker queue drain sau khôi phục consumer', async () => {
 });
 
 const requestCountBefore = await scalar(selectors.healthy);
+// Ép cache miss và chờ pool PG idle đóng kết nối: outage phải chịu được DNS DB mới.
+await compose(['exec', '-T', 'redis', 'redis-cli', 'DEL', 'course:v1:item:course-001']);
+await delay(12_000);
 let collectorStopped = false;
 try {
   collectorStopped = true;
