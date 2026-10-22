@@ -1,5 +1,6 @@
 import { Injectable, Logger, OnApplicationBootstrap, OnModuleDestroy } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { metrics } from '@opentelemetry/api';
 
 import { GradePublicationCoordinator } from '../../application/grade-publication.coordinator.js';
 import { GradeEventPublishError } from '../../application/grade-event-publish-error.js';
@@ -15,6 +16,9 @@ export class PendingGradeEventWorker implements OnApplicationBootstrap, OnModule
   private timer: NodeJS.Timeout | undefined;
   private running: Promise<void> | undefined;
   private stopped = true;
+  private readonly retryCount = metrics
+    .getMeter('@aiops-lms/grading')
+    .createCounter('grading.messaging.retry.count');
 
   constructor(
     private readonly repository: GradePublicationRepository,
@@ -52,6 +56,10 @@ export class PendingGradeEventWorker implements OnApplicationBootstrap, OnModule
     try {
       const pending = await this.repository.findPending(this.batchSize);
       for (const snapshot of pending) {
+        this.retryCount.add(1, {
+          dependency_identity: 'grading-rabbitmq',
+          operation_name: 'publish',
+        });
         try {
           await this.coordinator.publish(snapshot);
         } catch (error) {

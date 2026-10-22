@@ -8,6 +8,8 @@ const telemetry = startTelemetry(
   {
     enabled: !environment.OTEL_SDK_DISABLED,
     otlpTracesEndpoint: environment.OTEL_EXPORTER_OTLP_TRACES_ENDPOINT,
+    otlpMetricsEndpoint: environment.OTEL_EXPORTER_OTLP_METRICS_ENDPOINT,
+    metricExportIntervalMillis: environment.OTEL_METRIC_EXPORT_INTERVAL,
     serviceInstanceId: environment.OTEL_SERVICE_INSTANCE_ID,
     serviceName: NOTIFICATION_SERVICE_NAME,
     serviceVersion: environment.OTEL_SERVICE_VERSION,

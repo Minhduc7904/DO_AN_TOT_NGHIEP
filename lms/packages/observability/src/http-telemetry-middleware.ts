@@ -8,6 +8,7 @@ import {
   trace,
   type TextMapGetter,
 } from '@opentelemetry/api';
+import { normalizeHttpMethod } from './http-client-span-attributes.js';
 
 interface HttpRequest {
   baseUrl?: string;
@@ -64,20 +65,7 @@ export function createHttpTelemetryMiddleware(): HttpTelemetryMiddleware {
 
   return (request, response, next) => {
     const start = performance.now();
-    const rawMethod = request.method?.toUpperCase() ?? '';
-    const method = [
-      'GET',
-      'HEAD',
-      'POST',
-      'PUT',
-      'PATCH',
-      'DELETE',
-      'OPTIONS',
-      'CONNECT',
-      'TRACE',
-    ].includes(rawMethod)
-      ? rawMethod
-      : '_OTHER';
+    const method = normalizeHttpMethod(request.method);
     const parentContext = propagation.extract(ROOT_CONTEXT, request.headers, headerGetter);
     const span = tracer.startSpan(
       `${method} unmatched`,

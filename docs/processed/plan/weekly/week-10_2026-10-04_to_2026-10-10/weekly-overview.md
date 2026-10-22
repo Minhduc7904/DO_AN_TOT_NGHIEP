@@ -17,7 +17,7 @@
 | --- | --- | --- | --- | --- | --- |
 | [task-01_deploy-observability-stack](task-01_deploy-observability-stack.md) | Dựng OTel Collector, Prometheus, Tempo, Loki và Grafana trong Compose | Đức | Bách góp ý nhu cầu query/retention | Cao | Hoàn thành |
 | [task-02_complete-distributed-tracing](task-02_complete-distributed-tracing.md) | Hoàn thiện distributed tracing và resource identity toàn topology | Đức | Bách kiểm tra field phục vụ diagnosis | Cao | Hoàn thành |
-| [task-03_export-service-metrics](task-03_export-service-metrics.md) | Xuất service metrics và thêm kiểm chứng metrics baseline | Đức | Bách kiểm tra khả năng query cho anomaly | Cao | Đã giao |
+| [task-03_export-service-metrics](task-03_export-service-metrics.md) | Xuất service metrics và thêm kiểm chứng metrics baseline | Đức | Bách kiểm tra khả năng query cho anomaly | Cao | Hoàn thành |
 | [task-04_correlate-structured-logs](task-04_correlate-structured-logs.md) | Chuẩn hóa structured logs, correlation và Loki ingestion | Bách | Đức hỗ trợ Collector/Compose và trace context | Cao | Chờ xử lý |
 | [task-05_build-dashboard-and-validate-observability](task-05_build-dashboard-and-validate-observability.md) | Dựng dashboard và nghiệm thu baseline observability W10 | Bách | Đức hỗ trợ topology, telemetry và smoke test | Cao | Chờ xử lý |
 
@@ -41,17 +41,23 @@
 - [x] OTel Collector, Prometheus, Tempo, Loki và Grafana chạy bằng Compose, có healthcheck/config pin version và tài liệu vận hành.
 - [x] Một request có trace xuyên Gateway và các service liên quan; trace context tiếp tục qua RabbitMQ tới Notification.
 - [x] Inbound/outbound HTTP, PostgreSQL, Redis, storage và RabbitMQ có span/error semantics đủ phục vụ dependency graph và RCA.
-- [ ] Service metrics truy vấn được theo label bounded; không dùng correlation/user/run ID làm label.
+- [x] Service metrics truy vấn được theo label bounded; không dùng correlation/user/run ID làm label.
 - [ ] Structured logs dùng timestamp UTC ISO-8601, có `service.name`, severity, message và `trace_id`/`span_id` khi có active span; Loki truy vấn được theo trace.
 - [ ] Grafana có service overview và query kiểm chứng error status, HTTP status, error type, dependency identity và timeout semantics.
 - [ ] Mỗi task có PR riêng, bằng chứng DoD và trạng thái theo vòng đời task canonical.
 
 ## Tiến độ task-01 ngày 21/10/2026
 
-[PR #41](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/41) có stack16 thành phần, reset hai lần cùng fingerprint và smoke/query ba backend. [Output Đức](../../../../../workspace/duc/week-10_2026-10-04_to_2026-10-10/task-01_deploy-observability-stack/output/task-output.md) ghi bằng chứng, giới hạn Windows và ngoại lệ review agent độc lập Đức đã xác nhận. Readiness đã push tại `9c4a422`; reviewer agent độc lập APPROVED nội bộ và điều phối viên finalization trước merge theo ngoại lệ Đức xác nhận. Task-01 đã hoàn tất trên main. Task-02 đã triển khai như phần tiến độ dưới đây; task-03 chưa bắt đầu, task-04/05 giữ nguyên.
+[PR #41](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/41) có stack16 thành phần, reset hai lần cùng fingerprint và smoke/query ba backend. [Output Đức](../../../../../workspace/duc/week-10_2026-10-04_to_2026-10-10/task-01_deploy-observability-stack/output/task-output.md) ghi bằng chứng, giới hạn Windows và ngoại lệ review agent độc lập Đức đã xác nhận. Readiness đã push tại `9c4a422`; reviewer agent độc lập APPROVED nội bộ và điều phối viên finalization trước merge theo ngoại lệ Đức xác nhận. Task-01 đã hoàn tất trên main. Task-02 đã triển khai như phần tiến độ dưới đây; task-03 được cập nhật ở phần tiến độ dưới, task-04/05 giữ nguyên.
 
 ## Tiến độ task-02 ngày21/10/2026
 
-[PR42](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/42) có trace thật51spans8runtime cùng timeout/unavailable; [output Đức](../../../../../workspace/duc/week-10_2026-10-04_to_2026-10-10/task-02_complete-distributed-tracing/output/task-output.md) ghi bằng chứng và CI39626518883 đạt cả5jobs. URL+Chờreview đã push trước agent review; full/focused APPROVED nội bộ, finalization trước merge theo ngoại lệ Đức xác nhận. Task03 chưa triển khai, task04/05 giữ nguyên.
+[PR42](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/42) có trace thật51spans8runtime cùng timeout/unavailable; [output Đức](../../../../../workspace/duc/week-10_2026-10-04_to_2026-10-10/task-02_complete-distributed-tracing/output/task-output.md) ghi bằng chứng và CI39626518883 đạt cả5jobs. URL+Chờreview đã push trước agent review; full/focused APPROVED nội bộ, finalization trước merge theo ngoại lệ Đức xác nhận. Task-03 được cập nhật ở phần tiến độ dưới, task04/05 giữ nguyên.
 
-Task-02 PR #42: finalization sau agent review độc lập APPROVED nội bộ tại `b7182a4`, CI39626518883 đạt5jobs; ngoại lệ Đức xác nhận không có GitHub approval Bách. Task-03 chưa bắt đầu, task-04/05 giữ nguyên Chờ xử lý; W10 chưa hoàn thành.
+Task-02 PR #42: finalization sau agent review độc lập APPROVED nội bộ tại `b7182a4`, CI39626518883 đạt5jobs; ngoại lệ Đức xác nhận không có GitHub approval Bách. Task-03 được cập nhật ở phần tiến độ dưới, task-04/05 giữ nguyên Chờ xử lý; W10 chưa hoàn thành.
+
+## Tiến độ task-03 ngày 22/10/2026
+
+[PR #43](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/43) hoàn tất metrics tám runtime, CPU/RSS, histogram/cardinality, backlog và Collector outage sau sửa DNS exporter. Reviewer agent độc lập APPROVED nội bộ tại `c132d82`, CI39784597102 đạt cả 5 jobs. [Output Đức](../../../../../workspace/duc/week-10_2026-10-04_to_2026-10-10/task-03_export-service-metrics/output/task-output.md) đối chiếu từng DoD và nguồn ngoại lệ.
+
+Finalization được ghi trước merge; kiểm reviewer/CI head cuối trước merge. Sau PR #43 vào main, ba task Đức hoàn thành; task-04/05 của Bách giữ nguyên Chờ xử lý và trạng thái tuần vẫn Đang thực hiện. Gate M2 không được tự xác nhận đạt.

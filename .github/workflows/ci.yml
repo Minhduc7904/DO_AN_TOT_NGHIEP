@@ -149,6 +149,12 @@ jobs:
           --environment test --project aiops-lms-test-regression
           --confirm aiops-lms-test-regression
           --compose-env-file ../docker-compose/.env.example
+      - name: Validate real Prometheus metrics, backlog and Collector outage
+        run: >-
+          pnpm --dir lms run test:observability:metrics --
+          --environment test --project aiops-lms-test-regression
+          --confirm aiops-lms-test-regression
+          --compose-env-file ../docker-compose/.env.example
       - name: Show logs on failure
         if: failure()
         run: >-
