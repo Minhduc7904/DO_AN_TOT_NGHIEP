@@ -62,5 +62,13 @@ Hoàn thiện export metrics từ toàn bộ service qua OTel Collector tới Pr
 
 - Cập nhật gần nhất: 22/10/2026 20:23 — finalization trước merge sau review độc lập và CI substantive head đạt.
 - Reviewer kiểm chứng 29 tests và acceptance Prometheus đủ tám runtime; cold DB khi Collector dừng trả 200, export phục hồi. Chi tiết DoD, feedback DNS và trace nằm trong output.
-- CI39784597102 đạt cả 5 jobs; CI head finalization phải đạt trước merge. Không có GitHub approval Bách; dùng ngoại lệ Đức đã xác nhận.
+- CI 39784597102 đạt cả 5 job; CI head finalization phải đạt trước merge. Không có GitHub approval Bách; dùng ngoại lệ Đức đã xác nhận.
 - Task-04/05 giữ nguyên; task-03 chỉ hoàn thành canonical sau khi metadata và code vào main.
+
+## Hậu kiểm theo issue #45 ngày 23/10/2026
+
+Xử lý trong [PR #46](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/46); trạng thái `Hoàn thành` không đổi.
+
+- Blocker cho task-05 đã sửa trong PR follow-up: Collector giữ `service.name=notification` và `dependency_identity=notification-rabbitmq` cho series broker RabbitMQ nhưng xóa `service.version`/`service.instance.id` (kể cả giá trị prometheus receiver tự gán), đúng telemetry schema §5.1. Metrics smoke kiểm resource identity của mọi series có `service_name` business service.
+- CI head cuối `4ecb95b` là [run 39786424620](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/actions/runs/39786424620), đạt cả 5 job. Task hoàn thành 22/10/2026, đúng hạn dự kiến.
+- Collaborator: chưa có xác nhận của Bách về khả năng query cho anomaly; Bách sẽ xác nhận trong task-04/05.

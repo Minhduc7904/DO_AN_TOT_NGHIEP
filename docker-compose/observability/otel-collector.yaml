@@ -36,17 +36,23 @@ processors:
     timeout: 1s
     send_batch_size: 512
     send_batch_max_size: 1024
+  # Prometheus receiver tự sinh up/scrape_* cho target broker; bỏ để chúng không mang service.name=notification
+  # như tín hiệu sức khỏe của runtime Notification. Thiếu gauge queue vẫn được hiểu là unavailable.
+  filter/rabbitmq:
+    error_mode: ignore
+    metrics:
+      metric:
+        - 'not IsMatch(name, "^rabbitmq_detailed_queue_messages(_ready|_unacked)?$")'
   resource/rabbitmq:
     attributes:
       - key: service.name
         value: notification
         action: upsert
+      # Broker exporter không có version/instance của runtime Notification; để trống thay vì gán giá trị giả.
       - key: service.version
-        value: rabbitmq-4.1.4
-        action: upsert
+        action: delete
       - key: service.instance.id
-        value: rabbitmq-compose-1
-        action: upsert
+        action: delete
   transform/rabbitmq:
     metric_statements:
       - context: datapoint
@@ -97,7 +103,7 @@ service:
       exporters: [prometheus]
     metrics/rabbitmq:
       receivers: [prometheus/rabbitmq]
-      processors: [memory_limiter, resource/rabbitmq, transform/rabbitmq, batch]
+      processors: [memory_limiter, filter/rabbitmq, resource/rabbitmq, transform/rabbitmq, batch]
       exporters: [prometheus]
     logs:
       receivers: [otlp]

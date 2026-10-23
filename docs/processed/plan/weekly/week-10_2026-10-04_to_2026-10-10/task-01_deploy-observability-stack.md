@@ -60,6 +60,15 @@ Bổ sung OTel Collector, Prometheus, Tempo, Loki và Grafana vào topology Dock
 ## Cập nhật tiến độ
 
 - Cập nhật gần nhất: 21/10/2026 — triển khai, kiểm chứng và push readiness PR #41.
-- Ghi chú/tồn đọng: Stack16/16 healthy và ingest/query ba backend đã kiểm chứng; chi tiết DoD, giới hạn Windows và ngoại lệ review nằm trong output. Agent review trước finalization/merge bởi điều phối viên.
+- Ghi chú/tồn đọng: Stack 16/16 healthy và ingest/query ba backend đã kiểm chứng; chi tiết DoD, giới hạn Windows và ngoại lệ review nằm trong output. Agent review trước finalization/merge bởi điều phối viên.
 
 - Finalization ngày 21/10/2026 21:42: output/input/card/overview đồng bộ theo review nội bộ; phải kiểm CI head cuối trước merge, không giả approval Bách.
+
+## Hậu kiểm theo issue #45 ngày 23/10/2026
+
+Xử lý trong [PR #46](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/46); trạng thái `Hoàn thành` không đổi.
+
+- Trễ hạn: hạn dự kiến 18/10/2026, hoàn thành (finalization) 21/10/2026, trễ 3 ngày so với mốc bù tiến độ.
+- CI head cuối `f2c4c36` là [run 39619194330](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/actions/runs/39619194330), đạt cả 5 job; output trước đây chỉ trích run của commit substantive `0fd400a`.
+- Check GitGuardian fail trên cả ba commit PR #41 do 2 "Generic Password" là credential Grafana local mẫu; giải trình false positive và bỏ fallback trong `compose.yaml` được ghi trong output.
+- Collaborator: chưa có xác nhận của Bách về nhu cầu query/retention; Bách sẽ xác nhận trong task-04/05.

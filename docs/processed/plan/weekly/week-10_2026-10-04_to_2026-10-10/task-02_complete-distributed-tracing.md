@@ -60,9 +60,18 @@ Hoàn thiện tracing trên sáu business service, Gateway và storage mock đ�
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 21/10/2026 — push readiness PR42; evidence Compose/Tempo trong output.
+- Cập nhật gần nhất: 21/10/2026 — push readiness PR #42; evidence Compose/Tempo trong output.
 - Ghi chú/tồn đọng: Bắt đầu sau task-01; không gộp task-03 metrics vào cùng branch.
 
 ## Finalization ngày 21/10/2026 22:39
 
-CI39626518883 cả5jobs đạt; reviewer độc lập full/focused APPROVED nội bộ. Điều phối viên finalization trước merge theo ngoại lệ đã xác nhận; phải kiểm CI head cuối trước merge. Output ghi rõ localW1flaky, không giả GitHub approval.
+CI 39626518883 cả 5 job đạt; reviewer độc lập full/focused APPROVED nội bộ. Điều phối viên finalization trước merge theo ngoại lệ đã xác nhận; phải kiểm CI head cuối trước merge. Output ghi rõ W1 local flaky, không giả GitHub approval.
+
+## Hậu kiểm theo issue #45 ngày 23/10/2026
+
+Xử lý trong [PR #46](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/46); trạng thái `Hoàn thành` không đổi.
+
+- Trễ hạn: hạn dự kiến 20/10/2026, hoàn thành (finalization) 21/10/2026, trễ 1 ngày so với mốc bù tiến độ.
+- Đối chiếu review: agent focused review APPROVED nội bộ tại `b7182a4`. `e11cd1f` và `10209da` là hai commit finalization chỉ gồm metadata sau approval; CI head cuối `10209da` là [run 39627853914](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/actions/runs/39627853914), đạt cả 5 job. Câu "metadata cuối `10209da`" trong mô tả PR #42 không có nghĩa reviewer đã review lại commit đó.
+- Shutdown runtime nay chờ `app.close()` xong rồi mới `telemetry.shutdown()` để span/log lúc đóng app không bị mất; sửa trong PR follow-up của issue #45.
+- Collaborator: chưa có xác nhận của Bách về field phục vụ diagnosis; Bách sẽ xác nhận trong task-04/05.

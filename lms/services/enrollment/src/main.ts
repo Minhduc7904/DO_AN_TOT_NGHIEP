@@ -23,7 +23,8 @@ try {
   let shutdownPromise: Promise<void> | undefined;
 
   const shutdown = (): Promise<void> => {
-    shutdownPromise ??= Promise.all([app.close(), telemetry.shutdown()]).then(() => undefined);
+    // Đóng app trước để span/log phát ra lúc shutdown còn được flush.
+    shutdownPromise ??= app.close().finally(() => telemetry.shutdown());
     return shutdownPromise;
   };
 
