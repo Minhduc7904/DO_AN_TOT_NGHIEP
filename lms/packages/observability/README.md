@@ -95,16 +95,16 @@ Outage acceptance xóa đúng cache key `course:v1:item:course-001`, chờ 12 gi
 
 Tám runtime ghi log qua `StructuredLogger`, logger tương thích `LoggerService` của NestJS được truyền vào `NestFactory.create`. Mọi log của Nest, kể cả `new Logger(context)`, và log chủ động của package đều đi qua `emitStructuredLog`. Mỗi lần gọi ghi một dòng JSON ra stdout và một OTel log record gửi qua Collector tới Loki.
 
-| Field stdout                                             | Ý nghĩa                                                                                                                                           |
-| -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `timestamp`                                              | UTC ISO-8601 (`...Z`)                                                                                                                             |
-| `level`                                                  | `TRACE`/`DEBUG`/`INFO`/`WARN`/`ERROR`/`FATAL`, map sang OTel `severity_number`                                                                    |
-| `message`                                                | Message đã che credential/PII, tối đa 2000 ký tự                                                                                                  |
-| `service.name`, `service.version`, `service.instance.id` | Resource identity từ config của `startTelemetry`                                                                                                  |
-| `trace_id`, `span_id`                                    | Chỉ có khi đang trong span hợp lệ; ngoài context (startup, background) bỏ trống, không tạo ID giả                                                 |
-| `logger`                                                 | Context của Nest logger, ví dụ `RoutesResolver`                                                                                                   |
-| `exception.stacktrace`                                   | Stack đã che dữ liệu nhạy cảm, khi log lỗi có stack                                                                                               |
-| Field chẩn đoán                                          | Allowlist: `event`, `event_id`, `error_type`, `dependency_identity`, `operation_name`, `http_method`, `http_route`, `http_status_code`, `outcome` |
+| Field stdout                                             | Ý nghĩa                                                                                                                                                          |
+| -------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `timestamp`                                              | UTC ISO-8601 (`...Z`)                                                                                                                                            |
+| `level`                                                  | `TRACE`/`DEBUG`/`INFO`/`WARN`/`ERROR`/`FATAL`, map sang OTel `severity_number`                                                                                   |
+| `message`                                                | Message đã che credential/PII, tối đa 2000 ký tự                                                                                                                 |
+| `service.name`, `service.version`, `service.instance.id` | Resource identity từ config của `startTelemetry`                                                                                                                 |
+| `trace_id`, `span_id`                                    | Chỉ có khi đang trong span hợp lệ; ngoài context (startup, background) bỏ trống, không tạo ID giả                                                                |
+| `logger`                                                 | Context của Nest logger, ví dụ `RoutesResolver`                                                                                                                  |
+| `exception.stacktrace`                                   | Stack đã che dữ liệu nhạy cảm, khi log lỗi có stack                                                                                                              |
+| Field chẩn đoán                                          | Allowlist: `event`, `event_id`, `error_type`, `dependency_identity`, `operation_name`, `http_method`, `http_route`, `http_status_code`, `duration_ms`, `outcome` |
 
 Field ngoài allowlist bị bỏ trước khi ghi, nên payload, user/principal ID hoặc object tùy ý không lọt vào log. Message và stack đi qua bộ che: `Bearer`/`Basic` token, JWT, credential trong URL, `password|secret|token|api_key|authorization = ...` và email. Bộ che chỉ là lớp bảo vệ thêm; code không được đưa payload vào message. Mức mặc định là `log`/`warn`/`error`/`fatal`; `debug`/`verbose` chỉ bật qua `setLogLevels`.
 
@@ -112,11 +112,13 @@ Giới hạn đã biết:
 
 - Resource identity trên stdout chỉ có sau khi `startTelemetry` gọi `configureStructuredLogging`. Runtime gọi `startTelemetry` trước khi import app nên mọi log đều có identity; test chạy nhiều app trong một process hoặc import bản build khác instance module có thể thấy log thiếu `service.*`.
 - Khi bootstrap lỗi, `main.ts` gọi `telemetry.shutdown()` rồi ném lại lỗi; Node in stack thô ra stderr, không phải JSON và không qua Loki. Container exit code và `docker compose logs` là nguồn chẩn đoán cho lỗi startup.
-- Request healthy không có access log; Gateway và service HTTP chỉ có log khi lỗi 5xx hoặc dependency lỗi. Cần chốt trước task-05 nếu dashboard cần nối trace healthy với log.
 
 Log chẩn đoán được ghi ở các điểm dùng chung, không rải theo từng handler:
 
-- `createHttpTelemetryMiddleware` ghi `ERROR` `event=http.server.error` cho HTTP 5xx, `client_aborted` và exception, kèm `http_method`, `http_route` (template hoặc `unmatched`), `http_status_code` và `error_type`, trong context của server span. HTTP 4xx nghiệp vụ không ghi lỗi.
+- `createHttpTelemetryMiddleware` ghi đúng một log cho mỗi request, trong context của server span, kèm `http_method`, `http_route` (template hoặc `unmatched`), `http_status_code` và `duration_ms`:
+  - `ERROR` `event=http.server.error` cho HTTP 5xx, `client_aborted` và exception, thêm `error_type`.
+  - Access log `event=http.server.request` cho request còn lại: `INFO` với 1xx–3xx, `WARN` với 4xx. HTTP 4xx nghiệp vụ không bị coi là lỗi.
+  - Access log bỏ qua route `/health` để probe của Docker (5 giây/lần) không làm nhiễu log; lỗi 5xx của `/health` vẫn được ghi. Option `accessLog: { enabled, ignoreRoutes }` đổi hành vi này; tám runtime đọc `HTTP_ACCESS_LOG_ENABLED` (mặc định `true`) để tắt access log khi cần giảm volume mà không mất log lỗi.
 - `logDependencyFailure(span, ...)` ghi `ERROR` `event=dependency.failure` với `dependency_identity`, `operation_name`, `error_type` (`timeout`/`unavailable`) trong context của client span lỗi. Hàm này được gọi từ `dependency-telemetry.ts` của Course/Enrollment/Submission/Grading, publish RabbitMQ của Grading, Gateway proxy và repository PostgreSQL của Auth. Conflict nghiệp vụ không ghi lỗi.
 - Notification ghi kết quả xử lý `grade.completed` (`outcome`, `event_id`) và lỗi consume/connect qua cùng logger.
 
@@ -128,6 +130,7 @@ Loki chỉ index `service_name`; `service_version`, `service_instance_id`, `trac
 {service_name="gateway"} | trace_id="<trace-id>"
 {service_name=~"gateway|submission"} | event="dependency.failure" | error_type="timeout"
 {service_name="notification"} | event="grade.completed" | outcome!="accepted"
+{service_name="gateway"} | event="http.server.request" | duration_ms > 500
 sum by (service_name) (count_over_time({service_name=~".+"} | severity_text="ERROR" [1m]))
 ```
 
@@ -138,9 +141,10 @@ cd lms
 pnpm run test:observability:logs -- --environment test --project aiops-lms-test-regression --confirm aiops-lms-test-regression --compose-env-file ../docker-compose/.env.example
 ```
 
-Script chạy tracing smoke để có một workflow healthy và hai lỗi storage timeout/unavailable. Với mỗi trace lỗi, script query `{service_name="gateway"}` và `{service_name="submission"}` rồi lọc `trace_id`, yêu cầu có `dependency.failure` (`gateway-submission`/`submission-storage`, đúng `error_type`) và `http.server.error` (504/503). Với trace healthy, script yêu cầu Notification có `grade.completed` `outcome=accepted`. Mọi log trả về phải có `trace_id` khớp và `span_id` thuộc chính trace đó trong Tempo. Script cũng kiểm:
+Script chạy tracing smoke để có một workflow healthy và hai lỗi storage timeout/unavailable. Với mỗi trace lỗi, script query `{service_name="gateway"}` và `{service_name="submission"}` rồi lọc `trace_id`, yêu cầu có `dependency.failure` (`gateway-submission`/`submission-storage`, đúng `error_type`) và `http.server.error` (504/503). Với trace healthy, script yêu cầu Notification có `grade.completed` `outcome=accepted` và mọi runtime HTTP còn lại có access log `INFO`. Mọi log trả về phải có `trace_id` khớp và `span_id` thuộc chính trace đó trong Tempo. Script cũng kiểm:
 
 - Loki chỉ có label `service_name`.
+- Access log có `duration_ms`, status 1xx–4xx và không có `/health`.
 - Toàn bộ log trong cửa sổ test và stdout không chứa token, password hoặc email test.
 - Mọi dòng stdout của Gateway, Submission và Notification là JSON hợp lệ, có timestamp UTC và identity khớp Compose.
 - Log startup ngoài trace context không có `trace_id`.

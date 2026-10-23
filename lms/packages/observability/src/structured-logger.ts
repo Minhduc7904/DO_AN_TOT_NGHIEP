@@ -18,6 +18,7 @@ const SEVERITY: Readonly<Record<StructuredLogLevel, { number: SeverityNumber; te
 /** Field có ngữ nghĩa ổn định được phép ghi; mọi key khác bị bỏ để không lộ payload/PII. */
 export interface StructuredLogFields {
   dependency_identity?: string;
+  duration_ms?: number;
   error_type?: string;
   event?: string;
   event_id?: string;
@@ -30,6 +31,7 @@ export interface StructuredLogFields {
 
 const FIELD_KEYS = [
   'dependency_identity',
+  'duration_ms',
   'error_type',
   'event',
   'event_id',

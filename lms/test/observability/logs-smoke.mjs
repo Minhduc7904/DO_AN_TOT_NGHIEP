@@ -167,6 +167,11 @@ for (const failure of tracing.failures) {
 await expectTraceLogs('notification', tracing.healthyTraceId, [
   { event: 'grade.completed', outcome: 'accepted', severity_text: 'INFO' },
 ]);
+// Workflow healthy đi qua mọi HTTP runtime với cùng trace, nên mỗi runtime phải có access log.
+for (const service of tracing.services.filter((name) => name !== 'notification'))
+  await expectTraceLogs(service, tracing.healthyTraceId, [
+    { event: 'http.server.request', severity_text: 'INFO' },
+  ]);
 
 const login = await json(`${gateway}/api/v1/auth/login`, {
   method: 'POST',
@@ -182,6 +187,13 @@ const labels = await poll('Loki label bounded và log không lộ dữ liệu nh
   for (const name of names) assert.ok(allowedLabels.has(name), `Cấm Loki label ${name}`);
   const all = await lokiQuery('{service_name=~".+"}');
   assert.ok(all.length > 0);
+  const access = all.filter((entry) => entry.metadata.event === 'http.server.request');
+  assert.ok(access.length > 0, 'Thiếu access log');
+  for (const entry of access) {
+    assert.notEqual(entry.metadata.http_route, '/health', 'Access log không được ghi health probe');
+    assert.match(entry.metadata.http_status_code ?? '', /^[1-4]\d\d$/u);
+    assert.ok(Number(entry.metadata.duration_ms) >= 0, 'Access log thiếu duration_ms');
+  }
   const serialized = JSON.stringify(all);
   for (const value of sensitive) assert.ok(!serialized.includes(value), 'Log lộ dữ liệu nhạy cảm');
   return names;

@@ -71,3 +71,10 @@ Ngày 23/10/2026 06:35, Bách (người phụ trách) xác nhận finalization v
 - CI: head `f9d50c4` [run 39902016144](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/actions/runs/39902016144) đạt cả 5 job.
 - GitGuardian: check đỏ vì incident 38885072, chuỗi JWT giả (`{"sub":"1"}`, chữ ký là chữ `signature`) trong unit test ở commit `32d6965`. Không phải secret thật. Source cuối không còn literal; viết lại lịch sử bị chặn bởi quyền thao tác Git trong phiên agent, Bách chọn giữ lịch sử. Incident nên được đánh dấu test credential/false positive trên dashboard GitGuardian; check GitGuardian của các PR sau không quét lại commit đã vào `main`.
 
+## Bổ sung sau hoàn thành: access log (23/10/2026)
+
+Bách giao chọn giải pháp theo best practice cho giới hạn "request healthy không có access log", xử lý trong [PR #48](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/48) follow-up riêng (branch `feat/week-10/task-04-correlate-structured-logs-followup`) vì card task-05 không cho sửa instrumentation. Trạng thái `Hoàn thành` không đổi.
+
+- `createHttpTelemetryMiddleware` ghi đúng một log cho mỗi request trong context server span: `http.server.error` (`ERROR`) cho 5xx/aborted/exception như cũ, còn lại là access log `http.server.request` (`INFO`, 4xx là `WARN`). Field bounded: `http_method`, `http_route` (template), `http_status_code`, `duration_ms`; không có user ID hay payload.
+- Bỏ qua `/health` để probe Docker không làm nhiễu log; 5xx của `/health` vẫn ghi lỗi. Tám runtime đọc `HTTP_ACCESS_LOG_ENABLED` (mặc định `true`, Compose truyền qua env file) để tắt access log khi cần giảm volume.
+- Logs smoke yêu cầu mọi runtime HTTP có access log `INFO` trong trace healthy, access log có `duration_ms`, status 1xx–4xx và không có `/health`.

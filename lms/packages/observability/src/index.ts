@@ -1,6 +1,7 @@
 export {
   createHttpTelemetryMiddleware,
   type HttpTelemetryMiddleware,
+  type HttpTelemetryOptions,
 } from './http-telemetry-middleware.js';
 export {
   startTelemetry,
