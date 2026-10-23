@@ -6,11 +6,11 @@
 | --- | --- |
 | Mã task | `task-04_correlate-structured-logs` |
 | Tuần | `week-10_2026-10-04_to_2026-10-10` |
-| Trạng thái | Chờ xử lý |
+| Trạng thái | Đang thực hiện |
 | Người phụ trách | Bách |
 | Collaborator | Đức hỗ trợ Collector/Compose và trace context |
 | Ưu tiên | Cao |
-| Hạn dự kiến | 22/10/2026 — mốc bù tiến độ, phụ thuộc người phụ trách quay lại |
+| Hạn dự kiến | 23/10/2026 — Bách chốt lại ngày 23/10/2026 (mốc bù tiến độ cũ 22/10/2026) |
 | Nhánh thực hiện | `feat/week-10/task-04-correlate-structured-logs` |
 
 ## Yêu cầu và phạm vi
@@ -29,7 +29,7 @@ Chuẩn hóa log runtime của Gateway, sáu business service và storage mock t
 
 - Tài liệu/task cần có trước: task-01; trace context từ task-02; telemetry schema canonical.
 - Người hoặc phần việc cần phối hợp: Đức cung cấp Collector/Loki pipeline và hỗ trợ active span context; Bách chịu trách nhiệm schema/query/diagnosis semantics.
-- Rủi ro/giả định: Bách hiện chưa tham gia nên task đang `Chờ xử lý`; log rời rạc từ Nest logger/console cần adapter thống nhất nhưng không được làm mất startup/error diagnostics.
+- Rủi ro/giả định: Bách bắt đầu ngày 23/10/2026 sau mốc hạn; log rời rạc từ Nest logger/console cần adapter thống nhất nhưng không được làm mất startup/error diagnostics.
 
 ## Sản phẩm kỳ vọng
 
@@ -51,8 +51,8 @@ Chuẩn hóa log runtime của Gateway, sáu business service và storage mock t
 
 ## Liên kết hồ sơ thực hiện
 
-- Input workspace: Chưa tạo.
-- Output workspace: Chưa tạo.
+- Input workspace: [task-input.md](../../../../../workspace/bach/week-10_2026-10-04_to_2026-10-10/task-04_correlate-structured-logs/input/task-input.md).
+- Output workspace: [task-output.md](../../../../../workspace/bach/week-10_2026-10-04_to_2026-10-10/task-04_correlate-structured-logs/output/task-output.md).
 - Pull request: Chưa tạo.
 - Kết quả review: Chưa review.
 
@@ -60,5 +60,6 @@ Chuẩn hóa log runtime của Gateway, sáu business service và storage mock t
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 13/10/2026 — lập task bù tiến độ W10.
-- Ghi chú/tồn đọng: Chờ Bách tiếp tục công việc; chưa tạo hồ sơ trong `workspace/bach/` và không chuyển `Đang thực hiện` khi chưa có xác nhận của Bách.
+- Cập nhật gần nhất: 23/10/2026 — Bách xác nhận bắt đầu; tạo nhánh từ `main` tại `2a71506` (sau PR #46), tạo input/output và chuyển `Đang thực hiện`.
+- Ghi chú/tồn đọng: Theo [issue #45](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/issues/45), task-04 không có blocker; cần cấu hình log processor/exporter dùng transport chung, `OTEL_EXPORTER_OTLP_LOGS_ENDPOINT` cho 8 runtime, flush khi shutdown và kiểm Loki theo `trace_id`. Quá mốc cũ 22/10/2026; Bách chốt mốc mới 23/10/2026.
+- 23/10/2026: đã triển khai structured logger, log export OTLP tới Loki và `test:observability:logs`; regression, tracing, metrics và logs smoke pass local. Chưa tạo PR, chưa chạy CI GitHub.
