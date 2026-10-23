@@ -74,6 +74,7 @@ const environmentSchema = z.object({
   OTEL_EXPORTER_OTLP_LOGS_ENDPOINT: z.url().optional(),
   OTEL_METRIC_EXPORT_INTERVAL: z.coerce.number().int().min(1_000).max(60_000).default(5_000),
   OTEL_SDK_DISABLED: environmentBoolean.default(false),
+  HTTP_ACCESS_LOG_ENABLED: environmentBoolean.default(true),
   OTEL_SERVICE_INSTANCE_ID: z.string().trim().min(1).default(DEFAULT_SERVICE_INSTANCE_ID),
   OTEL_SERVICE_VERSION: z.string().trim().min(1).default(DEFAULT_SERVICE_VERSION),
   PORT: z.coerce.number().int().min(1).max(65_535).default(DEFAULT_PORT),

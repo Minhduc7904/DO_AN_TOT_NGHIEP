@@ -30,6 +30,19 @@ interface HttpResponse {
   statusCode: number;
 }
 
+export interface HttpTelemetryOptions {
+  /**
+   * Access log `http.server.request` cho request không lỗi (INFO, 4xx là WARN). Lỗi 5xx/aborted luôn
+   * ghi `http.server.error`. Mặc định bật và bỏ qua `/health` để probe không làm nhiễu log.
+   */
+  accessLog?: {
+    enabled?: boolean;
+    ignoreRoutes?: readonly string[];
+  };
+}
+
+const DEFAULT_ACCESS_LOG_IGNORED_ROUTES = ['/health'] as const;
+
 export type HttpTelemetryMiddleware = (
   request: HttpRequest,
   response: HttpResponse,
@@ -57,7 +70,13 @@ function getMatchedRouteTemplate(request: HttpRequest): string | undefined {
   return `${baseUrl}${normalizedRoutePath}` || '/';
 }
 
-export function createHttpTelemetryMiddleware(): HttpTelemetryMiddleware {
+export function createHttpTelemetryMiddleware(
+  options: HttpTelemetryOptions = {},
+): HttpTelemetryMiddleware {
+  const accessLogEnabled = options.accessLog?.enabled ?? true;
+  const accessLogIgnoredRoutes = new Set<string>(
+    options.accessLog?.ignoreRoutes ?? DEFAULT_ACCESS_LOG_IGNORED_ROUTES,
+  );
   const tracer = trace.getTracer('@aiops-lms/observability');
   const meter = metrics.getMeter('@aiops-lms/observability');
   const requestCount = meter.createCounter('http.server.request.count');
@@ -95,9 +114,10 @@ export function createHttpTelemetryMiddleware(): HttpTelemetryMiddleware {
         http_route_template: routeTemplate ?? 'unmatched',
         http_status_class: failure ?? `${Math.floor(response.statusCode / 100)}xx`,
       };
+      const elapsedMillis = performance.now() - start;
       requestCount.add(1, labels);
       if (failure || response.statusCode >= 500) errorCount.add(1, labels);
-      duration.record((performance.now() - start) / 1_000, labels);
+      duration.record(elapsedMillis / 1_000, labels);
 
       if (routeTemplate) {
         span.setAttribute('http.route', routeTemplate);
@@ -105,22 +125,35 @@ export function createHttpTelemetryMiddleware(): HttpTelemetryMiddleware {
       }
 
       if (!failure) span.setAttribute('http.response.status_code', response.statusCode);
-      if (failure || response.statusCode >= 500) {
-        const errorType = failure ?? String(response.statusCode);
+      const errorType =
+        failure ?? (response.statusCode >= 500 ? String(response.statusCode) : undefined);
+      if (errorType) {
         span.setAttribute('error.type', errorType);
         span.setStatus({ code: SpanStatusCode.ERROR });
+      }
+      if (
+        errorType ||
+        (accessLogEnabled && !accessLogIgnoredRoutes.has(labels.http_route_template))
+      ) {
+        const route = labels.http_route_template;
+        const fields = {
+          duration_ms: Math.round(elapsedMillis * 1_000) / 1_000,
+          http_method: method,
+          http_route: route,
+          ...(failure ? {} : { http_status_code: response.statusCode }),
+        };
         context.with(trace.setSpan(parentContext, span), () =>
-          emitStructuredLog(
-            'error',
-            `HTTP ${method} ${labels.http_route_template} lỗi ${errorType}`,
-            {
-              error_type: errorType,
-              event: 'http.server.error',
-              http_method: method,
-              http_route: labels.http_route_template,
-              ...(failure ? {} : { http_status_code: response.statusCode }),
-            },
-          ),
+          errorType
+            ? emitStructuredLog('error', `HTTP ${method} ${route} lỗi ${errorType}`, {
+                ...fields,
+                error_type: errorType,
+                event: 'http.server.error',
+              })
+            : emitStructuredLog(
+                response.statusCode >= 400 ? 'warn' : 'log',
+                `HTTP ${method} ${route} ${response.statusCode}`,
+                { ...fields, event: 'http.server.request' },
+              ),
         );
       }
       span.end();

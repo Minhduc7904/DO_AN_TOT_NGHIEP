@@ -12,7 +12,11 @@ export async function bootstrapApplication(): Promise<INestApplication> {
   const configService = app.get(ConfigService);
   const port = configService.getOrThrow<number>('PORT');
 
-  app.use(createHttpTelemetryMiddleware());
+  app.use(
+    createHttpTelemetryMiddleware({
+      accessLog: { enabled: configService.getOrThrow<boolean>('HTTP_ACCESS_LOG_ENABLED') },
+    }),
+  );
   app.useGlobalFilters(new HttpExceptionFilter());
   await app.listen(port, DEFAULT_HOST);
   return app;

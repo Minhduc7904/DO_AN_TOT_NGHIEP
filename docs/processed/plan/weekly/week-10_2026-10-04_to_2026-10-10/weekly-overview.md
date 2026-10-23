@@ -80,6 +80,8 @@ Bách xác nhận bắt đầu task-04 trên nhánh `feat/week-10/task-04-correl
 
 Finalization task-04 ngày 23/10/2026 06:35: CI head `f9d50c4` [run 39902016144](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/actions/runs/39902016144) đạt 5 job; Bách tự review theo ngoại lệ, feedback đã xử lý; không có GitHub `APPROVED` của Đức, finalization và merge theo xác nhận của Bách (người phụ trách). GitGuardian còn đỏ do JWT giả trong lịch sử commit, đã giải trình trong output. Task-05 giữ `Chờ xử lý` tới khi Bách bắt đầu; W10 chưa hoàn thành.
 
+Bổ sung task-04 ngày 23/10/2026: access log `http.server.request` cho mọi request (trừ `/health`), bật/tắt qua `HTTP_ACCESS_LOG_ENABLED`, xử lý trong [PR #48](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/48) follow-up riêng (branch `feat/week-10/task-04-correlate-structured-logs-followup`) để task-05 nối được trace healthy với log. Trạng thái `Hoàn thành` của task-04 không đổi.
+
 ## Tiến độ task-05 ngày 23/10/2026
 
 Bách xác nhận bắt đầu task-05 trên nhánh `feat/week-10/task-05-build-dashboard-and-validate-observability` từ `main` tại `9a9afa2` (đã gồm PR #47); [input Bách](../../../../../workspace/bach/week-10_2026-10-04_to_2026-10-10/task-05_build-dashboard-and-validate-observability/input/task-input.md) đã tạo và card chuyển `Đang thực hiện`. Hạn 24/10/2026. Trạng thái tuần vẫn Đang thực hiện.

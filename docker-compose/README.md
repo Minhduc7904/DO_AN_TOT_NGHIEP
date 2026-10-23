@@ -215,7 +215,7 @@ Registry/labels/buckets/query và giới hạn nằm tại [metrics baseline](..
 
 ## Structured logs W10
 
-Cả 8 application runtime bật logs với `OTEL_EXPORTER_OTLP_LOGS_ENDPOINT=http://otel-collector:4318/v1/logs`. Nếu env local cũ chưa có biến, Compose dùng mặc định. Collector chuyển logs qua pipeline `logs` có sẵn tới Loki native OTLP; Loki chỉ index `service_name`, còn `trace_id`, `span_id`, severity và field chẩn đoán là structured metadata. Contract field, redaction, query mẫu và `test:observability:logs` nằm tại [structured logs](../lms/packages/observability/README.md#structured-logs-w10). CI chạy bước này sau metrics khi Compose đã sẵn sàng.
+Cả 8 application runtime bật logs với `OTEL_EXPORTER_OTLP_LOGS_ENDPOINT=http://otel-collector:4318/v1/logs`. Nếu env local cũ chưa có biến, Compose dùng mặc định. Collector chuyển logs qua pipeline `logs` có sẵn tới Loki native OTLP; Loki chỉ index `service_name`, còn `trace_id`, `span_id`, severity và field chẩn đoán là structured metadata. Mỗi request HTTP (trừ `/health`) có một access log `http.server.request`; đặt `HTTP_ACCESS_LOG_ENABLED=false` để tắt access log, log lỗi vẫn giữ. Contract field, redaction, query mẫu và `test:observability:logs` nằm tại [structured logs](../lms/packages/observability/README.md#structured-logs-w10). CI chạy bước này sau metrics khi Compose đã sẵn sàng.
 
 ## Dashboard và nghiệm thu W10
 

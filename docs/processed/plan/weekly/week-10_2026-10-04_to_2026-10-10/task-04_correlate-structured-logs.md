@@ -64,3 +64,11 @@ Chuẩn hóa log runtime của Gateway, sáu business service và storage mock t
 - Ghi chú/tồn đọng: Theo [issue #45](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/issues/45), task-04 không có blocker; cần cấu hình log processor/exporter dùng transport chung, `OTEL_EXPORTER_OTLP_LOGS_ENDPOINT` cho 8 runtime, flush khi shutdown và kiểm Loki theo `trace_id`. Quá mốc cũ 22/10/2026; Bách chốt mốc mới 23/10/2026.
 - 23/10/2026: đã triển khai structured logger, log export OTLP tới Loki và `test:observability:logs`; regression, tracing, metrics và logs smoke pass local.
 - 23/10/2026: tạo [PR #47](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/47), ghi URL PR và chuyển `Chờ review`; chờ CI GitHub trên PR head và review của Đức.
+
+## Bổ sung sau hoàn thành: access log (23/10/2026)
+
+Bách giao chọn giải pháp theo best practice cho giới hạn "request healthy không có access log", xử lý trong [PR #48](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/48) follow-up riêng (branch `feat/week-10/task-04-correlate-structured-logs-followup`) vì card task-05 không cho sửa instrumentation. Trạng thái `Hoàn thành` không đổi.
+
+- `createHttpTelemetryMiddleware` ghi đúng một log cho mỗi request trong context server span: `http.server.error` (`ERROR`) cho 5xx/aborted/exception như cũ, còn lại là access log `http.server.request` (`INFO`, 4xx là `WARN`). Field bounded: `http_method`, `http_route` (template), `http_status_code`, `duration_ms`; không có user ID hay payload.
+- Bỏ qua `/health` để probe Docker không làm nhiễu log; 5xx của `/health` vẫn ghi lỗi. Tám runtime đọc `HTTP_ACCESS_LOG_ENABLED` (mặc định `true`, Compose truyền qua env file) để tắt access log khi cần giảm volume.
+- Logs smoke yêu cầu mọi runtime HTTP có access log `INFO` trong trace healthy, access log có `duration_ms`, status 1xx–4xx và không có `/health`.
