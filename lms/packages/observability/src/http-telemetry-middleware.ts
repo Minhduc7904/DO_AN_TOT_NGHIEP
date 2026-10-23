@@ -9,6 +9,7 @@ import {
   type TextMapGetter,
 } from '@opentelemetry/api';
 import { normalizeHttpMethod } from './http-client-span-attributes.js';
+import { emitStructuredLog } from './structured-logger.js';
 
 interface HttpRequest {
   baseUrl?: string;
@@ -105,8 +106,22 @@ export function createHttpTelemetryMiddleware(): HttpTelemetryMiddleware {
 
       if (!failure) span.setAttribute('http.response.status_code', response.statusCode);
       if (failure || response.statusCode >= 500) {
-        span.setAttribute('error.type', failure ?? String(response.statusCode));
+        const errorType = failure ?? String(response.statusCode);
+        span.setAttribute('error.type', errorType);
         span.setStatus({ code: SpanStatusCode.ERROR });
+        context.with(trace.setSpan(parentContext, span), () =>
+          emitStructuredLog(
+            'error',
+            `HTTP ${method} ${labels.http_route_template} lỗi ${errorType}`,
+            {
+              error_type: errorType,
+              event: 'http.server.error',
+              http_method: method,
+              http_route: labels.http_route_template,
+              ...(failure ? {} : { http_status_code: response.statusCode }),
+            },
+          ),
+        );
       }
       span.end();
     };

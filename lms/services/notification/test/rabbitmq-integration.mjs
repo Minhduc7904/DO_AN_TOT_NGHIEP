@@ -7,7 +7,7 @@ import {
   SimpleSpanProcessor,
   SpanKind,
 } from '@aiops-lms/observability/testing';
-import { startTelemetry } from '@aiops-lms/observability';
+import { configureStructuredLogging, startTelemetry } from '@aiops-lms/observability';
 import amqp from 'amqplib';
 
 const brokerUrl = process.env.NOTIFICATION_RABBITMQ_URL;
@@ -121,10 +121,21 @@ const consumer = new RabbitMqGradeCompletedConsumer(
 const publisher = new RabbitMqGradeCompletedPublisher(publisherConfig);
 const infoLines = [];
 const errorLines = [];
-const originalInfo = console.info;
-const originalError = console.error;
-console.info = (...values) => infoLines.push(values.map(String).join(' '));
-console.error = (...values) => errorLines.push(values.map(String).join(' '));
+// Bắt structured log của consumer: INFO có outcome là kết quả xử lý, ERROR là lỗi consume/connect.
+configureStructuredLogging(
+  {
+    serviceInstanceId: 'notification-rabbitmq-test-1',
+    serviceName: 'notification',
+    serviceVersion: '0.1.0-test',
+  },
+  {
+    write: (line) => {
+      const record = JSON.parse(line);
+      if (record.level === 'ERROR') errorLines.push(line);
+      else if (record.level === 'INFO' && record.outcome) infoLines.push(line);
+    },
+  },
+);
 
 try {
   consumer.onModuleInit();
@@ -176,12 +187,8 @@ try {
   }
   const evidence = JSON.stringify({ errorLines, infoLines, metrics });
   assert.doesNotMatch(evidence, /lms-local-only|w1_test_password|amqp:\/\/|student-001/u);
-
-  console.info = originalInfo;
   console.log('Notification RabbitMQ consume, duplicate, backlog và telemetry integration đạt.');
 } finally {
-  console.info = originalInfo;
-  console.error = originalError;
   await consumer.onModuleDestroy().catch(() => undefined);
   await publisher.onApplicationShutdown().catch(() => undefined);
   await adminChannel.deleteQueue(QUEUE).catch(() => undefined);

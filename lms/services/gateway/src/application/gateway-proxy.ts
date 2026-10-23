@@ -9,7 +9,11 @@ import {
 } from '@opentelemetry/api';
 
 import type { Principal } from '../domain/access-token.js';
-import { setHttpClientSpanAttributes, normalizeHttpMethod } from '@aiops-lms/observability';
+import {
+  logDependencyFailure,
+  normalizeHttpMethod,
+  setHttpClientSpanAttributes,
+} from '@aiops-lms/observability';
 
 const tracer = trace.getTracer('@aiops-lms/gateway');
 const meter = metrics.getMeter('@aiops-lms/gateway');
@@ -123,6 +127,11 @@ export class GatewayProxy {
       });
       clientSpan.setAttribute('error.type', status);
       clientSpan.setStatus({ code: SpanStatusCode.ERROR });
+      logDependencyFailure(clientSpan, {
+        dependency_identity: metricAttributes.dependency_identity,
+        error_type: status,
+        operation_name: metricAttributes.operation_name,
+      });
       if (error instanceof DependencyTimeoutError || timedOut) {
         throw new DependencyTimeoutError();
       }

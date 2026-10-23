@@ -89,6 +89,8 @@ docker compose --env-file docker-compose/.env -f docker-compose/compose.yaml log
 docker compose --env-file docker-compose/.env -f docker-compose/compose.yaml down
 ```
 
+Log của tám application runtime là JSON một dòng (timestamp UTC, level, message, resource identity, `trace_id`/`span_id` khi có span). Cùng nội dung được gửi OTLP qua Collector tới Loki, nên khi điều tra theo trace nên dùng Loki thay vì `docker compose logs`; xem [structured logs](../lms/packages/observability/README.md#structured-logs-w10).
+
 Xóa cả dữ liệu local để kiểm chứng fresh setup hoặc bắt đầu lại từ trạng thái sạch:
 
 ```bash
@@ -210,3 +212,7 @@ Cả 8 application runtime bật metrics với `OTEL_EXPORTER_OTLP_METRICS_ENDPO
 Collector có thêm pipeline broker scrape nội bộ port 15692 từ plugin RabbitMQ đã bật; chỉ queue canonical `notification.grade-completed.v1` và ba depth gauge. Nếu thay tên queue, phải cập nhật mapping exact queue trước khi dùng số liệu; không coi missing là 0. CPU/RSS của tám application đo từ process; broker gauge chỉ enrich ownership Notification (`service_name=notification`, `dependency_identity=notification-rabbitmq`) và xóa `service_version`/`service_instance_id`, không giả resource identity của application process. Các series `up`/`scrape_*` do receiver tự sinh bị lọc bỏ khỏi pipeline broker.
 
 Registry/labels/buckets/query và giới hạn nằm tại [metrics baseline](../lms/packages/observability/README.md#metrics-baseline-w10). `test:observability:metrics` chỉ chấp nhận project test đã xác nhận, tạm stop Notification/Collector và restore trong `finally`, không chạy cùng test fault khác. CI chạy sau regression/tracing khi Compose đã sẵn sàng.
+
+## Structured logs W10
+
+Cả 8 application runtime bật logs với `OTEL_EXPORTER_OTLP_LOGS_ENDPOINT=http://otel-collector:4318/v1/logs`. Nếu env local cũ chưa có biến, Compose dùng mặc định. Collector chuyển logs qua pipeline `logs` có sẵn tới Loki native OTLP; Loki chỉ index `service_name`, còn `trace_id`, `span_id`, severity và field chẩn đoán là structured metadata. Contract field, redaction, query mẫu và `test:observability:logs` nằm tại [structured logs](../lms/packages/observability/README.md#structured-logs-w10). CI chạy bước này sau metrics khi Compose đã sẵn sàng.

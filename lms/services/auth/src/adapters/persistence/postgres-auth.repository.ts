@@ -2,6 +2,7 @@ import { Injectable, OnModuleDestroy } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { randomUUID } from 'node:crypto';
 import { Pool } from 'pg';
+import { logDependencyFailure } from '@aiops-lms/observability';
 import { context, metrics, SpanKind, SpanStatusCode, trace } from '@opentelemetry/api';
 
 import { AuthRepository, type AuthUser } from '../../application/ports/auth-repository.js';
@@ -100,11 +101,14 @@ export class PostgresAuthRepository extends AuthRepository implements OnModuleDe
     } catch (error) {
       status = 'error';
       const code = error instanceof Error && 'code' in error ? String(error.code) : '';
-      span.setAttribute(
-        'error.type',
-        ['57014', 'ETIMEDOUT'].includes(code) ? 'timeout' : 'unavailable',
-      );
+      const errorType = ['57014', 'ETIMEDOUT'].includes(code) ? 'timeout' : 'unavailable';
+      span.setAttribute('error.type', errorType);
       span.setStatus({ code: SpanStatusCode.ERROR });
+      logDependencyFailure(span, {
+        dependency_identity: 'auth-postgres',
+        error_type: errorType,
+        operation_name: operation,
+      });
       throw error;
     } finally {
       const attributes = { ...labels, status };

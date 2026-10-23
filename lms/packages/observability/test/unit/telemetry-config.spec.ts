@@ -1,4 +1,8 @@
-import { defineTelemetryConfig, resolveMetricsEndpoint } from '../../src/telemetry-config.js';
+import {
+  defineTelemetryConfig,
+  resolveLogsEndpoint,
+  resolveMetricsEndpoint,
+} from '../../src/telemetry-config.js';
 
 const validConfig = {
   enabled: true,
@@ -22,6 +26,20 @@ describe('defineTelemetryConfig', () => {
         otlpMetricsEndpoint: 'http://other:4318/custom-metrics',
       }),
     ).toBe('http://other:4318/custom-metrics');
+  });
+  it('derives the logs endpoint like metrics and keeps an explicit override', () => {
+    expect(
+      resolveLogsEndpoint({
+        ...validConfig,
+        otlpTracesEndpoint: 'http://collector:4318/proxy/v1/traces',
+      }),
+    ).toBe('http://collector:4318/proxy/v1/logs');
+    expect(
+      resolveLogsEndpoint({ ...validConfig, otlpLogsEndpoint: 'http://other:4318/custom-logs' }),
+    ).toBe('http://other:4318/custom-logs');
+    expect(() =>
+      defineTelemetryConfig({ ...validConfig, otlpLogsEndpoint: 'file:///logs' }),
+    ).toThrow('otlpLogsEndpoint');
   });
   it('keeps an explicit metric endpoint and export interval', () => {
     expect(

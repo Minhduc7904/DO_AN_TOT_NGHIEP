@@ -1,3 +1,4 @@
+import { logDependencyFailure } from '@aiops-lms/observability';
 import { context, metrics, SpanKind, SpanStatusCode, trace } from '@opentelemetry/api';
 
 import {
@@ -32,6 +33,11 @@ export async function observeDependency<T>(
     status = error instanceof SubmissionDependencyError ? error.kind : 'unavailable';
     span.setAttribute('error.type', status);
     span.setStatus({ code: SpanStatusCode.ERROR });
+    logDependencyFailure(span, {
+      dependency_identity: dependency,
+      error_type: status,
+      operation_name: operation,
+    });
     throw error;
   } finally {
     const labels = { ...attributes, status };
