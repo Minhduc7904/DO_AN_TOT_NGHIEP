@@ -67,6 +67,8 @@ Hoàn thiện export metrics từ toàn bộ service qua OTel Collector tới Pr
 
 ## Hậu kiểm theo issue #45 ngày 23/10/2026
 
+Xử lý trong [PR #46](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/46); trạng thái `Hoàn thành` không đổi.
+
 - Blocker cho task-05 đã sửa trong PR follow-up: Collector giữ `service.name=notification` và `dependency_identity=notification-rabbitmq` cho series broker RabbitMQ nhưng xóa `service.version`/`service.instance.id` (kể cả giá trị prometheus receiver tự gán), đúng telemetry schema §5.1. Metrics smoke kiểm resource identity của mọi series có `service_name` business service.
 - CI head cuối `4ecb95b` là [run 39786424620](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/actions/runs/39786424620), đạt cả 5 job. Task hoàn thành 22/10/2026, đúng hạn dự kiến.
 - Collaborator: chưa có xác nhận của Bách về khả năng query cho anomaly; Bách sẽ xác nhận trong task-04/05.

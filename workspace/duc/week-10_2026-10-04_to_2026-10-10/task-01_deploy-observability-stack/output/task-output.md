@@ -53,7 +53,7 @@ Reviewer kiểm Compose/syntax/diff, reset guard 11/11, smoke ba backend và Gra
 
 ## Hậu kiểm theo issue #45 ngày 23/10/2026
 
-Bổ sung theo [issue #45](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/issues/45) (review độc lập sau merge) và yêu cầu của Bách; trạng thái `Hoàn thành` không đổi.
+Bổ sung theo [issue #45](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/issues/45) (review độc lập sau merge) và yêu cầu của Bách, xử lý trong [PR #46](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/46); trạng thái `Hoàn thành` không đổi.
 
 - **Trích dẫn CI:** bảng DoD trước đây chỉ trích run 39617474360 của `0fd400a`, trong khi readiness `9c4a422` còn sửa `stack-smoke.mjs`. Nay trích run 39619194330 của head cuối `f2c4c36`, đạt cả 5 job.
 - **GitGuardian:** check "GitGuardian Security Checks" fail trên `0fd400a`, `9c4a422`, `f2c4c36` với 2 "Generic Password": `GRAFANA_ADMIN_PASSWORD=grafana-local-only` ở `docker-compose/.env.example` và fallback cùng giá trị trong `compose.yaml`. Đây là false positive: credential mẫu chỉ dùng local, Grafana chỉ bind `127.0.0.1`, không dùng production; README đã ghi rõ. PR follow-up bỏ fallback, Compose dùng `${GRAFANA_ADMIN_PASSWORD:?...}` như các credential bắt buộc khác; giá trị mẫu vẫn giữ trong `.env.example` theo cùng quy ước với các credential local còn lại. Việc đánh dấu incident là false positive trên dashboard GitGuardian cần người có quyền trên workspace GitGuardian thực hiện; hồ sơ này không khẳng định đã đánh dấu.

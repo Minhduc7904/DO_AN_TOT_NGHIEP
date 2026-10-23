@@ -64,7 +64,7 @@ Các lỗi harness đã sửa: đường dẫn env dùng absolute path đã vali
 
 ## Hậu kiểm theo issue #45 ngày 23/10/2026
 
-Bổ sung theo [issue #45](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/issues/45) (review độc lập sau merge) và yêu cầu của Bách; trạng thái `Hoàn thành` không đổi.
+Bổ sung theo [issue #45](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/issues/45) (review độc lập sau merge) và yêu cầu của Bách, xử lý trong [PR #46](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/46); trạng thái `Hoàn thành` không đổi.
 
 - **Blocker cho task-05 đã sửa:** `otel-collector.yaml` từng upsert `service.version=rabbitmq-4.1.4`, `service.instance.id=rabbitmq-compose-1` cho series broker có `service.name=notification`, trái telemetry schema §5.1 (version/instance của exporter infrastructure phải nullable, không tạo dữ liệu giả) và làm `service_name="notification"` có thêm một identity không phải runtime Notification. PR follow-up giữ `service.name=notification` cùng `dependency_identity=notification-rabbitmq`, xóa `service.version`/`service.instance.id` (kể cả `service.instance.id` mà prometheus receiver tự gán). Khi kiểm chứng phát hiện receiver còn tự sinh `up`/`scrape_*` mang `service_name="notification"`; pipeline broker nay lọc chỉ giữ ba gauge queue. `metrics-smoke.mjs` trước đây chỉ kiểm identity trên `http_server_request_count_total`; nay kiểm mọi series có `service_name` business service: series ứng dụng khớp version/instance trong catalogue Compose, series broker `rabbitmq_*` không có hai field này, và phải có ít nhất một series broker. README metrics baseline và Compose README đã cập nhật.
 - **Hạn:** hạn dự kiến 22/10/2026, hoàn thành 22/10/2026, đúng hạn.

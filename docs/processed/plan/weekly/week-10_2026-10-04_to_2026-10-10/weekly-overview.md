@@ -64,7 +64,7 @@ Finalization được ghi trước merge; kiểm reviewer/CI head cuối trướ
 
 ## Hậu kiểm task-01..03 theo issue #45 ngày 23/10/2026
 
-[Issue #45](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/issues/45) là review độc lập chỉ đọc của task-01..03 trên `main` tại `3e7dedf`: không có blocker cho task-04, có 1 blocker cho task-05. Theo yêu cầu của Bách, các tồn đọng được xử lý trong một PR follow-up riêng (branch `fix/week-10/task-03-export-service-metrics-followup`), không sửa trong branch task-04/05:
+[Issue #45](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/issues/45) là review độc lập chỉ đọc của task-01..03 trên `main` tại `3e7dedf`: không có blocker cho task-04, có 1 blocker cho task-05. Theo yêu cầu của Bách, các tồn đọng được xử lý trong [PR #46](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/46) follow-up riêng (branch `fix/week-10/task-03-export-service-metrics-followup`), không sửa trong branch task-04/05:
 
 - Blocker task-05: series broker RabbitMQ không còn gán `service_version`/`service_instance_id` giả cho Notification; metrics smoke kiểm resource identity của mọi series có `service_name` business service.
 - Shutdown runtime chờ `app.close()` xong rồi mới `telemetry.shutdown()`; Compose bắt buộc `GRAFANA_ADMIN_PASSWORD` từ env file thay vì fallback trong `compose.yaml`.

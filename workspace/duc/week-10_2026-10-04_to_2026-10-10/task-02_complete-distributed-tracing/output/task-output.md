@@ -63,7 +63,7 @@ Reviewer độc lập kiểm chứng trace 51 span qua 8 runtime `3b20a3aa35ed67
 
 ## Hậu kiểm theo issue #45 ngày 23/10/2026
 
-Bổ sung theo [issue #45](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/issues/45) (review độc lập sau merge) và yêu cầu của Bách; trạng thái `Hoàn thành` không đổi.
+Bổ sung theo [issue #45](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/issues/45) (review độc lập sau merge) và yêu cầu của Bách, xử lý trong [PR #46](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/46); trạng thái `Hoàn thành` không đổi.
 
 - **Đối chiếu review:** card ghi focused review tại `b7182a4`, mô tả PR #42 ghi "metadata cuối `10209da`". Hai nguồn không mâu thuẫn về verdict: agent focused review APPROVED nội bộ tại `b7182a4`; `e11cd1f` và `10209da` là commit finalization chỉ sửa card/overview/input/output sau approval, không có bằng chứng reviewer kiểm lại hai commit này. CI head cuối `10209da` đạt [run 39627853914](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/actions/runs/39627853914) cả 5 job. Mô tả PR #42 đã được sửa theo cách diễn đạt này.
 - **Shutdown:** `main.ts` của tám runtime trước đây chạy `app.close()` và `telemetry.shutdown()` song song, span/log phát ra lúc đóng app có thể mất. PR follow-up đổi sang chờ `app.close()` xong rồi mới `telemetry.shutdown()`, kể cả khi đóng app lỗi.

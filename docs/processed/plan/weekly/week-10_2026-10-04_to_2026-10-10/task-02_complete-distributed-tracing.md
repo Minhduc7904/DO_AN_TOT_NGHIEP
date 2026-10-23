@@ -69,6 +69,8 @@ CI 39626518883 cả 5 job đạt; reviewer độc lập full/focused APPROVED n�
 
 ## Hậu kiểm theo issue #45 ngày 23/10/2026
 
+Xử lý trong [PR #46](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/46); trạng thái `Hoàn thành` không đổi.
+
 - Trễ hạn: hạn dự kiến 20/10/2026, hoàn thành (finalization) 21/10/2026, trễ 1 ngày so với mốc bù tiến độ.
 - Đối chiếu review: agent focused review APPROVED nội bộ tại `b7182a4`. `e11cd1f` và `10209da` là hai commit finalization chỉ gồm metadata sau approval; CI head cuối `10209da` là [run 39627853914](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/actions/runs/39627853914), đạt cả 5 job. Câu "metadata cuối `10209da`" trong mô tả PR #42 không có nghĩa reviewer đã review lại commit đó.
 - Shutdown runtime nay chờ `app.close()` xong rồi mới `telemetry.shutdown()` để span/log lúc đóng app không bị mất; sửa trong PR follow-up của issue #45.
