@@ -108,6 +108,12 @@ Tám runtime ghi log qua `StructuredLogger`, logger tương thích `LoggerServic
 
 Field ngoài allowlist bị bỏ trước khi ghi, nên payload, user/principal ID hoặc object tùy ý không lọt vào log. Message và stack đi qua bộ che: `Bearer`/`Basic` token, JWT, credential trong URL, `password|secret|token|api_key|authorization = ...` và email. Bộ che chỉ là lớp bảo vệ thêm; code không được đưa payload vào message. Mức mặc định là `log`/`warn`/`error`/`fatal`; `debug`/`verbose` chỉ bật qua `setLogLevels`.
 
+Giới hạn đã biết:
+
+- Resource identity trên stdout chỉ có sau khi `startTelemetry` gọi `configureStructuredLogging`. Runtime gọi `startTelemetry` trước khi import app nên mọi log đều có identity; test chạy nhiều app trong một process hoặc import bản build khác instance module có thể thấy log thiếu `service.*`.
+- Khi bootstrap lỗi, `main.ts` gọi `telemetry.shutdown()` rồi ném lại lỗi; Node in stack thô ra stderr, không phải JSON và không qua Loki. Container exit code và `docker compose logs` là nguồn chẩn đoán cho lỗi startup.
+- Request healthy không có access log; Gateway và service HTTP chỉ có log khi lỗi 5xx hoặc dependency lỗi. Cần chốt trước task-05 nếu dashboard cần nối trace healthy với log.
+
 Log chẩn đoán được ghi ở các điểm dùng chung, không rải theo từng handler:
 
 - `createHttpTelemetryMiddleware` ghi `ERROR` `event=http.server.error` cho HTTP 5xx, `client_aborted` và exception, kèm `http_method`, `http_route` (template hoặc `unmatched`), `http_status_code` và `error_type`, trong context của server span. HTTP 4xx nghiệp vụ không ghi lỗi.

@@ -236,8 +236,9 @@ export async function startTestbed(): Promise<Testbed> {
   const originalStdoutWrite = process.stdout.write.bind(process.stdout);
   process.stdout.write = ((chunk: unknown, ...rest: unknown[]): boolean => {
     try {
-      const parsed = JSON.parse(String(chunk)) as Partial<NotificationLog>;
+      const parsed = JSON.parse(String(chunk)) as Partial<NotificationLog> & { event?: string };
       if (
+        parsed.event === 'grade.completed' &&
         typeof parsed.event_id === 'string' &&
         (parsed.outcome === 'accepted' || parsed.outcome === 'duplicate')
       ) {

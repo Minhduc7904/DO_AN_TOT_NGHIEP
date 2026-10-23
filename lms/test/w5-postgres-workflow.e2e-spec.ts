@@ -234,8 +234,9 @@ describe('W5 Gateway → Grading → Submission → PostgreSQL → RabbitMQ → 
     // của observability, khác instance module với test.
     process.stdout.write = ((chunk: unknown, ...rest: unknown[]): boolean => {
       try {
-        const parsed = JSON.parse(String(chunk)) as Partial<NotificationLog>;
+        const parsed = JSON.parse(String(chunk)) as Partial<NotificationLog> & { event?: string };
         if (
+          parsed.event === 'grade.completed' &&
           typeof parsed.event_id === 'string' &&
           (parsed.outcome === 'accepted' || parsed.outcome === 'duplicate')
         ) {

@@ -51,7 +51,7 @@ const REDACTIONS: readonly [RegExp, string][] = [
   [/\beyJ[\w-]+\.[\w-]+\.[\w-]+/gu, '[REDACTED_JWT]'],
   [/(\b[a-z][a-z0-9+.-]*:\/\/)[^\s/:@]+:[^\s/@]+@/giu, '$1[REDACTED]@'],
   [
-    /\b(password|passwd|pwd|secret|token|access_token|refresh_token|api[_-]?key|authorization)(["']?\s*[:=]\s*)("[^"]*"|'[^']*'|[^\s,;&}]+)/giu,
+    /\b(password|passwd|pwd|secret|token|access[_-]?token|refresh[_-]?token|api[_-]?key|authorization)(["']?\s*[:=]\s*)("[^"]*"|'[^']*'|[^\s,;&}]+)/giu,
     '$1$2[REDACTED]',
   ],
   [/[\w.+-]+@[\w-]+(\.[\w-]+)+/gu, '[REDACTED_EMAIL]'],

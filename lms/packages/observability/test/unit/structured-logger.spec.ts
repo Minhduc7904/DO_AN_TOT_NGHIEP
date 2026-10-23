@@ -108,6 +108,9 @@ it('drops fields outside the allowlist and redacts credentials and PII', () => {
   }
   expect(lines[0]).toMatchObject({ error_type: 'timeout', http_status_code: 504 });
   expect(sanitizeLogText('x'.repeat(3_000))).toHaveLength(2_001);
+  expect(
+    sanitizeLogText('accessToken=opaque-a refreshToken: opaque-r refresh-token=opaque-k'),
+  ).toBe('accessToken=[REDACTED] refreshToken: [REDACTED] refresh-token=[REDACTED]');
 });
 
 it('implements the NestJS logger contract with context, stack and default level filtering', () => {
