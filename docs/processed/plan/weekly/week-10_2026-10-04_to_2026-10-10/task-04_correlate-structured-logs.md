@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-04_correlate-structured-logs` |
 | Tuần | `week-10_2026-10-04_to_2026-10-10` |
-| Trạng thái | Đang thực hiện |
+| Trạng thái | Chờ review |
 | Người phụ trách | Bách |
 | Collaborator | Đức hỗ trợ Collector/Compose và trace context |
 | Ưu tiên | Cao |
@@ -53,7 +53,7 @@ Chuẩn hóa log runtime của Gateway, sáu business service và storage mock t
 
 - Input workspace: [task-input.md](../../../../../workspace/bach/week-10_2026-10-04_to_2026-10-10/task-04_correlate-structured-logs/input/task-input.md).
 - Output workspace: [task-output.md](../../../../../workspace/bach/week-10_2026-10-04_to_2026-10-10/task-04_correlate-structured-logs/output/task-output.md).
-- Pull request: Chưa tạo.
+- Pull request: [#47](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/47).
 - Kết quả review: Chưa review.
 
 > URL/số PR và `Chờ review` phải được commit/push vào PR head trước review. Thành viên còn lại phải gửi `APPROVED` hợp lệ trên GitHub; sau đó người phụ trách finalization metadata, ghi `Hoàn thành` trên chính branch/PR và tự merge task của mình. Card chỉ canonically hoàn thành khi commit đó vào nhánh canonical; xem [vòng đời task canonical](../../../rules/git-and-pull-request-rules.md#vòng-đời-task-canonical).
@@ -62,4 +62,5 @@ Chuẩn hóa log runtime của Gateway, sáu business service và storage mock t
 
 - Cập nhật gần nhất: 23/10/2026 — Bách xác nhận bắt đầu; tạo nhánh từ `main` tại `2a71506` (sau PR #46), tạo input/output và chuyển `Đang thực hiện`.
 - Ghi chú/tồn đọng: Theo [issue #45](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/issues/45), task-04 không có blocker; cần cấu hình log processor/exporter dùng transport chung, `OTEL_EXPORTER_OTLP_LOGS_ENDPOINT` cho 8 runtime, flush khi shutdown và kiểm Loki theo `trace_id`. Quá mốc cũ 22/10/2026; Bách chốt mốc mới 23/10/2026.
-- 23/10/2026: đã triển khai structured logger, log export OTLP tới Loki và `test:observability:logs`; regression, tracing, metrics và logs smoke pass local. Chưa tạo PR, chưa chạy CI GitHub.
+- 23/10/2026: đã triển khai structured logger, log export OTLP tới Loki và `test:observability:logs`; regression, tracing, metrics và logs smoke pass local. 
+- 23/10/2026: tạo [PR #47](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/47), ghi URL PR và chuyển `Chờ review`; chờ CI GitHub trên PR head và review của Đức.

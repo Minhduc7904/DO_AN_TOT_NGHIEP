@@ -18,7 +18,7 @@
 | [task-01_deploy-observability-stack](task-01_deploy-observability-stack.md) | Dựng OTel Collector, Prometheus, Tempo, Loki và Grafana trong Compose | Đức | Bách góp ý nhu cầu query/retention | Cao | Hoàn thành |
 | [task-02_complete-distributed-tracing](task-02_complete-distributed-tracing.md) | Hoàn thiện distributed tracing và resource identity toàn topology | Đức | Bách kiểm tra field phục vụ diagnosis | Cao | Hoàn thành |
 | [task-03_export-service-metrics](task-03_export-service-metrics.md) | Xuất service metrics và thêm kiểm chứng metrics baseline | Đức | Bách kiểm tra khả năng query cho anomaly | Cao | Hoàn thành |
-| [task-04_correlate-structured-logs](task-04_correlate-structured-logs.md) | Chuẩn hóa structured logs, correlation và Loki ingestion | Bách | Đức hỗ trợ Collector/Compose và trace context | Cao | Đang thực hiện |
+| [task-04_correlate-structured-logs](task-04_correlate-structured-logs.md) | Chuẩn hóa structured logs, correlation và Loki ingestion | Bách | Đức hỗ trợ Collector/Compose và trace context | Cao | Chờ review |
 | [task-05_build-dashboard-and-validate-observability](task-05_build-dashboard-and-validate-observability.md) | Dựng dashboard và nghiệm thu baseline observability W10 | Bách | Đức hỗ trợ topology, telemetry và smoke test | Cao | Chờ xử lý |
 
 > Khi đọc tiến độ project-wide, chỉ coi hàng có trạng thái `Hoàn thành` trên nhánh canonical là hoàn thành; trạng thái đã finalization trên task branch chưa thay thế nguồn này.
@@ -75,3 +75,5 @@ Trạng thái `Hoàn thành` của task-01..03 không đổi; task-04/05 vẫn `
 ## Tiến độ task-04 ngày 23/10/2026
 
 Bách xác nhận bắt đầu task-04 trên nhánh `feat/week-10/task-04-correlate-structured-logs` từ `main` tại `2a71506` (đã gồm PR #46); [input Bách](../../../../../workspace/bach/week-10_2026-10-04_to_2026-10-10/task-04_correlate-structured-logs/input/task-input.md) đã tạo và card chuyển `Đang thực hiện`. Task bắt đầu sau hạn 22/10/2026. Task-05 giữ `Chờ xử lý` cho tới khi task-04 có dữ liệu log thật; trạng thái tuần vẫn Đang thực hiện.
+
+[PR #47](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/47) triển khai structured logs cho 8 runtime, log export OTLP tới Loki và `test:observability:logs`; regression, tracing, metrics và logs smoke pass local. Task-04 chuyển `Chờ review`, chờ CI GitHub và review của Đức.

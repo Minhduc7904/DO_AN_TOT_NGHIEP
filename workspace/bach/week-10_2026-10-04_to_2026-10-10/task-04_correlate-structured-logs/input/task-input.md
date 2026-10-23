@@ -8,11 +8,11 @@
 | Tên task | Chuẩn hóa structured logs, correlation và Loki ingestion |
 | Người phụ trách | Bách |
 | Tuần thực hiện | `week-10_2026-10-04_to_2026-10-10` |
-| Trạng thái | Đang thực hiện |
+| Trạng thái | Chờ review |
 | Ngày tạo | 23/10/2026 (Asia/Saigon) |
 | Thời gian dự kiến | 23/10/2026 (Bách chốt lại; mốc cũ trên card 22/10/2026 đã qua khi bắt đầu) |
 | Nhánh thực hiện | `feat/week-10/task-04-correlate-structured-logs` |
-| Pull request dự kiến | PR từ nhánh task vào `main` sau khi hoàn tất work và bằng chứng DoD |
+| Pull request dự kiến | [PR #47](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/47) vào `main` |
 
 ## Mục tiêu và phạm vi
 
