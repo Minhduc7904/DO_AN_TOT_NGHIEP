@@ -11,7 +11,7 @@
 | Hoàn thành thực tế | Chưa hoàn thành |
 | Tổng thời lượng | Chưa ghi nhận |
 | Pull request | [PR #47](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/47) |
-| Người review | Đức (dự kiến) |
+| Người review | Bách tự review theo ngoại lệ (review `5623879276`, `COMMENTED`); Đức chưa review |
 | Kết quả review | Chưa review |
 
 ## Báo cáo công việc đã làm
@@ -38,18 +38,27 @@ Tạo nhánh `feat/week-10/task-04-correlate-structured-logs` từ `main` tại 
 
 | Điều kiện từ input | Kết quả | Bằng chứng |
 | --- | --- | --- |
-| Log JSON đủ timestamp, severity, message, resource identity | Đạt (local, chờ CI) | Unit test; `logs-smoke` parse mọi dòng stdout Gateway 35, Submission 28, Notification 50: JSON hợp lệ, timestamp UTC, identity khớp Compose |
-| `trace_id`/`span_id` khớp active span, ngoài context bỏ trống | Đạt (local, chờ CI) | Unit test span hiện hành/dependency span; `logs-smoke` yêu cầu `span_id` Loki thuộc chính trace trong Tempo; stdout có 19/12/23 log startup không có `trace_id` |
-| Loki ingest Gateway, một service HTTP, Notification; query theo service rồi `trace_id` | Đạt (local, chờ CI) | Query `{service_name="gateway"}` và `{service_name="submission"}` rồi lọc `trace_id` cho trace timeout `c3ee0c76d26b3166e421a74719dfb2b6` và unavailable `9dcae44dd8a034ca51a992f330db1193`; Notification `outcome=accepted` trace healthy `df1a4cb650403c306b13751935f5b656` |
-| Error log có HTTP status, error type, dependency identity, timeout; không lộ secret/PII | Đạt (local, chờ CI) | Loki: `dependency.failure` `gateway-submission`/`submission-storage` với `error_type=timeout\|unavailable`, `http.server.error` 504/503; unit test redaction; smoke không thấy token/password/email test |
-| Loki labels bounded, test redaction/label | Đạt (local, chờ CI) | Loki labels chỉ `service_name`; `trace_id`, `span_id`, severity, field chẩn đoán là structured metadata; unit test allowlist bỏ `user_id`/payload |
-| Test liên quan, `ci:verify`, Compose smoke | Đạt (local, chờ CI) | Local Linux, Node 22.13.1/pnpm 11.19.0: `ci:verify` (observability 37 test, Notification 16 test), regression, tracing, metrics và logs smoke pass |
+| Log JSON đủ timestamp, severity, message, resource identity | Đạt | Unit test; `logs-smoke` parse mọi dòng stdout Gateway 35, Submission 28, Notification 50: JSON hợp lệ, timestamp UTC, identity khớp Compose |
+| `trace_id`/`span_id` khớp active span, ngoài context bỏ trống | Đạt | Unit test span hiện hành/dependency span; `logs-smoke` yêu cầu `span_id` Loki thuộc chính trace trong Tempo; stdout có 19/12/23 log startup không có `trace_id` |
+| Loki ingest Gateway, một service HTTP, Notification; query theo service rồi `trace_id` | Đạt | Query `{service_name="gateway"}` và `{service_name="submission"}` rồi lọc `trace_id` cho trace timeout `c3ee0c76d26b3166e421a74719dfb2b6` và unavailable `9dcae44dd8a034ca51a992f330db1193`; Notification `outcome=accepted` trace healthy `df1a4cb650403c306b13751935f5b656` |
+| Error log có HTTP status, error type, dependency identity, timeout; không lộ secret/PII | Đạt | Loki: `dependency.failure` `gateway-submission`/`submission-storage` với `error_type=timeout\|unavailable`, `http.server.error` 504/503; unit test redaction; smoke không thấy token/password/email test |
+| Loki labels bounded, test redaction/label | Đạt | Loki labels chỉ `service_name`; `trace_id`, `span_id`, severity, field chẩn đoán là structured metadata; unit test allowlist bỏ `user_id`/payload |
+| Test liên quan, `ci:verify`, Compose smoke | Đạt | CI [run 39901081032](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/actions/runs/39901081032) tại `f24e10d` đạt cả 5 job, gồm `test:*:postgres`, W5 e2e, `ci:verify`, regression, tracing, metrics và logs smoke. Local Linux Node 22.13.1/pnpm 11.19.0 chạy lại đủ bước quality của CI với PostgreSQL/Redis/RabbitMQ như CI và chuỗi Compose: pass. GitGuardian vẫn đỏ do JWT giả trong lịch sử commit `32d6965`, xem mục xử lý review |
 | URL PR và `Chờ review` trước review; approval và finalization | Một phần | [PR #47](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/47) và `Chờ review` đã commit/push vào PR head; chờ CI, review `APPROVED` của Đức và finalization |
+
+## Xử lý review
+
+Bách tự review PR #47 theo ngoại lệ tại `8d4a583` (review `5623879276`, dạng `COMMENTED` vì GitHub không cho tác giả tự approve/request changes); review này không thay cho review độc lập của Đức.
+
+- Blocking 1, W5 e2e timeout do còn bắt `console.info`: `8fde8c2` chuyển sang bắt stdout như regression testbed. CI trước đó đỏ vì local `ci:verify` bỏ qua W5 khi thiếu PostgreSQL/RabbitMQ; nay đã chạy đủ bước quality của CI ở local.
+- Blocking 2, logs smoke `span_id lạ`: `8fde8c2` đọc lại span Tempo trong mỗi lần poll; CI {R} đạt.
+- Blocking 3, GitGuardian JWT: JWT là fixture giả (`{"sub":"1"}`, chữ ký là chữ `signature`), không phải secret. `8fde8c2` dựng chuỗi dạng JWT lúc chạy nên source hiện tại không còn literal; GitGuardian vẫn báo incident 38885072 vì commit `32d6965` còn trong lịch sử PR. Cần chọn viết lại lịch sử branch hoặc đánh dấu false positive trên dashboard.
+- Không blocking: `f24e10d` thêm điều kiện `event === 'grade.completed'` khi bắt log, che `accessToken`/`refreshToken`/`refresh-token`, ghi giới hạn identity, lỗi bootstrap và access log trong README.
 
 ## Thay đổi, tồn đọng và bước tiếp theo
 
 - Thay đổi so với input: Không ghi access log cho request healthy; log chẩn đoán chỉ ở lỗi HTTP 5xx/dependency và kết quả xử lý Notification. Test Notification/regression đổi cách bắt log từ `console.*` sang stdout của logger chung.
-- Việc chưa hoàn thành hoặc trở ngại: Task bắt đầu sau mốc cũ 22/10/2026; Bách chốt mốc mới 23/10/2026. Chưa có CI GitHub và review.
-- Bước tiếp theo: Chờ CI GitHub trên PR head đạt và Đức review; xử lý feedback nếu có, rồi finalization trước merge.
+- Việc chưa hoàn thành hoặc trở ngại: Task bắt đầu sau mốc cũ 22/10/2026; Bách chốt mốc mới 23/10/2026. GitGuardian còn đỏ do lịch sử commit. Request healthy không có access log; cần chốt với Đức trước task-05 nếu dashboard cần nối trace healthy với log.
+- Bước tiếp theo: Xử lý dứt điểm GitGuardian, chờ Đức review độc lập và gửi `APPROVED`, rồi finalization trước merge.
 
 > `Hoàn thành thực tế` là thời điểm người phụ trách đã hoàn tất work, DoD, nhận `APPROVED` hợp lệ từ thành viên còn lại và finalization; không ghi merge time. URL/số PR cùng trạng thái **Chờ review** phải được commit/push vào PR head trước review. Sau approval, người phụ trách dùng `task-completion-recording` để cập nhật hồ sơ và chuyển **Hoàn thành** trên chính branch/PR trước khi tự merge. Task chỉ canonically hoàn thành khi commit đó vào nhánh canonical. `Chờ xử lý` chỉ dùng cho blocker/dependency thực sự, không dùng chỉ vì PR đang chờ merge.
