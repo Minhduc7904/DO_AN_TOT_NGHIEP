@@ -8,7 +8,7 @@
 | Tên task | Chuẩn hóa structured logs, correlation và Loki ingestion |
 | Người phụ trách | Bách |
 | Tuần thực hiện | `week-10_2026-10-04_to_2026-10-10` |
-| Trạng thái | Chờ review |
+| Trạng thái | Hoàn thành |
 | Ngày tạo | 23/10/2026 (Asia/Saigon) |
 | Thời gian dự kiến | 23/10/2026 (Bách chốt lại; mốc cũ trên card 22/10/2026 đã qua khi bắt đầu) |
 | Nhánh thực hiện | `feat/week-10/task-04-correlate-structured-logs` |
@@ -57,12 +57,12 @@ Hướng triển khai dự kiến:
 
 ## Definition of Done
 
-- [ ] Log application là JSON hợp lệ với timestamp UTC ISO-8601, severity, message và ba resource identity field canonical.
-- [ ] Log trong request/consumer context có `trace_id` và `span_id` khớp active span; log ngoài context ghi thiếu có chủ đích thay vì tạo ID giả.
-- [ ] Loki ingest log của ít nhất Gateway, một service HTTP và Notification; query theo `service.name` rồi lọc `trace_id` trả đúng workflow.
-- [ ] Error log biểu diễn HTTP status, error type, dependency identity và timeout semantics khi áp dụng; không log token, password, payload nhạy cảm hoặc PII.
-- [ ] Loki labels chỉ dùng tập bounded; test/redaction check ngăn correlation/user/event/run ID thành label hoặc dữ liệu nhạy cảm bị ghi.
-- [ ] Test liên quan, `pnpm run ci:verify` và Compose smoke pass.
-- [ ] Sản phẩm đã được lưu/đẩy lên vị trí dự kiến và có thể truy cập.
-- [ ] URL/số PR và trạng thái `Chờ review` đã được commit/push vào PR head trước khi reviewer bắt đầu review.
-- [ ] Pull request từ nhánh task có mô tả đúng quy tắc, có verdict `APPROVED` hợp lệ từ thành viên còn lại trên GitHub và completion metadata được commit/push vào chính PR trước khi người phụ trách merge.
+- [x] Log application là JSON hợp lệ với timestamp UTC ISO-8601, severity, message và ba resource identity field canonical.
+- [x] Log trong request/consumer context có `trace_id` và `span_id` khớp active span; log ngoài context ghi thiếu có chủ đích thay vì tạo ID giả.
+- [x] Loki ingest log của ít nhất Gateway, một service HTTP và Notification; query theo `service.name` rồi lọc `trace_id` trả đúng workflow.
+- [x] Error log biểu diễn HTTP status, error type, dependency identity và timeout semantics khi áp dụng; không log token, password, payload nhạy cảm hoặc PII.
+- [x] Loki labels chỉ dùng tập bounded; test/redaction check ngăn correlation/user/event/run ID thành label hoặc dữ liệu nhạy cảm bị ghi.
+- [x] Test liên quan, `pnpm run ci:verify` và Compose smoke pass.
+- [x] Sản phẩm đã được lưu/đẩy lên vị trí dự kiến và có thể truy cập.
+- [x] URL/số PR và trạng thái `Chờ review` đã được commit/push vào PR head trước khi reviewer bắt đầu review.
+- [ ] Pull request từ nhánh task có mô tả đúng quy tắc, có verdict `APPROVED` hợp lệ từ thành viên còn lại trên GitHub và completion metadata được commit/push vào chính PR trước khi người phụ trách merge. *(Không đạt phần `APPROVED`: không có review của Đức; finalization và merge theo ngoại lệ do Bách (người phụ trách) xác nhận ngày 23/10/2026; không có GitHub `APPROVED` của Đức.)*
