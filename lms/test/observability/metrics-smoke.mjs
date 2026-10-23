@@ -49,6 +49,11 @@ const services = [
   'notification',
   'submission-storage',
 ];
+function runtimeIdentity(service) {
+  const composeName = service === 'submission-storage' ? 'submission-storage-mock' : service;
+  const env = configuration.services[composeName].environment;
+  return [env.OTEL_SERVICE_VERSION, env.OTEL_SERVICE_INSTANCE_ID];
+}
 const forbiddenKeys =
   /^(trace_id|span_id|request_id|user_id|principal_id|event_id|run_id|fault_type|fault_id|root_cause_service|url_path|url|path)$/u;
 const dynamicIds = [];
@@ -85,7 +90,7 @@ async function poll(label, check) {
       await delay(1_000);
     }
   } while (Date.now() < deadline);
-  throw new Error(`${label}: quá90giây`, { cause: lastError });
+  throw new Error(`${label}: quá 90 giây`, { cause: lastError });
 }
 const selectors = {
   healthy: 'sum(http_server_request_count_total{service_name="gateway",http_status_class="2xx"})',
@@ -114,7 +119,7 @@ async function runTracing() {
   );
 }
 // Khởi tạo cả error series của process hiện tại trước baseline; tránh counter cũ còn trong
-// Collector/Prometheus sau application restart. SDK5s + batch1s + scrape5s đều phải đi qua.
+// Collector/Prometheus sau application restart. SDK 5s + batch 1s + scrape 5s đều phải đi qua.
 await runTracing();
 const warmupFinishedAt = Date.now() / 1_000;
 await delay(12_000);
@@ -148,12 +153,11 @@ for (const service of services) {
   await poll(`RED/CPU/memory ${service}`, async () => {
     const rows = await query(`http_server_request_count_total{service_name="${service}"}`);
     assert.ok(rows.length > 0);
-    const composeName = service === 'submission-storage' ? 'submission-storage-mock' : service;
-    const env = configuration.services[composeName].environment;
-    for (const row of rows) {
-      assert.equal(row.metric.service_version, env.OTEL_SERVICE_VERSION);
-      assert.equal(row.metric.service_instance_id, env.OTEL_SERVICE_INSTANCE_ID);
-    }
+    for (const row of rows)
+      assert.deepEqual(
+        [row.metric.service_version, row.metric.service_instance_id],
+        runtimeIdentity(service),
+      );
     assert.ok((await scalar(`process_cpu_time_seconds_total{service_name="${service}"}`)) > 0);
     assert.ok((await scalar(`process_memory_usage_bytes{service_name="${service}"}`)) > 0);
     const buckets = await query(
@@ -310,15 +314,33 @@ try {
 await poll('Metrics hồi phục sau Collector outage', async () =>
   assert.ok((await scalar(selectors.healthy)) > requestCountBefore),
 );
+// Collector restart làm series broker stale; chờ scrape lại trước khi kiểm identity toàn bộ series.
+await poll('Broker series hồi phục sau Collector outage', async () =>
+  assert.equal((await query(queueSelector)).length, 1),
+);
 const rows = await query(`{service_name=~"${services.join('|')}"}`);
 assert.ok(rows.length > 0);
+let brokerSeries = 0;
 for (const row of rows) {
+  // Series broker do Collector scrape không có version/instance của runtime nên phải để trống.
+  const broker = row.metric.__name__.startsWith('rabbitmq_');
+  if (broker) {
+    brokerSeries += 1;
+    assert.equal(row.metric.service_name, 'notification');
+    assert.equal(row.metric.dependency_identity, 'notification-rabbitmq');
+  }
+  assert.deepEqual(
+    [row.metric.service_version, row.metric.service_instance_id],
+    broker ? [undefined, undefined] : runtimeIdentity(row.metric.service_name),
+    `Sai resource identity ở ${row.metric.__name__}{service_name="${row.metric.service_name}"}`,
+  );
   for (const key of Object.keys(row.metric))
     assert.ok(!forbiddenKeys.test(key), `Cấm label ${key}`);
   const serialized = JSON.stringify(row.metric);
   for (const dynamicId of dynamicIds) assert.ok(!serialized.includes(dynamicId));
   assert.ok(!serialized.includes(token) && !serialized.includes('student@example.test'));
 }
+assert.ok(brokerSeries > 0, 'Thiếu series broker để kiểm identity.');
 console.info(
   JSON.stringify({
     result: 'pass',
@@ -329,5 +351,6 @@ console.info(
     collectorOutage: 'business-request-pass-and-export-recovered',
     dynamicRoutes: 'stable-series',
     seriesCount: rows.length,
+    brokerSeriesWithoutRuntimeIdentity: brokerSeries,
   }),
 );
