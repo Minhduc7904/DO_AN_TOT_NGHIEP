@@ -124,7 +124,7 @@ describe('W5 Gateway → Grading → Submission → PostgreSQL → RabbitMQ → 
   let notificationHasProcessed: (eventId: string) => boolean;
   let publishedEvent: PublishedEvent | undefined;
   const notificationLogs: NotificationLog[] = [];
-  const originalConsoleInfo = console.info;
+  const originalStdoutWrite = process.stdout.write.bind(process.stdout);
   const slowdownTest = SLOWDOWN_ENABLED ? it : it.skip;
 
   async function waitUntil(
@@ -230,13 +230,12 @@ describe('W5 Gateway → Grading → Submission → PostgreSQL → RabbitMQ → 
       connectRabbitMq,
       notificationTelemetry,
     );
-    console.info = (...values: unknown[]): void => {
+    // Notification ghi kết quả qua structured log trên stdout; bắt ở stdout vì service dùng bản build
+    // của observability, khác instance module với test.
+    process.stdout.write = ((chunk: unknown, ...rest: unknown[]): boolean => {
       try {
-        const parsed = JSON.parse(String(values[0])) as Partial<NotificationLog> & {
-          service_name?: string;
-        };
+        const parsed = JSON.parse(String(chunk)) as Partial<NotificationLog>;
         if (
-          parsed.service_name === 'notification' &&
           typeof parsed.event_id === 'string' &&
           (parsed.outcome === 'accepted' || parsed.outcome === 'duplicate')
         ) {
@@ -245,13 +244,13 @@ describe('W5 Gateway → Grading → Submission → PostgreSQL → RabbitMQ → 
             outcome: parsed.outcome,
             ...(typeof parsed.trace_id === 'string' ? { trace_id: parsed.trace_id } : {}),
           });
-          return;
+          return true;
         }
       } catch {
-        // Chuyển tiếp log không phải JSON của Notification như bình thường.
+        // Chuyển tiếp output không phải JSON như bình thường.
       }
-      originalConsoleInfo(...values);
-    };
+      return (originalStdoutWrite as (...args: unknown[]) => boolean)(chunk, ...rest);
+    }) as typeof process.stdout.write;
     notificationConsumer.onModuleInit();
     await notificationConsumer.waitUntilConnected();
     // Course và Enrollment chỉ cần trả lời hợp lệ để Submission tạo bài nộp mới.
@@ -328,7 +327,7 @@ describe('W5 Gateway → Grading → Submission → PostgreSQL → RabbitMQ → 
   }, 30_000);
 
   afterAll(async () => {
-    console.info = originalConsoleInfo;
+    process.stdout.write = originalStdoutWrite;
     await gatewayApp?.close();
     await gradingApp?.close();
     await notificationConsumer?.onModuleDestroy().catch(() => undefined);

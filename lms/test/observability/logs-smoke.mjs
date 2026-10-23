@@ -123,8 +123,9 @@ const tracing = await runTracing();
 assert.equal(tracing.result, 'pass');
 const correlated = [];
 async function expectTraceLogs(service, traceId, checks) {
-  const spanIds = await traceSpanIds(traceId);
   return poll(`Loki ${service} lọc trace ${traceId}`, async () => {
+    // Đọc lại Tempo mỗi lần poll vì span có thể ingest chậm hơn log.
+    const spanIds = await traceSpanIds(traceId);
     const entries = await lokiQuery(`{service_name="${service}"} | trace_id="${traceId}"`);
     assert.ok(entries.length > 0, `Thiếu log ${service}`);
     for (const entry of entries) {
