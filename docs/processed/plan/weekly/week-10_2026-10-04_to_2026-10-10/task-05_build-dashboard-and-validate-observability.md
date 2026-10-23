@@ -6,11 +6,11 @@
 | --- | --- |
 | Mã task | `task-05_build-dashboard-and-validate-observability` |
 | Tuần | `week-10_2026-10-04_to_2026-10-10` |
-| Trạng thái | Chờ xử lý |
+| Trạng thái | Đang thực hiện |
 | Người phụ trách | Bách |
 | Collaborator | Đức hỗ trợ topology, telemetry và smoke test |
 | Ưu tiên | Cao |
-| Hạn dự kiến | 24/10/2026 — mốc bù tiến độ, phụ thuộc người phụ trách quay lại |
+| Hạn dự kiến | 24/10/2026 — mốc bù tiến độ |
 | Nhánh thực hiện | `feat/week-10/task-05-build-dashboard-and-validate-observability` |
 
 ## Yêu cầu và phạm vi
@@ -29,7 +29,7 @@ Provision Grafana datasource/dashboard cho service overview và tạo bộ query
 
 - Tài liệu/task cần có trước: task-01 đến task-04; regression workflow W9 khi khả dụng.
 - Người hoặc phần việc cần phối hợp: Đức cung cấp topology, query endpoint và hỗ trợ chạy workflow/fault; Bách chịu trách nhiệm dashboard và diagnosis validation.
-- Rủi ro/giả định: Bách hiện chưa tham gia nên task đang `Chờ xử lý`; task không thể nghiệm thu đủ khi structured logs/Loki task-04 chưa hoàn thành.
+- Rủi ro/giả định: Bách bắt đầu ngày 23/10/2026 sau khi task-04 vào `main`; request healthy không có access log nên dashboard chỉ nối trace lỗi và luồng Notification với log.
 
 ## Sản phẩm kỳ vọng
 
@@ -51,8 +51,8 @@ Provision Grafana datasource/dashboard cho service overview và tạo bộ query
 
 ## Liên kết hồ sơ thực hiện
 
-- Input workspace: Chưa tạo.
-- Output workspace: Chưa tạo.
+- Input workspace: [task-input.md](../../../../../workspace/bach/week-10_2026-10-04_to_2026-10-10/task-05_build-dashboard-and-validate-observability/input/task-input.md).
+- Output workspace: [task-output.md](../../../../../workspace/bach/week-10_2026-10-04_to_2026-10-10/task-05_build-dashboard-and-validate-observability/output/task-output.md).
 - Pull request: Chưa tạo.
 - Kết quả review: Chưa review.
 
@@ -60,5 +60,5 @@ Provision Grafana datasource/dashboard cho service overview và tạo bộ query
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 13/10/2026 — lập task bù tiến độ W10.
-- Ghi chú/tồn đọng: Chờ Bách tiếp tục công việc và task-01 đến task-04 có dữ liệu thật; không dùng dashboard rỗng hoặc dữ liệu mẫu để xác nhận DoD.
+- Cập nhật gần nhất: 23/10/2026 — Bách xác nhận bắt đầu; tạo nhánh từ `main` tại `9a9afa2` (sau PR #47), tạo input/output và chuyển `Đang thực hiện`.
+- Ghi chú/tồn đọng: Theo issue #45, cần thêm `tracesToLogsV2`/`derivedFields`, metric → trace dùng TraceQL vì chưa có exemplar, loại `submission-storage` và `/health` khỏi panel business service. Không dùng dashboard rỗng hoặc dữ liệu mẫu để xác nhận DoD.
