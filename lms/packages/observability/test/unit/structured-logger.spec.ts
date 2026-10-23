@@ -191,6 +191,60 @@ it('logs HTTP 5xx in the server span context with bounded route and status', () 
   });
 });
 
+function serveRoute(
+  path: string,
+  statusCode: number,
+  options?: Parameters<typeof createHttpTelemetryMiddleware>[0],
+) {
+  const request = Object.assign(new EventEmitter(), {
+    method: 'POST',
+    headers: {},
+    originalUrl: `${path.replace(':course_id', 'course-secret-id')}?token=secret-token`,
+    route: { path },
+  });
+  const response = Object.assign(new EventEmitter(), { statusCode });
+  let serverSpan: { traceId: string; spanId: string } | undefined;
+  createHttpTelemetryMiddleware(options)(request, response, () => {
+    serverSpan = trace.getActiveSpan()?.spanContext();
+  });
+  response.emit('finish');
+  return serverSpan;
+}
+
+it('writes one bounded access log per request in the server span context', () => {
+  const ok = serveRoute('/api/v1/courses/:course_id', 201);
+  serveRoute('/api/v1/courses/:course_id', 404);
+
+  expect(lines).toHaveLength(2);
+  expect(lines[0]).toMatchObject({
+    level: 'INFO',
+    message: 'HTTP POST /api/v1/courses/:course_id 201',
+    event: 'http.server.request',
+    http_method: 'POST',
+    http_route: '/api/v1/courses/:course_id',
+    http_status_code: 201,
+    trace_id: ok?.traceId,
+    span_id: ok?.spanId,
+  });
+  expect(lines[0]?.duration_ms).toEqual(expect.any(Number));
+  expect(lines[0]).not.toHaveProperty('error_type');
+  expect(lines[1]).toMatchObject({ level: 'WARN', http_status_code: 404 });
+  expect(JSON.stringify(lines)).not.toContain('secret');
+});
+
+it('skips access logs for health probes or when disabled but keeps HTTP 5xx logs', () => {
+  serveRoute('/health', 200);
+  serveRoute('/api/v1/courses', 200, { accessLog: { enabled: false } });
+  serveRoute('/api/v1/courses', 200, { accessLog: { ignoreRoutes: ['/api/v1/courses'] } });
+  serveRoute('/health', 503);
+  serveRoute('/api/v1/courses', 502, { accessLog: { enabled: false } });
+
+  expect(lines.map((line) => [line.event, line.http_route, line.http_status_code])).toEqual([
+    ['http.server.error', '/health', 503],
+    ['http.server.error', '/api/v1/courses', 502],
+  ]);
+});
+
 it('does not start an implicit OTLP log exporter when logs were not enabled', async () => {
   let exports = 0;
   const server = createServer((request, response) => {
