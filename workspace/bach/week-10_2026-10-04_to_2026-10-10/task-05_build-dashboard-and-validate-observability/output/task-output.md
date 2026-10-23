@@ -6,13 +6,13 @@
 | --- | --- |
 | Mã task | `task-05_build-dashboard-and-validate-observability` |
 | Người phụ trách | Bách |
-| Trạng thái | Chờ review |
+| Trạng thái | Hoàn thành |
 | Bắt đầu thực tế | 23/10/2026 (Asia/Saigon) |
-| Hoàn thành thực tế | Chưa hoàn thành |
-| Tổng thời lượng | Chưa ghi nhận |
+| Hoàn thành thực tế | 23/10/2026 15:44 (Asia/Saigon), finalization theo ngoại lệ |
+| Tổng thời lượng | Trong ngày 23/10/2026 |
 | Pull request | [PR #49](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/49) |
-| Người review | Chưa có |
-| Kết quả review | Chưa review |
+| Người review | Bách tự review theo ngoại lệ; Đức chưa review |
+| Kết quả review | [review `5625754686`](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/49#pullrequestreview-5625754686) `COMMENTED`, không blocking; không có GitHub `APPROVED` |
 
 ## Báo cáo công việc đã làm
 
@@ -47,7 +47,10 @@ Local Linux, Node 22.13.1, pnpm 11.19.0, stack Compose sạch project `aiops-lms
   - Unavailable, trace `4de1a540e893a693ee88c956d09c541d`: Error ratio Gateway 1; 503, `error_type=unavailable`; log lúc `2026-10-23T08:00:40.428Z`.
   - `grade.completed`, trace `4669677ca8a0185221092a47217f2a82`: producer `grading/lms.events publish` → consumer `notification/rabbitmq consume grade.completed` (consumer là con trực tiếp của producer); LogQL `{service_name="notification"} | trace_id="4669677ca8a0185221092a47217f2a82"` trả `outcome=accepted` trong span phía consumer, lúc `2026-10-23T08:00:01.826Z`; Gateway có access log trong trace.
   - Resource identity trong Tempo, Loki và Prometheus khớp `OTEL_SERVICE_VERSION=0.1.0` và `OTEL_SERVICE_INSTANCE_ID=<service>-compose-1` của Compose, khác container name `aiops-lms-test-regression-<service>-1`.
-- CI GitHub trên PR head: chờ chạy.
+- CI GitHub:
+  - Head `f503b10` (trước review): [run 39921895002](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/actions/runs/39921895002) đạt 5 job, gồm bước acceptance.
+  - Head cuối sau xử lý review `fbdea5f`: [run 39925442318](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/actions/runs/39925442318) đạt 5 job; bước "Validate Grafana dashboard and metric-trace-log acceptance" đạt. GitGuardian xanh trên cả hai head.
+- Sau xử lý review, `test:observability:acceptance` pass lại trên stack test tại `fbdea5f` (dashboard version 2): biến `service` đúng 7 business service, Error ratio có series cho mọi service, TraceQL từ data link Dependency lỗi trả đúng trace timeout/unavailable.
 
 ## Đối chiếu Definition of Done
 
@@ -59,16 +62,33 @@ Local Linux, Node 22.13.1, pnpm 11.19.0, stack Compose sạch project `aiops-lms
 | UTC ISO-8601; resource identity khớp catalogue | Đạt | Dashboard timezone `utc`; thời điểm log so với span theo epoch UTC; identity ba backend khớp Compose |
 | Smoke/acceptance trên dữ liệu thật, thất bại rõ khi thiếu modality/field | Đạt | Script fail khi panel rỗng, thiếu trace/log/field hoặc lệch span; JSON bằng chứng gồm commit, query, trace ID |
 | Không phụ thuộc secret/user ID/label high-cardinality; ghi giới hạn MVP và tồn đọng W11 | Đạt | Script chặn query dùng `user_id`/`email`/`event_id`...; route là template; giới hạn ghi bên dưới |
-| URL PR và `Chờ review` trước review; approval và finalization | Đang thực hiện | PR #49 đã tạo, chờ review của Đức |
+| URL PR và `Chờ review` trước review; approval và finalization | Đạt theo ngoại lệ | URL PR + `Chờ review` push ở `f503b10` trước review; nguồn: xác nhận của người phụ trách, không có GitHub `APPROVED` của Đức |
 
 ## Thay đổi, tồn đọng và bước tiếp theo
 
 - Thay đổi so với input: Access log cho request healthy được bổ sung trong PR #48 (follow-up task-04) thay vì ghi là giới hạn MVP. Dashboard nằm ở `docker-compose/observability/` cạnh datasource hiện có, không tạo thư mục `grafana/` riêng.
 - Giới hạn MVP:
+  - Acceptance smoke không mở trình duyệt; biến dashboard được thay theo mã nguồn Grafana 13.2.4 (`service` = All, khoảng 30 phút), không phải ảnh chụp UI.
   - Metric chưa có exemplar, nên metric → trace đi bằng TraceQL lọc service/route/thời gian, không nhảy thẳng tới một trace.
   - "Logs for this span" trong Tempo chỉ hiện log của service chứa span; xem log toàn trace bằng `{service_name=~".+"} | trace_id="..."`.
   - Dashboard chưa có alert rule, SLO hay panel theo instance; một node, retention 24 giờ như task-01.
 - Tồn đọng sang W11: feature pipeline/detector dùng các query này (log volume theo severity, error ratio, dependency lỗi), thêm exemplar khi SDK metrics hỗ trợ, alert rule.
-- Bước tiếp theo: Chờ CI GitHub trên PR #49 và review của Đức.
+- Bước tiếp theo: Bách merge PR #49 theo ngoại lệ; W11 dùng query dashboard làm đầu vào feature/detector.
 
 > `Hoàn thành thực tế` là thời điểm người phụ trách đã hoàn tất work, DoD, nhận `APPROVED` hợp lệ từ thành viên còn lại và finalization; không ghi merge time. URL/số PR cùng trạng thái **Chờ review** phải được commit/push vào PR head trước review. Sau approval, người phụ trách dùng `task-completion-recording` để cập nhật hồ sơ và chuyển **Hoàn thành** trên chính branch/PR trước khi tự merge. Task chỉ canonically hoàn thành khi commit đó vào nhánh canonical. `Chờ xử lý` chỉ dùng cho blocker/dependency thực sự, không dùng chỉ vì PR đang chờ merge.
+
+## Xử lý review
+
+Bách tự review tại `f503b10` ([review `5625754686`](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/49#pullrequestreview-5625754686), `COMMENTED`): không có blocking, 4 góp ý không blocking, đã xử lý ở `fbdea5f` và reply trên từng thread:
+
+1. Smoke tự thay biến dashboard: nay lấy giá trị `service` bằng chính label query của dashboard và thay biến theo format của từng datasource như Grafana 13.2.4 (Tempo `Pipe` `a|b`, đọc từ source map plugin trong image; Prometheus/Loki regex `(a|b)`), `$__rate_interval` 20s, `$__auto` 2s.
+2. Error ratio không có series cho service chưa lỗi: thêm nhánh `or (0 * request rate)`; panel từ 24 lên 96 điểm.
+3. Data link "Dependency lỗi" chưa lọc theo dependency: TraceQL lọc `span.dependency_identity`; smoke kiểm link này trả đúng trace lỗi.
+4. Output còn ghi CI "chờ chạy" và "chờ review của Đức": đã thay bằng run CI thật và ghi nguồn xác nhận trong mục dưới.
+
+## Finalization theo ngoại lệ
+
+Ngày 23/10/2026 15:44, Bách (người phụ trách) xác nhận finalization và merge PR #49 dù thiếu cổng review độc lập; bản tự review kết luận "đủ điều kiện finalization theo ngoại lệ". Nguồn: xác nhận của người phụ trách; không ghi thành verdict GitHub.
+
+- Review: chỉ có tự review của Bách (`COMMENTED`) tại `f503b10`. Phần sửa ở `fbdea5f` chưa được ai review lại. Đức chưa review, không có GitHub `APPROVED`.
+- CI: head `fbdea5f` [run 39925442318](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/actions/runs/39925442318) đạt cả 5 job; GitGuardian xanh.

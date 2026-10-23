@@ -7,7 +7,7 @@
 | Tuần | `week-10_2026-10-04_to_2026-10-10` |
 | Nguồn plan canonical | [Plan v0.2 — Tuần 10](../../plan-v0.2-24-weeks.md#tuần-10--hoàn-thiện-observability-stack) |
 | Mục tiêu tuần | Hoàn thiện stack OTel Collector, Prometheus, Tempo, Loki và Grafana; bảo đảm trace, metrics và structured logs có correlation, resource identity đúng và truy vấn được cho anomaly/RCA. |
-| Trạng thái tuần | Đang thực hiện |
+| Trạng thái tuần | Hoàn thành |
 
 > Kế hoạch W10 được cụ thể hóa hồi tố ngày 13/10/2026 để bù tiến độ sau W9. Mốc tuần canonical vẫn là 04/10/2026–10/10/2026; hạn task bên dưới là mốc bù tiến độ và không thay đổi phạm vi milestone.
 
@@ -19,7 +19,7 @@
 | [task-02_complete-distributed-tracing](task-02_complete-distributed-tracing.md) | Hoàn thiện distributed tracing và resource identity toàn topology | Đức | Bách kiểm tra field phục vụ diagnosis | Cao | Hoàn thành |
 | [task-03_export-service-metrics](task-03_export-service-metrics.md) | Xuất service metrics và thêm kiểm chứng metrics baseline | Đức | Bách kiểm tra khả năng query cho anomaly | Cao | Hoàn thành |
 | [task-04_correlate-structured-logs](task-04_correlate-structured-logs.md) | Chuẩn hóa structured logs, correlation và Loki ingestion | Bách | Đức hỗ trợ Collector/Compose và trace context | Cao | Hoàn thành |
-| [task-05_build-dashboard-and-validate-observability](task-05_build-dashboard-and-validate-observability.md) | Dựng dashboard và nghiệm thu baseline observability W10 | Bách | Đức hỗ trợ topology, telemetry và smoke test | Cao | Chờ review |
+| [task-05_build-dashboard-and-validate-observability](task-05_build-dashboard-and-validate-observability.md) | Dựng dashboard và nghiệm thu baseline observability W10 | Bách | Đức hỗ trợ topology, telemetry và smoke test | Cao | Hoàn thành |
 
 > Khi đọc tiến độ project-wide, chỉ coi hàng có trạng thái `Hoàn thành` trên nhánh canonical là hoàn thành; trạng thái đã finalization trên task branch chưa thay thế nguồn này.
 
@@ -42,9 +42,9 @@
 - [x] Một request có trace xuyên Gateway và các service liên quan; trace context tiếp tục qua RabbitMQ tới Notification.
 - [x] Inbound/outbound HTTP, PostgreSQL, Redis, storage và RabbitMQ có span/error semantics đủ phục vụ dependency graph và RCA.
 - [x] Service metrics truy vấn được theo label bounded; không dùng correlation/user/run ID làm label.
-- [ ] Structured logs dùng timestamp UTC ISO-8601, có `service.name`, severity, message và `trace_id`/`span_id` khi có active span; Loki truy vấn được theo trace.
-- [ ] Grafana có service overview và query kiểm chứng error status, HTTP status, error type, dependency identity và timeout semantics.
-- [ ] Mỗi task có PR riêng, bằng chứng DoD và trạng thái theo vòng đời task canonical.
+- [x] Structured logs dùng timestamp UTC ISO-8601, có `service.name`, severity, message và `trace_id`/`span_id` khi có active span; Loki truy vấn được theo trace.
+- [x] Grafana có service overview và query kiểm chứng error status, HTTP status, error type, dependency identity và timeout semantics.
+- [x] Mỗi task có PR riêng, bằng chứng DoD và trạng thái theo vòng đời task canonical. *(Task-01..05 finalization theo ngoại lệ người phụ trách xác nhận, ghi trong từng card; không có GitHub `APPROVED` chéo.)*
 
 ## Tiến độ task-01 ngày 21/10/2026
 
@@ -87,3 +87,5 @@ Bổ sung task-04 ngày 23/10/2026: access log `http.server.request` cho mọi r
 Bách xác nhận bắt đầu task-05 trên nhánh `feat/week-10/task-05-build-dashboard-and-validate-observability` từ `main` tại `9a9afa2` (đã gồm PR #47); [input Bách](../../../../../workspace/bach/week-10_2026-10-04_to_2026-10-10/task-05_build-dashboard-and-validate-observability/input/task-input.md) đã tạo và card chuyển `Đang thực hiện`. Hạn 24/10/2026. Trạng thái tuần vẫn Đang thực hiện.
 
 [PR #49](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/49) provision dashboard service overview, liên kết Tempo ↔ Loki theo `trace_id` và thêm `test:observability:acceptance` chạy query panel/TraceQL/LogQL qua Grafana trên dữ liệu thật; pass local tại `f5c2674` (đã gộp access log PR #48). Task-05 chuyển `Chờ review`, chờ CI GitHub và review của Đức; W10 chưa hoàn thành.
+
+Finalization task-05 ngày 23/10/2026 15:44: CI head `fbdea5f` [run 39925442318](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/actions/runs/39925442318) đạt 5 job, gồm bước acceptance; GitGuardian xanh. Bách tự review theo ngoại lệ ([review `5625754686`](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/49#pullrequestreview-5625754686), không blocking), 4 góp ý đã xử lý ở `fbdea5f`; không có GitHub `APPROVED` của Đức, finalization và merge theo xác nhận của Bách (người phụ trách). Khi PR #49 vào `main`, cả 5 task W10 `Hoàn thành` và W10 chuyển `Hoàn thành`; Gate M2 vẫn theo dõi riêng, không xác nhận thay bằng đóng tuần.

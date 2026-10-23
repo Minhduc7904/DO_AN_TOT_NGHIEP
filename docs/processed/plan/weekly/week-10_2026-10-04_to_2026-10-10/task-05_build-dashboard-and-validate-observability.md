@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-05_build-dashboard-and-validate-observability` |
 | Tuần | `week-10_2026-10-04_to_2026-10-10` |
-| Trạng thái | Chờ review |
+| Trạng thái | Hoàn thành |
 | Người phụ trách | Bách |
 | Collaborator | Đức hỗ trợ topology, telemetry và smoke test |
 | Ưu tiên | Cao |
@@ -47,20 +47,21 @@ Provision Grafana datasource/dashboard cho service overview và tạo bộ query
 - [x] Timestamp hiển thị/so sánh theo UTC ISO-8601; resource identity của mọi business service khớp catalogue canonical và không bị thay bằng container name.
 - [x] Smoke/acceptance test chạy trên dữ liệu phát sinh thật, lưu query/kết quả/commit làm bằng chứng và thất bại rõ khi thiếu một modality hoặc field bắt buộc.
 - [x] Dashboard/query không phụ thuộc secret, ID người dùng hoặc label high-cardinality; giới hạn MVP và tồn đọng sang W11 được ghi rõ.
-- [ ] URL/số PR và trạng thái `Chờ review` được commit/push vào PR head trước review; finalization tuân thủ vòng đời task canonical.
+- [x] URL/số PR và trạng thái `Chờ review` được commit/push vào PR head trước review; finalization tuân thủ vòng đời task canonical. *(Finalization theo ngoại lệ do Bách (người phụ trách) xác nhận ngày 23/10/2026; không có GitHub `APPROVED` của Đức.)*
 
 ## Liên kết hồ sơ thực hiện
 
 - Input workspace: [task-input.md](../../../../../workspace/bach/week-10_2026-10-04_to_2026-10-10/task-05_build-dashboard-and-validate-observability/input/task-input.md).
 - Output workspace: [task-output.md](../../../../../workspace/bach/week-10_2026-10-04_to_2026-10-10/task-05_build-dashboard-and-validate-observability/output/task-output.md).
 - Pull request: [PR #49](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/49).
-- Kết quả review: Chưa review.
+- Kết quả review: Bách tự review theo ngoại lệ ([review `5625754686`](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/49#pullrequestreview-5625754686), `COMMENTED`, không blocking) tại `f503b10`; 4 góp ý không blocking đã xử lý ở `fbdea5f` và reply trên PR, phần sửa chưa được review lại. Không có review/`APPROVED` của Đức. Finalization theo ngoại lệ do Bách (người phụ trách) xác nhận ngày 23/10/2026; không có GitHub `APPROVED` của Đức.
 
 > URL/số PR và `Chờ review` phải được commit/push vào PR head trước review. Thành viên còn lại phải gửi `APPROVED` hợp lệ trên GitHub; sau đó người phụ trách finalization metadata, ghi `Hoàn thành` trên chính branch/PR và tự merge task của mình. Card chỉ canonically hoàn thành khi commit đó vào nhánh canonical; xem [vòng đời task canonical](../../../rules/git-and-pull-request-rules.md#vòng-đời-task-canonical).
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 23/10/2026 — tạo [PR #49](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/49), ghi URL PR và chuyển `Chờ review`; chờ CI GitHub trên PR head và review của Đức.
+- Cập nhật gần nhất: 23/10/2026 15:44 — finalization trước merge theo ngoại lệ Bách xác nhận; CI head `fbdea5f` [run 39925442318](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/actions/runs/39925442318) đạt 5 job, gồm bước acceptance; GitGuardian xanh.
+- 23/10/2026: tạo [PR #49](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/49), ghi URL PR và chuyển `Chờ review`.
 - 23/10/2026: Bách xác nhận bắt đầu; tạo nhánh từ `main` tại `9a9afa2` (sau PR #47), tạo input/output và chuyển `Đang thực hiện`.
 - 23/10/2026: provision dashboard service overview và liên kết trace ↔ log; `test:observability:acceptance` pass local tại `f5c2674` (đã gộp PR #48).
 - Ghi chú/tồn đọng: Theo issue #45, cần thêm `tracesToLogsV2`/`derivedFields`, metric → trace dùng TraceQL vì chưa có exemplar, loại `submission-storage` và `/health` khỏi panel business service. Không dùng dashboard rỗng hoặc dữ liệu mẫu để xác nhận DoD.
