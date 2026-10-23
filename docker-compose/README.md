@@ -244,8 +244,8 @@ pnpm run test:observability:acceptance -- --environment test --project aiops-lms
 Script gọi Grafana bằng credential trong env file và kiểm:
 
 1. Ba datasource healthy; `tracesToLogsV2` và derived field đúng cấu hình; dashboard đã provision, timezone UTC; query không dùng `/health` hay field định danh (`user_id`, `email`, `event_id`...).
-2. Chạy tracing smoke để sinh workflow healthy và lỗi storage timeout/unavailable, rồi chạy mọi query panel qua Grafana: panel nào không có dữ liệu thì fail.
-3. Với mỗi lỗi: panel Error ratio thấy lỗi Gateway, panel Dependency lỗi thấy `submission-storage` đúng `status`; TraceQL từ data link trả đúng trace; query `tracesToLogsV2` trả `http.server.error` (503/504) và `dependency.failure` có `span_id` khớp server/client span, `error_type` khớp `error.type` của span, thời điểm log nằm trong span.
+2. Chạy tracing smoke để sinh workflow healthy và lỗi storage timeout/unavailable. Lấy giá trị biến `service` bằng chính label query của dashboard (phải đúng 7 business service), rồi chạy mọi query panel qua Grafana: panel nào không có dữ liệu thì fail. Biến được thay như Grafana làm trên UI với `service` = All và khoảng 30 phút: regex `(a|b)` cho Prometheus/Loki, `a|b` cho Tempo (format `Pipe` của plugin Tempo), `$__rate_interval` 20s, `$__auto` 2s. Smoke không mở trình duyệt, nên đây là mô phỏng theo mã nguồn Grafana 13.2.4 chứ không phải ảnh chụp UI.
+3. Với mỗi lỗi: panel Error ratio thấy lỗi Gateway, panel Dependency lỗi thấy `submission-storage` đúng `status`; TraceQL từ data link của cả hai panel (lọc theo `span.dependency_identity` với panel dependency) trả đúng trace; query `tracesToLogsV2` trả `http.server.error` (503/504) và `dependency.failure` có `span_id` khớp server/client span, `error_type` khớp `error.type` của span, thời điểm log nằm trong span.
 4. `grade.completed`: consumer Notification là con của producer Grading trong cùng trace; log `outcome=accepted` thuộc span phía consumer; Gateway có access log trong trace healthy.
 5. Resource identity trong Tempo, Loki và Prometheus khớp `OTEL_SERVICE_VERSION`/`OTEL_SERVICE_INSTANCE_ID` của Compose, không phải container name.
 

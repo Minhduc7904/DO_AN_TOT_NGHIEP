@@ -90,11 +90,17 @@ async function query(datasource, target) {
   assert.ok(!result.error, `${datasource}: ${result.error}`);
   return result.frames ?? [];
 }
-function interpolate(text, variables) {
+// Thay biến như Grafana làm trên UI với khoảng mặc định 30 phút và `service` = All:
+// - `$service`: Prometheus/Loki định dạng regex `(a|b)`, Tempo dùng `VariableFormatID.Pipe` (`a|b`).
+// - `$__rate_interval` = max($__interval + scrape, 4 × scrape) = 20s với `timeInterval: 5s`.
+// - `$__auto` của Loki ≈ 30 phút / ~1000 điểm = 2s.
+let serviceValues = BUSINESS_SERVICES;
+function interpolate(text, variables, datasource = 'prometheus') {
+  const service = datasource === 'tempo' ? serviceValues.join('|') : `(${serviceValues.join('|')})`;
   return text
-    .replaceAll('$service', serviceRegex)
-    .replaceAll('$__rate_interval', '1m')
-    .replaceAll('$__auto', '1m')
+    .replaceAll('$service', service)
+    .replaceAll('$__rate_interval', '20s')
+    .replaceAll('$__auto', '2s')
     .replace(/\$\{([^}]+)\}/gu, (match, name) => {
       assert.ok(name in variables, `Thiếu biến ${name} trong ${text}`);
       return variables[name];
@@ -173,6 +179,7 @@ for (const panel of panels)
   }
 const serviceVariable = dashboard.templating.list.find((item) => item.name === 'service');
 assert.match(serviceVariable.definition, /service_name!="submission-storage"/u);
+assert.equal(serviceVariable.includeAll, true);
 
 // 2. Sinh dữ liệu thật: workflow healthy (gồm grade.completed) và lỗi storage timeout/unavailable.
 window = { from: Date.now() - 10_000, to: Date.now() };
@@ -211,6 +218,22 @@ function assertIdentity(service, version, instance, source) {
   assert.equal(instance, identity[service].instance, `${source}: instance ${service}`);
 }
 
+// Giá trị của biến `service` lấy bằng đúng label query của dashboard qua Grafana, không hard-code.
+const [, variableSelector] = serviceVariable.definition.match(
+  /^label_values\((.+), service_name\)$/u,
+);
+serviceValues = await poll('Biến service chỉ gồm business service', async () => {
+  const url = new URL(
+    '/api/datasources/uid/prometheus/resources/api/v1/label/service_name/values',
+    grafana,
+  );
+  url.searchParams.set('match[]', variableSelector);
+  url.searchParams.set('start', String(Math.floor(window.from / 1_000) - 1_800));
+  const values = (await api(`${url.pathname}${url.search}`)).data.sort();
+  assert.deepEqual(values, [...BUSINESS_SERVICES].sort());
+  return values;
+});
+
 // 3. Mọi query của dashboard chạy được và có dữ liệu từ workflow vừa chạy, không phải dữ liệu tĩnh.
 const panelResults = await poll(
   'Mọi panel dashboard có dữ liệu thật',
@@ -219,7 +242,7 @@ const panelResults = await poll(
     for (const panel of panels)
       for (const target of panel.targets) {
         const datasource = target.datasource.uid;
-        const text = interpolate(target.expr ?? target.query, {});
+        const text = interpolate(target.expr ?? target.query, {}, datasource);
         const frames =
           datasource === 'tempo'
             ? await query('tempo', { queryType: 'traceql', query: text, limit: 20 })
@@ -240,6 +263,7 @@ const panelResults = await poll(
 const errorPanel = panels.find((panel) => panel.title === 'Error ratio');
 const errorLink = errorPanel.fieldConfig.defaults.links[0].internal.query.query;
 const dependencyPanel = panels.find((panel) => panel.title === 'Dependency lỗi');
+const dependencyLink = dependencyPanel.fieldConfig.defaults.links[0].internal.query.query;
 const evidence = [];
 for (const failure of tracing.failures) {
   const status = failure.scenario === 'timeout' ? 504 : 503;
@@ -258,9 +282,21 @@ for (const failure of tracing.failures) {
       ),
       `Panel Dependency lỗi thiếu submission-storage ${failure.scenario}`,
     );
-    const traceql = interpolate(errorLink, { '__field.labels.service_name': 'gateway' });
+    const traceql = interpolate(errorLink, { '__field.labels.service_name': 'gateway' }, 'tempo');
     const traceIds = await traceSearch(traceql);
     assert.ok(traceIds.includes(failure.traceId), `TraceQL ${traceql} không trả trace lỗi`);
+    const dependencyTraceql = interpolate(
+      dependencyLink,
+      {
+        '__field.labels.service_name': 'submission',
+        '__field.labels.dependency_identity': 'submission-storage',
+      },
+      'tempo',
+    );
+    assert.ok(
+      (await traceSearch(dependencyTraceql)).includes(failure.traceId),
+      `TraceQL ${dependencyTraceql} không trả trace lỗi dependency`,
+    );
 
     const spans = await traceById(failure.traceId);
     const server = spans.find(
@@ -309,6 +345,7 @@ for (const failure of tracing.failures) {
       traceId: failure.traceId,
       metric: { gatewayErrorRatioMax: gatewayRatio.max },
       traceql,
+      dependencyTraceql,
       logql: logsQuery,
       httpStatus: status,
       errorType: client.attributes['error.type'],
