@@ -528,6 +528,8 @@ services:
       - "127.0.0.1:${GRAFANA_PORT:-3008}:3000"
     volumes:
       - ./observability/grafana-datasources.yaml:/etc/grafana/provisioning/datasources/baseline.yaml:ro
+      - ./observability/grafana-dashboards.yaml:/etc/grafana/provisioning/dashboards/baseline.yaml:ro
+      - ./observability/dashboards:/etc/grafana/dashboards:ro
       - grafana-data:/var/observability
     healthcheck:
       test: ["CMD", "/health-probe", "http://127.0.0.1:3000/api/health"]

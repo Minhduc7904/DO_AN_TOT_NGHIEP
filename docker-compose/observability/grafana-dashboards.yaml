@@ -1,0 +1,12 @@
+apiVersion: 1
+providers:
+  # Dashboard nằm trong repo là nguồn duy nhất; sửa trên UI không được lưu để tránh lệch với Git.
+  - name: aiops-lms
+    folder: AIOps LMS
+    type: file
+    disableDeletion: true
+    allowUiUpdates: false
+    updateIntervalSeconds: 30
+    options:
+      path: /etc/grafana/dashboards
+      foldersFromFilesStructure: false

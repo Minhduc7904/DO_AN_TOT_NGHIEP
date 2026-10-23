@@ -170,7 +170,7 @@ docker compose --project-name aiops-lms-test-regression --env-file docker-compos
 
 Năm image dẫn xuất chỉ thêm executable `/health-probe` (Go static, builder `golang:1.25.8-alpine`) và thư mục dữ liệu được gán quyền cho user gốc. Probe yêu cầu HTTP 200, timeout 2 giây và exit khác 0 khi endpoint lỗi; không cần shell/curl/wget. Entrypoint và user runtime gốc được giữ. Các image ứng dụng và dữ liệu nghiệp vụ không đổi.
 
-Các port observability chỉ bind loopback, đổi bằng `OTEL_HTTP_PORT`, `OTEL_GRPC_PORT`, `PROMETHEUS_PORT`, `TEMPO_PORT`, `LOKI_PORT`, `GRAFANA_PORT`; các hostname/port nội bộ giữ nguyên. Gateway đang dùng 3000 nên Grafana dùng 3008. Đăng nhập Grafana bằng `GRAFANA_ADMIN_USER`/`GRAFANA_ADMIN_PASSWORD` trong env local (mẫu `admin`/`grafana-local-only`, tuyệt đối không dùng production). Compose bắt buộc có `GRAFANA_ADMIN_PASSWORD` trong env file, không còn giá trị mặc định trong `compose.yaml`; giá trị mẫu chỉ là credential local, Grafana chỉ bind loopback. Grafana tự provision datasource Prometheus/Tempo/Loki; dashboard và structured application logs thuộc task khác, chưa được nghiệm thu tại đây.
+Các port observability chỉ bind loopback, đổi bằng `OTEL_HTTP_PORT`, `OTEL_GRPC_PORT`, `PROMETHEUS_PORT`, `TEMPO_PORT`, `LOKI_PORT`, `GRAFANA_PORT`; các hostname/port nội bộ giữ nguyên. Gateway đang dùng 3000 nên Grafana dùng 3008. Đăng nhập Grafana bằng `GRAFANA_ADMIN_USER`/`GRAFANA_ADMIN_PASSWORD` trong env local (mẫu `admin`/`grafana-local-only`, tuyệt đối không dùng production). Compose bắt buộc có `GRAFANA_ADMIN_PASSWORD` trong env file, không còn giá trị mặc định trong `compose.yaml`; giá trị mẫu chỉ là credential local, Grafana chỉ bind loopback. Grafana tự provision datasource Prometheus/Tempo/Loki và dashboard service overview, xem [dashboard W10](#dashboard-và-nghiệm-thu-w10).
 
 Collector nhận OTLP HTTP/gRPC, batch tối đa 1024 record (gửi sau 1 giây hoặc 512 record), memory limiter 192 MiB/spike 48 MiB. Trace/log exporter retry tối đa 30 giây, hàng đợi 256 batch với 2 worker, không bền qua restart. Traces chuyển tới Tempo HTTP 4318; metrics chuyển tới Prometheus exporter 8889, Prometheus scrape mỗi 5 giây; logs chuyển tới Loki native OTLP `/otlp/v1/logs`. Chỉ promote ba resource identity vào metric labels; Loki chỉ index `service.name`, version/instance là structured metadata. Telemetry mẫu không chứa secret/PII hoặc fault truth.
 
@@ -216,3 +216,37 @@ Registry/labels/buckets/query và giới hạn nằm tại [metrics baseline](..
 ## Structured logs W10
 
 Cả 8 application runtime bật logs với `OTEL_EXPORTER_OTLP_LOGS_ENDPOINT=http://otel-collector:4318/v1/logs`. Nếu env local cũ chưa có biến, Compose dùng mặc định. Collector chuyển logs qua pipeline `logs` có sẵn tới Loki native OTLP; Loki chỉ index `service_name`, còn `trace_id`, `span_id`, severity và field chẩn đoán là structured metadata. Mỗi request HTTP (trừ `/health`) có một access log `http.server.request`; đặt `HTTP_ACCESS_LOG_ENABLED=false` để tắt access log, log lỗi vẫn giữ. Contract field, redaction, query mẫu và `test:observability:logs` nằm tại [structured logs](../lms/packages/observability/README.md#structured-logs-w10). CI chạy bước này sau metrics khi Compose đã sẵn sàng.
+
+## Dashboard và nghiệm thu W10
+
+Grafana provision từ file trong repo, không lưu thay đổi trên UI (`allowUiUpdates: false`):
+
+- `observability/grafana-datasources.yaml`: ba datasource uid `prometheus`/`tempo`/`loki`. Tempo có `tracesToLogsV2` mở log Loki của span theo `{service_name="<service.name>"} | trace_id="<trace>"`, khoảng thời gian span ±5 phút. Loki có derived field `trace_id` (structured metadata) mở trace trong Tempo. Biến Grafana viết `$${...}` vì provisioning tự thay `${...}` bằng biến môi trường.
+- `observability/grafana-dashboards.yaml`: provider đọc mọi JSON trong `observability/dashboards/` vào folder "AIOps LMS". Thêm dashboard mới chỉ cần thêm file JSON có `uid` cố định.
+- `observability/dashboards/service-overview.json`: dashboard [AIOps LMS — Service overview](http://127.0.0.1:3008/d/aiops-lms-service-overview), timezone UTC, biến `service` chỉ gồm business service (bỏ `submission-storage`).
+
+| Nhóm | Panel | Nguồn |
+| --- | --- | --- |
+| RED theo service | Request rate, error ratio (5xx + `client_aborted`), latency p95 | `http_server_request_*`, bỏ `/health` |
+| RED theo route | Request rate theo route/status class, latency p95 theo route | `http_route_template` bounded |
+| Dependency và broker | Dependency lỗi theo `dependency_identity`/`status`, dependency latency p95, backlog RabbitMQ và outbox Grading | `*_dependency_*`, `grading_messaging_*`, `notification_rabbitmq_*`, `rabbitmq_detailed_queue_messages_*` |
+| Trace và log | Trace lỗi gần đây (TraceQL), log `ERROR`/`FATAL`, log volume theo severity | Tempo, Loki |
+
+Điều tra một lỗi: click series trên panel RED/dependency → data link mở TraceQL cùng service (server span lỗi, span chậm hoặc theo route) → mở trace → "Logs for this span" chạy query Loki theo `trace_id` → trong log, link `trace_id` quay lại Tempo. Metric chưa có exemplar nên bước metric → trace lọc theo service/route/thời gian, không nhảy thẳng tới một trace.
+
+Nghiệm thu trên dữ liệu thật, sau khi Compose healthy trong project test cô lập:
+
+```bash
+cd lms
+pnpm run test:observability:acceptance -- --environment test --project aiops-lms-test-regression --confirm aiops-lms-test-regression --compose-env-file ../docker-compose/.env.example
+```
+
+Script gọi Grafana bằng credential trong env file và kiểm:
+
+1. Ba datasource healthy; `tracesToLogsV2` và derived field đúng cấu hình; dashboard đã provision, timezone UTC; query không dùng `/health` hay field định danh (`user_id`, `email`, `event_id`...).
+2. Chạy tracing smoke để sinh workflow healthy và lỗi storage timeout/unavailable. Lấy giá trị biến `service` bằng chính label query của dashboard (phải đúng 7 business service), rồi chạy mọi query panel qua Grafana: panel nào không có dữ liệu thì fail. Biến được thay như Grafana làm trên UI với `service` = All và khoảng 30 phút: regex `(a|b)` cho Prometheus/Loki, `a|b` cho Tempo (format `Pipe` của plugin Tempo), `$__rate_interval` 20s, `$__auto` 2s. Smoke không mở trình duyệt, nên đây là mô phỏng theo mã nguồn Grafana 13.2.4 chứ không phải ảnh chụp UI.
+3. Với mỗi lỗi: panel Error ratio thấy lỗi Gateway, panel Dependency lỗi thấy `submission-storage` đúng `status`; TraceQL từ data link của cả hai panel (lọc theo `span.dependency_identity` với panel dependency) trả đúng trace; query `tracesToLogsV2` trả `http.server.error` (503/504) và `dependency.failure` có `span_id` khớp server/client span, `error_type` khớp `error.type` của span, thời điểm log nằm trong span.
+4. `grade.completed`: consumer Notification là con của producer Grading trong cùng trace; log `outcome=accepted` thuộc span phía consumer; Gateway có access log trong trace healthy.
+5. Resource identity trong Tempo, Loki và Prometheus khớp `OTEL_SERVICE_VERSION`/`OTEL_SERVICE_INSTANCE_ID` của Compose, không phải container name.
+
+Output cuối là JSON gồm commit, thời điểm UTC, số điểm dữ liệu từng panel, trace ID, TraceQL và LogQL đã chạy; dùng làm bằng chứng nghiệm thu. CI chạy bước này sau logs smoke.
