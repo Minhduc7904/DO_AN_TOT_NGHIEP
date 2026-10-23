@@ -60,7 +60,7 @@ Chuẩn hóa log runtime của Gateway, sáu business service và storage mock t
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 23/10/2026 — Bách xác nhận bắt đầu; tạo nhánh từ `main` tại `2a71506` (sau PR #46), tạo input/output và chuyển `Đang thực hiện`.
+- Cập nhật gần nhất: 23/10/2026 — chuyển `Chờ review` với PR #47; trước đó Bách xác nhận bắt đầu, tạo nhánh từ `main` tại `2a71506` (sau PR #46) và tạo input/output.
 - Ghi chú/tồn đọng: Theo [issue #45](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/issues/45), task-04 không có blocker; cần cấu hình log processor/exporter dùng transport chung, `OTEL_EXPORTER_OTLP_LOGS_ENDPOINT` cho 8 runtime, flush khi shutdown và kiểm Loki theo `trace_id`. Quá mốc cũ 22/10/2026; Bách chốt mốc mới 23/10/2026.
-- 23/10/2026: đã triển khai structured logger, log export OTLP tới Loki và `test:observability:logs`; regression, tracing, metrics và logs smoke pass local. 
+- 23/10/2026: đã triển khai structured logger, log export OTLP tới Loki và `test:observability:logs`; regression, tracing, metrics và logs smoke pass local.
 - 23/10/2026: tạo [PR #47](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/47), ghi URL PR và chuyển `Chờ review`; chờ CI GitHub trên PR head và review của Đức.
