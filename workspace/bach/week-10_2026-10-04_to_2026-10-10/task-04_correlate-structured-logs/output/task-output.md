@@ -73,7 +73,7 @@ Ngày 23/10/2026 06:35, Bách (người phụ trách) xác nhận finalization v
 
 ## Bổ sung sau hoàn thành: access log (23/10/2026)
 
-Bách giao chọn giải pháp theo best practice cho giới hạn "request healthy không có access log", xử lý trong PR follow-up riêng (branch `feat/week-10/task-04-correlate-structured-logs-followup`) vì card task-05 không cho sửa instrumentation. Trạng thái `Hoàn thành` không đổi.
+Bách giao chọn giải pháp theo best practice cho giới hạn "request healthy không có access log", xử lý trong [PR #48](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/48) follow-up riêng (branch `feat/week-10/task-04-correlate-structured-logs-followup`) vì card task-05 không cho sửa instrumentation. Trạng thái `Hoàn thành` không đổi.
 
 - `createHttpTelemetryMiddleware` ghi đúng một log cho mỗi request trong context server span: `http.server.error` (`ERROR`) cho 5xx/aborted/exception như cũ, còn lại là access log `http.server.request` (`INFO`, 4xx là `WARN`). Field bounded: `http_method`, `http_route` (template), `http_status_code`, `duration_ms`; không có user ID hay payload.
 - Bỏ qua `/health` để probe Docker không làm nhiễu log; 5xx của `/health` vẫn ghi lỗi. Tám runtime đọc `HTTP_ACCESS_LOG_ENABLED` (mặc định `true`, Compose truyền qua env file) để tắt access log khi cần giảm volume.
