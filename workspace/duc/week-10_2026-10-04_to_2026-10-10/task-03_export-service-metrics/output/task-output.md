@@ -42,7 +42,7 @@
 | Dependency/messaging và backlog thật | Đạt | Query latency/error; broker tăng ít nhất 4 message rồi drain về 0; mapping Notification/dependency đúng, không dùng outbox pending thay queue depth |
 | CPU và memory | Đạt | CPU cumulative seconds và RSS lớn hơn 0 trên tám runtime; optional network/disk/lag chưa có không được giả thành 0 |
 | Fresh delta và Collector outage | Đạt | Reviewer độc lập delta healthy/5xx/timeout/unavailable `16/1/1/1`; cache miss + pool idle 12 giây + Collector dừng 6 giây vẫn HTTP 200, export phục hồi |
-| Tests, quality và CI | Đạt trên substantive head | [CI39784597102](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/actions/runs/39784597102) tại `8320e98` đạt cả 5 jobs: quality/ci:verify, Compose config, fresh Compose, reset hai lần, regression/tracing/metrics. Local full build/test/lint đã đạt trước sửa DNS; sau sửa DNS build/lint/format và 29 shared tests đạt. CI finalization head phải đạt trước merge |
+| Tests, quality và CI | Đạt trên substantive head | [CI 39784597102](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/actions/runs/39784597102) tại `8320e98` đạt cả 5 jobs: quality/ci:verify, Compose config, fresh Compose, reset hai lần, regression/tracing/metrics. Local full build/test/lint đã đạt trước sửa DNS; sau sửa DNS build/lint/format và 29 shared tests đạt. CI finalization head `4ecb95b` đạt [run 39786424620](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/actions/runs/39786424620) cả 5 job |
 | URL PR và readiness trước review | Đạt | Readiness tại `16124aa`, corrective readiness tại `c132d82`; card/input/output/overview đã push vào PR head trước review |
 | Review và finalization | Đạt theo ngoại lệ đã xác nhận | Agent độc lập full/focused review APPROVED nội bộ tại `c132d82`; Đức xác nhận dùng review này thay cổng approval Bách và ủy quyền điều phối viên commit/push/merge. Không có GitHub approval của Bách |
 
@@ -57,7 +57,15 @@ Các lỗi harness đã sửa: đường dẫn env dùng absolute path đã vali
 ## Giới hạn và bước tiếp theo
 
 - Histogram hiện có trong registry dùng giây; không tuyên bố đã hỗ trợ histogram unit khác.
-- Broker metrics có resource của observer, map ownership về Notification; không giả identity của application process.
+- Broker metrics map ownership về Notification (`service_name=notification`, `dependency_identity=notification-rabbitmq`) và không mang `service_version`/`service_instance_id`; bản đầu từng gán `rabbitmq-4.1.4`/`rabbitmq-compose-1`, đã sửa theo hậu kiểm bên dưới.
 - DNS exporter không dùng alias chỉ tồn tại trong hosts file; hỗ trợ DNS, localhost và literal IP, ghi rõ trong README.
 - Task-04 structured logs và task-05 dashboard của Bách giữ nguyên. W10 chưa hoàn thành toàn bộ; Gate M2 vẫn chưa đủ bằng chứng hai thành viên tự giải thích.
 - Finalization chỉ sửa metadata trên chính PR; kiểm CI head cuối và reviewer kiểm metadata trước merge. Không ghi agent verdict thành GitHub approval.
+
+## Hậu kiểm theo issue #45 ngày 23/10/2026
+
+Bổ sung theo [issue #45](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/issues/45) (review độc lập sau merge) và yêu cầu của Bách; trạng thái `Hoàn thành` không đổi.
+
+- **Blocker cho task-05 đã sửa:** `otel-collector.yaml` từng upsert `service.version=rabbitmq-4.1.4`, `service.instance.id=rabbitmq-compose-1` cho series broker có `service.name=notification`, trái telemetry schema §5.1 (version/instance của exporter infrastructure phải nullable, không tạo dữ liệu giả) và làm `service_name="notification"` có thêm một identity không phải runtime Notification. PR follow-up giữ `service.name=notification` cùng `dependency_identity=notification-rabbitmq`, xóa `service.version`/`service.instance.id` (kể cả `service.instance.id` mà prometheus receiver tự gán). Khi kiểm chứng phát hiện receiver còn tự sinh `up`/`scrape_*` mang `service_name="notification"`; pipeline broker nay lọc chỉ giữ ba gauge queue. `metrics-smoke.mjs` trước đây chỉ kiểm identity trên `http_server_request_count_total`; nay kiểm mọi series có `service_name` business service: series ứng dụng khớp version/instance trong catalogue Compose, series broker `rabbitmq_*` không có hai field này, và phải có ít nhất một series broker. README metrics baseline và Compose README đã cập nhật.
+- **Hạn:** hạn dự kiến 22/10/2026, hoàn thành 22/10/2026, đúng hạn.
+- **Collaborator:** card giao Bách kiểm tra khả năng query cho anomaly; task-03 hoàn thành khi chưa có xác nhận của Bách. Bách sẽ xác nhận trong task-04/05.
