@@ -91,7 +91,7 @@ describe('RabbitMqGradeCompletedConsumer', () => {
     jest
       .mocked(handler.handle)
       .mockRejectedValueOnce(new InvalidGradeCompletedMessageError('invalid message'));
-    const error = jest.spyOn(console, 'error').mockImplementation();
+    const error = jest.spyOn(process.stdout, 'write').mockImplementation(() => true);
     onMessage?.(message);
     await flushAsyncConsumer();
     expect(channel.nack).toHaveBeenCalledWith(message, false, false);

@@ -63,7 +63,7 @@ describe('RabbitMqGradeCompletedMessageHandler', () => {
       fault,
       new NotificationMessagingTelemetry(TEST_BINDING),
     );
-    const log = jest.spyOn(console, 'info').mockImplementation();
+    const log = jest.spyOn(process.stdout, 'write').mockImplementation(() => true);
 
     await expect(
       handler.handle(
@@ -170,7 +170,7 @@ describe('RabbitMqGradeCompletedMessageHandler', () => {
       new NotificationMessagingTelemetry(TEST_BINDING),
     );
     const spanStart = spanExporter.getFinishedSpans().length;
-    const errorLog = jest.spyOn(console, 'error').mockImplementation();
+    const errorLog = jest.spyOn(process.stdout, 'write').mockImplementation(() => true);
 
     await expect(handler.handle(scenario.content, scenario.headers)).rejects.toThrow();
     await telemetry.forceFlush();

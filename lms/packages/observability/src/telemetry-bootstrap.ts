@@ -1,3 +1,4 @@
+import { OTLPLogExporter } from '@opentelemetry/exporter-logs-otlp-http';
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
 import { OTLPMetricExporter } from '@opentelemetry/exporter-metrics-otlp-http';
 import { W3CTraceContextPropagator } from '@opentelemetry/core';
@@ -9,15 +10,18 @@ import {
   type SpanProcessor,
 } from '@opentelemetry/sdk-trace-base';
 import { PeriodicExportingMetricReader, type MetricReader } from '@opentelemetry/sdk-metrics';
+import { BatchLogRecordProcessor, type LogRecordProcessor } from '@opentelemetry/sdk-logs';
 
 import {
   defineTelemetryConfig,
+  resolveLogsEndpoint,
   resolveMetricsEndpoint,
   type TelemetryConfig,
 } from './telemetry-config.js';
 import { createTelemetryResource } from './telemetry-resource.js';
 import { createServiceMetricViews, registerProcessMetrics } from './service-metrics.js';
 import { telemetryHttpTransportOptions } from './telemetry-http-transport.js';
+import { configureStructuredLogging } from './structured-logger.js';
 
 export interface TelemetryHandle {
   readonly config: Readonly<TelemetryConfig>;
@@ -31,6 +35,8 @@ export interface TelemetryStartOptions {
   traceExporter?: SpanExporter;
   metricsEnabled?: boolean;
   metricReader?: MetricReader;
+  logsEnabled?: boolean;
+  logRecordProcessor?: LogRecordProcessor;
 }
 
 export function startTelemetry(
@@ -38,6 +44,7 @@ export function startTelemetry(
   options: TelemetryStartOptions = {},
 ): TelemetryHandle {
   const config = defineTelemetryConfig(rawConfig);
+  configureStructuredLogging(config);
 
   if (!config.enabled) {
     return {
@@ -70,6 +77,18 @@ export function startTelemetry(
         }),
       { exportTimeoutMillis: 2_000 },
     );
+  // Truyền danh sách rỗng khi tắt logs để NodeSDK không tự dựng OTLP log exporter từ môi trường.
+  const logRecordProcessor =
+    options.logRecordProcessor ??
+    (options.logsEnabled
+      ? new BatchLogRecordProcessor({
+          exporter: new OTLPLogExporter({
+            ...telemetryHttpTransportOptions(),
+            url: resolveLogsEndpoint(config),
+          }),
+          exportTimeoutMillis: 2_000,
+        })
+      : undefined);
   const sdk = new NodeSDK({
     autoDetectResources: false,
     resource: createTelemetryResource(config),
@@ -78,6 +97,7 @@ export function startTelemetry(
     metricReaders: metricReader ? [metricReader] : [],
     views: createServiceMetricViews(),
     spanProcessors: [spanProcessor],
+    logRecordProcessors: logRecordProcessor ? [logRecordProcessor] : [],
   });
 
   sdk.start();
@@ -90,6 +110,7 @@ export function startTelemetry(
     forceFlush: async () => {
       await spanProcessor.forceFlush();
       await metricReader?.forceFlush();
+      await logRecordProcessor?.forceFlush();
     },
     shutdown: async () => {
       if (stopped) {

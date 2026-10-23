@@ -39,7 +39,8 @@
     "test:testbed:reset:compose": "node test/testbed-reset/compose-reset-smoke.mjs",
     "test:observability:stack": "node test/observability/stack-smoke.mjs",
     "test:observability:tracing": "node test/observability/tracing-smoke.mjs",
-    "test:observability:metrics": "node test/observability/metrics-smoke.mjs"
+    "test:observability:metrics": "node test/observability/metrics-smoke.mjs",
+    "test:observability:logs": "node test/observability/logs-smoke.mjs"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",

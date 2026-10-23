@@ -2,8 +2,8 @@ import {
   gradeCompletedEventSchema,
   gradeCompletedRabbitMqHeadersSchema,
 } from '@aiops-lms/contracts';
+import { emitStructuredLog } from '@aiops-lms/observability';
 import { Injectable } from '@nestjs/common';
-import { context, trace } from '@opentelemetry/api';
 
 import {
   GradeCompletedFixtureConsumer,
@@ -45,18 +45,11 @@ function parseEvent(content: Buffer): unknown {
 }
 
 function logProcessing(eventName: string, eventId: string, outcome: string): void {
-  const spanContext = trace.getSpan(context.active())?.spanContext();
-  console.info(
-    JSON.stringify({
-      event: eventName,
-      event_id: eventId,
-      level: 'info',
-      outcome,
-      service_name: 'notification',
-      span_id: spanContext?.spanId,
-      trace_id: spanContext?.traceId,
-    }),
-  );
+  emitStructuredLog('log', `Xử lý ${eventName} kết quả ${outcome}`, {
+    event: eventName,
+    event_id: eventId,
+    outcome,
+  });
 }
 
 @Injectable()

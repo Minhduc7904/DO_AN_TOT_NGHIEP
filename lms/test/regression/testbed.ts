@@ -230,16 +230,15 @@ export async function startTestbed(): Promise<Testbed> {
     notificationTelemetry,
   );
 
-  // Notification chỉ báo kết quả xử lý qua structured log, nên thu log để assert outcome và trace_id.
+  // Notification chỉ báo kết quả xử lý qua structured log trên stdout, nên thu log để assert outcome
+  // và trace_id. Bắt ở stdout vì service dùng bản build của observability, khác instance với testbed.
   const notificationLogs: NotificationLog[] = [];
-  const originalConsoleInfo = console.info;
-  console.info = (...values: unknown[]): void => {
+  const originalStdoutWrite = process.stdout.write.bind(process.stdout);
+  process.stdout.write = ((chunk: unknown, ...rest: unknown[]): boolean => {
     try {
-      const parsed = JSON.parse(String(values[0])) as Partial<NotificationLog> & {
-        service_name?: string;
-      };
+      const parsed = JSON.parse(String(chunk)) as Partial<NotificationLog> & { event?: string };
       if (
-        parsed.service_name === 'notification' &&
+        parsed.event === 'grade.completed' &&
         typeof parsed.event_id === 'string' &&
         (parsed.outcome === 'accepted' || parsed.outcome === 'duplicate')
       ) {
@@ -248,13 +247,13 @@ export async function startTestbed(): Promise<Testbed> {
           outcome: parsed.outcome,
           ...(typeof parsed.trace_id === 'string' ? { trace_id: parsed.trace_id } : {}),
         });
-        return;
+        return true;
       }
     } catch {
-      // Chuyển tiếp log không phải JSON của Notification như bình thường.
+      // Chuyển tiếp output không phải JSON như bình thường.
     }
-    originalConsoleInfo(...values);
-  };
+    return (originalStdoutWrite as (...args: unknown[]) => boolean)(chunk, ...rest);
+  }) as typeof process.stdout.write;
   notificationConsumer.onModuleInit();
   await notificationConsumer.waitUntilConnected();
 
@@ -327,7 +326,7 @@ export async function startTestbed(): Promise<Testbed> {
     spanExporter,
     telemetry,
     async stop(): Promise<void> {
-      console.info = originalConsoleInfo;
+      process.stdout.write = originalStdoutWrite;
       await gateway.close();
       await grading.close();
       await notificationConsumer.onModuleDestroy().catch(() => undefined);

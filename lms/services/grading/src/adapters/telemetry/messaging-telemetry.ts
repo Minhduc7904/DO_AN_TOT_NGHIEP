@@ -1,3 +1,4 @@
+import { logDependencyFailure } from '@aiops-lms/observability';
 import { context, metrics, SpanKind, SpanStatusCode, trace } from '@opentelemetry/api';
 
 import { GradeEventPublishError } from '../../application/grade-event-publish-error.js';
@@ -58,6 +59,11 @@ export async function observePublish<T>(target: PublishTarget, run: () => Promis
     status = error instanceof GradeEventPublishError ? error.kind : 'unavailable';
     span.setAttribute('error.type', status);
     span.setStatus({ code: SpanStatusCode.ERROR });
+    logDependencyFailure(span, {
+      dependency_identity: GRADING_RABBITMQ_DEPENDENCY,
+      error_type: status,
+      operation_name: 'publish',
+    });
     throw error;
   } finally {
     const withStatus = { ...labels, status };

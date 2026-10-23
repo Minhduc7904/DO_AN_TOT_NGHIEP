@@ -155,6 +155,12 @@ jobs:
           --environment test --project aiops-lms-test-regression
           --confirm aiops-lms-test-regression
           --compose-env-file ../docker-compose/.env.example
+      - name: Validate structured logs in Loki correlated with Tempo traces
+        run: >-
+          pnpm --dir lms run test:observability:logs --
+          --environment test --project aiops-lms-test-regression
+          --confirm aiops-lms-test-regression
+          --compose-env-file ../docker-compose/.env.example
       - name: Show logs on failure
         if: failure()
         run: >-

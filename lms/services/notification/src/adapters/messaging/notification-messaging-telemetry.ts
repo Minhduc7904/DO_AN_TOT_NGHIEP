@@ -1,4 +1,5 @@
 import type { GradeCompletedEvent } from '@aiops-lms/contracts';
+import { emitStructuredLog } from '@aiops-lms/observability';
 import { Inject, Injectable } from '@nestjs/common';
 import {
   context,
@@ -138,32 +139,23 @@ export class NotificationMessagingTelemetry {
       status: 'unavailable',
     };
     this.connectionCount.add(1, labels);
-    console.error(
-      JSON.stringify({
-        error_type: errorType(error),
-        event: 'grade.completed',
-        level: 'error',
-        operation_name: 'connect',
-        outcome: 'unavailable',
-        service_name: 'notification',
-      }),
-    );
+    emitStructuredLog('error', 'Kết nối RabbitMQ của consumer grade.completed không sẵn sàng', {
+      dependency_identity: 'notification-rabbitmq',
+      error_type: errorType(error),
+      event: 'grade.completed',
+      operation_name: 'connect',
+      outcome: 'unavailable',
+    });
   }
 
   private logConsumeError(error: unknown, event: GradeCompletedEvent | undefined): void {
-    const spanContext = trace.getSpan(context.active())?.spanContext();
-    console.error(
-      JSON.stringify({
-        error_type: errorType(error),
-        event: event?.event_name ?? 'grade.completed',
-        ...(event ? { event_id: event.event_id } : {}),
-        level: 'error',
-        operation_name: 'consume',
-        service_name: 'notification',
-        span_id: spanContext?.spanId,
-        trace_id: spanContext?.traceId,
-      }),
-    );
+    emitStructuredLog('error', 'Consume message grade.completed lỗi', {
+      dependency_identity: 'notification-rabbitmq',
+      error_type: errorType(error),
+      event: event?.event_name ?? 'grade.completed',
+      ...(event ? { event_id: event.event_id } : {}),
+      operation_name: 'consume',
+    });
   }
 
   private async observeProcessing<T>(

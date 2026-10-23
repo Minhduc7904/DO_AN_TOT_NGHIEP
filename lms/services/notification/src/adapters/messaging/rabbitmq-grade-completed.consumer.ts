@@ -1,3 +1,4 @@
+import { emitStructuredLog } from '@aiops-lms/observability';
 import { Inject, Injectable, type OnModuleDestroy, type OnModuleInit } from '@nestjs/common';
 
 import {
@@ -143,14 +144,10 @@ export class RabbitMqGradeCompletedConsumer implements OnModuleInit, OnModuleDes
       await this.handler.handle(message.content, message.properties.headers);
       channel.ack(message);
     } catch (error) {
-      console.error(
-        JSON.stringify({
-          error_type: error instanceof Error ? error.name : 'processing_error',
-          event: 'grade.completed',
-          level: 'error',
-          service_name: 'notification',
-        }),
-      );
+      emitStructuredLog('error', 'Xử lý message grade.completed lỗi, nack', {
+        error_type: error instanceof Error ? error.name : 'processing_error',
+        event: 'grade.completed',
+      });
       if (channel !== this.channel) return;
       try {
         channel.nack(message, false, !this.isInvalid(error));

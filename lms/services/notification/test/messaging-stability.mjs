@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { connect as connectSocket, createServer } from 'node:net';
 
-import { startTelemetry } from '@aiops-lms/observability';
+import { configureStructuredLogging, startTelemetry } from '@aiops-lms/observability';
 import {
   InMemoryMetricExporter,
   InMemorySpanExporter,
@@ -133,10 +133,21 @@ const publisher = new RabbitMqGradeCompletedPublisher({
 });
 const infoLines = [];
 const errorLines = [];
-const originalInfo = console.info;
-const originalError = console.error;
-console.info = (...values) => infoLines.push(values.map(String).join(' '));
-console.error = (...values) => errorLines.push(values.map(String).join(' '));
+// Bắt structured log của consumer: INFO có outcome là kết quả xử lý, ERROR là lỗi consume/connect.
+configureStructuredLogging(
+  {
+    serviceInstanceId: 'notification-stability-test-1',
+    serviceName: 'notification',
+    serviceVersion: '0.1.0-test',
+  },
+  {
+    write: (line) => {
+      const record = JSON.parse(line);
+      if (record.level === 'ERROR') errorLines.push(line);
+      else if (record.level === 'INFO' && record.outcome) infoLines.push(line);
+    },
+  },
+);
 
 try {
   for (let round = 1; round <= ROUNDS; round += 1) {
@@ -301,14 +312,10 @@ try {
     JSON.stringify(errorLines),
     /student-stability|lms-local-only|w1_test_password|amqp:\/\/|credential/u,
   );
-
-  console.info = originalInfo;
   console.log(
     'Messaging stability đạt 3/3 vòng: reconnect, redelivery, duplicate và backlog drain.',
   );
 } finally {
-  console.info = originalInfo;
-  console.error = originalError;
   await publisher.onApplicationShutdown().catch(() => undefined);
   await adminChannel.close().catch(() => undefined);
   await admin.close().catch(() => undefined);
