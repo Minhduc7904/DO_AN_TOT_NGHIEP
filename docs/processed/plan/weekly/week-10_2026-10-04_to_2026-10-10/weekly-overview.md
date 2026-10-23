@@ -19,7 +19,7 @@
 | [task-02_complete-distributed-tracing](task-02_complete-distributed-tracing.md) | Hoàn thiện distributed tracing và resource identity toàn topology | Đức | Bách kiểm tra field phục vụ diagnosis | Cao | Hoàn thành |
 | [task-03_export-service-metrics](task-03_export-service-metrics.md) | Xuất service metrics và thêm kiểm chứng metrics baseline | Đức | Bách kiểm tra khả năng query cho anomaly | Cao | Hoàn thành |
 | [task-04_correlate-structured-logs](task-04_correlate-structured-logs.md) | Chuẩn hóa structured logs, correlation và Loki ingestion | Bách | Đức hỗ trợ Collector/Compose và trace context | Cao | Hoàn thành |
-| [task-05_build-dashboard-and-validate-observability](task-05_build-dashboard-and-validate-observability.md) | Dựng dashboard và nghiệm thu baseline observability W10 | Bách | Đức hỗ trợ topology, telemetry và smoke test | Cao | Đang thực hiện |
+| [task-05_build-dashboard-and-validate-observability](task-05_build-dashboard-and-validate-observability.md) | Dựng dashboard và nghiệm thu baseline observability W10 | Bách | Đức hỗ trợ topology, telemetry và smoke test | Cao | Chờ review |
 
 > Khi đọc tiến độ project-wide, chỉ coi hàng có trạng thái `Hoàn thành` trên nhánh canonical là hoàn thành; trạng thái đã finalization trên task branch chưa thay thế nguồn này.
 
@@ -85,3 +85,5 @@ Bổ sung task-04 ngày 23/10/2026: access log `http.server.request` cho mọi r
 ## Tiến độ task-05 ngày 23/10/2026
 
 Bách xác nhận bắt đầu task-05 trên nhánh `feat/week-10/task-05-build-dashboard-and-validate-observability` từ `main` tại `9a9afa2` (đã gồm PR #47); [input Bách](../../../../../workspace/bach/week-10_2026-10-04_to_2026-10-10/task-05_build-dashboard-and-validate-observability/input/task-input.md) đã tạo và card chuyển `Đang thực hiện`. Hạn 24/10/2026. Trạng thái tuần vẫn Đang thực hiện.
+
+[PR #49](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/49) provision dashboard service overview, liên kết Tempo ↔ Loki theo `trace_id` và thêm `test:observability:acceptance` chạy query panel/TraceQL/LogQL qua Grafana trên dữ liệu thật; pass local tại `f5c2674` (đã gộp access log PR #48). Task-05 chuyển `Chờ review`, chờ CI GitHub và review của Đức; W10 chưa hoàn thành.

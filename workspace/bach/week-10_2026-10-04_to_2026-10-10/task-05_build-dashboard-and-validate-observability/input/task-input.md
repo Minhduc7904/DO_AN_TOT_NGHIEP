@@ -8,11 +8,11 @@
 | Tên task | Dựng dashboard và nghiệm thu baseline observability W10 |
 | Người phụ trách | Bách |
 | Tuần thực hiện | `week-10_2026-10-04_to_2026-10-10` |
-| Trạng thái | Đang thực hiện |
+| Trạng thái | Chờ review |
 | Ngày tạo | 23/10/2026 (Asia/Saigon) |
 | Thời gian dự kiến | 23/10/2026–24/10/2026 (hạn trên card 24/10/2026) |
 | Nhánh thực hiện | `feat/week-10/task-05-build-dashboard-and-validate-observability` |
-| Pull request dự kiến | PR từ nhánh task vào `main` sau khi hoàn tất work và bằng chứng DoD |
+| Pull request dự kiến | [PR #49](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/49) |
 
 ## Mục tiêu và phạm vi
 
