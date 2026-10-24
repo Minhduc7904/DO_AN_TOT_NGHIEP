@@ -8,6 +8,7 @@ Thư mục này lưu mỗi GitHub issue của dự án thành một ticket Markd
 | --- | --- | --- | --- |
 | [#44](issue-044_w5-w10-overall-review.md) | Review tổng thể W5–W10 task-03: lệch code, hồ sơ và tài liệu canonical | Chưa fix | Chưa có |
 | [#45](issue-045_w10-task-01-03-followup.md) | W10: blocker cho task-05 và tồn đọng sau review task-01/02/03 | Đã fix | [#46](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/46) |
+| [#50](issue-050_grading-503-after-grade-saved.md) | POST /grades trả 503 dù điểm đã lưu; client không biết grade_id và gửi lại nhận 409 | Chưa fix | Chưa có |
 
 Khi đọc tiến độ, chỉ coi `Đã fix` trên nhánh `main` là đã fix; trạng thái đã ghi trên nhánh của PR chưa thay thế nguồn này.
 
