@@ -20,6 +20,7 @@
 | Lập/chia task tuần, hỏi công việc tuần | `agent-resources/skills/weekly-task-planning/SKILL.md` |
 | Review task/PR của người khác | `agent-resources/skills/task-code-review/SKILL.md` |
 | Xử lý feedback/comment trên PR của chính task | `agent-resources/skills/pr-review-response/SKILL.md` |
+| Fix GitHub issue, tạo/cập nhật ticket trong `docs/processed/issues/` | `agent-resources/skills/issue-fix/SKILL.md` |
 | Finalization/ghi nhận hoàn thành (trước merge) | `agent-resources/skills/task-completion-recording/SKILL.md` |
 | Tạo/gợi ý commit message | `.github/commit-message-template.md` |
 

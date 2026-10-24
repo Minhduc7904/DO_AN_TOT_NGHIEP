@@ -11,7 +11,7 @@
 
 ## Tài liệu
 
-- Tài liệu Markdown mới đặt trong `docs/processed/` theo mục đích: `architecture/`, `direction/`, `plan/`, `description/`, `course-materials/`, `guides/`, `rules/` hoặc `adr/` khi có ADR thực tế.
+- Tài liệu Markdown mới đặt trong `docs/processed/` theo mục đích: `architecture/`, `direction/`, `plan/`, `description/`, `course-materials/`, `guides/`, `rules/`, `issues/` (ticket theo dõi GitHub issue) hoặc `adr/` khi có ADR thực tế.
 - File tài liệu thông thường dùng `<subject>-v<version>.md` khi có phiên bản, ví dụ `project-scope-v1.md`; không gắn `final` vào tên file.
 - Tên theo vai trò cố định: `task-input.md`, `task-output.md`, `weekly-overview.md`, `meeting-notes.md`, `experiment-report.md`.
 - Không tạo bản tóm tắt/chuẩn hóa trong `docs/raw/`; tài liệu xử lý phải dẫn đường dẫn nguồn raw ở đầu file khi có nguồn raw.

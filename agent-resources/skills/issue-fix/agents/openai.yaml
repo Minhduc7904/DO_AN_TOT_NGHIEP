@@ -1,0 +1,6 @@
+interface:
+  display_name: "Fix GitHub issue"
+  short_description: "Fix issue trên nhánh riêng và cập nhật ticket theo dõi"
+  default_prompt: "Use $issue-fix to fix a GitHub issue and update its ticket."
+policy:
+  allow_implicit_invocation: true
