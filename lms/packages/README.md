@@ -12,3 +12,4 @@ Chứa technical primitive thực sự được nhiều service dùng, ví dụ 
 ## Package hiện có
 
 - [`observability/`](observability/README.md): OpenTelemetry bootstrap, resource identity và HTTP instrumentation dùng chung.
+- [`common/`](common/README.md): envelope lỗi, guard role, HTTP client có circuit breaker, command envelope, outbox/inbox và RabbitMQ dùng chung cho service v2.

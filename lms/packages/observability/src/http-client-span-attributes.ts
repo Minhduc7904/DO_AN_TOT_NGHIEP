@@ -11,6 +11,20 @@ const HTTP_DEPENDENCY_PEERS: Readonly<Record<string, string>> = {
   'submission-enrollment': 'enrollment',
   'submission-storage': 'submission-storage',
   'grading-submission': 'submission',
+  // Topology v2: `<service.name bên gọi>-<service.name bên nhận>`.
+  'gateway-student': 'student',
+  'gateway-admin': 'admin',
+  'gateway-media': 'media',
+  'gateway-notification': 'notification',
+  'gateway-scheduler': 'scheduler',
+  'gateway-ai': 'ai',
+  'auth-student': 'student',
+  'course-media': 'media',
+  'course-ai': 'ai',
+  'media-student': 'student',
+  'media-admin': 'admin',
+  'notification-worker-student': 'student',
+  'scheduler-worker-media': 'media',
 };
 
 export function normalizeHttpMethod(rawMethod: string | undefined): string {

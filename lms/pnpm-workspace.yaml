@@ -3,6 +3,8 @@ packages:
   - services/*
   - packages/*
 allowBuilds:
+  '@prisma/engines': true
+  prisma: true
   '@parcel/watcher': false
   protobufjs: true
   unrs-resolver: false

@@ -1,0 +1,29 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/adapters/persistence/generated"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum StudentStatus {
+  ACTIVE
+  INACTIVE
+  BLOCKED
+
+  @@map("student_status")
+}
+
+/// Hồ sơ student; `id` trùng `auth_users.id` (tham chiếu logic, không có foreign key xuyên DB).
+model Student {
+  id        String        @id @db.Uuid
+  email     String        @unique
+  fullName  String        @map("full_name")
+  status    StudentStatus @default(ACTIVE)
+  createdAt DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@index([status, createdAt])
+  @@map("students")
+}

@@ -40,3 +40,51 @@ test('cho phép import shared technical package', async () => {
 
   assert.deepEqual(messages, []);
 });
+
+const domainFilePath = 'services/student/src/domain/boundary-check.ts';
+const applicationFilePath = 'services/student/src/application/use-cases/boundary-check.ts';
+
+async function lintRestricted(source, filePath) {
+  const [result] = await eslint.lintText(`import '${source}';`, { filePath });
+
+  return result.messages.filter((message) => message.ruleId === 'no-restricted-imports');
+}
+
+test('cho phép shared package common trong service', async () => {
+  const messages = await lintImport('@aiops-lms/common/http');
+
+  assert.deepEqual(messages, []);
+});
+
+for (const source of [
+  '@nestjs/common',
+  '@prisma/client',
+  '../adapters/persistence/generated/client.js',
+  '@aiops-lms/common/http',
+  '@aiops-lms/common/messaging',
+  '@aiops-lms/observability',
+  'amqplib',
+]) {
+  test(`domain cấm import ${source}`, async () => {
+    assert.equal((await lintRestricted(source, domainFilePath)).length, 1);
+  });
+
+  test(`application cấm import ${source}`, async () => {
+    assert.equal((await lintRestricted(source, applicationFilePath)).length, 1);
+  });
+}
+
+for (const source of ['@aiops-lms/common/errors', '@aiops-lms/common/ports', 'zod']) {
+  test(`application cho phép import ${source}`, async () => {
+    assert.deepEqual(await lintRestricted(source, applicationFilePath), []);
+  });
+}
+
+test('domain cấm import adapters và application', async () => {
+  assert.equal((await lintRestricted('../adapters/x.js', domainFilePath)).length, 1);
+  assert.equal((await lintRestricted('../application/x.js', domainFilePath)).length, 1);
+});
+
+test('application cấm import adapters', async () => {
+  assert.equal((await lintRestricted('../../adapters/x.js', applicationFilePath)).length, 1);
+});

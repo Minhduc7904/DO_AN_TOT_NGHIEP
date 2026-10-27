@@ -5,11 +5,28 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import tseslint from 'typescript-eslint';
 
-const frameworkImports = ['@nestjs/*'];
+// domain/application chỉ được dùng phần thuần TypeScript của common (`errors`, `ports`).
+const frameworkImports = [
+  '@nestjs/*',
+  '@prisma/*',
+  'prisma',
+  'amqplib',
+  'nodemailer',
+  '@aws-sdk/*',
+  'minio',
+  '@aiops-lms/observability',
+  '@aiops-lms/common/http',
+  '@aiops-lms/common/clients',
+  '@aiops-lms/common/telemetry',
+  '@aiops-lms/common/messaging',
+  '@aiops-lms/common/prisma',
+  '@aiops-lms/common/config',
+];
 const outerLayerImports = ['**/application/**', '**/adapters/**', '**/config/**'];
+const generatedClientImports = ['**/generated/**'];
 const workspaceRoot = path.dirname(fileURLToPath(import.meta.url));
 const servicesRoot = path.join(workspaceRoot, 'services');
-const sharedWorkspacePackages = new Set(['contracts', 'observability', 'testing']);
+const sharedWorkspacePackages = new Set(['contracts', 'observability', 'common', 'testing']);
 
 const noCrossServiceImportsRule = {
   meta: {
@@ -75,7 +92,7 @@ const noCrossServiceImportsRule = {
 
 export default tseslint.config(
   {
-    ignores: ['**/coverage/**', '**/dist/**', '**/node_modules/**'],
+    ignores: ['**/coverage/**', '**/dist/**', '**/node_modules/**', '**/generated/**'],
   },
   eslint.configs.recommended,
   ...tseslint.configs.recommended,
@@ -118,7 +135,12 @@ export default tseslint.config(
         {
           patterns: [
             {
-              group: [...frameworkImports, ...outerLayerImports],
+              group: [
+                '**/services/**',
+                ...frameworkImports,
+                ...outerLayerImports,
+                ...generatedClientImports,
+              ],
               message: 'Domain phải độc lập với framework và outer layer.',
             },
           ],
@@ -134,13 +156,24 @@ export default tseslint.config(
         {
           patterns: [
             {
-              group: [...frameworkImports, '**/adapters/**', '**/config/**'],
+              group: [
+                '**/services/**',
+                ...frameworkImports,
+                '**/adapters/**',
+                '**/config/**',
+                ...generatedClientImports,
+              ],
               message: 'Application chỉ được phụ thuộc domain và port của chính nó.',
             },
           ],
         },
       ],
     },
+  },
+  {
+    // Gateway v1 import observability trong application; gỡ ngoại lệ này khi R-04 viết lại gateway.
+    files: ['services/gateway/src/application/gateway-proxy.ts'],
+    rules: { 'no-restricted-imports': 'off' },
   },
   {
     files: ['services/**/test/**/*.ts'],
