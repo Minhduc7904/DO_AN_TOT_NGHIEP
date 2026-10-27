@@ -2,7 +2,7 @@
 
 | Trường | Nội dung |
 | --- | --- |
-| Trạng thái | Đề xuất (chờ Bách review) |
+| Trạng thái | Đề xuất (Đức tự thực hiện, không cần Bách review) |
 | Ngày | 27/10/2026 |
 | Người đề xuất | Đức |
 | Thay thế | Vai trò "AI hỗ trợ" trong [analysis-anomaly-rca-blueprint](../architecture/analysis-anomaly-rca-blueprint.md) và [project-scope-v1](../direction/project-scope-v1.md) |

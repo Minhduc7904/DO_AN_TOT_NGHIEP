@@ -2,7 +2,7 @@
 
 | Trường | Nội dung |
 | --- | --- |
-| Trạng thái | Đề xuất (chờ Bách review) |
+| Trạng thái | Đề xuất (Đức tự thực hiện, không cần Bách review) |
 | Ngày | 27/10/2026 |
 | Người đề xuất | Đức |
 | Thay thế | Phần topology 8 runtime trong [service-catalogue-and-topology-v1](../architecture/service-catalogue-and-topology-v1.md) |
@@ -14,7 +14,7 @@ Testbed MVP (W5–W10) có 8 runtime, SQL viết tay bằng `pg`, schema tạo b
 
 ## Quyết định
 
-1. **Bộ service mới: 9 service** — `gateway`, `auth`, `student`, `admin`, `course`, `media`, `notification`, `scheduler`, `ai` — cộng hai worker (`media-worker`, `notification-worker`) dùng chung image với entrypoint khác.
+1. **Bộ service mới: 9 service** — `gateway`, `auth`, `student`, `admin`, `course`, `media`, `notification`, `scheduler`, `ai` — cộng ba worker (`media-worker`, `notification-worker`, `scheduler-worker`) dùng chung image với service tương ứng, entrypoint khác và `service.name` riêng.
 2. Bỏ `enrollment`, `submission`, `grading`, `submission-storage-mock`. Enrollment, tiến độ và quiz attempt chuyển vào `course`; lưu file dùng MinIO thật qua `media`.
 3. Giữ NestJS/TypeScript. Dùng **Prisma + PostgreSQL 17**, mỗi service một database riêng; migration bằng `prisma migrate`, thay `migrate.ts`.
 4. Mỗi use case là một class riêng (`application/use-cases/<area>/<verb-noun>.use-case.ts`, phương thức `execute`); controller chỉ ánh xạ HTTP sang use case.
@@ -25,7 +25,7 @@ Testbed MVP (W5–W10) có 8 runtime, SQL viết tay bằng `pg`, schema tạo b
 
 ## Hệ quả
 
-- Phải viết lại bộ tài liệu kiến trúc, ma trận fault, test và CI; tên `service.name` mới được chốt ở `service-catalogue-v2` trước khi Bách dựng dataset.
+- Phải viết lại bộ tài liệu kiến trúc, ma trận fault, test và CI; tên `service.name` mới được chốt ở `service-catalogue-v2`; dataset thu trên topology mới.
 - Dữ liệu telemetry thu trên topology cũ không dùng làm dataset chính thức.
 - Hồ sơ W2–W10 giữ nguyên làm lịch sử.
 - Rủi ro khối lượng: 2 tuần cho một người; theo dõi bằng mốc kiểm tra trong bảng task refactor.
