@@ -22,7 +22,7 @@ const containers = (await compose(['ps', '--all', '--format', 'json']))
   .trim()
   .split(/\r?\n/u)
   .map((line) => JSON.parse(line));
-assert.equal(containers.length, 16);
+assert.equal(containers.length, 20);
 for (const container of containers) assert.equal(container.Health, 'healthy');
 function endpoint(service, target) {
   const port = configuration.services[service].ports.find((item) => item.target === target);

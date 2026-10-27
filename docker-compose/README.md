@@ -8,7 +8,7 @@ Thư mục này chứa manifest orchestration root cho LMS testbed. Baseline hi�
 > - `../aiops-platform/observability/compose.yaml`: chỉ stack observability.
 > - `compose.full.yaml`: ghép cả hai trong một project (dùng `include`), là file mặc định của script reset/seed, smoke observability và CI.
 >
-> Hai bên nối với nhau qua network `aiops-net` (biến `AIOPS_NETWORK_NAME`); service LMS chỉ gửi OTLP/HTTP tới `otel-collector:4318`. Các lệnh bên dưới dùng `compose.full.yaml` khi cần đủ 16 thành phần; mục observability ở dưới sẽ chuyển về `aiops-platform/` khi viết lại tài liệu ở R-12. Đường dẫn `observability/…` trong các mục đó nay là `../aiops-platform/observability/…`.
+> Hai bên nối với nhau qua network `aiops-net` (biến `AIOPS_NETWORK_NAME`); service LMS chỉ gửi OTLP/HTTP tới `otel-collector:4318`. Các lệnh bên dưới dùng `compose.full.yaml` khi cần đủ 20 thành phần; mục observability ở dưới sẽ chuyển về `aiops-platform/` khi viết lại tài liệu ở R-12. Đường dẫn `observability/…` trong các mục đó nay là `../aiops-platform/observability/…`.
 
 > **Hạ tầng topology v2 (R-03):** `compose.yaml` đã thêm `student` (service mẫu Prisma, cổng host `3012`), `minio` + `minio-init` (5 bucket `images`, `videos`, `documents`, `audios`, `other`; API `9000`, console `9001`), `mailpit` (SMTP `1025`, UI `8025`) và các DB `student_db`, `media_db`, `notification_db`, `scheduler_db`, `ai_db` kèm role riêng (`postgres-init/02-create-v2-databases.sh`). Service v1 vẫn chạy song song cho tới khi bị thay ở R-04…R-08; `auth_db` và `course_db` của v1 phải tạo lại (`down --volumes`) khi `auth`/`course` v2 dùng Prisma. Container v2 chạy `prisma migrate deploy` trước khi khởi động.
 
@@ -52,7 +52,7 @@ docker compose --env-file docker-compose/.env -f docker-compose/compose.full.yam
 
 Grading nhận RabbitMQ URL (kèm credential từ `.env`) và publish `grade.completed` lên exchange `lms.events`; Grading phụ thuộc RabbitMQ healthy khi khởi động nhưng vẫn tự phục hồi nếu broker dừng rồi bật lại. Notification có thể mở HTTP khi RabbitMQ tạm unavailable, sau đó tự reconnect với một loop duy nhất. Service khai báo queue durable `notification.grade-completed.v1`, bind routing key `grade.completed`, deduplicate in-memory theo `event_id` với TTL 24 giờ/tối đa 10.000 ID và chỉ ack sau khi xử lý mô phỏng thành công. Cache không bền qua restart và không cung cấp exactly-once; fault slowdown mặc định tắt.
 
-Compose chỉ báo thành công sau khi Gateway, Auth, Course, Enrollment, Submission, Grading, Notification, Storage Mock, PostgreSQL, Redis, RabbitMQ, Collector, Prometheus, Tempo, Loki và Grafana (16 thành phần) đều healthy. PostgreSQL tạo `auth_db`, `course_db`, `enrollment_db`, `submission_db` và `grading_db` riêng; các service có persistence tự chạy migration/seed trước khi mở HTTP. Script khởi tạo PostgreSQL chỉ chạy trên volume mới; với volume cũ chưa có `grading_db`, reset volume theo hướng dẫn bên dưới. Credential lấy từ `.env`, không đặt trực tiếp trong manifest Compose.
+Compose chỉ báo thành công sau khi Gateway, Auth, Course, Enrollment, Submission, Grading, Notification, Storage Mock, PostgreSQL, Redis, RabbitMQ, Collector, Prometheus, Tempo, Loki và Grafana (20 thành phần, gồm Student, MinIO, `minio-init` và Mailpit) đều healthy. PostgreSQL tạo `auth_db`, `course_db`, `enrollment_db`, `submission_db` và `grading_db` riêng; các service có persistence tự chạy migration/seed trước khi mở HTTP. Script khởi tạo PostgreSQL chỉ chạy trên volume mới; với volume cũ chưa có `grading_db`, reset volume theo hướng dẫn bên dưới. Credential lấy từ `.env`, không đặt trực tiếp trong manifest Compose.
 
 ## Kiểm tra
 
@@ -167,16 +167,15 @@ Stack regression vẫn chạy sau khi lệnh kết thúc. Dọn project từ rep
 docker compose --project-name aiops-lms-test-regression --env-file docker-compose/.env -f docker-compose/compose.full.yaml down --volumes --remove-orphans
 ```
 
-
 ## Observability baseline W10
 
-| Backend | Image gốc đã pin | Endpoint host mặc định | Readiness trong container |
-| --- | --- | --- | --- |
+| Backend           | Image gốc đã pin                               | Endpoint host mặc định                            | Readiness trong container |
+| ----------------- | ---------------------------------------------- | ------------------------------------------------- | ------------------------- |
 | Collector Contrib | `otel/opentelemetry-collector-contrib:0.163.1` | OTLP HTTP `127.0.0.1:4318`, gRPC `127.0.0.1:4317` | `http://127.0.0.1:13133/` |
-| Prometheus | `prom/prometheus:v3.15.0` | [Prometheus](http://127.0.0.1:9090) | `/-/ready` |
-| Tempo | `grafana/tempo:3.1.0` | [Tempo API](http://127.0.0.1:3200/ready) | `/ready` |
-| Loki | `grafana/loki:3.7.9` | [Loki API](http://127.0.0.1:3100/ready) | `/ready` |
-| Grafana | `grafana/grafana:13.2.4` | [Grafana](http://127.0.0.1:3008) | `/api/health` |
+| Prometheus        | `prom/prometheus:v3.15.0`                      | [Prometheus](http://127.0.0.1:9090)               | `/-/ready`                |
+| Tempo             | `grafana/tempo:3.1.0`                          | [Tempo API](http://127.0.0.1:3200/ready)          | `/ready`                  |
+| Loki              | `grafana/loki:3.7.9`                           | [Loki API](http://127.0.0.1:3100/ready)           | `/ready`                  |
+| Grafana           | `grafana/grafana:13.2.4`                       | [Grafana](http://127.0.0.1:3008)                  | `/api/health`             |
 
 Năm image dẫn xuất chỉ thêm executable `/health-probe` (Go static, builder `golang:1.25.8-alpine`) và thư mục dữ liệu được gán quyền cho user gốc. Probe yêu cầu HTTP 200, timeout 2 giây và exit khác 0 khi endpoint lỗi; không cần shell/curl/wget. Entrypoint và user runtime gốc được giữ. Các image ứng dụng và dữ liệu nghiệp vụ không đổi.
 
@@ -184,13 +183,13 @@ Các port observability chỉ bind loopback, đổi bằng biến môi trường
 
 Collector nhận OTLP HTTP/gRPC, batch tối đa 1024 record (gửi sau 1 giây hoặc 512 record), memory limiter 192 MiB/spike 48 MiB. Trace/log exporter retry tối đa 30 giây, hàng đợi 256 batch với 2 worker, không bền qua restart. Traces chuyển tới Tempo HTTP 4318; metrics chuyển tới Prometheus exporter 8889, Prometheus scrape mỗi 5 giây; logs chuyển tới Loki native OTLP `/otlp/v1/logs`. Chỉ promote ba resource identity vào metric labels; Loki chỉ index `service.name`, version/instance là structured metadata. Telemetry mẫu không chứa secret/PII hoặc fault truth.
 
-| Thành phần | Giới hạn RAM | CPU | Lưu trữ |
-| --- | --- | --- | --- |
-| Collector | 256 MiB | 0.5 | Hàng đợi trong RAM |
-| Prometheus | 512 MiB | 0.5 | `prometheus-data`, retention 24 giờ hoặc 512 MB tùy ngưỡng đến trước |
-| Tempo | 512 MiB | 0.5 | `tempo-data`, WAL/blocks local, retention 24 giờ |
-| Loki | 512 MiB | 0.5 | `loki-data`, filesystem/TSDB v13, retention 24 giờ |
-| Grafana | 512 MiB | 0.5 | `grafana-data`, cấu hình/UI state local |
+| Thành phần | Giới hạn RAM | CPU | Lưu trữ                                                              |
+| ---------- | ------------ | --- | -------------------------------------------------------------------- |
+| Collector  | 256 MiB      | 0.5 | Hàng đợi trong RAM                                                   |
+| Prometheus | 512 MiB      | 0.5 | `prometheus-data`, retention 24 giờ hoặc 512 MB tùy ngưỡng đến trước |
+| Tempo      | 512 MiB      | 0.5 | `tempo-data`, WAL/blocks local, retention 24 giờ                     |
+| Loki       | 512 MiB      | 0.5 | `loki-data`, filesystem/TSDB v13, retention 24 giờ                   |
+| Grafana    | 512 MiB      | 0.5 | `grafana-data`, cấu hình/UI state local                              |
 
 Retention là chính sách xóa bất đồng bộ, không phải hard disk quota; khi đầy disk hoặc vượt RAM, telemetry có thể mất dù request nghiệp vụ vẫn chạy. Đây là MVP một node, chưa có HA/TLS/SSO/long-term storage. Tempo 3 dùng `backend_worker.compaction`, không dùng cấu hình `compactor` của Tempo 2. Cấu hình Loki native OTLP theo [tài liệu chính thức](https://grafana.com/docs/loki/latest/send-data/otel/); cấu hình Tempo theo [ví dụ v3.1.0](https://github.com/grafana/tempo/blob/v3.1.0/example/docker-compose/single-binary/tempo.yaml).
 
@@ -213,7 +212,7 @@ cd lms
 pnpm run test:testbed:reset:compose
 ```
 
-Test reset hai lần trên `aiops-lms-test-reset-seed`, so fingerprint, xác nhận 16 thành phần healthy, chạy smoke sau mỗi reset và xác nhận trace cũ trả 404 sau reset. Test tự dọn đúng project test cùng volume trong `finally`. Khi RAM/build cache hạn chế, đặt `COMPOSE_PARALLEL_LIMIT=1` trước các lệnh Compose/reset/regression để tránh build đồng thời.
+Test reset hai lần trên `aiops-lms-test-reset-seed`, so fingerprint, xác nhận 20 thành phần healthy, chạy smoke sau mỗi reset và xác nhận trace cũ trả 404 sau reset. Test tự dọn đúng project test cùng volume trong `finally`. Khi RAM/build cache hạn chế, đặt `COMPOSE_PARALLEL_LIMIT=1` trước các lệnh Compose/reset/regression để tránh build đồng thời.
 
 ## Metrics runtime và broker W10
 
@@ -235,12 +234,12 @@ Grafana provision từ file trong repo, không lưu thay đổi trên UI (`allow
 - `../aiops-platform/observability/grafana-dashboards.yaml`: provider đọc mọi JSON trong `../aiops-platform/observability/dashboards/` vào folder "AIOps LMS". Thêm dashboard mới chỉ cần thêm file JSON có `uid` cố định.
 - `../aiops-platform/observability/dashboards/service-overview.json`: dashboard [AIOps LMS — Service overview](http://127.0.0.1:3008/d/aiops-lms-service-overview), timezone UTC, biến `service` chỉ gồm business service (bỏ `submission-storage`).
 
-| Nhóm | Panel | Nguồn |
-| --- | --- | --- |
-| RED theo service | Request rate, error ratio (5xx + `client_aborted`), latency p95 | `http_server_request_*`, bỏ `/health` |
-| RED theo route | Request rate theo route/status class, latency p95 theo route | `http_route_template` bounded |
+| Nhóm                 | Panel                                                                                                          | Nguồn                                                                                                    |
+| -------------------- | -------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| RED theo service     | Request rate, error ratio (5xx + `client_aborted`), latency p95                                                | `http_server_request_*`, bỏ `/health`                                                                    |
+| RED theo route       | Request rate theo route/status class, latency p95 theo route                                                   | `http_route_template` bounded                                                                            |
 | Dependency và broker | Dependency lỗi theo `dependency_identity`/`status`, dependency latency p95, backlog RabbitMQ và outbox Grading | `*_dependency_*`, `grading_messaging_*`, `notification_rabbitmq_*`, `rabbitmq_detailed_queue_messages_*` |
-| Trace và log | Trace lỗi gần đây (TraceQL), log `ERROR`/`FATAL`, log volume theo severity | Tempo, Loki |
+| Trace và log         | Trace lỗi gần đây (TraceQL), log `ERROR`/`FATAL`, log volume theo severity                                     | Tempo, Loki                                                                                              |
 
 Điều tra một lỗi: click series trên panel RED/dependency → data link mở TraceQL cùng service (server span lỗi, span chậm hoặc theo route) → mở trace → "Logs for this span" chạy query Loki theo `trace_id` → trong log, link `trace_id` quay lại Tempo. Metric chưa có exemplar nên bước metric → trace lọc theo service/route/thời gian, không nhảy thẳng tới một trace.
 

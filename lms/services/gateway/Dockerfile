@@ -12,6 +12,7 @@ FROM base AS build
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
 COPY packages/observability/package.json packages/observability/package.json
+COPY packages/common/package.json packages/common/package.json
 COPY services/auth/package.json services/auth/package.json
 COPY services/course/package.json services/course/package.json
 COPY services/gateway/package.json services/gateway/package.json
