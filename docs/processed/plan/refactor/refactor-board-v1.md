@@ -6,13 +6,13 @@
 | Người phụ trách | Đức, làm một mình toàn bộ (code refactor và docs, gồm docs AI/scope); không cần Bách tham gia hay review |
 | Quyết định nền | [ADR-001](../../adr/adr-001-restructure-lms-testbed-v1.md), [ADR-002](../../adr/adr-002-ai-primary-root-cause-analysis-v1.md) |
 | Quy ước | Mỗi task một nhánh `refactor/week-NN/task-NN-<short-title>` (hoặc `docs/…`) và một PR vào `main` theo [quy tắc Git](../../rules/git-and-pull-request-rules.md) |
-| Trạng thái bảng | Chưa bắt đầu |
+| Trạng thái bảng | Đang thực hiện |
 
 ## Danh sách task
 
 | Mã | Task | Ngày | Phụ thuộc | Trạng thái |
 | --- | --- | --- | --- | --- |
-| R-01 | ADR, `service-catalogue-v2`, `http-and-event-contracts-v2`, `data-ownership-v2`; chốt `service.name` | 1–2 | — | Đang thực hiện (ADR-001/002 và 3 tài liệu v2 đã nháp, chờ Đức tự xác nhận) |
+| R-01 | ADR, `service-catalogue-v2`, `http-and-event-contracts-v2`, `data-ownership-v2`; chốt `service.name` | 1–2 | — | Hoàn thành (27/10/2026; Đức xác nhận qua chỉ thị merge trực tiếp, không có review của Bách theo quyết định refactor một người) |
 | R-02 | Tách `aiops-platform/observability/`, compose riêng, network external `aiops-net` | 1–2 | — | Chưa bắt đầu |
 | R-03 | Nền tảng: `packages/common`, skeleton service, eslint boundaries, compose LMS (Postgres, RabbitMQ, MinIO, Mailpit), Prisma | 2–3 | R-01 | Chưa bắt đầu |
 | R-04 | `auth` (3 role), `student`, `admin`, `gateway` | 3–5 | R-03 | Chưa bắt đầu |
