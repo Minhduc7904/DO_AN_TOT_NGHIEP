@@ -14,7 +14,7 @@ Testbed MVP (W5–W10) có 8 runtime, SQL viết tay bằng `pg`, schema tạo b
 
 ## Quyết định
 
-1. **Bộ service mới: 9 service** — `gateway`, `auth`, `student`, `admin`, `course`, `media`, `notification`, `scheduler`, `ai` — cộng ba worker (`media-worker`, `notification-worker`, `scheduler-worker`) dùng chung image với service tương ứng, entrypoint khác và `service.name` riêng.
+1. **Bộ service mới: 9 service** (còn 8 sau [ADR-003](adr-003-remove-admin-service-v1.md), bỏ `admin`) — `gateway`, `auth`, `student`, `admin`, `course`, `media`, `notification`, `scheduler`, `ai` — cộng ba worker (`media-worker`, `notification-worker`, `scheduler-worker`) dùng chung image với service tương ứng, entrypoint khác và `service.name` riêng.
 2. Bỏ `enrollment`, `submission`, `grading`, `submission-storage-mock`. Enrollment, tiến độ và quiz attempt chuyển vào `course`; lưu file dùng MinIO thật qua `media`.
 3. Giữ NestJS/TypeScript. Dùng **Prisma + PostgreSQL 17**, mỗi service một database riêng; migration bằng `prisma migrate`, thay `migrate.ts`.
 4. Mỗi use case là một class riêng (`application/use-cases/<area>/<verb-noun>.use-case.ts`, phương thức `execute`); controller chỉ ánh xạ HTTP sang use case.
