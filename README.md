@@ -60,8 +60,8 @@ Target có thể thêm Assignment, MinIO và expanded robustness evaluation vớ
 - `lms/services/`: API Gateway và LMS business services.
 - `lms/packages/observability/`: shared application instrumentation.
 - `lms/contracts/`: published HTTP/event contracts của LMS.
-- `docker-compose/observability/`: Collector, Prometheus, Tempo, Loki và Grafana runtime/config, cùng root manifest orchestration.
-- `docker-compose/`: Compose manifest root để khởi động LMS service và dependency cục bộ.
+- `aiops-platform/`: thành phần thu thập dữ liệu và phân tích tách khỏi LMS; hiện có `observability/` (Collector, Prometheus, Tempo, Loki, Grafana). LMS chỉ kết nối qua HTTP (OTLP). Module huấn luyện AI sẽ đặt tại đây.
+- `docker-compose/`: Compose manifest để khởi động LMS service và dependency cục bộ; `compose.full.yaml` ghép LMS với `aiops-platform`.
 - `load/`: workload implementation.
 - `faults/`: reusable fault mechanisms.
 - `experiments/`: protocol, scenario orchestration, runner và run artifacts.

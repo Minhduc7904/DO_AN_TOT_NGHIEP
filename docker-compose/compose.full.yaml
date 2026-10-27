@@ -1,0 +1,6 @@
+# Ghép LMS với stack thu thập dữ liệu của aiops-platform trong một project Compose.
+# Mỗi file giữ nguyên đường dẫn tương đối của riêng nó; env của aiops-platform khai báo ở đây.
+include:
+  - path: compose.yaml
+  - path: ../aiops-platform/observability/compose.yaml
+    env_file: ../aiops-platform/observability/.env.example

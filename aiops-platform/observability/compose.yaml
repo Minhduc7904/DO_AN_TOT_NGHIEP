@@ -1,0 +1,137 @@
+# Stack thu thập dữ liệu observability (Collector, Prometheus, Tempo, Loki, Grafana).
+# Tách khỏi docker-compose/ của LMS: LMS chỉ gửi OTLP/HTTP tới `otel-collector:4318`
+# qua network `aiops-net`. Chạy độc lập hoặc ghép với compose của LMS (xem ../README.md).
+services:
+  otel-collector:
+    build:
+      context: .
+      args:
+        BASE_IMAGE: otel/opentelemetry-collector-contrib:0.163.1
+    command: ["--config=/etc/otelcol-contrib/config.yaml"]
+    environment:
+      NOTIFICATION_GRADE_COMPLETED_QUEUE: "${NOTIFICATION_GRADE_COMPLETED_QUEUE:-notification.grade-completed.v1}"
+    ports:
+      - "127.0.0.1:${OTEL_HTTP_PORT:-4318}:4318"
+      - "127.0.0.1:${OTEL_GRPC_PORT:-4317}:4317"
+    volumes:
+      - ./otel-collector.yaml:/etc/otelcol-contrib/config.yaml:ro
+    healthcheck:
+      test: ["CMD", "/health-probe", "http://127.0.0.1:13133/"]
+      interval: 5s
+      timeout: 3s
+      retries: 24
+      start_period: 10s
+    mem_limit: 256m
+    cpus: 0.5
+    networks: [aiops-net]
+
+  prometheus:
+    build:
+      context: .
+      args:
+        BASE_IMAGE: prom/prometheus:v3.15.0
+        DATA_UID: "65534"
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/var/observability
+      - --storage.tsdb.retention.time=24h
+      - --storage.tsdb.retention.size=512MB
+    ports:
+      - "127.0.0.1:${PROMETHEUS_PORT:-9090}:9090"
+    volumes:
+      - ./prometheus.yaml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/var/observability
+    healthcheck:
+      test: ["CMD", "/health-probe", "http://127.0.0.1:9090/-/ready"]
+      interval: 5s
+      timeout: 3s
+      retries: 24
+      start_period: 10s
+    mem_limit: 512m
+    cpus: 0.5
+    networks: [aiops-net]
+
+  tempo:
+    build:
+      context: .
+      args:
+        BASE_IMAGE: grafana/tempo:3.1.0
+    command: ["-config.file=/etc/tempo.yaml"]
+    ports:
+      - "127.0.0.1:${TEMPO_PORT:-3200}:3200"
+    volumes:
+      - ./tempo.yaml:/etc/tempo.yaml:ro
+      - tempo-data:/var/observability
+    healthcheck:
+      test: ["CMD", "/health-probe", "http://127.0.0.1:3200/ready"]
+      interval: 5s
+      timeout: 3s
+      retries: 24
+      start_period: 20s
+    mem_limit: 512m
+    cpus: 0.5
+    networks: [aiops-net]
+
+  loki:
+    build:
+      context: .
+      args:
+        BASE_IMAGE: grafana/loki:3.7.9
+    command: ["-config.file=/etc/loki/local-config.yaml"]
+    ports:
+      - "127.0.0.1:${LOKI_PORT:-3100}:3100"
+    volumes:
+      - ./loki.yaml:/etc/loki/local-config.yaml:ro
+      - loki-data:/var/observability
+    healthcheck:
+      test: ["CMD", "/health-probe", "http://127.0.0.1:3100/ready"]
+      interval: 5s
+      timeout: 3s
+      retries: 24
+      start_period: 20s
+    mem_limit: 512m
+    cpus: 0.5
+    networks: [aiops-net]
+
+  grafana:
+    build:
+      context: .
+      args:
+        BASE_IMAGE: grafana/grafana:13.2.4
+        DATA_UID: "472"
+    environment:
+      GF_PATHS_DATA: /var/observability
+      GF_SECURITY_ADMIN_USER: "${GRAFANA_ADMIN_USER:-admin}"
+      GF_SECURITY_ADMIN_PASSWORD: "${GRAFANA_ADMIN_PASSWORD:?GRAFANA_ADMIN_PASSWORD is required}"
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+      GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
+    ports:
+      - "127.0.0.1:${GRAFANA_PORT:-3008}:3000"
+    volumes:
+      - ./grafana-datasources.yaml:/etc/grafana/provisioning/datasources/baseline.yaml:ro
+      - ./grafana-dashboards.yaml:/etc/grafana/provisioning/dashboards/baseline.yaml:ro
+      - ./dashboards:/etc/grafana/dashboards:ro
+      - grafana-data:/var/observability
+    healthcheck:
+      test: ["CMD", "/health-probe", "http://127.0.0.1:3000/api/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 24
+      start_period: 20s
+    mem_limit: 512m
+    cpus: 0.5
+    networks: [aiops-net]
+
+# Cùng định nghĩa với docker-compose/compose.yaml để hai file ghép chung một project vẫn hợp lệ,
+# còn khi chạy hai project riêng thì cùng nối vào một network tên cố định (Compose chỉ cảnh báo).
+networks:
+  aiops-net:
+    name: "${AIOPS_NETWORK_NAME:-aiops-net}"
+    driver: bridge
+
+volumes:
+  prometheus-data:
+  tempo-data:
+  loki-data:
+  grafana-data:

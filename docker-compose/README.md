@@ -1,6 +1,14 @@
 # Docker Compose baseline
 
-Thư mục này chứa manifest orchestration root cho LMS testbed. Baseline hiện tại build Gateway, Auth, Course, Enrollment, Submission, Grading, Notification và Storage Mock từ `lms/`, đồng thời khởi động PostgreSQL, Redis, RabbitMQ và 5 backend observability bằng image đã pin.
+Thư mục này chứa manifest orchestration root cho LMS testbed. Baseline hiện tại build Gateway, Auth, Course, Enrollment, Submission, Grading, Notification và Storage Mock từ `lms/`, đồng thời khởi động PostgreSQL, Redis và RabbitMQ.
+
+> **Tách `aiops-platform/` (R-02):** 5 backend observability (Collector, Prometheus, Tempo, Loki, Grafana) cùng cấu hình đã chuyển sang [`../aiops-platform/observability/`](../aiops-platform/observability/) với `compose.yaml` và `.env.example` riêng. Có ba cách chạy:
+>
+> - `compose.yaml`: chỉ LMS.
+> - `../aiops-platform/observability/compose.yaml`: chỉ stack observability.
+> - `compose.full.yaml`: ghép cả hai trong một project (dùng `include`), là file mặc định của script reset/seed, smoke observability và CI.
+>
+> Hai bên nối với nhau qua network `aiops-net` (biến `AIOPS_NETWORK_NAME`); service LMS chỉ gửi OTLP/HTTP tới `otel-collector:4318`. Các lệnh bên dưới dùng `compose.full.yaml` khi cần đủ 16 thành phần; mục observability ở dưới sẽ chuyển về `aiops-platform/` khi viết lại tài liệu ở R-12. Đường dẫn `observability/…` trong các mục đó nay là `../aiops-platform/observability/…`.
 
 ## Yêu cầu
 
@@ -35,9 +43,9 @@ Cả 8 application runtime gửi OTLP HTTP tới `http://otel-collector:4318/v1/
 Chạy từ repository root:
 
 ```bash
-docker compose --env-file docker-compose/.env -f docker-compose/compose.yaml config
-docker compose --env-file docker-compose/.env -f docker-compose/compose.yaml up --build -d --wait
-docker compose --env-file docker-compose/.env -f docker-compose/compose.yaml ps
+docker compose --env-file docker-compose/.env -f docker-compose/compose.full.yaml config
+docker compose --env-file docker-compose/.env -f docker-compose/compose.full.yaml up --build -d --wait
+docker compose --env-file docker-compose/.env -f docker-compose/compose.full.yaml ps
 ```
 
 Grading nhận RabbitMQ URL (kèm credential từ `.env`) và publish `grade.completed` lên exchange `lms.events`; Grading phụ thuộc RabbitMQ healthy khi khởi động nhưng vẫn tự phục hồi nếu broker dừng rồi bật lại. Notification có thể mở HTTP khi RabbitMQ tạm unavailable, sau đó tự reconnect với một loop duy nhất. Service khai báo queue durable `notification.grade-completed.v1`, bind routing key `grade.completed`, deduplicate in-memory theo `event_id` với TTL 24 giờ/tối đa 10.000 ID và chỉ ack sau khi xử lý mô phỏng thành công. Cache không bền qua restart và không cung cấp exactly-once; fault slowdown mặc định tắt.
@@ -77,16 +85,16 @@ Invoke-RestMethod http://localhost:3002/health
 Kiểm tra readiness trực tiếp của từng dependency:
 
 ```bash
-docker compose --env-file docker-compose/.env -f docker-compose/compose.yaml exec -T postgres sh -c 'pg_isready -U "$POSTGRES_USER" -d "$POSTGRES_DB"'
-docker compose --env-file docker-compose/.env -f docker-compose/compose.yaml exec -T redis redis-cli ping
-docker compose --env-file docker-compose/.env -f docker-compose/compose.yaml exec -T rabbitmq rabbitmq-diagnostics -q ping
+docker compose --env-file docker-compose/.env -f docker-compose/compose.full.yaml exec -T postgres sh -c 'pg_isready -U "$POSTGRES_USER" -d "$POSTGRES_DB"'
+docker compose --env-file docker-compose/.env -f docker-compose/compose.full.yaml exec -T redis redis-cli ping
+docker compose --env-file docker-compose/.env -f docker-compose/compose.full.yaml exec -T rabbitmq rabbitmq-diagnostics -q ping
 ```
 
 ## Logs, dừng và reset
 
 ```bash
-docker compose --env-file docker-compose/.env -f docker-compose/compose.yaml logs --no-color
-docker compose --env-file docker-compose/.env -f docker-compose/compose.yaml down
+docker compose --env-file docker-compose/.env -f docker-compose/compose.full.yaml logs --no-color
+docker compose --env-file docker-compose/.env -f docker-compose/compose.full.yaml down
 ```
 
 Log của tám application runtime là JSON một dòng (timestamp UTC, level, message, resource identity, `trace_id`/`span_id` khi có span). Cùng nội dung được gửi OTLP qua Collector tới Loki, nên khi điều tra theo trace nên dùng Loki thay vì `docker compose logs`; xem [structured logs](../lms/packages/observability/README.md#structured-logs-w10).
@@ -94,8 +102,8 @@ Log của tám application runtime là JSON một dòng (timestamp UTC, level, m
 Xóa cả dữ liệu local để kiểm chứng fresh setup hoặc bắt đầu lại từ trạng thái sạch:
 
 ```bash
-docker compose --env-file docker-compose/.env -f docker-compose/compose.yaml down --volumes --remove-orphans
-docker compose --env-file docker-compose/.env -f docker-compose/compose.yaml up --build -d --wait
+docker compose --env-file docker-compose/.env -f docker-compose/compose.full.yaml down --volumes --remove-orphans
+docker compose --env-file docker-compose/.env -f docker-compose/compose.full.yaml up --build -d --wait
 ```
 
 Không dùng lệnh reset volume với dữ liệu cần giữ lại.
@@ -106,9 +114,9 @@ Khi Docker chỉ có khoảng 4 GB RAM, build từng image có Dockerfile theo t
 
 ```bash
 for service in gateway auth course enrollment submission submission-storage-mock grading notification; do
-  docker compose --env-file docker-compose/.env -f docker-compose/compose.yaml build --no-cache "$service"
+  docker compose --env-file docker-compose/.env -f docker-compose/compose.full.yaml build --no-cache "$service"
 done
-docker compose --env-file docker-compose/.env -f docker-compose/compose.yaml up -d --wait
+docker compose --env-file docker-compose/.env -f docker-compose/compose.full.yaml up -d --wait
 ```
 
 ## Reset/seed Testbed có kiểm soát
@@ -126,10 +134,10 @@ cd lms
 pnpm run testbed:reset -- --environment local --project aiops-lms-local --confirm aiops-lms-local --compose-env-file ../docker-compose/.env
 ```
 
-Project `aiops-lms-local` dùng cùng host port trong `.env` với stack ở các mục trên. Dừng stack đó (`docker compose --env-file docker-compose/.env -f docker-compose/compose.yaml down`) trước khi reset. Tương tự, dừng project `aiops-lms-local` từ repository root trước khi chạy regression bên dưới:
+Project `aiops-lms-local` dùng cùng host port trong `.env` với stack ở các mục trên. Dừng stack đó (`docker compose --env-file docker-compose/.env -f docker-compose/compose.full.yaml down`) trước khi reset. Tương tự, dừng project `aiops-lms-local` từ repository root trước khi chạy regression bên dưới:
 
 ```bash
-docker compose --project-name aiops-lms-local --env-file docker-compose/.env -f docker-compose/compose.yaml down
+docker compose --project-name aiops-lms-local --env-file docker-compose/.env -f docker-compose/compose.full.yaml down
 ```
 
 Option canonical là `--compose-env-file` để không xung đột với option runtime `--env-file` của Node/Corepack khi PowerShell resolve `pnpm.ps1`. CLI vẫn nhận `--env-file` cho direct Node invocation hoặc automation cũ, nhưng sẽ in cảnh báo deprecated; không truyền đồng thời hai option.
@@ -154,7 +162,7 @@ Lệnh lần lượt build workspace, reset/seed project cô lập `aiops-lms-te
 Stack regression vẫn chạy sau khi lệnh kết thúc. Dọn project từ repository root:
 
 ```bash
-docker compose --project-name aiops-lms-test-regression --env-file docker-compose/.env -f docker-compose/compose.yaml down --volumes --remove-orphans
+docker compose --project-name aiops-lms-test-regression --env-file docker-compose/.env -f docker-compose/compose.full.yaml down --volumes --remove-orphans
 ```
 
 
@@ -170,7 +178,7 @@ docker compose --project-name aiops-lms-test-regression --env-file docker-compos
 
 Năm image dẫn xuất chỉ thêm executable `/health-probe` (Go static, builder `golang:1.25.8-alpine`) và thư mục dữ liệu được gán quyền cho user gốc. Probe yêu cầu HTTP 200, timeout 2 giây và exit khác 0 khi endpoint lỗi; không cần shell/curl/wget. Entrypoint và user runtime gốc được giữ. Các image ứng dụng và dữ liệu nghiệp vụ không đổi.
 
-Các port observability chỉ bind loopback, đổi bằng `OTEL_HTTP_PORT`, `OTEL_GRPC_PORT`, `PROMETHEUS_PORT`, `TEMPO_PORT`, `LOKI_PORT`, `GRAFANA_PORT`; các hostname/port nội bộ giữ nguyên. Gateway đang dùng 3000 nên Grafana dùng 3008. Đăng nhập Grafana bằng `GRAFANA_ADMIN_USER`/`GRAFANA_ADMIN_PASSWORD` trong env local (mẫu `admin`/`grafana-local-only`, tuyệt đối không dùng production). Compose bắt buộc có `GRAFANA_ADMIN_PASSWORD` trong env file, không còn giá trị mặc định trong `compose.yaml`; giá trị mẫu chỉ là credential local, Grafana chỉ bind loopback. Grafana tự provision datasource Prometheus/Tempo/Loki và dashboard service overview, xem [dashboard W10](#dashboard-và-nghiệm-thu-w10).
+Các port observability chỉ bind loopback, đổi bằng biến môi trường shell hoặc `../aiops-platform/observability/.env`: `OTEL_HTTP_PORT`, `OTEL_GRPC_PORT`, `PROMETHEUS_PORT`, `TEMPO_PORT`, `LOKI_PORT`, `GRAFANA_PORT`; các hostname/port nội bộ giữ nguyên. Gateway đang dùng 3000 nên Grafana dùng 3008. Đăng nhập Grafana bằng `GRAFANA_ADMIN_USER`/`GRAFANA_ADMIN_PASSWORD` trong env local (mẫu `admin`/`grafana-local-only`, tuyệt đối không dùng production). Compose bắt buộc có `GRAFANA_ADMIN_PASSWORD`, khai báo trong `../aiops-platform/observability/.env.example` (ghi đè bằng biến môi trường shell khi cần) và không có giá trị mặc định trong compose; giá trị mẫu chỉ là credential local, Grafana chỉ bind loopback. Grafana tự provision datasource Prometheus/Tempo/Loki và dashboard service overview, xem [dashboard W10](#dashboard-và-nghiệm-thu-w10).
 
 Collector nhận OTLP HTTP/gRPC, batch tối đa 1024 record (gửi sau 1 giây hoặc 512 record), memory limiter 192 MiB/spike 48 MiB. Trace/log exporter retry tối đa 30 giây, hàng đợi 256 batch với 2 worker, không bền qua restart. Traces chuyển tới Tempo HTTP 4318; metrics chuyển tới Prometheus exporter 8889, Prometheus scrape mỗi 5 giây; logs chuyển tới Loki native OTLP `/otlp/v1/logs`. Chỉ promote ba resource identity vào metric labels; Loki chỉ index `service.name`, version/instance là structured metadata. Telemetry mẫu không chứa secret/PII hoặc fault truth.
 
@@ -194,7 +202,7 @@ Smoke gửi ba payload OTLP JSON qua Collector; dùng trace ID/marker ngẫu nhi
 
 Ví dụ query: PromQL `{service_name="observability-smoke",__name__=~"observability_smoke_timestamp.*"}`; Tempo `/api/traces/<trace-id>` từ output smoke; LogQL `{service_name="observability-smoke"} |= "<marker>"` trong khoảng thời gian smoke. Marker chỉ ở span/log body, không phải metric/Loki index label. Application trace coverage và metrics đầy đủ được nghiệm thu tại task-02/03.
 
-Tắt riêng backend và giữ dữ liệu bằng `docker compose --env-file docker-compose/.env -f docker-compose/compose.yaml stop otel-collector prometheus tempo loki grafana`; application có thể tiếp tục chạy nhưng mất export. Dùng `up -d --wait` để bật lại. `down` xóa container/network nhưng giữ named volume. **`down --volumes` và reset/seed xóa cả dữ liệu nghiệp vụ lẫn telemetry của project đã xác nhận**, không giữ lịch sử observability qua reset. Không chạy reset project phát triển nếu cần giữ bằng chứng.
+Tắt riêng backend và giữ dữ liệu bằng `docker compose --env-file docker-compose/.env -f docker-compose/compose.full.yaml stop otel-collector prometheus tempo loki grafana`; application có thể tiếp tục chạy nhưng mất export. Dùng `up -d --wait` để bật lại. `down` xóa container/network nhưng giữ named volume. **`down --volumes` và reset/seed xóa cả dữ liệu nghiệp vụ lẫn telemetry của project đã xác nhận**, không giữ lịch sử observability qua reset. Không chạy reset project phát triển nếu cần giữ bằng chứng.
 
 Kiểm chứng phá hủy chỉ trong project test cô lập và không chạy cùng project khác chiếm host port:
 
@@ -221,9 +229,9 @@ Cả 8 application runtime bật logs với `OTEL_EXPORTER_OTLP_LOGS_ENDPOINT=ht
 
 Grafana provision từ file trong repo, không lưu thay đổi trên UI (`allowUiUpdates: false`):
 
-- `observability/grafana-datasources.yaml`: ba datasource uid `prometheus`/`tempo`/`loki`. Tempo có `tracesToLogsV2` mở log Loki của span theo `{service_name="<service.name>"} | trace_id="<trace>"`, khoảng thời gian span ±5 phút. Loki có derived field `trace_id` (structured metadata) mở trace trong Tempo. Biến Grafana viết `$${...}` vì provisioning tự thay `${...}` bằng biến môi trường.
-- `observability/grafana-dashboards.yaml`: provider đọc mọi JSON trong `observability/dashboards/` vào folder "AIOps LMS". Thêm dashboard mới chỉ cần thêm file JSON có `uid` cố định.
-- `observability/dashboards/service-overview.json`: dashboard [AIOps LMS — Service overview](http://127.0.0.1:3008/d/aiops-lms-service-overview), timezone UTC, biến `service` chỉ gồm business service (bỏ `submission-storage`).
+- `../aiops-platform/observability/grafana-datasources.yaml`: ba datasource uid `prometheus`/`tempo`/`loki`. Tempo có `tracesToLogsV2` mở log Loki của span theo `{service_name="<service.name>"} | trace_id="<trace>"`, khoảng thời gian span ±5 phút. Loki có derived field `trace_id` (structured metadata) mở trace trong Tempo. Biến Grafana viết `$${...}` vì provisioning tự thay `${...}` bằng biến môi trường.
+- `../aiops-platform/observability/grafana-dashboards.yaml`: provider đọc mọi JSON trong `../aiops-platform/observability/dashboards/` vào folder "AIOps LMS". Thêm dashboard mới chỉ cần thêm file JSON có `uid` cố định.
+- `../aiops-platform/observability/dashboards/service-overview.json`: dashboard [AIOps LMS — Service overview](http://127.0.0.1:3008/d/aiops-lms-service-overview), timezone UTC, biến `service` chỉ gồm business service (bỏ `submission-storage`).
 
 | Nhóm | Panel | Nguồn |
 | --- | --- | --- |

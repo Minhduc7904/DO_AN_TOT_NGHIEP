@@ -6,7 +6,7 @@ import { resolve } from 'node:path';
 const repositoryRoot = fileURLToPath(new URL('../../..', import.meta.url));
 const lmsRoot = resolve(repositoryRoot, 'lms');
 const envFile = resolve(repositoryRoot, 'docker-compose', '.env.example');
-const composeFile = resolve(repositoryRoot, 'docker-compose', 'compose.yaml');
+const composeFile = resolve(repositoryRoot, 'docker-compose', 'compose.full.yaml');
 const project = 'aiops-lms-test-reset-seed';
 
 function run(command, args, options = {}) {
