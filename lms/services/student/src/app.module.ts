@@ -1,7 +1,6 @@
-import { HealthController, PrincipalGuard, READINESS_CHECKS } from '@aiops-lms/common/http';
+import { COMMON_HTTP_PROVIDERS, HealthController, READINESS_CHECKS } from '@aiops-lms/common/http';
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { APP_GUARD } from '@nestjs/core';
 
 import { validateEnvironment } from './config/env.schema.js';
 import { StudentController } from './adapters/http/student.controller.js';
@@ -22,7 +21,7 @@ import { ListStudentsUseCase } from './application/use-cases/students/list-stude
     PrismaService,
     PrismaStudentRepository,
     { provide: STUDENT_REPOSITORY, useExisting: PrismaStudentRepository },
-    { provide: APP_GUARD, useClass: PrincipalGuard },
+    ...COMMON_HTTP_PROVIDERS,
     {
       provide: READINESS_CHECKS,
       useFactory: (students: StudentRepository) => ({ postgres: () => students.ping() }),

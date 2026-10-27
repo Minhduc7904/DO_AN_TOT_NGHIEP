@@ -1,5 +1,6 @@
 import { HttpException } from '@nestjs/common';
 import type { ArgumentsHost, ExecutionContext } from '@nestjs/common';
+import { apiErrorSchema } from '@aiops-lms/contracts';
 import { Reflector } from '@nestjs/core';
 import { z } from 'zod';
 
@@ -35,12 +36,12 @@ describe('AppExceptionFilter', () => {
 
     expect(sent.status).toBe(409);
     expect(sent.body).toMatchObject({
-      code: 'QUIZ_HAS_ATTEMPTS',
-      message: 'Quiz đã có attempt',
-      trace_id: 'unavailable',
-      details: null,
+      success: false,
+      data: null,
+      error: { code: 'QUIZ_HAS_ATTEMPTS', message: 'Quiz đã có attempt', details: null },
+      meta: { trace_id: 'unavailable', pagination: null },
     });
-    expect((sent.body as { timestamp: string }).timestamp).toMatch(/Z$/u);
+    expect(apiErrorSchema.safeParse(sent.body).success).toBe(true);
   });
 
   it('ánh xạ HttpException theo status', () => {
@@ -48,7 +49,9 @@ describe('AppExceptionFilter', () => {
     new AppExceptionFilter().catch(new HttpException('Không có route', 404), host);
 
     expect(sent.status).toBe(404);
-    expect(sent.body).toMatchObject({ code: 'NOT_FOUND', message: 'Không có route' });
+    expect(sent.body).toMatchObject({
+      error: { code: 'NOT_FOUND', message: 'Không có route' },
+    });
   });
 
   it('không lộ chi tiết lỗi không phân loại', () => {
@@ -57,7 +60,7 @@ describe('AppExceptionFilter', () => {
 
     expect(sent.status).toBe(500);
     expect(JSON.stringify(sent.body)).not.toContain('secret');
-    expect(sent.body).toMatchObject({ code: 'INTERNAL_ERROR' });
+    expect(sent.body).toMatchObject({ error: { code: 'INTERNAL_ERROR' } });
   });
 });
 

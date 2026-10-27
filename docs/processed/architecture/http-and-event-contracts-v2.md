@@ -43,25 +43,42 @@ Route `/internal/v1/*` **không được Gateway proxy**; chỉ service gọi nh
 
 Route đọc nội dung media công khai (không cần JWT) vì trình duyệt nhúng ảnh/video không gửi được token: `GET /api/v1/media/{media_id}/content`, `.../thumbnail`, `/api/v1/media/usages/{usage_id}/url`. Bảo vệ bằng UUID khó đoán, `Cache-Control: no-store`; đây là giới hạn được chấp nhận và ghi nhận ở R-12.
 
-## 1.2. Envelope thành công
+## 1.2. Envelope phản hồi thống nhất
 
-Giữ biểu diễn v1: body là chính resource; danh sách dùng
+Mọi response JSON của mọi service (thành công hay lỗi, kể cả `/health`, `/ready` và lỗi do Gateway sinh) có đúng bốn khóa `success`, `data`, `error`, `meta`:
 
 ```json
-{ "items": [], "page": 1, "page_size": 20, "total": 134 }
+{ "success": true, "data": { }, "error": null,
+  "meta": { "trace_id": "…", "timestamp": "2026-11-02T10:00:00.000Z", "pagination": null } }
 ```
 
-Endpoint cần quét lớn (export CSV) dùng keyset và stream, không dùng `page`.
+```json
+{ "success": false, "data": null,
+  "error": { "code": "VALIDATION_ERROR", "message": "…", "details": [ ] },
+  "meta": { "trace_id": "…", "timestamp": "…", "pagination": null } }
+```
+
+- `data` là tài nguyên, kết quả hoặc mảng (danh sách); `null` khi lỗi hoặc không có nội dung.
+- `error.details` là `null` hoặc dữ liệu có cấu trúc (ví dụ danh sách `{ path, message }` khi validate).
+- Ngoại lệ duy nhất: route trả byte/stream (media content, export CSV) dùng `@RawResponse()`; lỗi của chúng vẫn dùng envelope.
+
+## 1.3. Phân trang
+
+| | Quy ước |
+| --- | --- |
+| Đầu vào | `?page=1&page_size=20`: `page` ≥ 1 (mặc định 1), `page_size` 1–100 (mặc định 20); sai thì `400 VALIDATION_ERROR`. Bộ lọc riêng của endpoint thêm query khác, không đổi hai tham số này |
+| Đầu ra | `data` là mảng; `meta.pagination = { page, page_size, total, total_pages }`. `total_pages` = `ceil(total / page_size)`, bằng 0 khi rỗng |
+| Quét lớn | Export CSV dùng keyset và stream, không dùng `page` |
+
+## 1.4. DTO
+
+Request/response DTO là zod schema trong `lms/contracts/src/http/` (`@aiops-lms/contracts/http`), kiểu TypeScript suy ra bằng `z.infer`. Controller parse input bằng `parseInput(schema, …)` và trả DTO qua presenter có kiểu trả về `…Dto`; danh sách trả `Page<…Dto>` (`toPage`). Envelope được dựng một chỗ duy nhất (`ResponseEnvelopeInterceptor`, `AppExceptionFilter` trong `@aiops-lms/common/http`). Service gọi nhau đọc phản hồi bằng cùng schema, lấy dữ liệu từ `data`.
 
 ---
 
 # 2. Error contract
 
-Envelope giữ nguyên v1:
-
-```json
-{ "code": "…", "message": "…", "trace_id": "…", "timestamp": "…", "details": null }
-```
+Lỗi dùng envelope ở mục 1.2 với `success: false`; `error.code` lấy từ bảng dưới. Trước R-04b dùng body phẳng `{ code, message, trace_id, timestamp, details }` (đã bỏ).
 
 | HTTP | `code` | Khi dùng |
 | ---: | --- | --- |

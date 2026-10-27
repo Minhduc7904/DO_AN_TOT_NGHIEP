@@ -1,3 +1,4 @@
+import type { CreateStudentRequest } from '@aiops-lms/contracts';
 import { AppError } from '@aiops-lms/common/errors';
 import { HttpQueryClient } from '@aiops-lms/common/clients';
 import { Injectable } from '@nestjs/common';
@@ -25,10 +26,15 @@ export class StudentHttpClient implements StudentProfileClient {
   }
 
   async create(profile: StudentProfile): Promise<void> {
+    const body: CreateStudentRequest = {
+      id: profile.id,
+      email: profile.email,
+      full_name: profile.fullName,
+    };
     const response = await this.client.request({
       method: 'POST',
       path: '/internal/v1/students',
-      body: { id: profile.id, email: profile.email, full_name: profile.fullName },
+      body,
     });
     // Student từ chối (4xx) cũng khiến đăng ký thất bại: tài khoản không có hồ sơ là trạng thái lỗi.
     if (response.status !== 201) throw AppError.dependencyUnavailable('auth-student');

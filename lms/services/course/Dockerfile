@@ -11,6 +11,7 @@ WORKDIR /workspace
 FROM base AS build
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
+COPY contracts/package.json contracts/package.json
 COPY packages/observability/package.json packages/observability/package.json
 COPY services/course/package.json services/course/package.json
 COPY packages/common/package.json packages/common/package.json

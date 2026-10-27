@@ -14,7 +14,7 @@
           "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
             "pm.test('Dang nhap student thanh cong', () => pm.response.to.have.status(200));",
             "if (pm.response.code === 200) {",
-            "  const data = pm.response.json();",
+            "  const data = pm.response.json().data;",
             "  pm.environment.set('access_token', data.access_token);",
             "  pm.environment.set('refresh_token', data.refresh_token);",
             "  pm.environment.set('student_access_token', data.access_token);",
@@ -37,7 +37,7 @@
           "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
             "pm.test('Dang nhap instructor thanh cong', () => pm.response.to.have.status(200));",
             "if (pm.response.code === 200) {",
-            "  const data = pm.response.json();",
+            "  const data = pm.response.json().data;",
             "  pm.environment.set('access_token', data.access_token);",
             "  pm.environment.set('refresh_token', data.refresh_token);",
             "  pm.environment.set('instructor_access_token', data.access_token);",
@@ -60,7 +60,7 @@
           "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
             "pm.test('Refresh token thanh cong', () => pm.response.to.have.status(200));",
             "if (pm.response.code === 200) {",
-            "  const data = pm.response.json();",
+            "  const data = pm.response.json().data;",
             "  pm.environment.set('access_token', data.access_token);",
             "  pm.environment.set('refresh_token', data.refresh_token);",
             "  const role = pm.environment.get('principal_role');",

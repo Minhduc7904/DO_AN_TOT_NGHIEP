@@ -1,7 +1,7 @@
 import { type ArgumentsHost, Catch, type ExceptionFilter, HttpException } from '@nestjs/common';
 
 import { AppError } from '../errors/index.js';
-import { buildErrorEnvelope, codeForStatus } from './error-envelope.js';
+import { buildErrorEnvelope, codeForStatus } from './response-envelope.js';
 
 interface ResponseLike {
   status(code: number): { json(body: unknown): void };

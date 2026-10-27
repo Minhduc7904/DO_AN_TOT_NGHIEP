@@ -90,8 +90,8 @@ describe('Testbed MVP regression: hai workflow xuyên service, lỗi dependency 
       if (traceparent) call.set('traceparent', traceparent);
       const response = await call.send({ email, password: PASSWORD }).expect(200);
       return {
-        id: response.body.principal.id as string,
-        token: response.body.access_token as string,
+        id: response.body.data.principal.id as string,
+        token: response.body.data.access_token as string,
       };
     });
   }
