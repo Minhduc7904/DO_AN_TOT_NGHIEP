@@ -12,15 +12,7 @@ Outbound telemetry dùng identity hữu hạn `gateway-auth`, `gateway-course`, 
 
 ## Kiểm chứng W1
 
-Chạy `pnpm run test:w1` từ `lms/` để kiểm chứng workflow `Client → Gateway → Auth → JWT` với repository Auth trong bộ nhớ được reset trước mỗi test. Bộ test xác minh credential sai, JWT hết hạn/sai chữ ký, role không được phép, Auth timeout và chuỗi W3C gồm Gateway server span, Gateway client span và Auth server span.
-
-Kiểm chứng luồng persistence thực chạy riêng bằng `pnpm run test:w1:postgres`. Script này yêu cầu biến `W1_AUTH_DATABASE_URL`, xóa hai bảng Auth, chạy migration/seed canonical, khởi động Auth với `PostgresAuthRepository`, đăng nhập seed user qua Gateway và dùng JWT đó tại route bảo vệ. GitHub Actions cung cấp PostgreSQL sạch cho bước này. Khi chạy cục bộ, khởi động PostgreSQL tạm rồi đặt URL trước khi chạy script, ví dụ với PowerShell:
-
-```powershell
-docker run --rm --name aiops-w1-postgres -e POSTGRES_DB=auth_db -e POSTGRES_USER=w1_test -e POSTGRES_PASSWORD=w1_test_password -p 5432:5432 postgres:17.6-alpine
-$env:W1_AUTH_DATABASE_URL = 'postgresql://w1_test:w1_test_password@127.0.0.1:5432/auth_db'
-pnpm run test:w1:postgres
-```
+Các bộ e2e `test:w1`, `test:w1:postgres` dựa trên repository Auth v1 đã bị gỡ khi `auth` chuyển sang Prisma (R-04). Luồng `Client → Gateway → Auth → JWT` được kiểm bằng smoke observability trên Compose (đăng nhập qua Gateway bằng tài khoản seed) và sẽ có regression mới ở R-11. Test dependency của Gateway: `node services/gateway/test/telemetry/dependency.telemetry-test.mjs`.
 
 Gateway tạo client span cho mỗi lời gọi outbound và inject trace context từ client span đó; vì vậy Auth nhận cùng trace ID nhưng một parent span ID mới thay vì nhận nguyên `traceparent` của Client.
 
