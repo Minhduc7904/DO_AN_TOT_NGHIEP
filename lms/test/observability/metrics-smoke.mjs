@@ -194,7 +194,7 @@ const login = await json(`${gateway}/api/v1/auth/login`, {
   headers: { 'content-type': 'application/json' },
   body: JSON.stringify({ email: 'student@example.test', password: 'example-password' }),
 });
-const token = login.access_token;
+const token = login.data.access_token;
 async function missingCourse() {
   const dynamicId = `metrics-private-${randomBytes(8).toString('hex')}`;
   dynamicIds.push(dynamicId);

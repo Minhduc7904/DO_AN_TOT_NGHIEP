@@ -1,7 +1,9 @@
+import type { AccountDto } from '@aiops-lms/contracts';
+
 import type { Account } from '../../domain/account.js';
 
-/** JSON `snake_case` theo contract v2; không bao giờ trả mật khẩu băm. */
-export function presentAccount(account: Account): Record<string, unknown> {
+/** Domain → DTO `snake_case` theo contract v2; không bao giờ trả mật khẩu băm. */
+export function presentAccount(account: Account): AccountDto {
   return {
     id: account.id,
     email: account.email,

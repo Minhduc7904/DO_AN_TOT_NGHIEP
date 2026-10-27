@@ -1,7 +1,9 @@
+import type { StudentDto } from '@aiops-lms/contracts';
+
 import type { Student } from '../../domain/student.js';
 
-/** JSON `snake_case` theo contract v2. */
-export function presentStudent(student: Student): Record<string, unknown> {
+/** Domain → DTO `snake_case` theo contract v2. */
+export function presentStudent(student: Student): StudentDto {
   return {
     id: student.id,
     email: student.email,

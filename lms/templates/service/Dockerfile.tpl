@@ -18,11 +18,14 @@ RUN pnpm install --frozen-lockfile
 
 COPY tsconfig.base.json ./
 COPY packages/observability packages/observability
+COPY contracts contracts
 COPY packages/common packages/common
 COPY services/__NAME__ services/__NAME__
-RUN pnpm --filter @aiops-lms/observability build \
+RUN pnpm --filter @aiops-lms/contracts build \
+    && pnpm --filter @aiops-lms/observability build \
     && pnpm --filter @aiops-lms/common build \
     && pnpm --filter @aiops-lms/__NAME__ build
+RUN pnpm --filter @aiops-lms/contracts deploy --legacy --prod /production/contracts
 RUN pnpm --filter @aiops-lms/observability deploy --legacy --prod /production/observability
 RUN pnpm --filter @aiops-lms/common deploy --legacy --prod /production/common
 RUN pnpm --filter @aiops-lms/__NAME__ deploy --legacy --prod /production/__NAME__
@@ -39,6 +42,7 @@ RUN apk add --no-cache openssl
 COPY --from=build --chown=node:node /production/__NAME__/node_modules ./node_modules
 # `pnpm deploy --legacy` để lại symlink về /workspace; thay bằng bản đã deploy của từng package nội bộ.
 RUN rm -rf node_modules/@aiops-lms
+COPY --from=build --chown=node:node /production/contracts ./node_modules/@aiops-lms/contracts
 COPY --from=build --chown=node:node /production/observability ./node_modules/@aiops-lms/observability
 COPY --from=build --chown=node:node /production/common ./node_modules/@aiops-lms/common
 RUN rm -rf node_modules/@aiops-lms/common/node_modules/@aiops-lms

@@ -1,5 +1,22 @@
-import { CurrentPrincipal, parseInput, Public, Roles, z } from '@aiops-lms/common/http';
-import { ROLES, type Principal } from '@aiops-lms/common/ports';
+import {
+  createAccountRequestSchema,
+  listAccountsQuerySchema,
+  loginRequestSchema,
+  refreshRequestSchema,
+  registerRequestSchema,
+  type AccountDto,
+  type LoginResponseDto,
+  type TokenPairDto,
+} from '@aiops-lms/contracts';
+import {
+  CurrentPrincipal,
+  type Page,
+  parseInput,
+  Public,
+  Roles,
+  toPage,
+} from '@aiops-lms/common/http';
+import type { Principal } from '@aiops-lms/common/ports';
 import { Body, Controller, Get, HttpCode, Inject, Post, Query } from '@nestjs/common';
 
 import { CreateAccountUseCase } from '../../application/use-cases/accounts/create-account.use-case.js';
@@ -9,25 +26,6 @@ import { RegisterStudentUseCase } from '../../application/use-cases/accounts/reg
 import { LoginUseCase } from '../../application/use-cases/sessions/login.use-case.js';
 import { RefreshTokenUseCase } from '../../application/use-cases/sessions/refresh-token.use-case.js';
 import { presentAccount } from './account.presenter.js';
-
-const email = z.email().max(254);
-const password = z.string().min(8).max(128);
-const fullName = z.string().trim().min(1).max(200);
-
-const registerSchema = z.object({ email, password, full_name: fullName });
-const loginSchema = z.object({ email, password: z.string().min(1).max(128) });
-const refreshSchema = z.object({ refresh_token: z.string().trim().min(1).max(512) });
-const createAccountSchema = z.object({
-  email,
-  password,
-  full_name: fullName,
-  role: z.enum(['instructor', 'admin']),
-});
-const listSchema = z.object({
-  page: z.coerce.number().int().min(1).default(1),
-  page_size: z.coerce.number().int().min(1).max(100).default(20),
-  role: z.enum(ROLES).optional(),
-});
 
 @Controller('api/v1/auth')
 export class AuthController {
@@ -42,8 +40,8 @@ export class AuthController {
 
   @Public()
   @Post('register')
-  async register(@Body() body: unknown): Promise<Record<string, unknown>> {
-    const input = parseInput(registerSchema, body);
+  async register(@Body() body: unknown): Promise<AccountDto> {
+    const input = parseInput(registerRequestSchema, body);
     return presentAccount(
       await this.registerStudent.execute({
         email: input.email,
@@ -56,26 +54,26 @@ export class AuthController {
   @Public()
   @Post('login')
   @HttpCode(200)
-  login(@Body() body: unknown): ReturnType<LoginUseCase['execute']> {
-    return this.loginUseCase.execute(parseInput(loginSchema, body));
+  login(@Body() body: unknown): Promise<LoginResponseDto> {
+    return this.loginUseCase.execute(parseInput(loginRequestSchema, body));
   }
 
   @Public()
   @Post('refresh')
   @HttpCode(200)
-  refresh(@Body() body: unknown): ReturnType<RefreshTokenUseCase['execute']> {
-    return this.refreshToken.execute(parseInput(refreshSchema, body).refresh_token);
+  refresh(@Body() body: unknown): Promise<TokenPairDto> {
+    return this.refreshToken.execute(parseInput(refreshRequestSchema, body).refresh_token);
   }
 
   @Get('me')
-  async me(@CurrentPrincipal() principal: Principal): Promise<Record<string, unknown>> {
+  async me(@CurrentPrincipal() principal: Principal): Promise<AccountDto> {
     return presentAccount(await this.getCurrentAccount.execute(principal.id));
   }
 
   @Roles('admin')
   @Post('accounts')
-  async create(@Body() body: unknown): Promise<Record<string, unknown>> {
-    const input = parseInput(createAccountSchema, body);
+  async create(@Body() body: unknown): Promise<AccountDto> {
+    const input = parseInput(createAccountRequestSchema, body);
     return presentAccount(
       await this.createAccount.execute({
         email: input.email,
@@ -88,9 +86,13 @@ export class AuthController {
 
   @Roles('admin')
   @Get('accounts')
-  async list(@Query() query: unknown): Promise<Record<string, unknown>> {
-    const { page, page_size, role } = parseInput(listSchema, query);
-    const result = await this.listAccounts.execute(role ? { role } : {}, page, page_size);
-    return { items: result.items.map(presentAccount), page, page_size, total: result.total };
+  async list(@Query() query: unknown): Promise<Page<AccountDto>> {
+    const { role, ...pagination } = parseInput(listAccountsQuerySchema, query);
+    const result = await this.listAccounts.execute(
+      role ? { role } : {},
+      pagination.page,
+      pagination.page_size,
+    );
+    return toPage(result, pagination, presentAccount);
   }
 }

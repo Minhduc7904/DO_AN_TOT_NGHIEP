@@ -178,7 +178,12 @@ const login = await json(`${gateway}/api/v1/auth/login`, {
   headers: { 'content-type': 'application/json' },
   body: JSON.stringify({ email: 'student@example.test', password: 'example-password' }),
 });
-const sensitive = [login.access_token, login.refresh_token, 'example-password', '@example.test'];
+const sensitive = [
+  login.data.access_token,
+  login.data.refresh_token,
+  'example-password',
+  '@example.test',
+];
 const labels = await poll('Loki label bounded và log không lộ dữ liệu nhạy cảm', async () => {
   const url = new URL(`${loki}/loki/api/v1/labels`);
   url.searchParams.set('start', String(startedAt));

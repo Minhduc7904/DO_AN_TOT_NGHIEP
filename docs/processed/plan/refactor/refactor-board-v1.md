@@ -15,7 +15,8 @@
 | R-01 | ADR, `service-catalogue-v2`, `http-and-event-contracts-v2`, `data-ownership-v2`; chốt `service.name` | 1–2 | — | Hoàn thành (27/10/2026; Đức xác nhận qua chỉ thị merge trực tiếp, không có review của Bách theo quyết định refactor một người) |
 | R-02 | Tách `aiops-platform/observability/`, compose riêng, network external `aiops-net` | 1–2 | — | Hoàn thành (27/10/2026; PR #52) |
 | R-03 | Nền tảng: `packages/common`, skeleton service, eslint boundaries, compose LMS (Postgres, RabbitMQ, MinIO, Mailpit), Prisma | 2–3 | R-01 | Hoàn thành (27/10/2026; PR #53, bỏ qua CI theo chỉ thị của Đức, bằng chứng chạy cục bộ bên dưới) |
-| R-04 | `auth` (3 role), `student`, `admin`, `gateway` | 3–5 | R-03 | Đang thực hiện (`student` xong ở R-03; `auth` xong trên nhánh `refactor/week-13/task-04-auth`; còn `admin`, `gateway`) |
+| R-04 | `auth` (3 role), `student`, `admin`, `gateway` | 3–5 | R-03 | Đang thực hiện (`student` xong ở R-03, `auth` xong ở PR #54; còn `admin`, `gateway`, và `gateway` phải sinh lỗi đúng envelope mới) |
+| R-04b | DTO dùng chung trong `contracts`, envelope phản hồi thống nhất (success và lỗi), phân trang nhất quán | 3–5 | R-04 (auth) | Hoàn thành trên nhánh `refactor/week-13/task-04b-api-envelope-dto` (chờ merge) |
 | R-05 | `course`: course/lesson/quiz, enrollment, progress, quiz attempt, export CSV | 4–8 | R-04 | Chưa bắt đầu |
 | R-06 | `media` + worker: upload trực tiếp MinIO, thumbnail, usage, job | 5–8 | R-03 | Chưa bắt đầu |
 | R-07 | `notification` + worker: single, batch, email thật, inbox REST | 6–9 | R-03, R-04 | Chưa bắt đầu |
@@ -69,3 +70,13 @@ Stack 16 container dựng từ `docker-compose/compose.full.yaml`: 51 span từ 
 | Generator | `pnpm new-service <name> --port <port>` sinh service build, lint và test được (kiểm bằng service thử, đã xóa) |
 
 Bỏ qua theo chỉ thị: CI GitHub Actions chưa đối chiếu cho nhánh này. Image MinIO chính thức không còn trên Docker Hub/Quay, nên compose dùng `bitnamilegacy/minio` ghim phiên bản (xem ghi chú trong `compose.yaml`).
+
+### R-04b (chạy cục bộ ngày 27/10/2026)
+
+| Hạng mục | Kết quả |
+| --- | --- |
+| Contract | `lms/contracts/src/http/`: `common` (id, role, phân trang, envelope), `auth`, `student`; kiểu suy ra từ zod |
+| Envelope | Success và lỗi cùng bốn khóa `success/data/error/meta`; `ResponseEnvelopeInterceptor` + `AppExceptionFilter` dựng ở một chỗ; `@RawResponse()` cho stream |
+| Phân trang | Đầu vào `page`/`page_size` (mặc định 1/20, tối đa 100), đầu ra `meta.pagination { page, page_size, total, total_pages }`; tham số sai trả 400 |
+| Test | common 21 test (gồm envelope và Page); e2e auth 6 test và e2e student 4 test với PostgreSQL thật, mọi response parse qua schema của contract; `compose-reset-smoke` đạt với đăng nhập đọc `data.access_token` |
+| Hệ quả | Gateway v1 và course/enrollment/... v1 vẫn trả body cũ cho tới khi thay ở R-04…R-08; smoke, CI, Postman, regression đã đổi đọc `data.*` cho phần đăng nhập |

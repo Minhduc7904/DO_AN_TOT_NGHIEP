@@ -2,6 +2,14 @@ import { createServer, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 
 import { AppExceptionFilter, correlationIdMiddleware } from '@aiops-lms/common/http';
+import {
+  accountDtoSchema,
+  apiErrorSchema,
+  apiListResponseSchema,
+  apiResponseSchema,
+  loginResponseDtoSchema,
+  tokenPairDtoSchema,
+} from '@aiops-lms/contracts';
 import type { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
@@ -66,9 +74,13 @@ describe('auth service (PostgreSQL thật, student giả)', () => {
       .post('/api/v1/auth/register')
       .send({ email, password: 'student-password', full_name: 'Học viên' })
       .expect(201);
-    expect(registered.body).toMatchObject({ email, role: 'student', status: 'ACTIVE' });
-    expect(registered.body).not.toHaveProperty('password_hash');
-    expect(createdProfiles.at(-1)).toMatchObject({ id: registered.body.id, email });
+    expect(apiResponseSchema(accountDtoSchema).parse(registered.body)).toMatchObject({
+      success: true,
+      data: { email, role: 'student', status: 'ACTIVE' },
+    });
+    const studentId = registered.body.data.id as string;
+    expect(registered.body.data).not.toHaveProperty('password_hash');
+    expect(createdProfiles.at(-1)).toMatchObject({ id: studentId, email });
 
     await request(app.getHttpServer())
       .post('/api/v1/auth/register')
@@ -79,23 +91,26 @@ describe('auth service (PostgreSQL thật, student giả)', () => {
       .post('/api/v1/auth/login')
       .send({ email, password: 'student-password' })
       .expect(200);
-    expect(login.body.principal).toEqual({ id: registered.body.id, role: 'student' });
+    const session = apiResponseSchema(loginResponseDtoSchema).parse(login.body);
+    expect(session.data?.principal).toEqual({ id: studentId, role: 'student' });
+    const refreshToken = login.body.data.refresh_token as string;
 
     const me = await request(app.getHttpServer())
       .get('/api/v1/auth/me')
-      .set('x-principal-id', registered.body.id)
+      .set('x-principal-id', studentId)
       .set('x-principal-role', 'student')
       .expect(200);
-    expect(me.body.email).toBe(email);
+    expect(me.body.data.email).toBe(email);
 
     const refreshed = await request(app.getHttpServer())
       .post('/api/v1/auth/refresh')
-      .send({ refresh_token: login.body.refresh_token })
+      .send({ refresh_token: refreshToken })
       .expect(200);
-    expect(refreshed.body.refresh_token).not.toBe(login.body.refresh_token);
+    expect(apiResponseSchema(tokenPairDtoSchema).safeParse(refreshed.body).success).toBe(true);
+    expect(refreshed.body.data.refresh_token).not.toBe(refreshToken);
     await request(app.getHttpServer())
       .post('/api/v1/auth/refresh')
-      .send({ refresh_token: login.body.refresh_token })
+      .send({ refresh_token: refreshToken })
       .expect(401);
   });
 
@@ -112,7 +127,7 @@ describe('auth service (PostgreSQL thật, student giả)', () => {
       [1, 2, 3].map(() =>
         request(app.getHttpServer())
           .post('/api/v1/auth/refresh')
-          .send({ refresh_token: login.body.refresh_token }),
+          .send({ refresh_token: login.body.data.refresh_token }),
       ),
     );
 
@@ -124,7 +139,7 @@ describe('auth service (PostgreSQL thật, student giả)', () => {
       .post('/api/v1/auth/login')
       .send({ email: 'admin@example.test', password: ADMIN_PASSWORD })
       .expect(200);
-    expect(admin.body.principal).toEqual({ id: ADMIN_ID, role: 'admin' });
+    expect(admin.body.data.principal).toEqual({ id: ADMIN_ID, role: 'admin' });
     const asAdmin = { 'x-principal-id': ADMIN_ID, 'x-principal-role': 'admin' };
 
     const created = await request(app.getHttpServer())
@@ -137,19 +152,52 @@ describe('auth service (PostgreSQL thật, student giả)', () => {
         role: 'instructor',
       })
       .expect(201);
-    expect(created.body.role).toBe('instructor');
+    expect(created.body.data.role).toBe('instructor');
 
     const listed = await request(app.getHttpServer())
       .get('/api/v1/auth/accounts?role=instructor&page_size=100')
       .set(asAdmin)
       .expect(200);
-    expect(listed.body.items.map((item: { id: string }) => item.id)).toContain(created.body.id);
+    const list = apiListResponseSchema(accountDtoSchema).parse(listed.body);
+    expect(list.meta.pagination).toMatchObject({ page: 1, page_size: 100 });
+    expect((list.data ?? []).map((item) => item.id)).toContain(created.body.data.id);
+    expect(list.data?.every((item) => item.role === 'instructor')).toBe(true);
 
     await request(app.getHttpServer())
       .get('/api/v1/auth/accounts')
-      .set({ 'x-principal-id': created.body.id, 'x-principal-role': 'student' })
+      .set({ 'x-principal-id': created.body.data.id, 'x-principal-role': 'student' })
       .expect(403);
     await request(app.getHttpServer()).get('/api/v1/auth/accounts').expect(401);
+  });
+
+  it('phân trang nhất quán: mặc định, tổng trang và từ chối tham số sai', async () => {
+    const asAdmin = { 'x-principal-id': ADMIN_ID, 'x-principal-role': 'admin' };
+
+    const defaults = apiListResponseSchema(accountDtoSchema).parse(
+      (await request(app.getHttpServer()).get('/api/v1/auth/accounts').set(asAdmin).expect(200))
+        .body,
+    );
+    expect(defaults.meta.pagination).toMatchObject({ page: 1, page_size: 20 });
+
+    const single = apiListResponseSchema(accountDtoSchema).parse(
+      (
+        await request(app.getHttpServer())
+          .get('/api/v1/auth/accounts?page=2&page_size=1')
+          .set(asAdmin)
+          .expect(200)
+      ).body,
+    );
+    expect(single.data).toHaveLength(1);
+    expect(single.meta.pagination).toMatchObject({ page: 2, page_size: 1 });
+    expect(single.meta.pagination?.total_pages).toBe(single.meta.pagination?.total);
+
+    for (const query of ['page=0', 'page_size=101', 'page_size=0', 'page=abc']) {
+      const rejected = await request(app.getHttpServer())
+        .get(`/api/v1/auth/accounts?${query}`)
+        .set(asAdmin)
+        .expect(400);
+      expect(apiErrorSchema.parse(rejected.body).error.code).toBe('VALIDATION_ERROR');
+    }
   });
 
   it('student lỗi thì đăng ký thất bại 503 và email dùng lại được', async () => {
@@ -159,7 +207,7 @@ describe('auth service (PostgreSQL thật, student giả)', () => {
       .post('/api/v1/auth/register')
       .send({ email, password: 'student-password', full_name: 'Lỗi' })
       .expect(503);
-    expect(failed.body.code).toBe('DEPENDENCY_UNAVAILABLE');
+    expect(apiErrorSchema.parse(failed.body).error.code).toBe('DEPENDENCY_UNAVAILABLE');
 
     studentMode = 'ok';
     // Breaker có thể đang mở sau lỗi trên; bỏ qua nếu 503 vì short-circuit, chỉ kiểm tra email không bị giữ.
@@ -174,17 +222,16 @@ describe('auth service (PostgreSQL thật, student giả)', () => {
       .post('/api/v1/auth/register')
       .send({ email: 'khong-phai-email', password: 'ngan', full_name: '' })
       .expect(400);
-    expect(invalid.body.code).toBe('VALIDATION_ERROR');
-    expect(invalid.body.details.map((issue: { path: string }) => issue.path).sort()).toEqual([
-      'email',
-      'full_name',
-      'password',
-    ]);
+    const invalidBody = apiErrorSchema.parse(invalid.body);
+    expect(invalidBody.error.code).toBe('VALIDATION_ERROR');
+    expect(
+      (invalidBody.error.details as { path: string }[]).map((issue) => issue.path).sort(),
+    ).toEqual(['email', 'full_name', 'password']);
 
     const wrong = await request(app.getHttpServer())
       .post('/api/v1/auth/login')
       .send({ email: 'admin@example.test', password: 'sai-mat-khau' })
       .expect(401);
-    expect(wrong.body.message).toBe('Thông tin đăng nhập không hợp lệ');
+    expect(wrong.body.error.message).toBe('Thông tin đăng nhập không hợp lệ');
   });
 });

@@ -36,7 +36,8 @@
     "test:observability:logs": "node test/observability/logs-smoke.mjs",
     "test:observability:acceptance": "node test/observability/acceptance-smoke.mjs",
     "new-service": "node scripts/new-service.mjs",
-    "test:auth:e2e": "pnpm --filter @aiops-lms/auth build && node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config services/auth/jest-e2e.config.ts"
+    "test:auth:e2e": "pnpm --filter @aiops-lms/auth build && node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config services/auth/jest-e2e.config.ts",
+    "test:student:e2e": "pnpm --filter @aiops-lms/student build && node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config services/student/jest-e2e.config.ts"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",

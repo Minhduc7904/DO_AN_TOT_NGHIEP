@@ -6,3 +6,4 @@ export {
   type GradeCompletedEvent,
   type GradeCompletedRabbitMqHeaders,
 } from './events/grade-completed.js';
+export * from './http/index.js';

@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@aiops-lms/common": "workspace:*",
+    "@aiops-lms/contracts": "workspace:*",
     "@aiops-lms/observability": "workspace:*",
     "@nestjs/common": "12.0.1",
     "@nestjs/config": "12.0.0",

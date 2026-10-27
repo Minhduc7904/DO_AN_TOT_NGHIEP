@@ -123,14 +123,19 @@ async function traceSpans(traceId) {
   );
 }
 
-const student = await request(gateway, '/api/v1/auth/login', {
-  method: 'POST',
-  body: { email: 'student@example.test', password: 'example-password' },
-});
-const instructor = await request(gateway, '/api/v1/auth/login', {
-  method: 'POST',
-  body: { email: 'instructor@example.test', password: 'example-password' },
-});
+// Auth v2 trả envelope `{ success, data, error, meta }`; token nằm trong `data`.
+const student = (
+  await request(gateway, '/api/v1/auth/login', {
+    method: 'POST',
+    body: { email: 'student@example.test', password: 'example-password' },
+  })
+).data;
+const instructor = (
+  await request(gateway, '/api/v1/auth/login', {
+    method: 'POST',
+    body: { email: 'instructor@example.test', password: 'example-password' },
+  })
+).data;
 sensitiveValues.push(student.access_token, instructor.access_token);
 const course = await request(gateway, '/api/v1/courses', {
   method: 'POST',
