@@ -9,6 +9,7 @@ import type { RefreshTokenRepository } from '../../src/application/ports/refresh
 import type {
   StudentProfile,
   StudentProfileClient,
+  StudentProfileStatus,
 } from '../../src/application/ports/student-profile-client.js';
 
 export class InMemoryAccounts implements AccountRepository {
@@ -87,12 +88,19 @@ export class InMemoryRefreshTokens implements RefreshTokenRepository {
 
 export class RecordingStudentClient implements StudentProfileClient {
   readonly created: StudentProfile[] = [];
+  readonly statuses = new Map<string, StudentProfileStatus>();
   failure: Error | undefined;
 
   create(profile: StudentProfile): Promise<void> {
     if (this.failure) return Promise.reject(this.failure);
     this.created.push(profile);
+    this.statuses.set(profile.id, 'ACTIVE');
     return Promise.resolve();
+  }
+
+  findStatus(id: string): Promise<StudentProfileStatus | null> {
+    if (this.failure) return Promise.reject(this.failure);
+    return Promise.resolve(this.statuses.get(id) ?? null);
   }
 }
 

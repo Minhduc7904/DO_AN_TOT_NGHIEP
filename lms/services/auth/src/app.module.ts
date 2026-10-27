@@ -69,8 +69,14 @@ import { validateEnvironment } from './config/env.schema.js';
         accounts: AccountRepository,
         refreshTokens: RefreshTokenRepository,
         settings: TokenSettings,
-      ) => new LoginUseCase(accounts, refreshTokens, settings),
-      inject: [ACCOUNT_REPOSITORY, REFRESH_TOKEN_REPOSITORY, TOKEN_SETTINGS],
+        students: StudentProfileClient,
+      ) => new LoginUseCase(accounts, refreshTokens, settings, students),
+      inject: [
+        ACCOUNT_REPOSITORY,
+        REFRESH_TOKEN_REPOSITORY,
+        TOKEN_SETTINGS,
+        STUDENT_PROFILE_CLIENT,
+      ],
     },
     {
       provide: RefreshTokenUseCase,
@@ -78,16 +84,17 @@ import { validateEnvironment } from './config/env.schema.js';
         new RefreshTokenUseCase(refreshTokens, settings),
       inject: [REFRESH_TOKEN_REPOSITORY, TOKEN_SETTINGS],
     },
-    ...[
-      CreateAccountUseCase,
-      GetCurrentAccountUseCase,
-      ListAccountsUseCase,
-      BootstrapAccountsUseCase,
-    ].map((useCase) => ({
+    ...[CreateAccountUseCase, GetCurrentAccountUseCase, ListAccountsUseCase].map((useCase) => ({
       provide: useCase,
       useFactory: (accounts: AccountRepository) => new useCase(accounts),
       inject: [ACCOUNT_REPOSITORY],
     })),
+    {
+      provide: BootstrapAccountsUseCase,
+      useFactory: (accounts: AccountRepository, students: StudentProfileClient) =>
+        new BootstrapAccountsUseCase(accounts, students),
+      inject: [ACCOUNT_REPOSITORY, STUDENT_PROFILE_CLIENT],
+    },
   ],
 })
 export class AppModule {}

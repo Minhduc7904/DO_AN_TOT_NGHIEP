@@ -44,6 +44,22 @@ describe('student service (PostgreSQL thật)', () => {
     return id;
   }
 
+  it('tra cứu nội bộ theo id trả hồ sơ, id chưa có hoặc sai định dạng thì lỗi envelope', async () => {
+    const id = await createStudent(900);
+
+    const found = await request(app.getHttpServer()).get(`/internal/v1/students/${id}`).expect(200);
+    expect(apiResponseSchema(studentDtoSchema).parse(found.body).data).toMatchObject({
+      id,
+      status: 'ACTIVE',
+    });
+
+    const missing = await request(app.getHttpServer())
+      .get(`/internal/v1/students/${randomUUID()}`)
+      .expect(404);
+    expect(apiErrorSchema.parse(missing.body).error.code).toBe('NOT_FOUND');
+    await request(app.getHttpServer()).get('/internal/v1/students/khong-phai-uuid').expect(400);
+  });
+
   it('tạo nội bộ trả envelope success, trùng thì 409 envelope lỗi', async () => {
     const id = randomUUID();
     const body = { id, email: `dup-${unique}@example.test`, full_name: 'Học viên' };

@@ -4,20 +4,20 @@ Auth sở hữu `auth_db` (Prisma + PostgreSQL), đăng ký student, đăng nh�
 
 ## Route
 
-| Method | Path                    | Role  | Use case                                                                                                                                      |
-| ------ | ----------------------- | :---: | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| POST   | `/api/v1/auth/register` |   –   | `register-student`: tạo tài khoản rồi gọi `student` (`POST /internal/v1/students`) tạo hồ sơ cùng `id`; student lỗi thì xóa tài khoản vừa tạo |
-| POST   | `/api/v1/auth/login`    |   –   | `login`: trả `access_token`, `refresh_token`, `principal`                                                                                     |
-| POST   | `/api/v1/auth/refresh`  |   –   | `refresh-token`: xoay vòng, token cũ dùng một lần (xóa-và-đọc trong một câu lệnh)                                                             |
-| GET    | `/api/v1/auth/me`       |   *   | `get-current-account`                                                                                                                         |
-| POST   | `/api/v1/auth/accounts` | admin | `create-account` (instructor hoặc admin)                                                                                                      |
-| GET    | `/api/v1/auth/accounts` | admin | `list-accounts` (lọc `role`, phân trang)                                                                                                      |
+| Method | Path                    | Role  | Use case                                                                                                                                                                                                                               |
+| ------ | ----------------------- | :---: | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| POST   | `/api/v1/auth/register` |   –   | `register-student`: tạo tài khoản rồi gọi `student` (`POST /internal/v1/students`) tạo hồ sơ cùng `id`; student lỗi thì xóa tài khoản vừa tạo                                                                                          |
+| POST   | `/api/v1/auth/login`    |   –   | `login`: trả `access_token`, `refresh_token`, `principal`; với role `student` gọi `student` (`GET /internal/v1/students/{id}`) và chỉ cấp token khi hồ sơ `ACTIVE` (không có hồ sơ hoặc `INACTIVE`/`BLOCKED` → 403, student lỗi → 503) |
+| POST   | `/api/v1/auth/refresh`  |   –   | `refresh-token`: xoay vòng, token cũ dùng một lần (xóa-và-đọc trong một câu lệnh)                                                                                                                                                      |
+| GET    | `/api/v1/auth/me`       |   *   | `get-current-account`                                                                                                                                                                                                                  |
+| POST   | `/api/v1/auth/accounts` | admin | `create-account` (instructor hoặc admin)                                                                                                                                                                                               |
+| GET    | `/api/v1/auth/accounts` | admin | `list-accounts` (lọc `role`, phân trang)                                                                                                                                                                                               |
 
 Use case nằm ở `src/application/use-cases/{accounts,sessions}/`, mỗi use case một class. Mật khẩu băm scrypt; đăng nhập sai email, sai mật khẩu hay tài khoản bị khóa đều trả cùng một lỗi 401 và luôn thực hiện một lần băm để thời gian phản hồi không lộ email.
 
 ## Seed khi khởi động
 
-`BootstrapAccountsUseCase` tạo tài khoản cố định nếu email chưa tồn tại, đọc từ `AUTH_BOOTSTRAP_{ADMIN,INSTRUCTOR,STUDENT}_{ID,EMAIL,PASSWORD}`; bỏ trống email hoặc mật khẩu thì bỏ qua tài khoản đó. `created_at` cố định `2026-08-27T09:00:00Z` để fingerprint reset/seed ổn định. Compose đặt mặc định `admin@example.test`, `instructor@example.test`, `student@example.test` với mật khẩu `example-password` (chỉ dùng cục bộ). `AUTH_BOOTSTRAP_ADMIN_ID` phải trùng `ADMIN_IDS` của service `admin`. Hồ sơ student của tài khoản student seed không được tạo ở `student` (R-10 seeder xử lý).
+`BootstrapAccountsUseCase` tạo tài khoản cố định nếu email chưa tồn tại, đọc từ `AUTH_BOOTSTRAP_{ADMIN,INSTRUCTOR,STUDENT}_{ID,EMAIL,PASSWORD}`; bỏ trống email hoặc mật khẩu thì bỏ qua tài khoản đó. `created_at` cố định `2026-08-27T09:00:00Z` để fingerprint reset/seed ổn định. Compose đặt mặc định `admin@example.test`, `instructor@example.test`, `student@example.test` với mật khẩu `example-password` (chỉ dùng cục bộ). `AUTH_BOOTSTRAP_ADMIN_ID` phải trùng `ADMIN_IDS` của service `admin`. Tài khoản student seed được bảo đảm có hồ sơ ở `student` (gọi `GET` rồi `POST /internal/v1/students` khi thiếu) vì đăng nhập student yêu cầu hồ sơ; auth khởi động sau `student` healthy trong compose.
 
 ## Chạy và kiểm tra
 

@@ -4,6 +4,7 @@ import { hashPassword, verifyPassword } from '../../../domain/password.js';
 import type { Account } from '../../../domain/account.js';
 import type { AccountRepository } from '../../ports/account-repository.js';
 import type { RefreshTokenRepository } from '../../ports/refresh-token-repository.js';
+import type { StudentProfileClient } from '../../ports/student-profile-client.js';
 import type { TokenSettings } from '../../token-settings.js';
 import { issueTokenPair, type TokenPair } from './issue-token-pair.js';
 
@@ -21,6 +22,7 @@ export class LoginUseCase {
     private readonly accounts: AccountRepository,
     private readonly refreshTokens: RefreshTokenRepository,
     private readonly settings: TokenSettings,
+    private readonly students: StudentProfileClient,
   ) {}
 
   async execute(input: { email: string; password: string }): Promise<LoginResult> {
@@ -30,6 +32,15 @@ export class LoginUseCase {
 
     if (!account || !matches || account.status !== 'ACTIVE') {
       throw AppError.unauthorized(INVALID_CREDENTIALS);
+    }
+
+    // Student chỉ đăng nhập được khi hồ sơ ở `student` còn tồn tại và đang hoạt động; student lỗi
+    // thì từ chối đăng nhập (503), không cấp token khi chưa kiểm tra được.
+    if (account.role === 'student') {
+      const profileStatus = await this.students.findStatus(account.id);
+      if (profileStatus !== 'ACTIVE') {
+        throw AppError.forbidden('Hồ sơ student không tồn tại hoặc không hoạt động');
+      }
     }
 
     const pair = await issueTokenPair(account, this.settings, this.refreshTokens);

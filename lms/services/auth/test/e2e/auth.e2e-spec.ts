@@ -26,6 +26,8 @@ describe('auth service (PostgreSQL thật, student giả)', () => {
   let studentStub: Server;
   let studentMode: 'ok' | 'fail' = 'ok';
   const createdProfiles: Record<string, unknown>[] = [];
+  // Hồ sơ student giả theo id → trạng thái; POST thêm ACTIVE, GET trả envelope hoặc 404.
+  const profiles = new Map<string, string>();
 
   beforeAll(async () => {
     if (!process.env.AUTH_DATABASE_URL) {
@@ -36,8 +38,32 @@ describe('auth service (PostgreSQL thật, student giả)', () => {
       req.on('data', (chunk: Buffer) => chunks.push(chunk));
       req.on('end', () => {
         if (studentMode === 'fail') return res.writeHead(500).end('{}');
-        createdProfiles.push(JSON.parse(Buffer.concat(chunks).toString('utf8')));
-        res.writeHead(201, { 'content-type': 'application/json' }).end('{}');
+        const json = { 'content-type': 'application/json' };
+        if (req.method === 'GET') {
+          const id = req.url?.split('/').at(-1) ?? '';
+          const status = profiles.get(id);
+          if (!status) return res.writeHead(404, json).end('{}');
+          const now = new Date().toISOString();
+          return res.writeHead(200, json).end(
+            JSON.stringify({
+              success: true,
+              data: {
+                id,
+                email: 'stub@example.test',
+                full_name: 'Stub',
+                status,
+                created_at: now,
+                updated_at: now,
+              },
+              error: null,
+              meta: { trace_id: 'stub', timestamp: now, pagination: null },
+            }),
+          );
+        }
+        const profile = JSON.parse(Buffer.concat(chunks).toString('utf8'));
+        createdProfiles.push(profile);
+        profiles.set(profile.id, 'ACTIVE');
+        res.writeHead(201, json).end('{}');
       });
     });
     await new Promise<void>((resolve) => studentStub.listen(0, '127.0.0.1', resolve));
@@ -198,6 +224,31 @@ describe('auth service (PostgreSQL thật, student giả)', () => {
         .expect(400);
       expect(apiErrorSchema.parse(rejected.body).error.code).toBe('VALIDATION_ERROR');
     }
+  });
+
+  it('student mất hồ sơ hoặc bị chặn thì không đăng nhập được, student lỗi thì 503', async () => {
+    const email = `blocked-${unique}@example.test`;
+    const registered = await request(app.getHttpServer())
+      .post('/api/v1/auth/register')
+      .send({ email, password: 'student-password', full_name: 'Bị chặn' })
+      .expect(201);
+    const studentId = registered.body.data.id as string;
+    const login = (): request.Test =>
+      request(app.getHttpServer()).post('/api/v1/auth/login').send({
+        email,
+        password: 'student-password',
+      });
+
+    profiles.set(studentId, 'BLOCKED');
+    const blocked = await login().expect(403);
+    expect(apiErrorSchema.parse(blocked.body).error.code).toBe('FORBIDDEN');
+    expect(blocked.body.data).toBeNull();
+
+    profiles.delete(studentId);
+    await login().expect(403);
+
+    profiles.set(studentId, 'ACTIVE');
+    await login().expect(200);
   });
 
   it('student lỗi thì đăng ký thất bại 503 và email dùng lại được', async () => {

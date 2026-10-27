@@ -43,6 +43,13 @@ export class StudentController {
     );
   }
 
+  /** Nội bộ (auth → student): kiểm tra hồ sơ trước khi cấp token; 404 khi chưa có hồ sơ. */
+  @Public()
+  @Get('internal/v1/students/:student_id')
+  async getInternal(@Param('student_id') studentId: string): Promise<StudentDto> {
+    return presentStudent(await this.getStudent.execute(parseInput(idSchema, studentId)));
+  }
+
   @Roles('student')
   @Get('api/v1/students/me')
   async me(@CurrentPrincipal() principal: Principal): Promise<StudentDto> {

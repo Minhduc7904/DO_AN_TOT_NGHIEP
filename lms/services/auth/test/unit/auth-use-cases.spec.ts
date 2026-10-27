@@ -72,18 +72,22 @@ describe('LoginUseCase và RefreshTokenUseCase', () => {
     login: LoginUseCase;
     refresh: RefreshTokenUseCase;
     accountId: string;
+    students: RecordingStudentClient;
   }> {
     const accounts = new InMemoryAccounts();
     const refreshTokens = new InMemoryRefreshTokens(accounts);
-    const account = await new RegisterStudentUseCase(
-      accounts,
-      new RecordingStudentClient(),
-    ).execute({ email: 'a@b.co', password: 'password-1', fullName: 'A' });
+    const students = new RecordingStudentClient();
+    const account = await new RegisterStudentUseCase(accounts, students).execute({
+      email: 'a@b.co',
+      password: 'password-1',
+      fullName: 'A',
+    });
     return {
       accounts,
       refreshTokens,
+      students,
       accountId: account.id,
-      login: new LoginUseCase(accounts, refreshTokens, TOKEN_SETTINGS),
+      login: new LoginUseCase(accounts, refreshTokens, TOKEN_SETTINGS, students),
       refresh: new RefreshTokenUseCase(refreshTokens, TOKEN_SETTINGS),
     };
   }
@@ -120,6 +124,50 @@ describe('LoginUseCase và RefreshTokenUseCase', () => {
     await expect(login.execute({ email: 'a@b.co', password: 'password-1' })).rejects.toMatchObject({
       status: 401,
     });
+  });
+
+  it('student chưa có hồ sơ hoặc hồ sơ không hoạt động thì bị từ chối, không cấp token', async () => {
+    const { login, students, accountId } = await setup();
+
+    students.statuses.delete(accountId);
+    await expect(login.execute({ email: 'a@b.co', password: 'password-1' })).rejects.toMatchObject({
+      status: 403,
+    });
+
+    for (const status of ['INACTIVE', 'BLOCKED'] as const) {
+      students.statuses.set(accountId, status);
+      await expect(
+        login.execute({ email: 'a@b.co', password: 'password-1' }),
+      ).rejects.toMatchObject({ status: 403 });
+    }
+  });
+
+  it('student lỗi thì đăng nhập thất bại 503 thay vì cấp token chưa kiểm tra', async () => {
+    const { login, students } = await setup();
+    students.failure = AppError.dependencyUnavailable('auth-student');
+
+    await expect(login.execute({ email: 'a@b.co', password: 'password-1' })).rejects.toMatchObject({
+      status: 503,
+    });
+  });
+
+  it('sai mật khẩu không gọi student; instructor và admin đăng nhập không cần hồ sơ student', async () => {
+    const { login, accounts, students } = await setup();
+    const create = new CreateAccountUseCase(accounts);
+    await create.execute({
+      email: 'i@b.co',
+      password: 'password-1',
+      fullName: 'I',
+      role: 'instructor',
+    });
+    students.failure = AppError.dependencyUnavailable('auth-student');
+
+    await expect(login.execute({ email: 'i@b.co', password: 'password-1' })).resolves.toMatchObject(
+      { principal: { role: 'instructor' } },
+    );
+    await expect(
+      login.execute({ email: 'a@b.co', password: 'wrong-password' }),
+    ).rejects.toMatchObject({ status: 401 });
   });
 
   it('refresh xoay vòng token: token cũ dùng một lần', async () => {
@@ -181,7 +229,8 @@ describe('quản lý tài khoản', () => {
 
   it('bootstrap idempotent: lần hai không tạo lại và không ghi đè', async () => {
     const accounts = new InMemoryAccounts();
-    const bootstrap = new BootstrapAccountsUseCase(accounts);
+    const students = new RecordingStudentClient();
+    const bootstrap = new BootstrapAccountsUseCase(accounts, students);
     const seeds = [
       {
         id: '00000000-0000-4000-8000-000000000001',
@@ -197,5 +246,30 @@ describe('quản lý tài khoản', () => {
     await expect(bootstrap.execute(seeds)).resolves.toEqual({ created: [] });
     expect(accounts.rows.get(seeds[0]?.id ?? '')?.passwordHash).toBe(hash);
     expect(accounts.rows.size).toBe(1);
+    expect(students.created).toHaveLength(0);
+  });
+
+  it('bootstrap bảo đảm student seed có hồ sơ, kể cả khi tài khoản đã tồn tại từ trước', async () => {
+    const accounts = new InMemoryAccounts();
+    const students = new RecordingStudentClient();
+    const bootstrap = new BootstrapAccountsUseCase(accounts, students);
+    const seed = {
+      id: '11111111-1111-4111-8111-111111111111',
+      email: 'Student@Example.test',
+      password: 'student-password',
+      fullName: 'Học viên mẫu',
+      role: 'student' as const,
+    };
+
+    await bootstrap.execute([seed]);
+    expect(students.created).toEqual([
+      { id: seed.id, email: 'student@example.test', fullName: 'Học viên mẫu' },
+    ]);
+
+    students.statuses.clear();
+    await bootstrap.execute([seed]);
+    expect(students.created).toHaveLength(2);
+    await bootstrap.execute([seed]);
+    expect(students.created).toHaveLength(2);
   });
 });

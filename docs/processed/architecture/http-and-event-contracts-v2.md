@@ -276,7 +276,7 @@ Task key hợp lệ: `document-extraction`, `lesson-synthesis`, `quiz-authoring`
 | --- | --- | --- | --- | --- |
 | student | POST | `/internal/v1/students` | auth | Tạo hồ sơ student cùng `id` với tài khoản |
 | student | GET | `/internal/v1/students` | notification-worker | Danh sách `ACTIVE` theo trang (`page_size` ≤ 100) để snapshot recipient |
-| student | GET | `/internal/v1/students/{student_id}` | media | Kiểm tra actor |
+| student | GET | `/internal/v1/students/{student_id}` | auth, media | auth: kiểm tra hồ sơ tồn tại và `ACTIVE` khi student đăng nhập (404 → 403, student lỗi → 503); media: kiểm tra actor |
 | admin | GET | `/internal/v1/admins/{admin_id}` | media | Kiểm tra actor admin |
 | media | POST | `/internal/v1/media/usages/ids:query` | course | Lấy usage ID theo owner (xóa khóa học) |
 | media | GET | `/internal/v1/media/usages/urls` | course | URL các usage |
