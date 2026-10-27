@@ -18,6 +18,15 @@ const RUNTIME_SERVICE_NAMES = new Set([
   'grading',
   'notification',
   'submission-storage',
+  // Topology v2 (R-01): 9 service + 3 worker. Tên v1 ở trên được gỡ khi service cũ bị xóa.
+  'student',
+  'admin',
+  'media',
+  'media-worker',
+  'notification-worker',
+  'scheduler',
+  'scheduler-worker',
+  'ai',
 ]);
 
 function resolveSignalEndpoint(

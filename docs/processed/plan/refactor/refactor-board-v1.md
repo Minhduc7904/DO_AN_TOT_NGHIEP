@@ -13,8 +13,8 @@
 | Mã | Task | Ngày | Phụ thuộc | Trạng thái |
 | --- | --- | --- | --- | --- |
 | R-01 | ADR, `service-catalogue-v2`, `http-and-event-contracts-v2`, `data-ownership-v2`; chốt `service.name` | 1–2 | — | Hoàn thành (27/10/2026; Đức xác nhận qua chỉ thị merge trực tiếp, không có review của Bách theo quyết định refactor một người) |
-| R-02 | Tách `aiops-platform/observability/`, compose riêng, network external `aiops-net` | 1–2 | — | Chưa bắt đầu |
-| R-03 | Nền tảng: `packages/common`, skeleton service, eslint boundaries, compose LMS (Postgres, RabbitMQ, MinIO, Mailpit), Prisma | 2–3 | R-01 | Chưa bắt đầu |
+| R-02 | Tách `aiops-platform/observability/`, compose riêng, network external `aiops-net` | 1–2 | — | Hoàn thành (27/10/2026; PR #52) |
+| R-03 | Nền tảng: `packages/common`, skeleton service, eslint boundaries, compose LMS (Postgres, RabbitMQ, MinIO, Mailpit), Prisma | 2–3 | R-01 | Hoàn thành (27/10/2026; PR #53, bỏ qua CI theo chỉ thị của Đức, bằng chứng chạy cục bộ bên dưới) |
 | R-04 | `auth` (3 role), `student`, `admin`, `gateway` | 3–5 | R-03 | Chưa bắt đầu |
 | R-05 | `course`: course/lesson/quiz, enrollment, progress, quiz attempt, export CSV | 4–8 | R-04 | Chưa bắt đầu |
 | R-06 | `media` + worker: upload trực tiếp MinIO, thumbnail, usage, job | 5–8 | R-03 | Chưa bắt đầu |
@@ -49,3 +49,23 @@ Mỗi task chỉ chuyển `Hoàn thành` khi output ghi lệnh đã chạy và k
 | R-10 | Seed lặp cho cùng fingerprint; ghi thời gian và số dòng |
 | R-11 | CI xanh; regression pass; Postman v2 chạy được |
 | R-12 | Trace đủ span xuyên service; docs đối chiếu code; danh mục case phức tạp v0 có ground truth |
+
+## Bằng chứng đã chạy
+
+### R-02 (PR #52)
+
+Stack 16 container dựng từ `docker-compose/compose.full.yaml`: 51 span từ 8 runtime, metric kể cả RabbitMQ qua hai network, log có `trace_id`; `reset-and-seed` chạy hai lần cho cùng fingerprint; teardown sạch. Job CI `Testbed MVP regression` từng fail một lần ở acceptance smoke (kịch bản `unavailable`) và pass khi chạy lại; GitGuardian báo false positive trên mật khẩu Grafana mẫu, giống ca W10 PR #41.
+
+### R-03 (chạy cục bộ ngày 27/10/2026, Node 22.13.1, pnpm 11.19.0)
+
+| Hạng mục | Lệnh / kết quả |
+| --- | --- |
+| Build, lint, format | `pnpm run build`, `pnpm run lint`, `pnpm run format:check` đều xanh |
+| Unit `common` | `pnpm --filter @aiops-lms/common test`: 16 test (envelope lỗi, guard role, correlation, circuit breaker, HTTP client, outbox/inbox) |
+| Integration `common` | `test/integration/rabbitmq-outbox.integration.mjs` với RabbitMQ 4.1 + PostgreSQL 17 thật: outbox → relay → consumer, inbox chặn xử lý trùng, retry đủ 3 lần, `onFault`, queue `.error`. Chạy lần đầu lộ lỗi consumer thứ hai không khai báo queue; đã sửa trước khi commit |
+| Boundary | `pnpm run test:architecture`: 27 test (domain/application cấm `@nestjs/*`, `@prisma/*`, `common/{http,clients,telemetry,messaging,prisma,config}`, adapters; cho phép `common/{errors,ports}`) |
+| Service mẫu `student` | Image build bằng `services/student/Dockerfile`; container chạy `prisma migrate deploy`, `GET /ready` báo `postgres: ok`, tạo/đọc student, 401/403/409/400 đúng envelope |
+| Hạ tầng | `postgres` tạo DB và role riêng cho student/media/notification/scheduler/ai; `minio-init` tạo 5 bucket; Mailpit trả `/api/v1/info` |
+| Generator | `pnpm new-service <name> --port <port>` sinh service build, lint và test được (kiểm bằng service thử, đã xóa) |
+
+Bỏ qua theo chỉ thị: CI GitHub Actions chưa đối chiếu cho nhánh này. Image MinIO chính thức không còn trên Docker Hub/Quay, nên compose dùng `bitnamilegacy/minio` ghim phiên bản (xem ghi chú trong `compose.yaml`).

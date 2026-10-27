@@ -1,3 +1,7 @@
+# Prisma client sinh ra từ schema.
+**/generated
+# Lockfile do pnpm quản lý.
+pnpm-lock.yaml
 **/coverage
 **/dist
 **/node_modules

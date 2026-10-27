@@ -22,3 +22,6 @@ aiops-platform/**/.env.*
 
 # Dữ liệu tạm do Codex tạo khi kiểm chứng hoặc render cục bộ.
 /.codex-tmp/
+
+# Prisma client sinh ra từ schema (prisma generate chạy trong build).
+lms/services/*/src/adapters/persistence/generated/

@@ -9,14 +9,14 @@
     "pnpm": "11.19.0"
   },
   "scripts": {
-    "build": "pnpm --filter @aiops-lms/contracts build && pnpm --filter @aiops-lms/observability build && pnpm --filter @aiops-lms/course build && pnpm --filter @aiops-lms/auth build && pnpm --filter @aiops-lms/gateway build && pnpm --filter @aiops-lms/enrollment build && pnpm --filter @aiops-lms/submission-storage-mock build && pnpm --filter @aiops-lms/submission build && pnpm --filter @aiops-lms/notification build && pnpm --filter @aiops-lms/grading build",
+    "build": "pnpm --filter @aiops-lms/contracts build && pnpm --filter @aiops-lms/observability build && pnpm --filter @aiops-lms/common build && pnpm --filter @aiops-lms/course build && pnpm --filter @aiops-lms/auth build && pnpm --filter @aiops-lms/gateway build && pnpm --filter @aiops-lms/enrollment build && pnpm --filter @aiops-lms/submission-storage-mock build && pnpm --filter @aiops-lms/submission build && pnpm --filter @aiops-lms/notification build && pnpm --filter @aiops-lms/grading build && pnpm --filter @aiops-lms/student build",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "lint": "eslint \"{contracts,packages/observability,services/{course,auth,gateway,enrollment,submission,submission-storage-mock,notification,grading}}/**/*.ts\" --max-warnings=0",
+    "lint": "eslint \"{contracts,packages/{observability,common},services/{student,course,auth,gateway,enrollment,submission,submission-storage-mock,notification,grading}}/**/*.ts\" --max-warnings=0",
     "ci:verify": "pnpm run format:check && pnpm run build && pnpm run lint && pnpm run test",
     "start:course": "pnpm run build && pnpm --filter @aiops-lms/course start",
-    "test": "pnpm run test:architecture && pnpm run test:testbed:reset && pnpm --filter @aiops-lms/contracts build && pnpm --filter @aiops-lms/observability test && node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config services/course/jest.config.ts && node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config services/auth/jest.config.ts && node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config services/gateway/jest.config.ts && node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config services/enrollment/jest.config.ts && node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config services/submission-storage-mock/jest.config.ts && node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config services/submission/jest.config.ts && node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config services/grading/jest.config.ts && pnpm --filter @aiops-lms/notification test && pnpm run test:w1 && pnpm run test:telemetry",
-    "test:architecture": "node test/eslint-boundaries.test.mjs",
+    "test": "pnpm run test:architecture && pnpm run test:testbed:reset && pnpm --filter @aiops-lms/contracts build && pnpm --filter @aiops-lms/observability test && pnpm --filter @aiops-lms/common test && node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config services/student/jest.config.ts && node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config services/course/jest.config.ts && node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config services/auth/jest.config.ts && node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config services/gateway/jest.config.ts && node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config services/enrollment/jest.config.ts && node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config services/submission-storage-mock/jest.config.ts && node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config services/submission/jest.config.ts && node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config services/grading/jest.config.ts && pnpm --filter @aiops-lms/notification test && pnpm run test:w1 && pnpm run test:telemetry",
+    "test:architecture": "node test/eslint-boundaries.test.mjs && node --test test/new-service.test.mjs",
     "test:w1": "pnpm run test:w1:types && node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config jest.w1.config.ts",
     "test:w1:postgres": "pnpm --filter @aiops-lms/observability build && pnpm --filter @aiops-lms/auth build && node services/auth/test/reset-w1-postgres.mjs && node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config jest.w1-postgres.config.ts",
     "test:course:postgres": "pnpm --filter @aiops-lms/observability build && pnpm --filter @aiops-lms/course build && node services/course/test/postgres-integration.mjs",
@@ -41,7 +41,8 @@
     "test:observability:tracing": "node test/observability/tracing-smoke.mjs",
     "test:observability:metrics": "node test/observability/metrics-smoke.mjs",
     "test:observability:logs": "node test/observability/logs-smoke.mjs",
-    "test:observability:acceptance": "node test/observability/acceptance-smoke.mjs"
+    "test:observability:acceptance": "node test/observability/acceptance-smoke.mjs",
+    "new-service": "node scripts/new-service.mjs"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",

@@ -10,6 +10,8 @@ Thư mục này chứa manifest orchestration root cho LMS testbed. Baseline hi�
 >
 > Hai bên nối với nhau qua network `aiops-net` (biến `AIOPS_NETWORK_NAME`); service LMS chỉ gửi OTLP/HTTP tới `otel-collector:4318`. Các lệnh bên dưới dùng `compose.full.yaml` khi cần đủ 16 thành phần; mục observability ở dưới sẽ chuyển về `aiops-platform/` khi viết lại tài liệu ở R-12. Đường dẫn `observability/…` trong các mục đó nay là `../aiops-platform/observability/…`.
 
+> **Hạ tầng topology v2 (R-03):** `compose.yaml` đã thêm `student` (service mẫu Prisma, cổng host `3012`), `minio` + `minio-init` (5 bucket `images`, `videos`, `documents`, `audios`, `other`; API `9000`, console `9001`), `mailpit` (SMTP `1025`, UI `8025`) và các DB `student_db`, `media_db`, `notification_db`, `scheduler_db`, `ai_db` kèm role riêng (`postgres-init/02-create-v2-databases.sh`). Service v1 vẫn chạy song song cho tới khi bị thay ở R-04…R-08; `auth_db` và `course_db` của v1 phải tạo lại (`down --volumes`) khi `auth`/`course` v2 dùng Prisma. Container v2 chạy `prisma migrate deploy` trước khi khởi động.
+
 ## Yêu cầu
 
 - Docker Engine đang chạy.

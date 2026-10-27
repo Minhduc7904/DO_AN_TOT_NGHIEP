@@ -358,6 +358,44 @@ services:
       - lms-network
       - aiops-net
 
+  student:
+    build:
+      context: ../lms
+      dockerfile: services/student/Dockerfile
+    environment:
+      NODE_ENV: production
+      STUDENT_DATABASE_URL: "postgresql://${STUDENT_POSTGRES_USER:-student_user}:${STUDENT_POSTGRES_PASSWORD:-student-local-only}@postgres:5432/student_db"
+      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: "${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT:-http://otel-collector:4318/v1/traces}"
+      OTEL_EXPORTER_OTLP_METRICS_ENDPOINT: "${OTEL_EXPORTER_OTLP_METRICS_ENDPOINT:-http://otel-collector:4318/v1/metrics}"
+      OTEL_EXPORTER_OTLP_LOGS_ENDPOINT: "${OTEL_EXPORTER_OTLP_LOGS_ENDPOINT:-http://otel-collector:4318/v1/logs}"
+      OTEL_METRIC_EXPORT_INTERVAL: "${OTEL_METRIC_EXPORT_INTERVAL:-5000}"
+      HTTP_ACCESS_LOG_ENABLED: "${HTTP_ACCESS_LOG_ENABLED:-true}"
+      OTEL_SDK_DISABLED: "${OTEL_SDK_DISABLED:-false}"
+      OTEL_SERVICE_INSTANCE_ID: "${STUDENT_SERVICE_INSTANCE_ID:-student-compose-1}"
+      OTEL_SERVICE_VERSION: "${STUDENT_SERVICE_VERSION:-0.1.0}"
+      PORT: 3002
+    ports:
+      - "${STUDENT_PORT:-3012}:3002"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - >-
+          fetch('http://127.0.0.1:3002/ready')
+          .then((response) => { if (!response.ok) process.exit(1); })
+          .catch(() => process.exit(1));
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 10s
+    networks:
+      - lms-network
+      - aiops-net
+
   postgres:
     image: postgres:17.6-alpine
     environment:
@@ -366,6 +404,16 @@ services:
       POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:-lms-local-only}"
       AUTH_POSTGRES_USER: "${AUTH_POSTGRES_USER:?AUTH_POSTGRES_USER is required}"
       AUTH_POSTGRES_PASSWORD: "${AUTH_POSTGRES_PASSWORD:?AUTH_POSTGRES_PASSWORD is required}"
+      STUDENT_POSTGRES_USER: "${STUDENT_POSTGRES_USER:-student_user}"
+      STUDENT_POSTGRES_PASSWORD: "${STUDENT_POSTGRES_PASSWORD:-student-local-only}"
+      MEDIA_POSTGRES_USER: "${MEDIA_POSTGRES_USER:-media_user}"
+      MEDIA_POSTGRES_PASSWORD: "${MEDIA_POSTGRES_PASSWORD:-media-local-only}"
+      NOTIFICATION_POSTGRES_USER: "${NOTIFICATION_POSTGRES_USER:-notification_user}"
+      NOTIFICATION_POSTGRES_PASSWORD: "${NOTIFICATION_POSTGRES_PASSWORD:-notification-local-only}"
+      SCHEDULER_POSTGRES_USER: "${SCHEDULER_POSTGRES_USER:-scheduler_user}"
+      SCHEDULER_POSTGRES_PASSWORD: "${SCHEDULER_POSTGRES_PASSWORD:-scheduler-local-only}"
+      AI_POSTGRES_USER: "${AI_POSTGRES_USER:-ai_user}"
+      AI_POSTGRES_PASSWORD: "${AI_POSTGRES_PASSWORD:-ai-local-only}"
     ports:
       - "${POSTGRES_PORT:-5432}:5432"
     volumes:
@@ -404,6 +452,65 @@ services:
     networks:
       - lms-network
 
+  # MinIO ngừng phát hành image cộng đồng nên dùng bản bitnamilegacy đã ghim phiên bản (2025.7.23).
+  # Đủ cho testbed; thay bằng image tự build/registry nội bộ nếu cần bản vá bảo mật mới.
+  minio:
+    image: bitnamilegacy/minio:2025.7.23-debian-12-r5
+    environment:
+      MINIO_DEFAULT_BUCKETS: ""
+      MINIO_ROOT_USER: "${MINIO_ROOT_USER:-lms-minio}"
+      MINIO_ROOT_PASSWORD: "${MINIO_ROOT_PASSWORD:-lms-minio-local-only}"
+    ports:
+      - "${MINIO_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
+    volumes:
+      - minio-data:/bitnami/minio/data
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:9000/minio/health/live"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 5s
+    networks:
+      - lms-network
+      - aiops-net
+
+  # Tạo bucket do service `media` sở hữu rồi thoát; service khác không truy cập MinIO.
+  minio-init:
+    image: bitnamilegacy/minio-client:2025.7.21-debian-12-r3
+    depends_on:
+      minio:
+        condition: service_healthy
+    environment:
+      MINIO_ROOT_USER: "${MINIO_ROOT_USER:-lms-minio}"
+      MINIO_ROOT_PASSWORD: "${MINIO_ROOT_PASSWORD:-lms-minio-local-only}"
+    entrypoint:
+      - /bin/sh
+      - -c
+      - >-
+        until mc alias set local http://minio:9000 "$$MINIO_ROOT_USER" "$$MINIO_ROOT_PASSWORD"; do sleep 2; done &&
+        for bucket in images videos documents audios other; do mc mb --ignore-existing "local/$$bucket"; done
+    restart: "no"
+    networks:
+      - lms-network
+
+  mailpit:
+    image: axllent/mailpit:v1.31.6
+    environment:
+      MP_MAX_MESSAGES: 5000
+      MP_SMTP_AUTH_ACCEPT_ANY: 1
+      MP_SMTP_AUTH_ALLOW_INSECURE: 1
+    ports:
+      - "${MAILPIT_SMTP_PORT:-1025}:1025"
+      - "${MAILPIT_UI_PORT:-8025}:8025"
+    healthcheck:
+      test: ["CMD", "/mailpit", "readyz"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+    networks:
+      - lms-network
+
   rabbitmq:
     image: rabbitmq:4.1.4-management-alpine
     environment:
@@ -437,6 +544,7 @@ networks:
     driver: bridge
 
 volumes:
+  minio-data:
   postgres-data:
   redis-data:
   rabbitmq-data:

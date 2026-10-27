@@ -1,0 +1,63 @@
+{
+  "name": "@aiops-lms/common",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./errors": {
+      "types": "./dist/errors/index.d.ts",
+      "import": "./dist/errors/index.js"
+    },
+    "./ports": {
+      "types": "./dist/ports/index.d.ts",
+      "import": "./dist/ports/index.js"
+    },
+    "./http": {
+      "types": "./dist/http/index.d.ts",
+      "import": "./dist/http/index.js"
+    },
+    "./clients": {
+      "types": "./dist/clients/index.d.ts",
+      "import": "./dist/clients/index.js"
+    },
+    "./telemetry": {
+      "types": "./dist/telemetry/index.d.ts",
+      "import": "./dist/telemetry/index.js"
+    },
+    "./messaging": {
+      "types": "./dist/messaging/index.d.ts",
+      "import": "./dist/messaging/index.js"
+    },
+    "./prisma": {
+      "types": "./dist/prisma/index.d.ts",
+      "import": "./dist/prisma/index.js"
+    },
+    "./config": {
+      "types": "./dist/config/index.d.ts",
+      "import": "./dist/config/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "test": "node --experimental-vm-modules ../../node_modules/jest/bin/jest.js --config jest.config.ts",
+    "test:integration": "node test/integration/rabbitmq-outbox.integration.mjs"
+  },
+  "dependencies": {
+    "@aiops-lms/observability": "workspace:*",
+    "amqplib": "2.2.0",
+    "zod": "4.5.4"
+  },
+  "peerDependencies": {
+    "@nestjs/common": "12.0.1",
+    "@nestjs/core": "12.0.1",
+    "@opentelemetry/api": "1.9.0",
+    "reflect-metadata": "0.2.2"
+  },
+  "devDependencies": {
+    "@nestjs/common": "12.0.1",
+    "@nestjs/core": "12.0.1",
+    "@opentelemetry/api": "1.9.0",
+    "reflect-metadata": "0.2.2",
+    "pg": "8.16.3"
+  }
+}
