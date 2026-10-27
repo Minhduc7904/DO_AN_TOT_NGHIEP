@@ -17,7 +17,7 @@ Use case nằm ở `src/application/use-cases/{accounts,sessions}/`, mỗi use c
 
 ## Seed khi khởi động
 
-`BootstrapAccountsUseCase` tạo tài khoản cố định nếu email chưa tồn tại, đọc từ `AUTH_BOOTSTRAP_{ADMIN,INSTRUCTOR,STUDENT}_{ID,EMAIL,PASSWORD}`; bỏ trống email hoặc mật khẩu thì bỏ qua tài khoản đó. `created_at` cố định `2026-08-27T09:00:00Z` để fingerprint reset/seed ổn định. Compose đặt mặc định `admin@example.test`, `instructor@example.test`, `student@example.test` với mật khẩu `example-password` (chỉ dùng cục bộ). `AUTH_BOOTSTRAP_ADMIN_ID` phải trùng `ADMIN_IDS` của service `admin`. Tài khoản student seed được bảo đảm có hồ sơ ở `student` (gọi `GET` rồi `POST /internal/v1/students` khi thiếu) vì đăng nhập student yêu cầu hồ sơ; auth khởi động sau `student` healthy trong compose.
+`BootstrapAccountsUseCase` tạo tài khoản cố định nếu email chưa tồn tại, đọc từ `AUTH_BOOTSTRAP_{ADMIN,INSTRUCTOR,STUDENT}_{ID,EMAIL,PASSWORD}`; bỏ trống email hoặc mật khẩu thì bỏ qua tài khoản đó. `created_at` cố định `2026-08-27T09:00:00Z` để fingerprint reset/seed ổn định. Compose đặt mặc định `admin@example.test`, `instructor@example.test`, `student@example.test` với mật khẩu `example-password` (chỉ dùng cục bộ). Không có service `admin` riêng ([ADR-003](../../../docs/processed/adr/adr-003-remove-admin-service-v1.md)): admin chỉ là một tài khoản role `admin` của `auth`. Tài khoản student seed được bảo đảm có hồ sơ ở `student` (gọi `GET` rồi `POST /internal/v1/students` khi thiếu) vì đăng nhập student yêu cầu hồ sơ; auth khởi động sau `student` healthy trong compose.
 
 ## Chạy và kiểm tra
 

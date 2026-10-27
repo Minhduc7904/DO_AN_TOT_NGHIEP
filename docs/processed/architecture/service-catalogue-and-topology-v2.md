@@ -26,11 +26,11 @@ Nghiệp vụ lấy từ repo mẫu .NET `intern_be/ducnm3` làm đặc tả; kh
 
 # 2. Quyết định topology v2
 
-**9 service + 3 worker.** Worker là process riêng, cùng image với service tương ứng, entrypoint `worker.ts`, có `service.name` riêng.
+**8 service + 3 worker.** Worker là process riêng, cùng image với service tương ứng, entrypoint `worker.ts`, có `service.name` riêng.
 
 ```text
-gateway  auth  student  admin  course  media  notification  scheduler  ai
-                                       media-worker  notification-worker  scheduler-worker
+gateway  auth  student  course  media  notification  scheduler  ai
+                                  media-worker  notification-worker  scheduler-worker
 ```
 
 Hạ tầng bắt buộc:
@@ -51,7 +51,6 @@ Không còn: Redis, Storage Mock, event `grade.completed`, service `enrollment`/
 gateway
 auth
 student
-admin
 course
 media
 media-worker
@@ -84,7 +83,7 @@ notification-rabbitmq
 notification-worker-rabbitmq
 ```
 
-Quy ước đặt tên: `<service.name của bên sử dụng>-<hạ tầng>`; `admin` và `gateway` không sở hữu hạ tầng. `scheduler-worker` truy cập `scheduler-postgres` qua identity `scheduler-postgres` (cùng owner).
+Quy ước đặt tên: `<service.name của bên sử dụng>-<hạ tầng>`; `gateway` không sở hữu hạ tầng. `scheduler-worker` truy cập `scheduler-postgres` qua identity `scheduler-postgres` (cùng owner).
 
 ---
 
@@ -99,7 +98,6 @@ flowchart LR
 
         A[auth]
         ST[student]
-        AD[admin]
         CO[course]
         M[media]
         MW[media-worker]
@@ -123,7 +121,7 @@ flowchart LR
         LLM[(ai-llm-provider)]
 
         C -->|HTTP| G
-        G --> A & ST & AD & CO & M & N & S & AI
+        G --> A & ST & CO & M & N & S & AI
 
         A --> ADB
         A -->|HTTP: tạo hồ sơ student| ST
@@ -168,20 +166,19 @@ flowchart LR
 
 # 4. Service catalogue
 
-| Component | `service.name` | Trách nhiệm | Data/resource ownership | Inbound | Outbound |
-| --- | --- | --- | --- | --- | --- |
-| **API Gateway** | `gateway` | Entry point; route theo prefix; validate JWT; ánh xạ role; propagate trace và `x-principal-*`; chuẩn hóa lỗi proxy | Không có DB | Client | auth, student, admin, course, media, notification, scheduler, ai |
-| **Auth** | `auth` | Đăng ký student, đăng nhập, refresh, phát JWT; quản lý tài khoản 3 role | `auth_db` | Gateway | `auth-postgres`; student (HTTP tạo hồ sơ khi đăng ký) |
-| **Student** | `student` | Hồ sơ và danh sách student, thống kê | `student_db` | Gateway; auth; media; notification-worker | `student-postgres` |
-| **Admin** | `admin` | Tra cứu thông tin admin (cấu hình qua env, không DB) | Không có DB | Gateway; media | Không có |
-| **Course** | `course` | Course, lesson, quiz, enrollment, tiến độ, quiz attempt, export CSV, luồng AI soạn bài (extraction + job worker nội bộ), đồng bộ usage media bằng command | `course_db` | Gateway | `course-postgres`; media (HTTP); ai (HTTP); `course-rabbitmq` (command) |
-| **Media** | `media` | Upload multipart/trực tiếp, library, content stream, usage, thumbnail status/retry, thống kê, jobs | `media_db`; object trong MinIO | Gateway; course; scheduler-worker | `media-postgres`; `media-minio`; student; admin; `media-rabbitmq` (command) |
-| **Media worker** | `media-worker` | Consumer: tạo thumbnail, đồng bộ/xóa usage markdown, đăng ký usage cho notification | `media_db` (cùng owner media) | RabbitMQ | `media-postgres`; `media-minio`; `media-worker-rabbitmq` |
-| **Notification** | `notification` | Tạo thông báo đơn, tạo/tra cứu batch, inbox student | `notification_db` | Gateway | `notification-postgres`; `notification-rabbitmq` (command) |
-| **Notification worker** | `notification-worker` | Consumer: snapshot recipient, dispatch batch, gửi email thật, ghi thông báo đã gửi | `notification_db` | RabbitMQ | `notification-postgres`; student (HTTP); `notification-smtp`; `notification-worker-rabbitmq` |
-| **Scheduler** | `scheduler` | Quản lý job và lịch sử run | `scheduler_db` | Gateway | `scheduler-postgres` |
-| **Scheduler worker** | `scheduler-worker` | Chạy job theo cron/tay; job `MEDIA_UNUSED_CLEANUP` | `scheduler_db` (cùng owner) | Tick nội bộ | `scheduler-postgres`; media (HTTP) |
-| **AI** | `ai` | Provider/model/binding, API key mã hóa, completion, health-check, usage log | `ai_db` | Gateway; course | `ai-postgres`; `ai-llm-provider` |
+| Component               | `service.name`        | Trách nhiệm                                                                                                                                               | Data/resource ownership        | Inbound                                   | Outbound                                                                                     |
+| ----------------------- | --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------ | ----------------------------------------- | -------------------------------------------------------------------------------------------- |
+| **API Gateway**         | `gateway`             | Entry point; route theo prefix; validate JWT; ánh xạ role; propagate trace và `x-principal-*`; chuẩn hóa lỗi proxy                                        | Không có DB                    | Client                                    | auth, student, course, media, notification, scheduler, ai                                    |
+| **Auth**                | `auth`                | Đăng ký student, đăng nhập, refresh, phát JWT; quản lý tài khoản 3 role                                                                                   | `auth_db`                      | Gateway                                   | `auth-postgres`; student (HTTP tạo hồ sơ khi đăng ký)                                        |
+| **Student**             | `student`             | Hồ sơ và danh sách student, thống kê                                                                                                                      | `student_db`                   | Gateway; auth; media; notification-worker | `student-postgres`                                                                           |
+| **Course**              | `course`              | Course, lesson, quiz, enrollment, tiến độ, quiz attempt, export CSV, luồng AI soạn bài (extraction + job worker nội bộ), đồng bộ usage media bằng command | `course_db`                    | Gateway                                   | `course-postgres`; media (HTTP); ai (HTTP); `course-rabbitmq` (command)                      |
+| **Media**               | `media`               | Upload multipart/trực tiếp, library, content stream, usage, thumbnail status/retry, thống kê, jobs                                                        | `media_db`; object trong MinIO | Gateway; course; scheduler-worker         | `media-postgres`; `media-minio`; student; `media-rabbitmq` (command)                         |
+| **Media worker**        | `media-worker`        | Consumer: tạo thumbnail, đồng bộ/xóa usage markdown, đăng ký usage cho notification                                                                       | `media_db` (cùng owner media)  | RabbitMQ                                  | `media-postgres`; `media-minio`; `media-worker-rabbitmq`                                     |
+| **Notification**        | `notification`        | Tạo thông báo đơn, tạo/tra cứu batch, inbox student                                                                                                       | `notification_db`              | Gateway                                   | `notification-postgres`; `notification-rabbitmq` (command)                                   |
+| **Notification worker** | `notification-worker` | Consumer: snapshot recipient, dispatch batch, gửi email thật, ghi thông báo đã gửi                                                                        | `notification_db`              | RabbitMQ                                  | `notification-postgres`; student (HTTP); `notification-smtp`; `notification-worker-rabbitmq` |
+| **Scheduler**           | `scheduler`           | Quản lý job và lịch sử run                                                                                                                                | `scheduler_db`                 | Gateway                                   | `scheduler-postgres`                                                                         |
+| **Scheduler worker**    | `scheduler-worker`    | Chạy job theo cron/tay; job `MEDIA_UNUSED_CLEANUP`                                                                                                        | `scheduler_db` (cùng owner)    | Tick nội bộ                               | `scheduler-postgres`; media (HTTP)                                                           |
+| **AI**                  | `ai`                  | Provider/model/binding, API key mã hóa, completion, health-check, usage log                                                                               | `ai_db`                        | Gateway; course                           | `ai-postgres`; `ai-llm-provider`                                                             |
 
 ### Ownership rules
 
@@ -200,12 +197,11 @@ flowchart LR
 ## 5.1. Service-to-service (HTTP đồng bộ)
 
 ```text
-gateway -> auth | student | admin | course | media | notification | scheduler | ai
+gateway -> auth | student | course | media | notification | scheduler | ai
 auth -> student                      # tạo hồ sơ khi đăng ký
 course -> media                      # usage ids/urls, content bytes cho tài liệu AI
 course -> ai                         # completions (extract, synthesize, quiz)
 media -> student                     # kiểm tra actor (avatar)
-media -> admin                       # kiểm tra actor admin
 notification-worker -> student       # snapshot recipient theo trang
 scheduler-worker -> media            # cleanup media không dùng
 ```
@@ -238,34 +234,32 @@ media-worker, notification-worker -> <service>-rabbitmq (consume)
 
 # 6. Edge catalogue phục vụ telemetry/graph/RCA
 
-| Edge ID | Caller | Callee/dependency | Kiểu | Workflow | Evidence tối thiểu |
-| --- | --- | --- | --- | --- | --- |
-| `e01` | Client | gateway | HTTP | W1–W7 | route, method, status, duration |
-| `e02` | gateway | auth | HTTP | W1 | caller=`gateway`, callee=`auth` |
-| `e03` | gateway | student | HTTP | W1, W3 | caller=`gateway`, callee=`student` |
-| `e04` | gateway | admin | HTTP | W4 | caller=`gateway`, callee=`admin` |
-| `e05` | gateway | course | HTTP | W2, W3, W6 | caller=`gateway`, callee=`course` |
-| `e06` | gateway | media | HTTP | W2, W4 | caller=`gateway`, callee=`media` |
-| `e07` | gateway | notification | HTTP | W5 | caller=`gateway`, callee=`notification` |
-| `e08` | gateway | scheduler | HTTP | W7 | caller=`gateway`, callee=`scheduler` |
-| `e09` | gateway | ai | HTTP | W6 | caller=`gateway`, callee=`ai` |
-| `e10` | auth | student | HTTP | W1 | caller=`auth`, callee=`student` |
-| `e11` | course | media | HTTP | W2, W6 | caller=`course`, callee=`media` |
-| `e12` | course | ai | HTTP | W6 | caller=`course`, callee=`ai` |
-| `e13` | media | student | HTTP | W4 | caller=`media`, callee=`student` |
-| `e14` | media | admin | HTTP | W4 | caller=`media`, callee=`admin` |
-| `e15` | notification-worker | student | HTTP | W5 | caller=`notification-worker`, callee=`student` |
-| `e16` | scheduler-worker | media | HTTP | W7 | caller=`scheduler-worker`, callee=`media` |
-| `e17` | course | media-worker | async command | W2 | `command_name`, `message_id`, producer/consumer |
-| `e18` | media | media-worker | async command | W4 | như trên |
-| `e19` | notification, notification-worker | media-worker | async command | W5 | như trên |
-| `e20` | notification | notification-worker | async command | W5 | như trên |
-| `e21` | notification-worker | notification-worker | async command | W5 | như trên |
-| `e22` | notification-worker | notification-smtp | dependency | W5 | `dependency_identity=notification-smtp` |
-| `e23` | media, media-worker | media-minio | dependency | W4 | `dependency_identity=media-minio` |
-| `e24` | ai | ai-llm-provider | dependency | W6 | `dependency_identity=ai-llm-provider` |
-| `e25` | `<service>` | `<service>-postgres` | DB | tất cả | `dependency_identity=<service>-postgres` (7 identity) |
-| `e26` | publisher / consumer | `<service>-rabbitmq` | messaging | W2, W4, W5 | publish/consume span + broker metrics |
+| Edge ID | Caller                            | Callee/dependency    | Kiểu          | Workflow   | Evidence tối thiểu                                    |
+| ------- | --------------------------------- | -------------------- | ------------- | ---------- | ----------------------------------------------------- |
+| `e01`   | Client                            | gateway              | HTTP          | W1–W7      | route, method, status, duration                       |
+| `e02`   | gateway                           | auth                 | HTTP          | W1         | caller=`gateway`, callee=`auth`                       |
+| `e03`   | gateway                           | student              | HTTP          | W1, W3     | caller=`gateway`, callee=`student`                    |
+| `e04`   | gateway                           | course               | HTTP          | W2, W3, W6 | caller=`gateway`, callee=`course`                     |
+| `e05`   | gateway                           | media                | HTTP          | W2, W4     | caller=`gateway`, callee=`media`                      |
+| `e06`   | gateway                           | notification         | HTTP          | W5         | caller=`gateway`, callee=`notification`               |
+| `e07`   | gateway                           | scheduler            | HTTP          | W7         | caller=`gateway`, callee=`scheduler`                  |
+| `e08`   | gateway                           | ai                   | HTTP          | W6         | caller=`gateway`, callee=`ai`                         |
+| `e09`   | auth                              | student              | HTTP          | W1         | caller=`auth`, callee=`student`                       |
+| `e10`   | course                            | media                | HTTP          | W2, W6     | caller=`course`, callee=`media`                       |
+| `e11`   | course                            | ai                   | HTTP          | W6         | caller=`course`, callee=`ai`                          |
+| `e12`   | media                             | student              | HTTP          | W4         | caller=`media`, callee=`student`                      |
+| `e13`   | notification-worker               | student              | HTTP          | W5         | caller=`notification-worker`, callee=`student`        |
+| `e14`   | scheduler-worker                  | media                | HTTP          | W7         | caller=`scheduler-worker`, callee=`media`             |
+| `e15`   | course                            | media-worker         | async command | W2         | `command_name`, `message_id`, producer/consumer       |
+| `e16`   | media                             | media-worker         | async command | W4         | như trên                                              |
+| `e17`   | notification, notification-worker | media-worker         | async command | W5         | như trên                                              |
+| `e18`   | notification                      | notification-worker  | async command | W5         | như trên                                              |
+| `e19`   | notification-worker               | notification-worker  | async command | W5         | như trên                                              |
+| `e20`   | notification-worker               | notification-smtp    | dependency    | W5         | `dependency_identity=notification-smtp`               |
+| `e21`   | media, media-worker               | media-minio          | dependency    | W4         | `dependency_identity=media-minio`                     |
+| `e22`   | ai                                | ai-llm-provider      | dependency    | W6         | `dependency_identity=ai-llm-provider`                 |
+| `e23`   | `<service>`                       | `<service>-postgres` | DB            | tất cả     | `dependency_identity=<service>-postgres` (7 identity) |
+| `e24`   | publisher / consumer              | `<service>-rabbitmq` | messaging     | W2, W4, W5 | publish/consume span + broker metrics                 |
 
 ### Edge observability rule
 
@@ -275,15 +269,15 @@ Giữ nguyên quy tắc v1: mỗi boundary phải thu được identity caller/c
 
 # 7. Workflow view
 
-| ID | Tên | Đường đi chính |
-| --- | --- | --- |
-| **W1** | Đăng ký và đăng nhập | Client → gateway → auth → `auth-postgres`; đăng ký: auth → student |
-| **W2** | Soạn nội dung khóa học | Instructor → gateway → course → `course-postgres`; markdown có media → course ⇒ `media-worker` (command) → `media-postgres` |
-| **W3** | Ghi danh và học | Student → gateway → course (enroll, tiến độ, quiz attempt, chấm điểm) → `course-postgres` |
-| **W4** | Upload media | Client → gateway → media (upload-intent) → MinIO trực tiếp → media (upload-complete, promote) ⇒ `media-worker` tạo thumbnail |
-| **W5** | Thông báo batch + email | Admin → gateway → notification ⇒ `notification-worker` (snapshot từ student, dispatch, SMTP) ⇒ `media-worker` (usage) |
-| **W6** | AI soạn bài / sinh quiz | Instructor → gateway → course → ai → `ai-llm-provider`; tài liệu: course → media (content) |
-| **W7** | Dọn media không dùng | `scheduler-worker` → media (cleanup) → `media-minio` + `media-postgres` |
+| ID     | Tên                     | Đường đi chính                                                                                                               |
+| ------ | ----------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| **W1** | Đăng ký và đăng nhập    | Client → gateway → auth → `auth-postgres`; đăng ký: auth → student                                                           |
+| **W2** | Soạn nội dung khóa học  | Instructor → gateway → course → `course-postgres`; markdown có media → course ⇒ `media-worker` (command) → `media-postgres`  |
+| **W3** | Ghi danh và học         | Student → gateway → course (enroll, tiến độ, quiz attempt, chấm điểm) → `course-postgres`                                    |
+| **W4** | Upload media            | Client → gateway → media (upload-intent) → MinIO trực tiếp → media (upload-complete, promote) ⇒ `media-worker` tạo thumbnail |
+| **W5** | Thông báo batch + email | Admin → gateway → notification ⇒ `notification-worker` (snapshot từ student, dispatch, SMTP) ⇒ `media-worker` (usage)        |
+| **W6** | AI soạn bài / sinh quiz | Instructor → gateway → course → ai → `ai-llm-provider`; tài liệu: course → media (content)                                   |
+| **W7** | Dọn media không dùng    | `scheduler-worker` → media (cleanup) → `media-minio` + `media-postgres`                                                      |
 
 Chuỗi phụ thuộc dài nhất (phục vụ case RCA phức tạp): W5 chạm 5 service/worker (notification → notification-worker → student; notification → media-worker → MinIO) và dùng chung RabbitMQ với W2/W4.
 
@@ -293,7 +287,7 @@ Chuỗi phụ thuộc dài nhất (phục vụ case RCA phức tạp): W5 chạm
 
 Giữ nguyên nguyên tắc v1: graph thiết kế dùng để **validate** graph quan sát từ trace, không thay thế. Edge thiếu trong trace ghi nhận là vấn đề coverage. Async edge nối bằng trace context trong header RabbitMQ; fallback `message_id`/thời gian chỉ khi cần và phải giảm confidence. Hạ tầng xuất hiện trong evidence graph nhưng không trộn vào candidate set service-level.
 
-**Candidate set RCA mặc định:** `auth`, `student`, `admin`, `course`, `media`, `media-worker`, `notification`, `notification-worker`, `scheduler`, `scheduler-worker`, `ai`. `gateway` là symptom mặc định, chỉ là candidate khi evaluation protocol có gateway fault.
+**Candidate set RCA mặc định:** `auth`, `student`, `course`, `media`, `media-worker`, `notification`, `notification-worker`, `scheduler`, `scheduler-worker`, `ai`. `gateway` là symptom mặc định, chỉ là candidate khi evaluation protocol có gateway fault.
 
 ---
 
@@ -301,20 +295,20 @@ Giữ nguyên nguyên tắc v1: graph thiết kế dùng để **validate** grap
 
 Chi tiết ở [data-ownership-and-fault-matrix-v2](data-ownership-and-fault-matrix-v2.md); danh mục case phức tạp hoàn chỉnh được chốt ở R-12.
 
-| Fault v0 | Root-cause | Evidence/component | Symptom dự kiến |
-| --- | --- | --- | --- |
-| FA Chậm MinIO | `media` / `media-worker` | `media-minio` | upload-complete timeout tại gateway, thumbnail kẹt |
-| FB Backlog hàng đợi | `notification-worker` | `notification-rabbitmq` | thumbnail của `media-worker` chậm, usage sync trễ |
-| FC Chậm DB giữ kết nối | `course` | `course-postgres` | enroll/quiz submit chậm không có span lỗi |
-| FD Provider AI chậm | `ai` | `ai-llm-provider` | lease job hết hạn, retry chồng, outbox backlog |
-| FE Student chậm | `student` | `student-postgres` | batch notification partial-failed, log không có error |
-| FF Quá tải CPU | một service bất kỳ | instance | latency/error lan theo dependency |
+| Fault v0               | Root-cause               | Evidence/component      | Symptom dự kiến                                       |
+| ---------------------- | ------------------------ | ----------------------- | ----------------------------------------------------- |
+| FA Chậm MinIO          | `media` / `media-worker` | `media-minio`           | upload-complete timeout tại gateway, thumbnail kẹt    |
+| FB Backlog hàng đợi    | `notification-worker`    | `notification-rabbitmq` | thumbnail của `media-worker` chậm, usage sync trễ     |
+| FC Chậm DB giữ kết nối | `course`                 | `course-postgres`       | enroll/quiz submit chậm không có span lỗi             |
+| FD Provider AI chậm    | `ai`                     | `ai-llm-provider`       | lease job hết hạn, retry chồng, outbox backlog        |
+| FE Student chậm        | `student`                | `student-postgres`      | batch notification partial-failed, log không có error |
+| FF Quá tải CPU         | một service bất kỳ       | instance                | latency/error lan theo dependency                     |
 
 ---
 
 # 10. Scope consistency
 
-**MVP trong topology v2:** 9 service + 3 worker, PostgreSQL/RabbitMQ/MinIO/SMTP/LLM provider, các workflow W1–W7.
+**MVP trong topology v2:** 8 service + 3 worker, PostgreSQL/RabbitMQ/MinIO/SMTP/LLM provider, các workflow W1–W7.
 
 **Không đưa vào topology v2:** Redis, frontend, performance runner, kênh real-time, notification tự động theo sự kiện, Kubernetes/service mesh, multi-fault, RCA mức instance/component làm primary.
 
@@ -328,16 +322,16 @@ Giữ nguyên quy tắc v1: thêm/xóa service, đổi ownership dữ liệu, th
 
 # 12. Khác biệt v1 → v2
 
-| Mục | v1 | v2 |
-| --- | --- | --- |
-| Business service | 6 + gateway | 9 service + 3 worker |
-| Storage | Storage Mock in-memory | MinIO thật (`media-minio`) |
-| Cache | Redis (`course-redis`) | Bỏ |
-| Async | event `grade.completed` | Command qua RabbitMQ (outbox/inbox) |
-| Notification | Log fixture | SMTP thật + inbox REST |
-| Workflow | W1–W5 | W1–W7 |
-| Dependency identity | 9 | 15 |
-| Edge | e01–e20 | e01–e26 |
+| Mục                 | v1                      | v2                                  |
+| ------------------- | ----------------------- | ----------------------------------- |
+| Business service    | 6 + gateway             | 8 service + 3 worker                |
+| Storage             | Storage Mock in-memory  | MinIO thật (`media-minio`)          |
+| Cache               | Redis (`course-redis`)  | Bỏ                                  |
+| Async               | event `grade.completed` | Command qua RabbitMQ (outbox/inbox) |
+| Notification        | Log fixture             | SMTP thật + inbox REST              |
+| Workflow            | W1–W5                   | W1–W7                               |
+| Dependency identity | 9                       | 15                                  |
+| Edge                | e01–e20                 | e01–e24                             |
 
 ---
 
@@ -346,12 +340,12 @@ Giữ nguyên quy tắc v1: thêm/xóa service, đổi ownership dữ liệu, th
 Đức tự xác nhận trước khi chuyển R-01 sang hoàn thành (refactor do một mình Đức làm, không cần Bách review):
 
 - [ ] `service.name` và dependency identity ở mục 2 đủ ổn định cho telemetry/feature.
-- [ ] Edge `e02–e26` đủ để dựng dynamic graph cho W1–W7.
+- [ ] Edge `e02–e24` đủ để dựng dynamic graph cho W1–W7.
 - [ ] Async command có thể nối bằng RabbitMQ trace context.
 - [ ] Candidate set mục 8 hợp lý; worker tách `service.name` riêng được chấp nhận.
 - [ ] Fault v0 ở mục 9 đủ làm nền cho danh mục case phức tạp.
 
-| Trường | Giá trị |
-| --- | --- |
-| Người xác nhận | Đức |
-| Trạng thái | `PENDING` |
+| Trường         | Giá trị   |
+| -------------- | --------- |
+| Người xác nhận | Đức       |
+| Trạng thái     | `PENDING` |
