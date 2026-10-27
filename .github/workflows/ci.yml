@@ -100,8 +100,14 @@ jobs:
       - name: Ensure local Compose configuration is absent
         run: test ! -e docker-compose/.env
 
-      - name: Validate Compose with committed example configuration
+      - name: Validate LMS Compose with committed example configuration
         run: docker compose --env-file docker-compose/.env.example -f docker-compose/compose.yaml config --quiet
+
+      - name: Validate aiops-platform observability Compose with committed example configuration
+        run: docker compose --env-file aiops-platform/observability/.env.example -f aiops-platform/observability/compose.yaml config --quiet
+
+      - name: Validate full stack Compose (LMS + aiops-platform)
+        run: docker compose --env-file docker-compose/.env.example -f docker-compose/compose.full.yaml config --quiet
 
   testbed-reset:
     name: Reset/seed Testbed twice with stable fingerprint
@@ -172,13 +178,13 @@ jobs:
         run: >-
           docker compose --project-name aiops-lms-test-regression
           --env-file docker-compose/.env.example
-          --file docker-compose/compose.yaml logs --no-color
+          --file docker-compose/compose.full.yaml logs --no-color
       - name: Stop stack
         if: always()
         run: >-
           docker compose --project-name aiops-lms-test-regression
           --env-file docker-compose/.env.example
-          --file docker-compose/compose.yaml down --volumes --remove-orphans
+          --file docker-compose/compose.full.yaml down --volumes --remove-orphans
 
   w7-compose:
     name: Fresh Compose W1–W7 smoke

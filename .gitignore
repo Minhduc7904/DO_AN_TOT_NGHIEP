@@ -15,5 +15,10 @@ docker-compose/.env
 docker-compose/.env.*
 !docker-compose/.env.example
 
+# Cấu hình local của stack observability trong aiops-platform.
+aiops-platform/**/.env
+aiops-platform/**/.env.*
+!aiops-platform/**/.env.example
+
 # Dữ liệu tạm do Codex tạo khi kiểm chứng hoặc render cục bộ.
 /.codex-tmp/

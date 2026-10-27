@@ -20,7 +20,8 @@ export const REQUIRED_SERVICES = Object.freeze([
 
 const SCRIPT_PATH = fileURLToPath(import.meta.url);
 export const REPOSITORY_ROOT = realpathSync(resolve(SCRIPT_PATH, '..', '..', '..'));
-export const COMPOSE_FILE = resolve(REPOSITORY_ROOT, 'docker-compose', 'compose.yaml');
+// File bọc ghép LMS với stack thu thập dữ liệu trong aiops-platform (qua `include`).
+export const COMPOSE_FILE = resolve(REPOSITORY_ROOT, 'docker-compose', 'compose.full.yaml');
 const ALLOWED_PROJECT = /^(?:aiops-lms-local|aiops-lms-test-[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)$/u;
 const ALLOWED_ENVIRONMENTS = new Set(['local', 'test']);
 
@@ -73,7 +74,7 @@ function isInside(parent, candidate) {
 export function validateOptions(raw, context = {}) {
   const repositoryRoot = context.repositoryRoot ?? REPOSITORY_ROOT;
   const composeFile =
-    context.composeFile ?? resolve(repositoryRoot, 'docker-compose', 'compose.yaml');
+    context.composeFile ?? resolve(repositoryRoot, 'docker-compose', 'compose.full.yaml');
   const pathExists = context.pathExists ?? existsSync;
 
   if (!raw.environment) fail('Bắt buộc truyền --environment.');
