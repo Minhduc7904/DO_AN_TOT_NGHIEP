@@ -2,6 +2,7 @@ import type { IdGenerator, Principal } from '@aiops-lms/common/ports';
 
 import type { StudentClient } from '../../src/application/ports/student-client.js';
 import { GetMediaUsageUrlsUseCase } from '../../src/application/use-cases/usages/get-media-usage-urls.use-case.js';
+import { ListOwnerUsagesUseCase } from '../../src/application/use-cases/usages/list-owner-usages.use-case.js';
 import { ReorderMediaUsagesUseCase } from '../../src/application/use-cases/usages/reorder-media-usages.use-case.js';
 import { DeleteMediaUsageUseCase } from '../../src/application/use-cases/usages/delete-media-usage.use-case.js';
 import { UsageRules } from '../../src/application/use-cases/usages/usage-attacher.js';
@@ -15,7 +16,7 @@ import {
   type SynchronizeMarkdownUsageInput,
   SynchronizeMarkdownUsageUseCase,
 } from '../../src/application/use-cases/worker/synchronize-markdown-usage.use-case.js';
-import type { MediaObject } from '../../src/domain/media.js';
+import type { MediaObject, MediaUsage } from '../../src/domain/media.js';
 import { InMemoryUnitOfWork } from './fakes.js';
 
 let counter = 0;
@@ -247,6 +248,45 @@ describe('GetMediaUsageUrlsUseCase', () => {
     await uow.media.update(uuid(2), { status: 'FAILED' });
     expect(await urls.execute([usages[1]!.id])).toEqual([]);
     await expect(urls.executeOne(usages[1]!.id)).rejects.toMatchObject({ status: 404 });
+  });
+});
+
+describe('ListOwnerUsagesUseCase', () => {
+  it('liệt kê usage của owner theo position kèm metadata, chỉ đúng usage_type và owner', async () => {
+    const { uow, rules } = setup();
+    await seedMedia(uow, {
+      id: uuid(1),
+      type: 'DOCUMENT',
+      originalName: 'bai-1.pdf',
+      mimeType: 'application/pdf',
+      sizeBytes: 1234,
+    });
+    await seedMedia(uow, { id: uuid(2), type: 'DOCUMENT', originalName: 'bai-2.docx' });
+    await seedMedia(uow, { id: uuid(3), type: 'DOCUMENT' });
+    const lessonId = uuid(90);
+    const attach = (
+      mediaId: string,
+      ownerId: string,
+      usageType: 'LESSON_ATTACHMENT' | 'LESSON_CONTENT',
+    ): Promise<MediaUsage> =>
+      rules.attach(uow.stores, instructor, { mediaId, ownerKind: 'COURSE', ownerId, usageType });
+    const first = await attach(uuid(1), lessonId, 'LESSON_ATTACHMENT');
+    await attach(uuid(2), lessonId, 'LESSON_ATTACHMENT');
+    await attach(uuid(3), lessonId, 'LESSON_CONTENT');
+    await attach(uuid(3), uuid(91), 'LESSON_ATTACHMENT');
+    const list = new ListOwnerUsagesUseCase(uow);
+
+    const result = await list.execute('COURSE', lessonId, 'LESSON_ATTACHMENT');
+
+    expect(result.map((item) => [item.usage.mediaId, item.usage.position])).toEqual([
+      [uuid(1), 0],
+      [uuid(2), 1],
+    ]);
+    expect(result[0]).toMatchObject({
+      usage: { id: first.id },
+      media: { originalName: 'bai-1.pdf', mimeType: 'application/pdf', sizeBytes: 1234 },
+    });
+    expect(await list.execute('COURSE', uuid(92), 'LESSON_ATTACHMENT')).toEqual([]);
   });
 });
 

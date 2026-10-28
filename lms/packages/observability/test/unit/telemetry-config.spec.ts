@@ -69,6 +69,12 @@ describe('defineTelemetryConfig', () => {
       );
     },
   );
+  it.each(['ai', 'ai-worker', 'scheduler', 'scheduler-worker', 'media-worker'])(
+    'accepts the v2 runtime service name: %s',
+    (serviceName) => {
+      expect(defineTelemetryConfig({ ...validConfig, serviceName }).serviceName).toBe(serviceName);
+    },
+  );
   it('normalizes and freezes valid configuration', () => {
     const config = defineTelemetryConfig(validConfig);
 

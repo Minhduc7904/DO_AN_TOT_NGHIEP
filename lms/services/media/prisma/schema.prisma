@@ -88,6 +88,8 @@ model MediaObject {
   mimeType        String          @map("mime_type")
   sizeBytes       Int             @map("size_bytes")
   checksumSha256  String          @map("checksum_sha256")
+  /// Yêu cầu `ai` trích văn bản khi tệp READY (chỉ tệp mà `ai` đọc được; xem `isExtractableDocument`).
+  extractText     Boolean         @default(false) @map("extract_text")
   bucket          String
   objectKey       String          @map("object_key")
   tmpObjectKey    String?         @map("tmp_object_key")

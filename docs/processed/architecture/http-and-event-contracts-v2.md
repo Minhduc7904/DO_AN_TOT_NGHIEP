@@ -68,10 +68,18 @@ Route đọc nội dung media công khai với người dùng (không cần JWT)
 | `gateway:proxy`         | gateway                          | Mọi route public của mọi service      | Đã có                                                     |
 | `student:profile:write` | auth                             | `POST /internal/v1/students`          | Đã có                                                     |
 | `student:profile:read`  | auth, media, notification-worker | `GET /internal/v1/students[/{id}]`    | Đã có (client media ở R-06, notification-worker ở R-07)      |
-| `media:usage:read`      | course                           | `ids:query`, `usages/urls`            | Đã có (R-06)                                              |
-| `media:content:read`    | course                           | `GET /internal/v1/media/{id}/content` | Đã có (R-06)                                              |
+| `media:usage:read`      | course                           | `ids:query`, `usages/urls`, `usages/by-owner` | Đã có (R-06; `by-owner` ở R-08)                    |
+| `media:content:read`    | ai-worker                        | `GET /internal/v1/media/{id}/content` | Đã có (R-06 cấp cho course; **R-08 chuyển sang `ai-worker`**, course không còn cần)  |
 | `media:cleanup`         | scheduler-worker                 | `POST /internal/v1/media/cleanup`     | Đã có (R-09)                                              |
-| `ai:completion`         | course                           | `POST /internal/v1/ai/completions`    | Dự kiến R-08                                              |
+| `ai:completion`         | ai-worker (trong process) và client ngoài | `POST /internal/v1/ai/completions` | Đã có (R-08); `course` không còn gọi route này           |
+| `ai:document:read`      | course                           | `POST /internal/v1/ai/documents/query` | Đã có (R-08) |
+| `ai:document:write`     | course                           | `POST /internal/v1/ai/documents/sync`  | Đã có (R-08) |
+| `ai:job:read`           | course                           | `GET /internal/v1/ai/jobs[/{job_id}]`  | Đã có (R-08) |
+| `ai:job:write`          | course                           | `POST /internal/v1/ai/jobs`            | Đã có (R-08) |
+| `course:lesson-ai:read` | ai-worker                        | `GET /internal/v1/courses/{c}/lessons/{l}/ai-context` | Đã có (R-08) |
+| `course:lesson-ai:write`| ai-worker                        | `PUT …/ai-content`, `POST …/ai-quizzes` | Đã có (R-08) |
+
+Các scope `ai:document:*`, `ai:job:*` và `course:lesson-ai:*` đã được cấp trong registry `auth` (client `course` và `ai-worker`, xem `SERVICE_CLIENTS_BOOTSTRAP` ở compose).
 
 Một client chỉ được xin token cho các `audience` và `scope` trong registry (`auth_service_clients`); xin ngoài phạm vi → `SERVICE_SCOPE_FORBIDDEN`.
 
@@ -154,6 +162,13 @@ Mã nghiệp vụ bổ sung (giữ từ repo mẫu, cùng envelope):
 |  409 | `AI_TASK_NOT_CONFIGURED`         | ai      | Task chưa có binding model                                 |
 |  502 | `AI_PROVIDER_ERROR`              | ai      | Provider lỗi hoặc không phản hồi hợp lệ                    |
 |  422 | `AI_PROVIDER_REJECTED_REQUEST`   | ai      | Provider từ chối request                                   |
+|  409 | `AI_PROVIDER_KEY_UNREADABLE`     | ai      | API key đã lưu không giải mã được (ciphertext hỏng hoặc đổi `AI_ENCRYPTION_KEY`); nhập lại key |
+|  409 | `AI_REFERENCE_INACTIVE`          | ai      | Gán binding cho model `INACTIVE` hoặc tạo model cho provider `INACTIVE` |
+|  409 | `AI_PROVIDER_NAME_CONFLICT`      | ai      | Tên provider đã tồn tại (không phân biệt hoa thường)       |
+|  409 | `AI_PROVIDER_IN_USE`             | ai      | Xóa provider còn model                                     |
+|  409 | `AI_MODEL_CONFLICT`              | ai      | Provider đã có model cùng `model_name`                     |
+|  409 | `AI_MODEL_IN_USE`                | ai      | Xóa model còn được gán cho một task                        |
+|  409 | `LESSON_CONTENT_EXISTS`          | course  | `SYNTHESIZE_LESSON` trên bài học đã có nội dung mà `overwrite_content=false` |
 |  400 | `MEDIA_CHECKSUM_MISMATCH`        | media   | Checksum upload không khớp                                 |
 |  409 | `MEDIA_NOT_READY`                | media   | Media (hoặc thumbnail) chưa `READY` cho thao tác này       |
 |  413 | `MEDIA_TOO_LARGE`                | media   | Vượt giới hạn kích thước theo loại media                   |
@@ -161,6 +176,7 @@ Mã nghiệp vụ bổ sung (giữ từ repo mẫu, cùng envelope):
 |  409 | `MEDIA_USAGE_CONFLICT`           | media   | Usage vi phạm quy tắc (trùng, singleton, sai loại owner)   |
 |  409 | `NOTIFICATION_BATCH_NOT_RETRYABLE` | notification | Batch chưa kết thúc hoặc không có recipient `FAILED`  |
 |  409 | `NOTIFICATION_BATCH_RETRY_EXISTS`  | notification | Batch nguồn đã có batch retry (`details.retry_batch_id`) |
+|  409 | `SCHEDULER_JOB_NOT_ACTIVE`         | scheduler | Tạo run cho job `PAUSED`/`DISABLED` (`details.status`) |
 
 Không trả stack trace, password, JWT, API key, hoặc chi tiết DB nội bộ. Thông báo lỗi AI phải loại bỏ API key và host của provider.
 
@@ -176,7 +192,6 @@ Gateway chọn service theo prefix dài nhất; chỉ proxy `/api/v1/*`, không 
 | `/api/v1/students`                                      | student      |                                                                   |
 | `/api/v1/courses`, `/api/v1/student`                    | course       | `/api/v1/student/*` là route học của student                      |
 | `/api/v1/media`                                         | media        |                                                                   |
-|  409 | `SCHEDULER_JOB_NOT_ACTIVE`         | scheduler | Tạo run cho job `PAUSED`/`DISABLED` (`details.status`) |
 | `/api/v1/notifications`, `/api/v1/notification-batches` | notification |                                                                   |
 | `/api/v1/scheduler`                                     | scheduler    |                                                                   |
 | `/api/v1/ai`                                            | ai           |                                                                   |
@@ -220,7 +235,7 @@ Ba cửa đăng nhập riêng theo role dùng chung bảng `auth_users` và cùn
 
 ## 4.3. course
 
-Ký hiệu role: `A` admin, `I` instructor, `I*` instructor sở hữu khóa học (`courses.instructor_id`), `S` student, `*` mọi role đã xác thực. Mọi path dưới đây đã triển khai ở R-05 (đối chiếu `lms/services/course/src/adapters/http/`), trừ phần AI ở cuối bảng (R-08).
+Ký hiệu role: `A` admin, `I` instructor, `I*` instructor sở hữu khóa học (`courses.instructor_id`), `S` student, `*` mọi role đã xác thực. Mọi path dưới đây đã triển khai (đối chiếu `lms/services/course/src/adapters/http/`): phần học liệu/quiz ở R-05, phần AI ở cuối bảng ở R-08.
 
 | Method | Path                                                      | Role  | Use case                                                                                                                     |
 | ------ | --------------------------------------------------------- | :---: | ---------------------------------------------------------------------------------------------------------------------------- |
@@ -253,11 +268,11 @@ Ký hiệu role: `A` admin, `I` instructor, `I*` instructor sở hữu khóa h�
 | PUT    | `/api/v1/student/attempts/{attempt_id}/answers`           |   S   | `save-attempt-answers` (thay toàn bộ câu trả lời; 409 `QUIZ_ATTEMPT_ALREADY_SUBMITTED`)                                      |
 | POST   | `/api/v1/student/attempts/{attempt_id}/submit`            |   S   | `submit-quiz-attempt` (200; `QuizGrader`; 409 `QUIZ_ATTEMPT_ALREADY_SUBMITTED`)                                              |
 | GET    | `/api/v1/student/attempts/{attempt_id}`                   |   S   | `get-my-attempt` (đáp án đúng chỉ lộ sau khi đã nộp)                                                                         |
-| GET    | `…/lessons/{lesson_id}/ai-documents`                      | A, I* | `get-lesson-ai-documents` (**R-08**)                                                                                         |
-| POST   | `…/lessons/{lesson_id}/ai-documents/sync`                 | A, I* | `sync-lesson-ai-documents` (**R-08**)                                                                                        |
-| GET    | `…/lessons/{lesson_id}/ai-jobs`                           | A, I* | `get-lesson-ai-jobs` (**R-08**)                                                                                              |
-| POST   | `…/lessons/{lesson_id}/ai-jobs`                           | A, I* | `create-lesson-ai-job` (**R-08**)                                                                                            |
-| GET    | `…/lessons/{lesson_id}/ai-jobs/{job_id}`                  | A, I* | `get-lesson-ai-job` (**R-08**)                                                                                               |
+| GET    | `…/lessons/{lesson_id}/ai-documents`                      | A, I* | `get-lesson-ai-documents` (facade: tệp đính kèm lấy từ `media`, trạng thái từ `ai`; `NOT_QUEUED` nếu `ai` chưa có bản ghi, `UNSUPPORTED` nếu định dạng không hỗ trợ, `EXTRACTING` khi `ai` đang xử lý; không trả văn bản) |
+| POST   | `…/lessons/{lesson_id}/ai-documents/sync`                 | A, I* | `sync-lesson-ai-documents` (200; chuyển tệp đính kèm sang `ai` để xếp hàng chờ, idempotent; `?retry_failed=true` đưa `FAILED` về `PENDING`) |
+| GET    | `…/lessons/{lesson_id}/ai-jobs`                           | A, I* | `get-lesson-ai-jobs` (tối đa 10 job mới nhất, không kèm nội dung cũ của bài học)                                              |
+| POST   | `…/lessons/{lesson_id}/ai-jobs`                           | A, I* | `create-lesson-ai-job` (202, job `PENDING`; 409 `AI_JOB_ALREADY_ACTIVE`, 409 `LESSON_CONTENT_EXISTS`, 422 `AI_DOCUMENTS_NOT_EXTRACTED`) |
+| GET    | `…/lessons/{lesson_id}/ai-jobs/{job_id}`                  | A, I* | `get-lesson-ai-job` (kèm `previous_content_markdown` nếu job đã ghi đè nội dung; 404 nếu job không thuộc bài học)              |
 
 Quy tắc:
 
@@ -265,7 +280,14 @@ Quy tắc:
 - Quiz: tiêu đề 2–200 ký tự, markdown ≤ 20000, lựa chọn ≤ 2000, ≤ 100 câu hỏi, mỗi câu 2–10 lựa chọn, điểm > 0, ≤ 100 và ≤ 2 chữ số thập phân; `SINGLE_CHOICE` có đúng 1 đáp án đúng, `MULTIPLE_CHOICE` có ≥ 1. Vi phạm trả 400 `VALIDATION_ERROR` kèm danh sách `path`/`message`.
 - Student chỉ thấy quiz `PUBLISHED`; mỗi (quiz, student) có tối đa một attempt `IN_PROGRESS` (partial unique index `quiz_attempts_one_in_progress`).
 - Chấm điểm: câu đúng khi tập lựa chọn bằng tập đáp án đúng (không chấm từng phần); `score` là tổng điểm các câu đúng, `max_score` là tổng điểm quiz tại thời điểm nộp (snapshot).
-- Đồng bộ usage media đã có từ R-06: create/update course, lesson, quiz ghi command `media.markdown-usage.synchronize` vào `outbox_messages` cùng transaction; xóa course/lesson/quiz hỏi `media` (`ids:query`) rồi ghi `media.usages.delete-by-ids` cùng transaction (media không trả lời thì 503 và không xóa). Luồng AI chưa có: producer thêm ở R-08.
+- Đồng bộ usage media đã có từ R-06: create/update course, lesson, quiz ghi command `media.markdown-usage.synchronize` vào `outbox_messages` cùng transaction; xóa course/lesson/quiz hỏi `media` (`ids:query`) rồi ghi `media.usages.delete-by-ids` cùng transaction (media không trả lời thì 503 và không xóa). Ghi nội dung bài học hoặc quiz bằng job AI đi cùng đường này (job gọi lại `update-lesson`/`create-quiz`).
+- Soạn bài học bằng AI (R-08): **`course` chỉ là facade mỏng**. Dữ liệu tài liệu và job nằm ở `ai_db` (`ai_documents`, `ai_jobs`, §4.7) và việc nền chạy ở `ai-worker`; `course` không có bảng, worker hay client provider cho tính năng này. Năm route trên giữ nguyên hợp đồng public. `course` chỉ làm bốn việc:
+  - Kiểm tra bài học thuộc khóa học và quyền sở hữu (A, I* như mọi route quản lý bài học) trước khi gọi `ai`; 404/403 do `course` trả, `ai` không biết khóa học hay quyền.
+  - Lấy tệp đính kèm từ `media` (`GET /internal/v1/media/usages/by-owner?owner_kind=COURSE&owner_id={lesson_id}&usage_type=LESSON_ATTACHMENT`, §5) và gửi metadata tệp sang `ai` (`documents/sync|query`); `ai` giữ `PROCESSING` còn facade hiển thị `EXTRACTING` để hợp đồng public không đổi. Bài học không có tệp đính kèm thì trả danh sách rỗng, không gọi `ai`.
+  - Tạo job: với `SYNTHESIZE_LESSON` mà bài học đã có nội dung và `overwrite_content=false` thì 409 `LESSON_CONTENT_EXISTS` (không gọi `ai`); `media_ids` phải là tập con tệp đính kèm của bài học (khác thì 422 `AI_DOCUMENTS_NOT_EXTRACTED` kèm `details.media_ids`); rồi `POST /internal/v1/ai/jobs` với `requested_by` = người gọi (id, role) được truyền tường minh. Lỗi nghiệp vụ của `ai` (409 `AI_JOB_ALREADY_ACTIVE`, 422 `AI_DOCUMENTS_NOT_EXTRACTED`, 404, …) được chuyển nguyên mã, mã HTTP và `details`.
+  - Phục vụ `ai-worker` ba route nội bộ (§5): `ai-context` (tiêu đề + nội dung hiện có), `ai-content` (ghi nội dung bài học, trả bản cũ; tái dùng `update-lesson`, đi cùng đường đồng bộ usage media) và `ai-quizzes` (tái dùng `create-quiz`, luôn `DRAFT`; dữ liệu quiz sai trả 400 `VALIDATION_ERROR` kèm `path`/`message` để model sửa). Cả hai route ghi chạy dưới danh nghĩa `requested_by` nên quyền sở hữu khóa học vẫn được kiểm tra; `LESSON_CONTENT_EXISTS` (409) khi bài học có nội dung mà không `overwrite_content`.
+  - Hệ quả: các route AI của `course` phụ thuộc `ai` đang chạy (`ai` chết → 503/504 `DEPENDENCY_*`, tính năng khác của `course` không ảnh hưởng). Xóa bài học/khóa học/media **không** xóa `ai_documents`/`ai_jobs` của chúng (không có FK chéo DB, chưa có chính sách retention): bản ghi mồ côi vô hại, ghi nhận ở ma trận dữ liệu.
+  - Cạnh `course → ai → course` tạo vòng phụ thuộc: chấp nhận vì chiều `ai → course` chỉ do `ai-worker` gọi bất đồng bộ sau khi `course` đã nhận `202` (course không bao giờ chờ `ai-worker`); đường gọi ghi telemetry `dependency_identity=ai-worker-course` (service-catalogue-and-topology-v2 §cạnh phụ thuộc).
 
 ---
 
@@ -303,6 +325,8 @@ Bucket MinIO: `images`, `videos`, `documents`, `audios`, `other` (chọn theo lo
 Presigned POST bắt buộc lộ key `tmp/…` cho trình duyệt; key cuối cùng chỉ `media` biết. Phần mở rộng lấy từ tên file, chỉ giữ ký tự an toàn `[a-z0-9]`, mặc định `bin`.
 
 **Giới hạn kích thước** theo loại (cấu hình trong code): ảnh 10 MB, video 500 MB, tài liệu 50 MB, audio 100 MB, khác 25 MB; vượt giới hạn trả `MEDIA_TOO_LARGE` (413). Upload multipart qua `media` bị chặn thêm bởi `MEDIA_MULTIPART_MAX_BYTES` (mặc định 25 MB); file lớn hơn phải dùng `upload-intents`.
+
+**Cờ `extract_text` (R-08)**: `upload-intents` (JSON `extract_text: boolean`, mặc định `false`) và `POST /api/v1/media` (multipart field `extract_text` = `true|false`) nhận cờ yêu cầu trích văn bản bằng AI. Cờ chỉ hợp lệ cho loại tệp `ai` đọc được (TXT/MD, DOCX, PDF, ảnh) và kích thước ≤ 15 MB; vi phạm trả 400 `VALIDATION_ERROR`, giá trị không phải boolean cũng 400. Cờ lưu ở cột `media_objects.extract_text` và hiện trong DTO media. Khi media chuyển `READY` (upload multipart hoặc `upload-complete`), `media` ghi command `ai.document.extract` (§6.3) vào `outbox_messages` **trong cùng transaction**; media `FAILED` thì không có command. `ai` tạo bản ghi tài liệu theo `media_id` (idempotent), nên cùng tệp được dùng lại khi gắn vào bài học. `media` sao chép bảng phân loại định dạng của `ai` (`isExtractableDocument`) để từ chối sớm; `ai` vẫn là nơi quyết định `UNSUPPORTED`.
 
 **Thumbnail**: ảnh dùng `sharp` (WebP, cạnh dài tối đa 480 px), video lấy một khung hình bằng `ffmpeg` (có trong image `media`). `GET /thumbnail` stream WebP khi `thumbnail_status=READY`; ngược lại trả `MEDIA_NOT_READY` kèm `thumbnail_status` trong `details`. `thumbnail/retry` đặt lại job và gửi lại command `media.thumbnail.generate`.
 
@@ -405,6 +429,34 @@ Phần inbox là mới so với repo mẫu. Email đi qua SMTP; lỗi gửi ghi 
 
 Task key hợp lệ: `document-extraction`, `lesson-synthesis`, `quiz-authoring`. API key lưu mã hóa AES-256-GCM (khóa từ `AI_ENCRYPTION_KEY`), API chỉ trả `api_key_hint`.
 
+Quy tắc (R-08, đối chiếu `lms/services/ai`):
+
+- **Provider**: `provider_type` ∈ `OPENAI`, `GEMINI`, `ANTHROPIC`, `MISTRAL`, `CUSTOM` (mọi loại nói chuẩn OpenAI chat-completions); bỏ `base_url` thì dùng endpoint mặc định của loại, `CUSTOM` bắt buộc có (URL http(s) tuyệt đối, không chứa user/password). `name` 2–100 ký tự, duy nhất không phân biệt hoa thường (409 `AI_PROVIDER_NAME_CONFLICT`). `api_key` 8–500 ký tự không có khoảng trắng, chỉ ghi; `PUT` không gửi `api_key` thì giữ key cũ. Response chỉ có `api_key_hint` (`****` + 4 ký tự cuối). Xóa provider còn model → 409 `AI_PROVIDER_IN_USE`.
+- **Model**: `(provider_id, model_name)` duy nhất (409 `AI_MODEL_CONFLICT`); không đổi được provider; xóa model còn binding → 409 `AI_MODEL_IN_USE`.
+- **Binding**: `PUT /service-bindings/{task_key}` body `{model_id}` (201 lần đầu, 200 khi đổi model); model hoặc provider `INACTIVE` → 409 `AI_REFERENCE_INACTIVE`; `task_key` ngoài danh sách → 400; `GET`/`DELETE` task chưa gán → 404.
+- **Health check**: `POST …/health-check` gọi `GET {base_url}/models` với timeout `AI_HEALTH_CHECK_TIMEOUT_MS` (6 giây), trả `health_status` ∈ `ONLINE`, `AUTH_FAILED` (401/403), `UNREACHABLE` (không kết nối được hoặc quá hạn), `ERROR` (mã khác), `DISABLED` (provider `INACTIVE`, không gọi ra ngoài); không ghi DB. `health-checks` kiểm tra mọi provider.
+- **Completion** (`POST /internal/v1/ai/completions`, scope `ai:completion`): body `{task, messages, tools}`; `messages[]` có `role` (`system|user|assistant|tool`), `text` hoặc `parts[]` (`text`, `image`, `file` với `data_base64`; PDF/ảnh tối đa ~24 triệu ký tự tổng), `tool_calls[]` (`arguments_json`), `tool_call_id`. Trả `{task, provider_type, model_name, text, tool_calls, finish_reason, prompt_tokens, completion_tokens, latency_ms}` (`finish_reason=length` nghĩa là bị cắt). Timeout `AI_COMPLETION_TIMEOUT_MS` (240 giây), không retry, không theo redirect của provider. Lỗi: task chưa gán → 409 `AI_TASK_NOT_CONFIGURED`; key không giải mã được → 409 `AI_PROVIDER_KEY_UNREADABLE`; provider 400/422 → 422 `AI_PROVIDER_REJECTED_REQUEST`; provider 401/403/429/5xx hoặc phản hồi sai định dạng → 502 `AI_PROVIDER_ERROR` (`details.reason` ∈ `AUTH_FAILED`, `RATE_LIMITED`, `INVALID_RESPONSE`, `UPSTREAM_ERROR`); quá hạn → 504 `DEPENDENCY_TIMEOUT`; không kết nối được → 503 `DEPENDENCY_UNAVAILABLE` (dependency `ai-llm-provider`). Thông điệp lỗi không bao giờ chứa API key hay host của provider.
+- **Nhật ký gọi**: mỗi lần completion (thành công hay lỗi) ghi `ai_invocations` (task, provider, model, trạng thái, mã lỗi, token, độ trễ, số tool call); không lưu nội dung message hay API key.
+
+**Tài liệu và job AI của bài học (R-08, thiết kế lại)**: `ai` sở hữu việc trích văn bản và chạy job; `course`/`media` chỉ gọi `ai`. Bề mặt nội bộ (không qua Gateway, scope ở §1.1; `ai` không biết khóa học hay quyền, `course` đã kiểm tra và truyền `requested_by`):
+
+| Method | Path                                | Scope               | Mô tả                                                                                                                   |
+| ------ | ----------------------------------- | ------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| POST   | `/internal/v1/ai/documents/sync`    | `ai:document:write` | Body `{documents[1..100]: {media_id, file_name, content_type, media_type}, retry_failed}`; chèn bản ghi còn thiếu `PENDING` (hoặc `UNSUPPORTED`) kèm command `ai.document.extract`; `retry_failed` đặt `FAILED` về `PENDING`; trạng thái `PROCESSING` quá hạn lease được xử lý như bên dưới. Trả trạng thái từng tệp (200). |
+| POST   | `/internal/v1/ai/documents/query`   | `ai:document:read`  | Cùng body nhưng không ghi; tệp chưa có bản ghi trả `NOT_QUEUED` hoặc `UNSUPPORTED`; không bao giờ trả văn bản.         |
+| POST   | `/internal/v1/ai/jobs`              | `ai:job:write`      | Body `{job_type, course_id, lesson_id, media_ids[1..20], question_count?, overwrite_content, requested_by: {id, role}}`; 202, job `PENDING`; 409 `AI_JOB_ALREADY_ACTIVE`, 422 `AI_DOCUMENTS_NOT_EXTRACTED` (kèm `details.media_ids`). |
+| GET    | `/internal/v1/ai/jobs?lesson_id=…`  | `ai:job:read`       | Tối đa 10 job mới nhất của bài học (`limit` ≤ 10).                                                                      |
+| GET    | `/internal/v1/ai/jobs/{job_id}?lesson_id=…` | `ai:job:read` | Chi tiết kèm `previous_content_markdown`; 404 nếu job không thuộc bài học.                                       |
+
+- **Dữ liệu** (`ai_db`): `ai_documents` (duy nhất theo `media_id`; `status` `PENDING|PROCESSING|EXTRACTED|FAILED|UNSUPPORTED`, văn bản, số lần thử, lease, `error_code`) và `ai_jobs` (`job_type` `SYNTHESIZE_LESSON|GENERATE_QUIZ`, `course_id`, `lesson_id`, `requested_by_id`/`requested_by_role`, `status`, lease, `result_quiz_id`, `previous_content_markdown`; partial unique index `ai_jobs_one_active` trên `(lesson_id, job_type)` khi `status` ∈ `PENDING|RUNNING`).
+- **Hai tiến trình, cùng image**: `ai` (API, cổng 3009, relay outbox) và `ai-worker` (cổng 3011, `node dist/worker.js`, chỉ `/health` `/ready`). `ai-worker` gọi provider **trong process** (không qua HTTP), nên `POST /internal/v1/ai/completions` giữ nguyên chỉ cho client ngoài.
+- **Trích xuất** (command `ai.document.extract`, §6.3): worker nhận tài liệu bằng lease (`AI_WORKER_LEASE_MS`, mặc định 10 phút), tải byte qua `GET /internal/v1/media/{id}/content` (tối đa 15 MB, scope `media:content:read`): TXT/MD đọc UTF-8, DOCX qua parser trong `ai`, PDF/ảnh gửi task `document-extraction`. Văn bản quá 300.000 ký tự bị cắt kèm ghi chú; lỗi ghi `FAILED` + `error_code` (`UNSUPPORTED_FORMAT`, `DOCUMENT_TOO_LARGE`, `EXTRACTION_EMPTY`, `EXTRACTION_FAILED`, `EXTRACTION_INTERRUPTED`, hoặc mã lỗi của `media`/`ai`). Tối đa 3 lần nhận; tài liệu `PROCESSING` quá lease chỉ được phục hồi khi `documents/sync` được gọi lại: hết 3 lần thì `FAILED`/`EXTRACTION_INTERRUPTED`, còn lượt thì về `PENDING` kèm command mới.
+- **Job** (command `ai.job.run`, §6.3): `SYNTHESIZE_LESSON` (task `lesson-synthesis`, tool `save_lesson_content`) hoặc `GENERATE_QUIZ` (task `quiz-authoring`, tool `create_quiz`, `question_count` 1–30, mặc định 10, đúng số câu yêu cầu). Mọi tài liệu phải `EXTRACTED`; tổng văn bản ≤ 150.000 ký tự. Worker đọc `ai-context` từ `course`, chạy vòng agent tối đa 6 lượt (gia hạn lease trước mỗi lượt), tool gọi `ai-content`/`ai-quizzes` của `course` với `requested_by` của job; dữ liệu quiz sai (400) được trả lại cho model sửa. Ghi thành công thì `COMPLETED` (quiz luôn `DRAFT`). `error_code`: `AI_NO_RESULT`, `AI_TOO_MANY_STEPS`, `DOCUMENT_NOT_READY`, `DOCUMENTS_TOO_LARGE`, `LESSON_CONTENT_EXISTS`, `WORKER_INTERRUPTED`, hoặc mã lỗi của `ai`/`course`.
+- **Lease và giao lại command**: mỗi job/tài liệu có đúng **một** command, ghi vào outbox cùng transaction với bản ghi (không tự enqueue lại). Tính đúng đắn đến từ máy trạng thái + lease (`UPDATE … WHERE status=… `/`FOR UPDATE SKIP LOCKED`), không từ inbox: command giao lại khi bản ghi đang `PROCESSING|RUNNING` còn lease là no-op; job `RUNNING` quá lease thành `FAILED`/`WORKER_INTERRUPTED` và **không chạy lại** (tránh tạo trùng quiz hay ghi đè lần hai). Chuyển trạng thái cuối được ghi cùng dòng `inbox_states` trong một transaction nên command đã xử lý xong bị khử trùng. Command vào `<queue>.error` thì `onFault` đặt bản ghi `FAILED`.
+- Văn bản tài liệu là dữ liệu không tin cậy: nằm trong khối `<document>`, system prompt yêu cầu không làm theo chỉ dẫn trong tài liệu.
+- **Lỗi nghiệp vụ**: 409 `AI_JOB_ALREADY_ACTIVE`, 422 `AI_DOCUMENTS_NOT_EXTRACTED`, 404 job; `LESSON_CONTENT_EXISTS` do `course` trả (facade và `ai-content`).
+- **Cấu hình**: `AI_RABBITMQ_URL`, `AI_OUTBOX_*` (API và worker); worker thêm `SERVICE_CLIENT_ID/SECRET`, `AI_COURSE_BASE_URL`, `AI_MEDIA_BASE_URL`, `AI_WORKER_PREFETCH|MAX_ATTEMPTS|RETRY_DELAY_MS|LEASE_MS`. `AI_WORKER_LEASE_MS` phải lớn hơn `AI_COMPLETION_TIMEOUT_MS` (240 giây).
+
 ---
 
 # 5. Contract nội bộ `/internal/v1` (không qua Gateway, cần service token)
@@ -418,9 +470,18 @@ Task key hợp lệ: `document-extraction`, `lesson-synthesis`, `quiz-authoring`
 | student | GET    | `/internal/v1/students/{student_id}`    | auth, media          | `student:profile:read`  | auth: kiểm tra hồ sơ tồn tại và `ACTIVE` khi student đăng nhập (404 → 403, student lỗi → 503); media: kiểm tra actor     |
 | media   | POST   | `/internal/v1/media/usages/ids:query`   | course               | `media:usage:read`      | Lấy usage ID theo owner (xóa khóa học)                                                                                   |
 | media   | GET    | `/internal/v1/media/usages/urls`        | course               | `media:usage:read`      | URL các usage                                                                                                            |
-| media   | GET    | `/internal/v1/media/{media_id}/content` | course               | `media:content:read`    | Byte tài liệu cho trích văn bản AI                                                                                       |
+| media   | GET    | `/internal/v1/media/{media_id}/content` | ai-worker            | `media:content:read`    | Byte tệp cho trích văn bản AI (R-06 cấp cho course; R-08 chuyển sang `ai-worker`)                                        |
+| media   | GET    | `/internal/v1/media/usages/by-owner`    | course               | `media:usage:read`      | Usage của một owner kèm metadata tệp (query `owner_kind`, `owner_id`, `usage_type`; theo `position`); course dùng cho tệp `LESSON_ATTACHMENT` của bài học (R-08) |
 | media   | POST   | `/internal/v1/media/cleanup`            | scheduler-worker     | `media:cleanup`         | Dọn media không dùng quá hạn và phục hồi upload `PENDING` stale; body tùy chọn `{retention_hours, pending_grace_minutes, limit}`, trả tóm tắt số lượng (job `MEDIA_UNUSED_CLEANUP`, §4.4, §4.6; đã có từ R-09) |
-| ai      | POST   | `/internal/v1/ai/completions`           | course               | `ai:completion`         | Hoàn thành hội thoại; body `{task, messages, tools}`, hỗ trợ phần ảnh/PDF; timeout 240 giây                              |
+| ai      | POST   | `/internal/v1/ai/completions`           | client ngoài (ai-worker gọi trong process) | `ai:completion` | Hoàn thành hội thoại; body `{task, messages, tools}`, hỗ trợ phần ảnh/PDF; timeout 240 giây (§4.7; R-08, `course` không còn gọi) |
+| ai      | POST   | `/internal/v1/ai/documents/sync`        | course               | `ai:document:write`     | Xếp tệp đính kèm vào hàng trích xuất, idempotent theo `media_id` (§4.7; R-08)                                            |
+| ai      | POST   | `/internal/v1/ai/documents/query`       | course               | `ai:document:read`      | Trạng thái trích xuất theo tệp, không ghi, không trả văn bản (§4.7; R-08)                                                |
+| ai      | POST   | `/internal/v1/ai/jobs`                  | course               | `ai:job:write`          | Tạo job AI `PENDING` cho bài học, kèm `requested_by` (202; §4.7; R-08)                                                   |
+| ai      | GET    | `/internal/v1/ai/jobs`                  | course               | `ai:job:read`           | Tối đa 10 job gần nhất của bài học (`?lesson_id=`; R-08)                                                                  |
+| ai      | GET    | `/internal/v1/ai/jobs/{job_id}`         | course               | `ai:job:read`           | Chi tiết job kèm `previous_content_markdown` (`?lesson_id=`; R-08)                                                       |
+| course  | GET    | `/internal/v1/courses/{course_id}/lessons/{lesson_id}/ai-context` | ai-worker | `course:lesson-ai:read` | Tiêu đề và nội dung hiện có của bài học (404 nếu bài học không thuộc khóa học; R-08)                    |
+| course  | PUT    | `/internal/v1/courses/{course_id}/lessons/{lesson_id}/ai-content` | ai-worker | `course:lesson-ai:write` | Ghi nội dung bài học dưới danh nghĩa `requested_by`; trả `previous_content_markdown`; 409 `LESSON_CONTENT_EXISTS` nếu đã có nội dung mà `overwrite_content=false` (R-08) |
+| course  | POST   | `/internal/v1/courses/{course_id}/lessons/{lesson_id}/ai-quizzes` | ai-worker | `course:lesson-ai:write` | Tạo quiz `DRAFT` dưới danh nghĩa `requested_by` (201 `{quiz_id}`); dữ liệu sai 400 `VALIDATION_ERROR` để model sửa (R-08) |
 
 Endpoint `/internal/v1/*` trả lỗi cùng envelope; header `x-principal-*` **không có hiệu lực** ở route internal (danh tính là service token); nếu một route internal cần biết actor (ví dụ course → ai), actor là tham số tường minh của request do hợp đồng của route đó quy định, không lấy từ header.
 
@@ -472,6 +533,8 @@ Trace context được inject vào header/properties RabbitMQ làm carrier chín
 | `media.notification-usage.register-batch` | notification-worker               | media-worker        | Đăng ký usage theo batch (≤ 500 item mỗi lô, kèm `job_id`)              |
 | `media.notification-usage.start-job`      | notification                      | media-worker        | Mở job usage cho batch                                                  |
 | `media.notification-usage.complete-job`   | notification-worker               | media-worker        | Hoàn tất job usage (kèm số usage kỳ vọng)                               |
+| `ai.document.extract`                     | ai, media                         | ai-worker           | Trích văn bản một tệp (`media_id`, `file_name`, `content_type`, `media_type`); `ai` phát khi `documents/sync`, `media` phát khi tệp có cờ `extract_text` thành `READY`; queue `ai-worker--extract-ai-document-v1` |
+| `ai.job.run`                              | ai                                | ai-worker           | Chạy một job AI đã ghi (`job_id`); đúng một command mỗi job, ghi cùng transaction với `ai_jobs`; queue `ai-worker--run-ai-job-v1` |
 | `notification.batch.snapshot`             | notification                      | notification-worker | Chụp danh sách recipient theo trang, chèn item idempotent               |
 | `notification.batch.dispatch`             | notification-worker               | notification-worker | Nhận một lô item bằng lease, gửi email, tự enqueue lại tới khi hết      |
 | `notification.single.dispatch`            | notification                      | notification-worker | Gửi email cho thông báo đơn đã nằm trong inbox                          |

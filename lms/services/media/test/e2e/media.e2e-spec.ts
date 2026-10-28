@@ -372,6 +372,175 @@ describe('media + media-worker (PostgreSQL, MinIO, RabbitMQ thật)', () => {
     ).toBe(true);
   });
 
+  describe('cờ extract_text → ai.document.extract', () => {
+    interface OutboxRow {
+      routing_key: string;
+      envelope: { command_name: string; producer: { service_name: string }; payload: unknown };
+    }
+    const extractCommands = (mediaId: string): Promise<OutboxRow[]> =>
+      api.get(PrismaService).$queryRawUnsafe<OutboxRow[]>(
+        `SELECT routing_key, envelope FROM outbox_messages
+            WHERE envelope->>'command_name' = 'ai.document.extract'
+              AND envelope->'payload'->>'media_id' = $1`,
+        mediaId,
+      );
+    const intentBody = (
+      content: Buffer,
+      fileName: string,
+      mimeType: string,
+      extra: Record<string, unknown> = {},
+    ): Record<string, unknown> => ({
+      file_name: fileName,
+      mime_type: mimeType,
+      size_bytes: content.length,
+      checksum_sha256: createHash('sha256').update(content).digest('hex'),
+      ...extra,
+    });
+
+    it('multipart có extract_text=true: lưu cờ và ghi command vào outbox cùng lúc media READY; không cờ thì không có command', async () => {
+      const pdf = Buffer.from('%PDF-1.4 tài liệu cần trích xuất');
+      const flagged = await http()
+        .post('/api/v1/media')
+        .set(instructor)
+        .field('extract_text', 'true')
+        .attach('file', pdf, { filename: 'giao-trinh.pdf', contentType: 'application/pdf' })
+        .expect(201);
+      const id = flagged.body.data.id as string;
+      expect(flagged.body.data).toMatchObject({ status: 'READY', extract_text: true });
+
+      const commands = await extractCommands(id);
+      expect(commands).toHaveLength(1);
+      expect(commands[0]).toMatchObject({
+        routing_key: 'ai-worker--extract-ai-document-v1',
+        envelope: {
+          command_name: 'ai.document.extract',
+          producer: { service_name: 'media' },
+          payload: {
+            media_id: id,
+            file_name: 'giao-trinh.pdf',
+            content_type: 'application/pdf',
+            media_type: 'DOCUMENT',
+          },
+        },
+      });
+
+      for (const extra of [{}, { extract_text: 'false' }]) {
+        const plain = http().post('/api/v1/media').set(instructor);
+        for (const [key, value] of Object.entries(extra)) plain.field(key, value as string);
+        const response = await plain
+          .attach('file', pdf, { filename: 'khong-co.pdf', contentType: 'application/pdf' })
+          .expect(201);
+        expect(response.body.data).toMatchObject({ status: 'READY', extract_text: false });
+        expect(await extractCommands(response.body.data.id as string)).toEqual([]);
+      }
+    });
+
+    it('upload trực tiếp: cờ nằm ở upload-intent, command chỉ được ghi khi upload-complete làm media READY', async () => {
+      const txt = Buffer.from('Ghi chú bài giảng');
+      const intent = await http()
+        .post('/api/v1/media/upload-intents')
+        .set(instructor)
+        .send(intentBody(txt, 'ghi-chu.txt', 'text/plain', { extract_text: true }))
+        .expect(201);
+      const id = intent.body.data.media_id as string;
+      expect(
+        (await api.get(PrismaService).mediaObject.findUnique({ where: { id } }))?.extractText,
+      ).toBe(true);
+      expect(await extractCommands(id)).toEqual([]);
+
+      const { upload } = intent.body.data as {
+        upload: { url: string; fields: Record<string, string> };
+      };
+      const form = new FormData();
+      for (const [key, value] of Object.entries(upload.fields)) form.append(key, value);
+      form.append('file', new Blob([new Uint8Array(txt)], { type: 'text/plain' }), 'ghi-chu.txt');
+      expect((await fetch(upload.url, { method: 'POST', body: form })).status).toBeLessThan(300);
+      const complete = await http().post(`/api/v1/media/${id}/upload-complete`).set(instructor);
+      expect(complete.status).toBe(200);
+      expect(complete.body.data).toMatchObject({ status: 'READY', extract_text: true });
+
+      // Hoàn tất lặp lại không phát thêm command.
+      await http().post(`/api/v1/media/${id}/upload-complete`).set(instructor);
+      expect(await extractCommands(id)).toHaveLength(1);
+    });
+
+    it('checksum sai làm media FAILED thì không có command trích xuất', async () => {
+      const txt = Buffer.from('Nội dung');
+      const intent = await http()
+        .post('/api/v1/media/upload-intents')
+        .set(instructor)
+        .send(
+          intentBody(txt, 'sai.txt', 'text/plain', {
+            extract_text: true,
+            checksum_sha256: 'c'.repeat(64),
+          }),
+        )
+        .expect(201);
+      const id = intent.body.data.media_id as string;
+      const { upload } = intent.body.data as {
+        upload: { url: string; fields: Record<string, string> };
+      };
+      const form = new FormData();
+      for (const [key, value] of Object.entries(upload.fields)) form.append(key, value);
+      form.append('file', new Blob([new Uint8Array(txt)], { type: 'text/plain' }), 'sai.txt');
+      await fetch(upload.url, { method: 'POST', body: form });
+
+      const complete = await http().post(`/api/v1/media/${id}/upload-complete`).set(instructor);
+      expect(complete.body.error.code).toBe('MEDIA_CHECKSUM_MISMATCH');
+      expect(await extractCommands(id)).toEqual([]);
+    });
+
+    it('ma trận validate: chỉ tài liệu/ảnh ai hỗ trợ và <= 15 MB; giá trị không phải boolean bị từ chối', async () => {
+      const intent = (body: Record<string, unknown>): request.Test =>
+        http().post('/api/v1/media/upload-intents').set(instructor).send(body);
+      const base = (fileName: string, mimeType: string, size = 100): Record<string, unknown> => ({
+        file_name: fileName,
+        mime_type: mimeType,
+        size_bytes: size,
+        checksum_sha256: 'd'.repeat(64),
+      });
+
+      // Loại ai không đọc được: video, âm thanh, tệp nhị phân lạ.
+      for (const [name, type] of [
+        ['phim.mp4', 'video/mp4'],
+        ['nhac.mp3', 'audio/mpeg'],
+      ] as const) {
+        const response = await intent({ ...base(name, type), extract_text: true }).expect(400);
+        expect(response.body.error.code).toBe('VALIDATION_ERROR');
+      }
+      // > 15 MB (ảnh cho phép tới 10 MB nên dùng tài liệu 15 MB + 1 byte).
+      const tooBig = await intent({
+        ...base('lon.pdf', 'application/pdf', 15 * 1024 * 1024 + 1),
+        extract_text: true,
+      });
+      expect([400, 413]).toContain(tooBig.status);
+      // extract_text phải là boolean.
+      for (const bad of ['true', 1, null, 'yes']) {
+        await intent({ ...base('a.pdf', 'application/pdf'), extract_text: bad }).expect(400);
+      }
+      // Ảnh và tài liệu hỗ trợ được chấp nhận.
+      for (const [name, type] of [
+        ['a.pdf', 'application/pdf'],
+        ['b.png', 'image/png'],
+        ['c.md', 'text/markdown'],
+      ] as const) {
+        await intent({ ...base(name, type), extract_text: true }).expect(201);
+      }
+      await intent(base('phim.mp4', 'video/mp4')).expect(201);
+
+      // Multipart: giá trị không phải 'true'/'false' và video có cờ đều bị từ chối.
+      const upload = (extra: string, name = 'x.pdf', type = 'application/pdf'): request.Test =>
+        http()
+          .post('/api/v1/media')
+          .set(instructor)
+          .field('extract_text', extra)
+          .attach('file', Buffer.from('%PDF-1.4'), { filename: name, contentType: type });
+      await upload('maybe').expect(400);
+      await upload('1').expect(400);
+      await upload('true', 'phim.mp4', 'video/mp4').expect(400);
+    });
+  });
+
   it('usage: quy tắc owner/type, thay thế singleton, sắp xếp, xóa và URL công khai', async () => {
     const image = await (async () => {
       const { mediaId } = await uploadDirect(instructor, await png(), 'a.png', 'image/png');

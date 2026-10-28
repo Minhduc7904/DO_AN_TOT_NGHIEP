@@ -5,6 +5,8 @@ import { fileURLToPath } from 'node:url';
 import { spawn } from 'node:child_process';
 
 export const REQUIRED_SERVICES = Object.freeze([
+  'ai',
+  'ai-worker',
   'auth',
   'course',
   'gateway',

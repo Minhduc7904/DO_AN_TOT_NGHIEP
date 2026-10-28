@@ -9,7 +9,8 @@ import type { MediaUnitOfWork } from '../../ports/unit-of-work.js';
 
 /**
  * Kiểm tra object tạm (tồn tại, đúng dung lượng, đúng SHA-256), chuyển sang key cuối cùng và đánh
- * dấu `READY`. Sai checksum thì xóa object tạm và đánh dấu `FAILED`. Gọi lại khi đã `READY` là no-op.
+ * dấu `READY`. Sai checksum thì xóa object tạm và đánh dấu `FAILED`. Gọi lại khi đã `READY` là no-op
+ * (nên lệnh trích văn bản chỉ phát đúng một lần, lúc chuyển sang `READY`).
  */
 export class CompleteDirectUploadUseCase {
   constructor(
@@ -63,6 +64,8 @@ export class CompleteDirectUploadUseCase {
         });
         await stores.commands.requestThumbnail(media.id);
       }
+      // Cùng transaction với việc đánh dấu READY: tệp READY có cờ thì chắc chắn có lệnh trích văn bản.
+      if (media.extractText) await stores.commands.requestDocumentExtraction(media);
       return updated ?? media;
     });
     await this.storage.remove(media.bucket, media.tmpObjectKey).catch(() => undefined);

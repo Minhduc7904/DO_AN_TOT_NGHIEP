@@ -56,11 +56,9 @@ Seed: một admin cố định (qua `AUTH_BOOTSTRAP_ADMIN_*`), một instructor 
 | `quizzes`, `quiz_questions`, `quiz_options` | Cây quiz; câu `SINGLE_CHOICE                       | MULTIPLE_CHOICE`, điểm 0–100                                                                    | Khóa sửa khi đã có attempt                                                                                                 |
 | `quiz_attempts`                             | Lượt làm; `status` `IN_PROGRESS                    | SUBMITTED`, điểm và điểm tối đa                                                                 | **Partial unique index** `(quiz_id, student_id) WHERE status = 'IN_PROGRESS'` (thay cột generated `open_marker` của MySQL) |
 | `quiz_attempt_answers`                      | Đáp án đã chọn                                     |                                                                                                 |
-| `lesson_attachment_texts`                   | Văn bản trích từ tài liệu đính kèm                 | Trạng thái trích; lease `FOR UPDATE SKIP LOCKED`; tối đa 3 lần, lease 10 phút                   |
-| `lesson_ai_jobs`                            | Job `SYNTHESIZE_LESSON`/`GENERATE_QUIZ`            | Một job active cho mỗi `(lesson, type)` (partial unique index); giữ `previous_content_markdown` |
-| `outbox_messages`                           | Command chờ phát                                   | Relay trong process `course`                                                                    |
+| `outbox_messages`                           | Command chờ phát (đồng bộ usage media)             | Relay trong process `course`                                                                    |
 
-Course không sở hữu file hay URL media; chỉ lưu `media_id` trong markdown và gọi media để lấy URL.
+Course không sở hữu file hay URL media; chỉ lưu `media_id` trong markdown và gọi media để lấy URL. Course **không** sở hữu dữ liệu AI: tài liệu trích xuất và job AI nằm ở `ai_db` (§2.7); `course` chỉ là facade và phục vụ `ai-worker` ghi nội dung/quiz qua HTTP nội bộ, nên không có bảng `lesson_attachment_texts`/`lesson_ai_jobs` ở đây.
 
 ## 2.4. `media_db` — media, media-worker
 
@@ -97,12 +95,19 @@ Run `CRON` có khóa lũy đẳng `cron:<job_id>:<scheduled_at>`. `scheduler-wor
 
 ## 2.7. `ai_db` — ai
 
-| Bảng                  | Ràng buộc chính                                                        |
-| --------------------- | ---------------------------------------------------------------------- |
-| `ai_providers`        | `type` `OPENAI                                                         | GEMINI | ANTHROPIC | MISTRAL | CUSTOM`, `base_url`, `api_key_encrypted`(AES-256-GCM),`api_key_hint` |
-| `ai_models`           | Model thuộc provider                                                   |
-| `ai_service_bindings` | `task_key` duy nhất → model                                            |
-| `ai_invocations`      | Nhật ký gọi: task, token, độ trễ, mã lỗi (không lưu nội dung nhạy cảm) |
+| Bảng                  | Ràng buộc chính                                                                                                                                      |
+| --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ai_providers`        | `provider_type` `OPENAI`/`GEMINI`/`ANTHROPIC`/`MISTRAL`/`CUSTOM`, `base_url`, `api_key_encrypted` (AES-256-GCM, khóa `AI_ENCRYPTION_KEY`), `api_key_hint`, `status`; tên duy nhất không phân biệt hoa thường |
+| `ai_models`           | Model thuộc provider; unique `(provider_id, model_name)`                                                                                              |
+| `ai_service_bindings` | `task_key` duy nhất → model (`ON DELETE RESTRICT`)                                                                                                   |
+| `ai_invocations`      | Nhật ký gọi: task, token, độ trễ, mã lỗi; không lưu nội dung prompt hay API key; không khóa ngoại để xóa được model mà vẫn giữ nhật ký              |
+| `ai_documents`        | Văn bản trích từ tệp đính kèm bài học (R-08): `media_id` duy nhất; `status` `PENDING`/`PROCESSING`/`EXTRACTED`/`FAILED`/`UNSUPPORTED`; văn bản, `attempt_count` (tối đa 3), `lease_expires_at`, `error_code`; lease `UPDATE … WHERE status=…` |
+| `ai_jobs`             | Job `SYNTHESIZE_LESSON`/`GENERATE_QUIZ`: `course_id`, `lesson_id`, `media_ids`, `requested_by_id`/`requested_by_role` (truyền tường minh từ `course`), `status`, lease, `result_quiz_id`, `previous_content_markdown`; **partial unique index** `ai_jobs_one_active` `(lesson_id, job_type)` khi `PENDING`/`RUNNING` |
+| `outbox_messages`, `inbox_states` | Outbox của `ai` (command `ai.document.extract`, `ai.job.run`); inbox của `ai-worker` (khử trùng, ghi cùng transaction với kết quả) |
+
+Mất hoặc đổi `AI_ENCRYPTION_KEY` thì mọi API key đã lưu không giải mã được: completion trả 409 `AI_PROVIDER_KEY_UNREADABLE`.
+
+`ai` dùng RabbitMQ (R-08) cho hai command tới `ai-worker`; `ai-worker` dùng chung `ai_db`. `ai_documents.media_id`, `ai_jobs.course_id`/`lesson_id`/`media_ids`/`requested_by_id` là ID logic, không có khóa ngoại chéo DB. Hệ quả đã chấp nhận: xóa media/bài học/khóa học **không** xóa bản ghi tương ứng ở `ai_db` (chưa có chính sách retention); bản ghi mồ côi không gây lỗi vì mọi truy vấn đi qua `(lesson_id)` hoặc `media_id` mà `course` đã kiểm tra. `media_objects.extract_text` (cột của `media_db`, R-08) chỉ là cờ yêu cầu; kết quả trích xuất nằm ở `ai_documents`.
 
 ## 2.8. Không có DB
 
@@ -147,7 +152,7 @@ Mục tiêu v2: các fault phải tạo triệu chứng **không nằm ở nơi 
 | **FA** | Độ trễ phụ thuộc      | `media` / `media-worker` | `media-minio`           | Chèn trễ/ngắt kết nối MinIO                               | Span MinIO chậm, thumbnail `PROCESSING` kẹt | upload-complete timeout ở gateway, usage sync trễ        |
 | **FB** | Backlog hàng đợi      | `notification-worker`    | `notification-rabbitmq` | Chạy batch lớn kèm làm chậm dispatch                      | Độ sâu queue, tuổi message cũ nhất          | thumbnail của `media-worker` chậm, command `course` trễ  |
 | **FC** | Giữ kết nối DB        | `course`                 | `course-postgres`       | Export CSV streaming khối lượng lớn đồng thời với tải học | Pool utilization, độ trễ truy vấn           | enroll/quiz submit chậm, không có span lỗi               |
-| **FD** | Độ trễ nhà cung cấp   | `ai`                     | `ai-llm-provider`       | Stub LLM chậm hoặc trả lỗi ngắt quãng                     | Span provider, lease hết hạn, retry job     | job AI retry chồng, outbox backlog                       |
+| **FD** | Độ trễ nhà cung cấp   | `ai`                     | `ai-llm-provider`       | Stub LLM chậm hoặc trả lỗi ngắt quãng                     | Span provider của `ai-worker`, lease hết hạn, job/tài liệu `FAILED` | job AI `WORKER_INTERRUPTED`, tài liệu kẹt `PROCESSING`, `course` hiện lỗi/`EXTRACTING` kéo dài |
 | **FE** | Độ trễ dependency nhỏ | `student`                | `student-postgres`      | Chèn trễ truy vấn                                         | Span student chậm ở snapshot                | batch `PARTIAL_FAILED`, số liệu lệch, log không có error |
 | **FF** | Quá tải tài nguyên    | bất kỳ service           | instance                | Giới hạn CPU/bộ nhớ container                             | CPU/RSS, độ trễ, tỉ lệ lỗi                  | latency/error lan theo dependency                        |
 | **FG** | Độ trễ/ngắt xác thực  | `auth`                   | `auth` / `auth-postgres` | Chèn trễ hoặc dừng `auth` (ADR-004)                       | Span `*-auth-token`/`*-auth-jwks` chậm hoặc lỗi, breaker mở | Chưa thấy gì trong ≤10 phút (stale-while-error), rồi mọi service lỗi 503 hàng loạt |
@@ -165,7 +170,7 @@ Tiêu chí: một người đọc dashboard/trace thông thường theo đườn
 | ------ | ----------------------------------------------------------- | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
 | **C1** | `upload-complete` timeout                                   | FB: batch notification làm đầy RabbitMQ    | `notification-worker` chiếm queue/DB → command thumbnail của `media-worker` đứng chờ → `media` đợi trạng thái | Span lỗi ở `media`, nguyên nhân ở service khác không có trên đường request         |
 | **C2** | Enroll/quiz submit chậm đột ngột                            | FC: export CSV của `course` giữ kết nối DB | Pool cạn → mọi truy vấn xếp hàng                                                                              | Trace không có span lỗi, mọi span chậm đều thuộc `course`, không rõ do request nào |
-| **C3** | Job AI soạn bài mãi `RUNNING`, usage media trễ              | FD: provider AI chậm                       | Lease hết hạn → retry chồng → outbox backlog → `media-worker` trễ                                             | Hai triệu chứng ở hai service, chung nguyên nhân gián tiếp                         |
+| **C3** | Job AI soạn bài mãi `RUNNING` rồi `WORKER_INTERRUPTED`, tài liệu mãi `EXTRACTING` | FD: provider AI chậm                       | `ai-worker` giữ lease lâu → job/tài liệu hết lease → `course` thấy lỗi muộn ở `ai-worker → course`                                             | Hai triệu chứng ở hai service, chung nguyên nhân gián tiếp                         |
 | **C4** | Khóa học `READY` nhưng thumbnail mất, job cleanup xóa media | FA: MinIO promote chậm                     | Media `PENDING` kẹt → usage chưa gắn → `scheduler-worker` coi là không dùng và xóa                            | Lỗi lộ ở scheduler muộn, cách nguyên nhân gốc nhiều bước và nhiều phút             |
 | **C5** | Batch notification `PARTIAL_FAILED`, số item lệch           | FE: `student` chậm khi snapshot            | Snapshot timeout từng trang → thiếu recipient                                                                 | Log không có lỗi, chỉ lệch số liệu so với kỳ vọng                                  |
 | **C6** | Nhiều service cùng trả 503 sau một khoảng yên lặng          | FG: `auth` chậm/chết                       | Token đã cache còn hạn → không lỗi → hết hạn mà không làm mới được → gateway/auth không gọi được ai          | Triệu chứng ở mọi service cùng lúc nhưng chỉ sau ≤10 phút; lỗi ở cạnh `*-auth-token` chứ không ở service lỗi |

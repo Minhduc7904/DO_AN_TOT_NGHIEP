@@ -76,6 +76,7 @@ jobs:
       NOTIFICATION_SMTP_PORT: 1025
       MAILPIT_API_PORT: 8025
       MEDIA_RABBITMQ_URL: amqp://w1_test:w1_test_password@127.0.0.1:5672
+      AI_RABBITMQ_URL: amqp://w1_test:w1_test_password@127.0.0.1:5672
       MINIO_ENDPOINT: 127.0.0.1
       MINIO_PORT: 9000
     steps:
@@ -103,7 +104,7 @@ jobs:
 
       - name: Create service databases
         run: |
-          for database in student_db course_db media_db notification_db scheduler_db; do
+          for database in student_db course_db media_db notification_db ai_db scheduler_db; do
             PGPASSWORD=w1_test_password psql -h 127.0.0.1 -U w1_test -d auth_db -c "CREATE DATABASE $database"
           done
 
@@ -115,6 +116,7 @@ jobs:
           export COURSE_DATABASE_URL="$base/course_db"
           export MEDIA_DATABASE_URL="$base/media_db"
           export NOTIFICATION_DATABASE_URL="$base/notification_db"
+          export AI_DATABASE_URL="$base/ai_db"
           export SCHEDULER_DATABASE_URL="$base/scheduler_db"
           pnpm run build
           (cd services/auth && pnpm exec prisma migrate deploy)
@@ -122,8 +124,9 @@ jobs:
           (cd services/course && pnpm exec prisma migrate deploy)
           (cd services/media && pnpm exec prisma migrate deploy)
           (cd services/notification && pnpm exec prisma migrate deploy)
+          (cd services/ai && pnpm exec prisma migrate deploy)
           (cd services/scheduler && pnpm exec prisma migrate deploy)
-          pnpm run test:auth:e2e && pnpm run test:student:e2e && pnpm run test:course:e2e && pnpm run test:media:e2e && pnpm run test:notification:e2e && pnpm run test:scheduler:e2e && pnpm run ci:verify
+          pnpm run test:auth:e2e && pnpm run test:student:e2e && pnpm run test:course:e2e && pnpm run test:media:e2e && pnpm run test:notification:e2e && pnpm run test:ai:e2e && pnpm run test:scheduler:e2e && pnpm run ci:verify
 
   compose-config:
     name: Validate Compose without local configuration

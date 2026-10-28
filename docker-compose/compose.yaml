@@ -11,6 +11,7 @@ services:
       GATEWAY_MEDIA_BASE_URL: http://media:3004
       GATEWAY_NOTIFICATION_BASE_URL: http://notification:3006
       GATEWAY_SCHEDULER_BASE_URL: http://scheduler:3008
+      GATEWAY_AI_BASE_URL: http://ai:3009
       SERVICE_CLIENT_ID: gateway
       SERVICE_CLIENT_SECRET: "${GATEWAY_CLIENT_SECRET:-gateway-client-local-only}"
       GATEWAY_UPSTREAM_TIMEOUT_MS: "${GATEWAY_UPSTREAM_TIMEOUT_MS:-5000}"
@@ -37,6 +38,8 @@ services:
       notification:
         condition: service_healthy
       scheduler:
+        condition: service_healthy
+      ai:
         condition: service_healthy
     healthcheck:
       test:
@@ -69,7 +72,7 @@ services:
       SERVICE_CLIENT_ID: auth
       SERVICE_CLIENT_SECRET: "${AUTH_CLIENT_SECRET:-auth-client-local-only}"
       # Registry client dịch vụ (ADR-004): gateway được gọi mọi route public; auth gọi student.
-      SERVICE_CLIENTS_BOOTSTRAP: '[{"client_id":"gateway","client_secret":"${GATEWAY_CLIENT_SECRET:-gateway-client-local-only}","audiences":["auth","student","course","media","notification","scheduler"],"scopes":["gateway:proxy"]},{"client_id":"auth","client_secret":"${AUTH_CLIENT_SECRET:-auth-client-local-only}","audiences":["student"],"scopes":["student:profile:read","student:profile:write"]},{"client_id":"media","client_secret":"${MEDIA_CLIENT_SECRET:-media-client-local-only}","audiences":["student"],"scopes":["student:profile:read"]},{"client_id":"notification-worker","client_secret":"${NOTIFICATION_WORKER_CLIENT_SECRET:-notification-worker-client-local-only}","audiences":["student"],"scopes":["student:profile:read"]},{"client_id":"course","client_secret":"${COURSE_CLIENT_SECRET:-course-client-local-only}","audiences":["media"],"scopes":["media:usage:read","media:content:read"]},{"client_id":"scheduler-worker","client_secret":"${SCHEDULER_WORKER_CLIENT_SECRET:-scheduler-worker-client-local-only}","audiences":["media"],"scopes":["media:cleanup"]}]'
+      SERVICE_CLIENTS_BOOTSTRAP: '[{"client_id":"gateway","client_secret":"${GATEWAY_CLIENT_SECRET:-gateway-client-local-only}","audiences":["auth","student","course","media","notification","scheduler","ai"],"scopes":["gateway:proxy"]},{"client_id":"auth","client_secret":"${AUTH_CLIENT_SECRET:-auth-client-local-only}","audiences":["student"],"scopes":["student:profile:read","student:profile:write"]},{"client_id":"media","client_secret":"${MEDIA_CLIENT_SECRET:-media-client-local-only}","audiences":["student"],"scopes":["student:profile:read"]},{"client_id":"notification-worker","client_secret":"${NOTIFICATION_WORKER_CLIENT_SECRET:-notification-worker-client-local-only}","audiences":["student"],"scopes":["student:profile:read"]},{"client_id":"course","client_secret":"${COURSE_CLIENT_SECRET:-course-client-local-only}","audiences":["media","ai"],"scopes":["media:usage:read","ai:document:read","ai:document:write","ai:job:read","ai:job:write"]},{"client_id":"ai-worker","client_secret":"${AI_WORKER_CLIENT_SECRET:-ai-worker-client-local-only}","audiences":["course","media"],"scopes":["course:lesson-ai:read","course:lesson-ai:write","media:content:read"]},{"client_id":"scheduler-worker","client_secret":"${SCHEDULER_WORKER_CLIENT_SECRET:-scheduler-worker-client-local-only}","audiences":["media"],"scopes":["media:cleanup"]}]'
       AUTH_STUDENT_BASE_URL: http://student:3002
       AUTH_STUDENT_TIMEOUT_MS: "${AUTH_STUDENT_TIMEOUT_MS:-3000}"
       AUTH_BOOTSTRAP_ADMIN_ID: "${AUTH_BOOTSTRAP_ADMIN_ID:-00000000-0000-4000-8000-000000000001}"
@@ -126,6 +129,8 @@ services:
       COURSE_RABBITMQ_URL: "amqp://${RABBITMQ_DEFAULT_USER:-lms}:${RABBITMQ_DEFAULT_PASS:-lms-local-only}@rabbitmq:5672"
       COURSE_MEDIA_BASE_URL: http://media:3004
       COURSE_MEDIA_TIMEOUT_MS: "${COURSE_MEDIA_TIMEOUT_MS:-3000}"
+      COURSE_AI_BASE_URL: http://ai:3009
+      COURSE_AI_TIMEOUT_MS: "${COURSE_AI_TIMEOUT_MS:-5000}"
       AUTH_BASE_URL: http://auth:3001
       SERVICE_CLIENT_ID: course
       SERVICE_CLIENT_SECRET: "${COURSE_CLIENT_SECRET:-course-client-local-only}"
@@ -357,6 +362,107 @@ services:
         - -e
         - >-
           fetch('http://127.0.0.1:3007/ready')
+          .then((response) => { if (!response.ok) process.exit(1); })
+          .catch(() => process.exit(1));
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 10s
+    networks:
+      - lms-network
+      - aiops-net
+
+  ai:
+    build:
+      context: ../lms
+      dockerfile: services/ai/Dockerfile
+    environment:
+      NODE_ENV: production
+      AI_DATABASE_URL: "postgresql://${AI_POSTGRES_USER:-ai_user}:${AI_POSTGRES_PASSWORD:-ai-local-only}@postgres:5432/ai_db"
+      # Khóa AES-256 (base64 của 32 byte) mã hóa API key provider; khóa mẫu chỉ dành cho local, mất/đổi khóa thì API key đã lưu không giải mã được.
+      AI_ENCRYPTION_KEY: "${AI_ENCRYPTION_KEY:-bG9jYWwtb25seS1haS1lbmNyeXB0aW9uLWtleS0zMmI=}"
+      AI_COMPLETION_TIMEOUT_MS: "${AI_COMPLETION_TIMEOUT_MS:-240000}"
+      AI_HEALTH_CHECK_TIMEOUT_MS: "${AI_HEALTH_CHECK_TIMEOUT_MS:-6000}"
+      AI_RABBITMQ_URL: "amqp://${RABBITMQ_DEFAULT_USER:-lms}:${RABBITMQ_DEFAULT_PASS:-lms-local-only}@rabbitmq:5672"
+      AUTH_BASE_URL: http://auth:3001
+      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: "${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT:-http://otel-collector:4318/v1/traces}"
+      OTEL_EXPORTER_OTLP_METRICS_ENDPOINT: "${OTEL_EXPORTER_OTLP_METRICS_ENDPOINT:-http://otel-collector:4318/v1/metrics}"
+      OTEL_EXPORTER_OTLP_LOGS_ENDPOINT: "${OTEL_EXPORTER_OTLP_LOGS_ENDPOINT:-http://otel-collector:4318/v1/logs}"
+      OTEL_METRIC_EXPORT_INTERVAL: "${OTEL_METRIC_EXPORT_INTERVAL:-5000}"
+      HTTP_ACCESS_LOG_ENABLED: "${HTTP_ACCESS_LOG_ENABLED:-true}"
+      OTEL_SDK_DISABLED: "${OTEL_SDK_DISABLED:-false}"
+      OTEL_SERVICE_INSTANCE_ID: "${AI_SERVICE_INSTANCE_ID:-ai-compose-1}"
+      OTEL_SERVICE_VERSION: "${AI_SERVICE_VERSION:-0.1.0}"
+      PORT: 3009
+    ports:
+      - "${AI_PORT:-3009}:3009"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - >-
+          fetch('http://127.0.0.1:3009/ready')
+          .then((response) => { if (!response.ok) process.exit(1); })
+          .catch(() => process.exit(1));
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 10s
+    networks:
+      - lms-network
+      - aiops-net
+
+  ai-worker:
+    build:
+      context: ../lms
+      dockerfile: services/ai/Dockerfile
+    # Cùng image với `ai`, chạy entrypoint worker (trích xuất tài liệu, chạy job AI soạn bài).
+    command: ["node", "dist/worker.js"]
+    environment:
+      NODE_ENV: production
+      AI_DATABASE_URL: "postgresql://${AI_POSTGRES_USER:-ai_user}:${AI_POSTGRES_PASSWORD:-ai-local-only}@postgres:5432/ai_db"
+      AI_ENCRYPTION_KEY: "${AI_ENCRYPTION_KEY:-bG9jYWwtb25seS1haS1lbmNyeXB0aW9uLWtleS0zMmI=}"
+      AI_COMPLETION_TIMEOUT_MS: "${AI_COMPLETION_TIMEOUT_MS:-240000}"
+      AI_RABBITMQ_URL: "amqp://${RABBITMQ_DEFAULT_USER:-lms}:${RABBITMQ_DEFAULT_PASS:-lms-local-only}@rabbitmq:5672"
+      AI_COURSE_BASE_URL: http://course:3003
+      AI_MEDIA_BASE_URL: http://media:3004
+      AI_MEDIA_CONTENT_TIMEOUT_MS: "${AI_MEDIA_CONTENT_TIMEOUT_MS:-30000}"
+      AI_WORKER_PREFETCH: "${AI_WORKER_PREFETCH:-2}"
+      AI_WORKER_MAX_ATTEMPTS: "${AI_WORKER_MAX_ATTEMPTS:-5}"
+      AI_WORKER_RETRY_DELAY_MS: "${AI_WORKER_RETRY_DELAY_MS:-1000}"
+      # Phải lớn hơn AI_COMPLETION_TIMEOUT_MS.
+      AI_WORKER_LEASE_MS: "${AI_WORKER_LEASE_MS:-600000}"
+      AUTH_BASE_URL: http://auth:3001
+      SERVICE_CLIENT_ID: ai-worker
+      SERVICE_CLIENT_SECRET: "${AI_WORKER_CLIENT_SECRET:-ai-worker-client-local-only}"
+      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: "${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT:-http://otel-collector:4318/v1/traces}"
+      OTEL_EXPORTER_OTLP_METRICS_ENDPOINT: "${OTEL_EXPORTER_OTLP_METRICS_ENDPOINT:-http://otel-collector:4318/v1/metrics}"
+      OTEL_EXPORTER_OTLP_LOGS_ENDPOINT: "${OTEL_EXPORTER_OTLP_LOGS_ENDPOINT:-http://otel-collector:4318/v1/logs}"
+      OTEL_METRIC_EXPORT_INTERVAL: "${OTEL_METRIC_EXPORT_INTERVAL:-5000}"
+      HTTP_ACCESS_LOG_ENABLED: "${HTTP_ACCESS_LOG_ENABLED:-true}"
+      OTEL_SDK_DISABLED: "${OTEL_SDK_DISABLED:-false}"
+      OTEL_SERVICE_INSTANCE_ID: "${AI_WORKER_SERVICE_INSTANCE_ID:-ai-worker-compose-1}"
+      OTEL_SERVICE_VERSION: "${AI_SERVICE_VERSION:-0.1.0}"
+      PORT: 3011
+    ports:
+      - "${AI_WORKER_PORT:-3011}:3011"
+    # Chờ `ai` healthy để schema đã migrate trước khi worker tiêu thụ command.
+    depends_on:
+      ai:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - >-
+          fetch('http://127.0.0.1:3011/ready')
           .then((response) => { if (!response.ok) process.exit(1); })
           .catch(() => process.exit(1));
       interval: 5s

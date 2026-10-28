@@ -20,6 +20,7 @@ export interface NewMedia {
   mimeType: string;
   sizeBytes: number;
   checksumSha256: string;
+  extractText?: boolean;
   bucket: string;
   objectKey: string;
   tmpObjectKey?: string | null;

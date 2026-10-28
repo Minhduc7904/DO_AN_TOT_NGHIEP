@@ -8,6 +8,8 @@ export const COURSE_ERROR_CODES = {
   enrollmentAlreadyExists: 'ENROLLMENT_ALREADY_EXISTS',
   studentNotEnrolled: 'STUDENT_NOT_ENROLLED',
   quizAttemptAlreadySubmitted: 'QUIZ_ATTEMPT_ALREADY_SUBMITTED',
+  aiDocumentsNotExtracted: 'AI_DOCUMENTS_NOT_EXTRACTED',
+  lessonContentExists: 'LESSON_CONTENT_EXISTS',
 } as const;
 
 export const courseErrors = {
@@ -35,4 +37,17 @@ export const courseErrors = {
     new AppError(COURSE_ERROR_CODES.studentNotEnrolled, 403, 'Học viên chưa ghi danh khóa học'),
   quizAttemptAlreadySubmitted: (): AppError =>
     new AppError(COURSE_ERROR_CODES.quizAttemptAlreadySubmitted, 409, 'Lượt làm bài đã được nộp'),
+  aiDocumentsNotExtracted: (mediaIds: readonly string[]): AppError =>
+    new AppError(
+      COURSE_ERROR_CODES.aiDocumentsNotExtracted,
+      422,
+      'Có tài liệu chưa được trích xuất văn bản',
+      { media_ids: mediaIds },
+    ),
+  lessonContentExists: (): AppError =>
+    new AppError(
+      COURSE_ERROR_CODES.lessonContentExists,
+      409,
+      'Bài học đã có nội dung; cần overwrite_content=true để ghi đè',
+    ),
 };

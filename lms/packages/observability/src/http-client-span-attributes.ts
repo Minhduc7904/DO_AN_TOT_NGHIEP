@@ -25,6 +25,8 @@ const HTTP_DEPENDENCY_PEERS: Readonly<Record<string, string>> = {
   'media-admin': 'admin',
   'notification-worker-student': 'student',
   'scheduler-worker-media': 'media',
+  'ai-worker-course': 'course',
+  'ai-worker-media': 'media',
 };
 
 export function normalizeHttpMethod(rawMethod: string | undefined): string {

@@ -24,6 +24,7 @@ export function presentMedia(media: MediaObject): MediaDto {
     mime_type: media.mimeType,
     size_bytes: media.sizeBytes,
     checksum_sha256: media.checksumSha256,
+    extract_text: media.extractText,
     thumbnail_status: media.thumbnailStatus,
     content_url: ready ? mediaContentUrl(media.id) : null,
     thumbnail_url: media.thumbnailStatus === 'READY' ? mediaThumbnailUrl(media.id) : null,

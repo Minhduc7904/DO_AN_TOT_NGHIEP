@@ -26,6 +26,8 @@ export interface MediaObject {
   mimeType: string;
   sizeBytes: number;
   checksumSha256: string;
+  /** Yêu cầu `ai` trích văn bản khi tệp READY. */
+  extractText: boolean;
   bucket: string;
   objectKey: string;
   tmpObjectKey: string | null;

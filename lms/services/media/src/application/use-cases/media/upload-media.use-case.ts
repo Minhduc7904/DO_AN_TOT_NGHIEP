@@ -11,6 +11,7 @@ import {
   MEDIA_SIZE_LIMITS,
   supportsThumbnail,
 } from '../../../domain/media-type.js';
+import { assertExtractTextAllowed } from '../../extract-text.js';
 import { buildObjectKey, safeExtension } from '../../../domain/object-key.js';
 import type { ObjectStorage } from '../../ports/object-storage.js';
 import type { MediaUnitOfWork } from '../../ports/unit-of-work.js';
@@ -19,9 +20,14 @@ export interface UploadMediaInput {
   content: Buffer;
   originalName: string;
   mimeType: string;
+  /** Mặc định `false`. */
+  extractText?: boolean;
 }
 
-/** Upload multipart qua `media`: ghi thẳng vào key cuối cùng rồi đánh dấu `READY`. */
+/**
+ * Upload multipart qua `media`: ghi thẳng vào key cuối cùng rồi đánh dấu `READY`; có cờ `extractText` thì
+ * ghi lệnh trích văn bản vào outbox cùng transaction.
+ */
 export class UploadMediaUseCase {
   constructor(
     private readonly uow: MediaUnitOfWork,
@@ -35,6 +41,9 @@ export class UploadMediaUseCase {
     const type = classifyMedia(input.mimeType);
     const limit = MEDIA_SIZE_LIMITS[type];
     if (input.content.length > limit) throw mediaErrors.tooLarge(limit);
+    if (input.extractText) {
+      assertExtractTextAllowed(input.originalName, input.mimeType, input.content.length);
+    }
 
     const id = this.ids.next();
     const bucket = BUCKET_BY_TYPE[type];
@@ -52,6 +61,7 @@ export class UploadMediaUseCase {
           mimeType: input.mimeType,
           sizeBytes: input.content.length,
           checksumSha256: createHash('sha256').update(input.content).digest('hex'),
+          extractText: input.extractText === true,
           bucket,
           objectKey,
           uploadedBy: principal.id,
@@ -65,6 +75,7 @@ export class UploadMediaUseCase {
           });
           await stores.commands.requestThumbnail(id);
         }
+        if (input.extractText) await stores.commands.requestDocumentExtraction(media);
         return media;
       });
     } catch (error) {

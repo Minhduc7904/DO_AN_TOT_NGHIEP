@@ -46,6 +46,7 @@ function setup(options: Partial<CleanupMediaOptions> = {}): {
       mimeType: 'image/png',
       sizeBytes: 3,
       checksumSha256: 'x',
+      extractText: false,
       bucket: 'images',
       objectKey: `2026/10/01/${id}.png`,
       tmpObjectKey: null,

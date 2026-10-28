@@ -1,8 +1,13 @@
+import type { MediaObject } from '../../domain/media.js';
 import type { JobRepository, MediaRepository, UsageRepository } from './repositories.js';
 
 /** Command phát sang `media-worker`, ghi vào outbox cùng transaction với dữ liệu nghiệp vụ. */
 export interface MediaCommands {
   requestThumbnail(mediaId: string): Promise<void>;
+  /** `media` → `ai-worker`: trích văn bản tệp vừa READY có cờ `extract_text`. */
+  requestDocumentExtraction(
+    media: Pick<MediaObject, 'id' | 'originalName' | 'mimeType' | 'type'>,
+  ): Promise<void>;
 }
 
 export interface MediaStores {

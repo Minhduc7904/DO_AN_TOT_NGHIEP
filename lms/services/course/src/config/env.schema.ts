@@ -21,6 +21,11 @@ const environmentSchema = baseEnvironmentSchema.extend({
   COURSE_MEDIA_TIMEOUT_MS: z.coerce.number().int().min(100).max(60_000).default(3_000),
   COURSE_MEDIA_BREAKER_THRESHOLD: z.coerce.number().int().min(1).max(100).default(3),
   COURSE_MEDIA_BREAKER_COOLDOWN_MS: z.coerce.number().int().min(1).max(300_000).default(5_000),
+  COURSE_AI_BASE_URL: z.url().default('http://localhost:3009'),
+  /** Các route nội bộ của `ai` (tài liệu, job) chỉ đọc/ghi DB và outbox nên ngắn như truy vấn thường. */
+  COURSE_AI_TIMEOUT_MS: z.coerce.number().int().min(100).max(60_000).default(5_000),
+  COURSE_AI_BREAKER_THRESHOLD: z.coerce.number().int().min(1).max(100).default(3),
+  COURSE_AI_BREAKER_COOLDOWN_MS: z.coerce.number().int().min(1).max(300_000).default(5_000),
 });
 
 export type Environment = z.infer<typeof environmentSchema>;

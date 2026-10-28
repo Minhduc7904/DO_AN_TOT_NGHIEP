@@ -52,6 +52,11 @@ export const createUploadIntentRequestSchema = z.object({
     .regex(/^[a-z0-9][a-z0-9!#$&^_.+-]*\/[a-z0-9][a-z0-9!#$&^_.+-]*$/iu),
   size_bytes: z.number().int().min(1),
   checksum_sha256: sha256Hex,
+  /**
+   * Yêu cầu `ai` trích văn bản ngay khi tệp READY. Chỉ hợp lệ với tệp mà `ai` đọc được
+   * (TXT/MD, DOCX, PDF, ảnh PNG/JPEG/WebP/GIF); mặc định `false`.
+   */
+  extract_text: z.boolean().default(false),
 });
 export type CreateUploadIntentRequest = z.infer<typeof createUploadIntentRequestSchema>;
 
@@ -111,6 +116,8 @@ export const mediaDtoSchema = z.object({
   mime_type: z.string(),
   size_bytes: z.number().int(),
   checksum_sha256: sha256Hex,
+  /** Tệp được yêu cầu trích văn bản cho AI khi upload (xem `POST /media/upload-intents`). */
+  extract_text: z.boolean(),
   thumbnail_status: thumbnailStatusSchema,
   /** Đường dẫn công khai qua Gateway; client không bao giờ nhận bucket hay object key cuối cùng. */
   content_url: z.string().nullable(),
