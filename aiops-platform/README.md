@@ -6,13 +6,13 @@ Quyết định tách: [ADR-001](../docs/processed/adr/adr-001-restructure-lms-t
 
 ## Cấu trúc
 
-| Thư mục | Trạng thái | Nội dung |
-| --- | --- | --- |
-| `observability/` | Có | Collector, Prometheus, Tempo, Loki, Grafana: cấu hình, Dockerfile, dashboard, `compose.yaml` riêng |
-| `training/` | Chưa tạo | Module huấn luyện AI (phát hiện bất thường, RCA) |
-| `mcp/` | Chưa tạo | MCP server chỉ đọc cho agent báo cáo (ADR-002) |
-| `agent/` | Chưa tạo | Agent LLM đọc dữ liệu qua MCP và viết báo cáo |
-| `load/`, `faults/`, `evaluation/` | Chưa tạo | Workload, fault injection, đánh giá |
+| Thư mục                           | Trạng thái | Nội dung                                                                                                       |
+| --------------------------------- | ---------- | -------------------------------------------------------------------------------------------------------------- |
+| `observability/`                  | Có         | Collector, Prometheus, Tempo, Loki, Grafana: cấu hình, Dockerfile, dashboard, `compose.yaml` riêng             |
+| `training/`                       | Chưa tạo   | **Phần chính**: dataset, huấn luyện và đánh giá RCA engine (phát hiện bất thường, xếp hạng nguyên nhân)        |
+| `mcp/`                            | Chưa tạo   | Thứ yếu, làm sau: MCP server chỉ đọc để LLM đọc kết quả của RCA engine ở giai đoạn suy luận/giám sát (ADR-002) |
+| `agent/`                          | Chưa tạo   | Thứ yếu, làm sau: agent LLM đọc kết quả qua MCP và viết báo cáo                                                |
+| `load/`, `faults/`, `evaluation/` | Chưa tạo   | Workload, fault injection, đánh giá                                                                            |
 
 Chỉ tạo thư mục khi bắt đầu triển khai module tương ứng.
 
