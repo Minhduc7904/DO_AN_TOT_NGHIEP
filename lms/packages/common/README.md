@@ -8,16 +8,17 @@ Primitive kỹ thuật dùng chung cho mọi service LMS v2: envelope lỗi, gua
 
 Package không có export gốc; mỗi subpath có quy tắc import riêng cho tầng kiến trúc:
 
-| Subpath                       | Nội dung                                                                           | domain / application được import |
-| ----------------------------- | ---------------------------------------------------------------------------------- | :------------------------------: |
-| `@aiops-lms/common/errors`    | `AppError`, mã lỗi                                                                 |                Có                |
-| `@aiops-lms/common/ports`     | `Principal`, `Role`, `Clock`, `CommandOutbox` (interface thuần)                    |                Có                |
-| `@aiops-lms/common/http`      | filter lỗi, `PrincipalGuard`, `@Roles`, `@Public`, correlation, `HealthController` |       Không (chỉ adapter)        |
-| `@aiops-lms/common/clients`   | `HttpQueryClient`, `CircuitBreaker`                                                |              Không               |
-| `@aiops-lms/common/telemetry` | `observeDependency`                                                                |              Không               |
-| `@aiops-lms/common/messaging` | envelope, outbox/inbox, RabbitMQ                                                   |              Không               |
-| `@aiops-lms/common/prisma`    | `SqlClient`                                                                        |              Không               |
-| `@aiops-lms/common/config`    | schema biến môi trường chung, `parseEnvironment`                                   |              Không               |
+| Subpath                       | Nội dung                                                                                                                                                                                     | domain / application được import |
+| ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :------------------------------: |
+| `@aiops-lms/common/errors`    | `AppError`, mã lỗi                                                                                                                                                                           |                Có                |
+| `@aiops-lms/common/ports`     | `Principal`, `Role`, `Clock`, `CommandOutbox` (interface thuần)                                                                                                                              |                Có                |
+| `@aiops-lms/common/http`      | filter lỗi, `ServiceAuthGuard`, `@Roles`, `@Anonymous`, `@InternalApi`, `@SkipAuth`, correlation, `HealthController`                                                                         |       Không (chỉ adapter)        |
+| `@aiops-lms/common/auth`      | JWT EdDSA, `TokenVerifier`, `HttpJwksKeyProvider` (cache JWKS), `ServiceTokenProvider` (cache, làm mới nền, stale-while-error), `HttpServiceTokenSource`; `auth/testing` mint token cho test |       Không (chỉ adapter)        |
+| `@aiops-lms/common/clients`   | `HttpQueryClient`, `CircuitBreaker`                                                                                                                                                          |              Không               |
+| `@aiops-lms/common/telemetry` | `observeDependency`                                                                                                                                                                          |              Không               |
+| `@aiops-lms/common/messaging` | envelope, outbox/inbox, RabbitMQ                                                                                                                                                             |              Không               |
+| `@aiops-lms/common/prisma`    | `SqlClient`                                                                                                                                                                                  |              Không               |
+| `@aiops-lms/common/config`    | schema biến môi trường chung, `parseEnvironment`                                                                                                                                             |              Không               |
 
 ## Quy tắc dependency
 

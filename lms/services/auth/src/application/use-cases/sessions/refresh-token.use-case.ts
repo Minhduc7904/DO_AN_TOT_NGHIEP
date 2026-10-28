@@ -2,13 +2,12 @@ import { AppError } from '@aiops-lms/common/errors';
 
 import { hashRefreshToken } from '../../../domain/token.js';
 import type { RefreshTokenRepository } from '../../ports/refresh-token-repository.js';
-import type { TokenSettings } from '../../token-settings.js';
-import { issueTokenPair, type TokenPair } from './issue-token-pair.js';
+import type { TokenIssuer, TokenPair } from '../../token-issuer.js';
 
 export class RefreshTokenUseCase {
   constructor(
     private readonly refreshTokens: RefreshTokenRepository,
-    private readonly settings: TokenSettings,
+    private readonly tokens: TokenIssuer,
   ) {}
 
   async execute(refreshToken: string): Promise<TokenPair> {
@@ -16,6 +15,6 @@ export class RefreshTokenUseCase {
     if (!account || account.status !== 'ACTIVE') {
       throw AppError.unauthorized('Refresh token không hợp lệ hoặc đã hết hạn');
     }
-    return issueTokenPair(account, this.settings, this.refreshTokens);
+    return this.tokens.issue(account);
   }
 }

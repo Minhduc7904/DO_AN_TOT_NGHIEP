@@ -1,5 +1,8 @@
+import { generateSigningKey } from '@aiops-lms/common/auth';
 import { AppError } from '@aiops-lms/common/errors';
 
+import { Ed25519TokenSigner } from '../../src/adapters/security/ed25519-token-signer.js';
+import { TokenIssuer } from '../../src/application/token-issuer.js';
 import { verifyPassword } from '../../src/domain/password.js';
 import { BootstrapAccountsUseCase } from '../../src/application/use-cases/accounts/bootstrap-accounts.use-case.js';
 import { CreateAccountUseCase } from '../../src/application/use-cases/accounts/create-account.use-case.js';
@@ -18,7 +21,13 @@ import {
   TOKEN_SETTINGS,
 } from './fakes.js';
 
-function decodeClaims(token: string): { sub: string; role: string; exp: number } {
+function decodeClaims(token: string): {
+  sub: string;
+  role: string;
+  exp: number;
+  typ: string;
+  aud: string;
+} {
   return JSON.parse(Buffer.from(token.split('.')[1] ?? '', 'base64url').toString('utf8'));
 }
 
@@ -83,6 +92,11 @@ describe('đăng nhập theo role và RefreshTokenUseCase', () => {
     const refreshTokens = new InMemoryRefreshTokens(accounts);
     const students = new RecordingStudentClient();
     const authenticator = new CredentialsAuthenticator(accounts);
+    const tokens = new TokenIssuer(
+      refreshTokens,
+      new Ed25519TokenSigner(generateSigningKey()),
+      TOKEN_SETTINGS,
+    );
     const account = await new RegisterStudentUseCase(accounts, students).execute({
       email: 'a@b.co',
       password: 'password-1',
@@ -93,10 +107,10 @@ describe('đăng nhập theo role và RefreshTokenUseCase', () => {
       refreshTokens,
       students,
       accountId: account.id,
-      login: new LoginStudentUseCase(authenticator, refreshTokens, TOKEN_SETTINGS, students),
-      loginInstructor: new LoginInstructorUseCase(authenticator, refreshTokens, TOKEN_SETTINGS),
-      loginAdmin: new LoginAdminUseCase(authenticator, refreshTokens, TOKEN_SETTINGS),
-      refresh: new RefreshTokenUseCase(refreshTokens, TOKEN_SETTINGS),
+      login: new LoginStudentUseCase(authenticator, tokens, students),
+      loginInstructor: new LoginInstructorUseCase(authenticator, tokens),
+      loginAdmin: new LoginAdminUseCase(authenticator, tokens),
+      refresh: new RefreshTokenUseCase(refreshTokens, tokens),
     };
   }
 
@@ -110,7 +124,12 @@ describe('đăng nhập theo role và RefreshTokenUseCase', () => {
       expires_in_seconds: 3_600,
       principal: { id: accountId, role: 'student' },
     });
-    expect(decodeClaims(result.access_token)).toMatchObject({ sub: accountId, role: 'student' });
+    expect(decodeClaims(result.access_token)).toMatchObject({
+      sub: accountId,
+      role: 'student',
+      typ: 'user',
+      aud: 'aiops-lms',
+    });
   });
 
   it('từ chối sai mật khẩu, email lạ và tài khoản bị khóa bằng cùng một lỗi', async () => {

@@ -5,6 +5,8 @@ import type {
   AccountRepository,
   NewAccount,
 } from '../../src/application/ports/account-repository.js';
+import type { ServiceClient } from '../../src/domain/service-client.js';
+import type { ServiceClientRepository } from '../../src/application/ports/service-client-repository.js';
 import type { RefreshTokenRepository } from '../../src/application/ports/refresh-token-repository.js';
 import type {
   StudentProfile,
@@ -104,8 +106,23 @@ export class RecordingStudentClient implements StudentProfileClient {
   }
 }
 
+export class InMemoryServiceClients implements ServiceClientRepository {
+  readonly rows = new Map<string, ServiceClient>();
+  upserts = 0;
+
+  findById(clientId: string): Promise<ServiceClient | null> {
+    return Promise.resolve(this.rows.get(clientId) ?? null);
+  }
+
+  upsert(client: ServiceClient): Promise<void> {
+    this.upserts += 1;
+    this.rows.set(client.clientId, client);
+    return Promise.resolve();
+  }
+}
+
 export const TOKEN_SETTINGS = {
-  jwtSecret: 'unit-test-secret-with-at-least-32-characters',
   jwtTtlSeconds: 3_600,
   refreshTtlSeconds: 86_400,
+  serviceTokenTtlSeconds: 600,
 };

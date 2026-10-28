@@ -30,3 +30,25 @@ export function parseEnvironment<TSchema extends z.ZodType>(
   }
   return result.data;
 }
+
+/** Cấu hình cache JWKS dùng chung cho mọi bên verify token (kể cả Gateway). */
+export const jwksCacheEnvironmentShape = {
+  AUTH_JWKS_TIMEOUT_MS: z.coerce.number().int().min(100).max(60_000).default(3_000),
+  AUTH_JWKS_CACHE_TTL_MS: z.coerce.number().int().min(1_000).max(86_400_000).default(300_000),
+  AUTH_JWKS_MIN_REFETCH_MS: z.coerce.number().int().min(100).max(3_600_000).default(10_000),
+};
+
+/** Biến môi trường cho service **verify** token (mọi service ngoài Gateway/auth): tải JWKS từ auth. */
+export const serviceAuthEnvironmentShape = {
+  AUTH_BASE_URL: z.url().default('http://localhost:3001'),
+  ...jwksCacheEnvironmentShape,
+};
+
+/** Biến môi trường cho service **lấy** token (Gateway, và service gọi service khác). */
+export const serviceClientEnvironmentShape = {
+  SERVICE_CLIENT_ID: z.string().trim().min(1),
+  SERVICE_CLIENT_SECRET: z.string().min(16),
+  AUTH_TOKEN_TIMEOUT_MS: z.coerce.number().int().min(100).max(60_000).default(3_000),
+  AUTH_TOKEN_BREAKER_THRESHOLD: z.coerce.number().int().min(1).max(100).default(3),
+  AUTH_TOKEN_BREAKER_COOLDOWN_MS: z.coerce.number().int().min(1).max(300_000).default(5_000),
+};

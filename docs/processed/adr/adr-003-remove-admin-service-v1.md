@@ -14,7 +14,7 @@ ADR-001 giữ service `admin` để khớp repo mẫu. Khi triển khai R-04 th�
 ## Quyết định
 
 1. Bỏ service `admin`: còn **8 service + 3 worker**. Admin là tài khoản role `admin` trong `auth`, tạo bằng bootstrap hoặc `POST /api/v1/auth/accounts`.
-2. Bỏ route `/api/v1/admins` và `/internal/v1/admins/{id}`. `media` không gọi `admin`; quyền admin dựa vào `x-principal-role` do Gateway đặt.
+2. Bỏ route `/api/v1/admins` và `/internal/v1/admins/{id}`. `media` không gọi `admin`; quyền admin dựa vào `x-principal-role` do Gateway đặt (header này chỉ được tin khi request mang service token của Gateway, xem [ADR-004](adr-004-service-access-token-and-api-surfaces-v1.md)).
 3. Giữ `student` là service riêng vì có dữ liệu và là dependency của `notification-worker`, `media` và `auth` (xem lập luận trong phiên thiết kế R-04).
 4. Bỏ hai edge `gateway → admin` và `media → admin`; đánh lại số edge thành `e01–e24`.
 

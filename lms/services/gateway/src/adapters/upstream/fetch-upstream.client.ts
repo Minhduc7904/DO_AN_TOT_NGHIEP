@@ -1,3 +1,4 @@
+import type { TokenProvider } from '@aiops-lms/common/auth';
 import { AppError, ERROR_CODES } from '@aiops-lms/common/errors';
 import { CORRELATION_ID_HEADER, getCorrelationId } from '@aiops-lms/common/http';
 import { observeDependency } from '@aiops-lms/common/telemetry';
@@ -21,9 +22,6 @@ const DEPENDENCY_IDENTITY: Record<UpstreamName, string> = {
   notification: 'gateway-notification',
   scheduler: 'gateway-scheduler',
   ai: 'gateway-ai',
-  enrollment: 'gateway-enrollment',
-  submission: 'gateway-submission',
-  grading: 'gateway-grading',
 };
 
 // Header theo từng chặng của phản hồi không được chuyển cho client.
@@ -60,6 +58,7 @@ export class FetchUpstreamClient implements UpstreamClient {
   constructor(
     private readonly baseUrls: Partial<Record<UpstreamName, string>>,
     private readonly timeoutMs: number,
+    private readonly tokens: TokenProvider,
   ) {}
 
   async forward(upstream: UpstreamName, request: UpstreamRequest): Promise<UpstreamResponse> {
@@ -67,10 +66,13 @@ export class FetchUpstreamClient implements UpstreamClient {
     if (!baseUrl) throw AppError.notFound('Không tìm thấy route');
     const dependency = DEPENDENCY_IDENTITY[upstream];
     const method = normalizeHttpMethod(request.method);
+    // Token trước khi mở span dependency: lỗi lấy token thuộc dependency `gateway-auth-token`,
+    // không bị tính nhầm là upstream lỗi.
+    const token = await this.tokens.getToken(upstream);
 
     try {
       return await observeDependency(dependency, method, () =>
-        this.send(dependency, baseUrl, request),
+        this.send(dependency, baseUrl, request, token),
       );
     } catch (error) {
       if (error instanceof UpstreamServerError) return error.response;
@@ -82,8 +84,13 @@ export class FetchUpstreamClient implements UpstreamClient {
     dependency: string,
     baseUrl: string,
     request: UpstreamRequest,
+    token: string,
   ): Promise<UpstreamResponse> {
-    const headers = { ...request.headers };
+    // Mọi request tới service đều mang service token của gateway (client không gửi được Authorization).
+    const headers: Record<string, string> = {
+      ...request.headers,
+      authorization: `Bearer ${token}`,
+    };
     const correlationId = getCorrelationId();
     if (correlationId) headers[CORRELATION_ID_HEADER] = correlationId;
     // Client span hiện tại làm parent: upstream nhận cùng trace id nhưng parent span của gateway.

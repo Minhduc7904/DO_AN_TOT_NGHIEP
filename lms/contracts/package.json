@@ -11,6 +11,18 @@
     "./http": {
       "types": "./dist/http/index.d.ts",
       "import": "./dist/http/index.js"
+    },
+    "./http/common": {
+      "types": "./dist/http/common/index.d.ts",
+      "import": "./dist/http/common/index.js"
+    },
+    "./http/public": {
+      "types": "./dist/http/public/index.d.ts",
+      "import": "./dist/http/public/index.js"
+    },
+    "./http/internal": {
+      "types": "./dist/http/internal/index.d.ts",
+      "import": "./dist/http/internal/index.js"
     }
   },
   "scripts": {

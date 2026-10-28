@@ -36,9 +36,9 @@ const server = createServer((req, res) => {
   if (route === 'courses') {
     return res.writeHead(404, { 'content-type': 'application/json' }).end(body);
   }
-  if (route === 'enrollments') return res.writeHead(504).end();
-  if (route === 'submissions') return res.writeHead(500).end();
-  // grades: không bao giờ trả lời → timeout phía gateway
+  if (route === 'students') return res.writeHead(504).end();
+  if (route === 'notifications') return res.writeHead(500).end();
+  // ai: không bao giờ trả lời → timeout phía gateway
 });
 await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
 const base = `http://127.0.0.1:${server.address().port}`;
@@ -47,13 +47,14 @@ const client = new FetchUpstreamClient(
   {
     auth: base,
     course: base,
-    enrollment: base,
-    submission: base,
-    grading: base,
+    student: base,
+    notification: base,
+    ai: base,
     // Không ai nghe cổng này: lỗi kết nối.
     media: 'http://127.0.0.1:9',
   },
   300,
+  { getToken: async () => 'telemetry-test-service-token' },
 );
 
 async function drain(response) {
@@ -78,17 +79,17 @@ try {
   assert.equal(notFound.status, 404);
   await drain(notFound);
   // 5xx của upstream vẫn được trả nguyên vẹn cho client nhưng bị ghi nhận là lỗi dependency.
-  const gatewayTimeout = await client.forward('enrollment', request('GET', '/api/v1/enrollments'));
+  const gatewayTimeout = await client.forward('student', request('GET', '/api/v1/students'));
   assert.equal(gatewayTimeout.status, 504);
   await drain(gatewayTimeout);
   const serverError = await client.forward(
-    'submission',
-    request('GET', '/api/v1/submissions/submission-001'),
+    'notification',
+    request('GET', '/api/v1/notifications/notification-001'),
   );
   assert.equal(serverError.status, 500);
   await drain(serverError);
   await assert.rejects(
-    client.forward('grading', request('GET', '/api/v1/grades/grade-001')),
+    client.forward('ai', request('GET', '/api/v1/ai/grade-001')),
     (error) => error.code === 'DEPENDENCY_TIMEOUT' && error.status === 504,
   );
   await assert.rejects(
@@ -106,9 +107,9 @@ try {
     [
       'gateway-auth',
       'gateway-course',
-      'gateway-enrollment',
-      'gateway-submission',
-      'gateway-grading',
+      'gateway-student',
+      'gateway-notification',
+      'gateway-ai',
       'gateway-media',
     ],
   );
@@ -117,16 +118,16 @@ try {
     [
       'gateway-auth POST',
       'gateway-course GET',
-      'gateway-enrollment GET',
-      'gateway-submission GET',
-      'gateway-grading GET',
+      'gateway-student GET',
+      'gateway-notification GET',
+      'gateway-ai GET',
       'gateway-media GET',
     ],
     'Gateway client span dùng dependency + method, không ghi path có ID động',
   );
   assert.doesNotMatch(
     JSON.stringify(spans.map((span) => [span.name, span.attributes, span.events])),
-    /course-001|submission-001|grade-001/u,
+    /course-001|notification-001|grade-001/u,
   );
   assert.notEqual(spans[0].status.code, SpanStatusCode.ERROR);
   assert.notEqual(spans[1].status.code, SpanStatusCode.ERROR);

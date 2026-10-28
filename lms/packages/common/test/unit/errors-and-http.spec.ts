@@ -1,16 +1,12 @@
 import { HttpException } from '@nestjs/common';
-import type { ArgumentsHost, ExecutionContext } from '@nestjs/common';
+import type { ArgumentsHost } from '@nestjs/common';
 import { apiErrorSchema } from '@aiops-lms/contracts';
-import { Reflector } from '@nestjs/core';
 import { z } from 'zod';
 
 import { AppExceptionFilter } from '../../src/http/app-exception.filter.js';
 import { correlationIdMiddleware, getCorrelationId } from '../../src/http/correlation.js';
 import { parseInput } from '../../src/http/parse-input.js';
-import { Public, PrincipalGuard, Roles } from '../../src/http/principal.js';
 import { AppError } from '../../src/errors/index.js';
-
-const PRINCIPAL_ID = '2f0b0a6e-5d4b-4c0b-9a54-3d1f0b8f7a11';
 
 function hostFor(): { host: ArgumentsHost; sent: { status?: number; body?: unknown } } {
   const sent: { status?: number; body?: unknown } = {};
@@ -77,57 +73,6 @@ describe('parseInput', () => {
       expect(error).toMatchObject({ code: 'VALIDATION_ERROR', status: 400 });
       expect((error as AppError).details).toEqual([{ path: 'email', message: expect.any(String) }]);
     }
-  });
-});
-
-describe('PrincipalGuard', () => {
-  class Controller {
-    @Roles('admin')
-    adminOnly(): void {}
-    @Public()
-    open(): void {}
-    any(): void {}
-  }
-
-  function contextFor(
-    handler: () => void,
-    headers: Record<string, string>,
-  ): { context: ExecutionContext; request: { principal?: unknown } } {
-    const request: { headers: Record<string, string>; principal?: unknown } = { headers };
-    const context = {
-      getHandler: () => handler,
-      getClass: () => Controller,
-      switchToHttp: () => ({ getRequest: () => request }),
-    } as unknown as ExecutionContext;
-    return { context, request };
-  }
-
-  const guard = new PrincipalGuard(new Reflector());
-  const instance = new Controller();
-
-  it('cho route công khai không cần header', () => {
-    expect(guard.canActivate(contextFor(instance.open, {}).context)).toBe(true);
-  });
-
-  it('trả 401 khi thiếu hoặc sai danh tính', () => {
-    expect(() => guard.canActivate(contextFor(instance.any, {}).context)).toThrow(AppError);
-    expect(() =>
-      guard.canActivate(
-        contextFor(instance.any, { 'x-principal-id': 'not-uuid', 'x-principal-role': 'admin' })
-          .context,
-      ),
-    ).toThrow(expect.objectContaining({ status: 401 }));
-  });
-
-  it('trả 403 khi sai role và gắn principal khi đúng role', () => {
-    const student = { 'x-principal-id': PRINCIPAL_ID, 'x-principal-role': 'student' };
-    expect(() => guard.canActivate(contextFor(instance.adminOnly, student).context)).toThrow(
-      expect.objectContaining({ status: 403 }),
-    );
-
-    const admin = contextFor(instance.adminOnly, { ...student, 'x-principal-role': 'admin' });
-    expect(guard.canActivate(admin.context)).toBe(true);
-    expect(admin.request.principal).toEqual({ id: PRINCIPAL_ID, role: 'admin' });
   });
 });
 

@@ -1,6 +1,6 @@
 # Docker Compose baseline
 
-Thư mục này chứa manifest orchestration root cho LMS testbed. Baseline hiện tại build Gateway, Auth, Course, Enrollment, Submission, Grading, Notification và Storage Mock từ `lms/`, đồng thời khởi động PostgreSQL, Redis và RabbitMQ.
+Thư mục này chứa manifest orchestration root cho LMS testbed. Baseline hiện tại build Gateway, Auth, Student, Course và Notification (v1, thay ở R-07) từ `lms/`, đồng thời khởi động PostgreSQL, RabbitMQ, MinIO, Mailpit.
 
 > **Tách `aiops-platform/` (R-02):** 5 backend observability (Collector, Prometheus, Tempo, Loki, Grafana) cùng cấu hình đã chuyển sang [`../aiops-platform/observability/`](../aiops-platform/observability/) với `compose.yaml` và `.env.example` riêng. Có ba cách chạy:
 >
@@ -8,15 +8,15 @@ Thư mục này chứa manifest orchestration root cho LMS testbed. Baseline hi�
 > - `../aiops-platform/observability/compose.yaml`: chỉ stack observability.
 > - `compose.full.yaml`: ghép cả hai trong một project (dùng `include`), là file mặc định của script reset/seed, smoke observability và CI.
 >
-> Hai bên nối với nhau qua network `aiops-net` (biến `AIOPS_NETWORK_NAME`); service LMS chỉ gửi OTLP/HTTP tới `otel-collector:4318`. Các lệnh bên dưới dùng `compose.full.yaml` khi cần đủ 20 thành phần; mục observability ở dưới sẽ chuyển về `aiops-platform/` khi viết lại tài liệu ở R-12. Đường dẫn `observability/…` trong các mục đó nay là `../aiops-platform/observability/…`.
+> Hai bên nối với nhau qua network `aiops-net` (biến `AIOPS_NETWORK_NAME`); service LMS chỉ gửi OTLP/HTTP tới `otel-collector:4318`. Các lệnh bên dưới dùng `compose.full.yaml` khi cần đủ 15 thành phần; mục observability ở dưới sẽ chuyển về `aiops-platform/` khi viết lại tài liệu ở R-12. Đường dẫn `observability/…` trong các mục đó nay là `../aiops-platform/observability/…`.
 
-> **Hạ tầng topology v2 (R-03):** `compose.yaml` đã thêm `student` (service mẫu Prisma, cổng host `3012`), `minio` + `minio-init` (5 bucket `images`, `videos`, `documents`, `audios`, `other`; API `9000`, console `9001`), `mailpit` (SMTP `1025`, UI `8025`) và các DB `student_db`, `media_db`, `notification_db`, `scheduler_db`, `ai_db` kèm role riêng (`postgres-init/02-create-v2-databases.sh`). Service v1 vẫn chạy song song cho tới khi bị thay ở R-04…R-08; `auth_db` và `course_db` của v1 phải tạo lại (`down --volumes`) khi `auth`/`course` v2 dùng Prisma. Container v2 chạy `prisma migrate deploy` trước khi khởi động.
+> **Hạ tầng topology v2 (R-03):** `compose.yaml` đã thêm `student` (service mẫu Prisma, cổng host `3012`), `minio` + `minio-init` (5 bucket `images`, `videos`, `documents`, `audios`, `other`; API `9000`, console `9001`), `mailpit` (SMTP `1025`, UI `8025`) và các DB `student_db`, `media_db`, `notification_db`, `scheduler_db`, `ai_db` kèm role riêng (`postgres-init/02-create-v2-databases.sh`). Từ R-05 `enrollment`, `submission`, `grading`, `submission-storage-mock` và Redis đã bị gỡ; `notification` (v1) còn tới R-07. Volume Postgres cũ còn `course_db` của v1 phải tạo lại (`down --volumes`) vì `course` v2 dùng Prisma và role riêng `course_user`. Container v2 chạy `prisma migrate deploy` trước khi khởi động.
 
 ## Yêu cầu
 
 - Docker Engine đang chạy.
 - Docker Compose v2 hỗ trợ `docker compose up --wait`.
-- Các port mặc định `3000`–`3007`, `5432`, `6379`, `5672` và `15672` chưa bị chiếm, hoặc đã được đổi trong file `.env` local.
+- Các port mặc định `3000`–`3003`, `3006`, `3012`, `5432`, `5672`, `15672`, `9000`–`9001`, `1025` và `8025` chưa bị chiếm, hoặc đã được đổi trong file `.env` local.
 - Docker được cấp khoảng 8 GB RAM khi bật cả observability. Với bộ nhớ hạn chế, build lại toàn bộ image không dùng cache bằng một lệnh `build --no-cache` có thể lỗi `cannot allocate memory` vì các image build song song; khi đó build tuần tự theo mục [Build lại image không dùng cache](#build-lại-image-không-dùng-cache).
 - Reset/seed và regression cần toolchain của `lms/` (Node.js `22.13.1`, pnpm `11.19.0`) và dependency đã cài theo [`../lms/README.md`](../lms/README.md#cài-đặt-và-kiểm-tra).
 
@@ -38,7 +38,7 @@ Các credential trong `.env.example` chỉ dùng cho local development, không p
 
 `COMPOSE_PROJECT_NAME=aiops-lms` trong `.env.example` quyết định tên container, network và volume. Nếu máy đã có stack hoặc volume `aiops-lms_*` cần giữ, đổi `COMPOSE_PROJECT_NAME` trong `.env` (ví dụ `aiops-lms-fresh-setup`) trước khi kiểm chứng fresh setup; nếu không, `up` dùng lại volume cũ và lệnh reset `down --volumes` bên dưới xóa dữ liệu đó.
 
-Cả 8 application runtime gửi OTLP HTTP tới `http://otel-collector:4318/v1/traces` qua network nội bộ. Collector và các backend được bật mặc định, không cần profile. Lỗi export không làm service dừng hoặc làm `/health` thất bại. Đặt `OTEL_SDK_DISABLED=true` để tắt SDK; không dùng `localhost` làm endpoint container tới container. Nếu `.env` được sao chép trước W10, đổi `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT` từ loopback cũ sang hostname Collector ở trên; giá trị trong env local ghi đè mặc định Compose.
+Cả 5 application runtime gửi OTLP HTTP tới `http://otel-collector:4318/v1/traces` qua network nội bộ. Collector và các backend được bật mặc định, không cần profile. Lỗi export không làm service dừng hoặc làm `/health` thất bại. Đặt `OTEL_SDK_DISABLED=true` để tắt SDK; không dùng `localhost` làm endpoint container tới container. Nếu `.env` được sao chép trước W10, đổi `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT` từ loopback cũ sang hostname Collector ở trên; giá trị trong env local ghi đè mặc định Compose.
 
 ## Validate và khởi động
 
@@ -50,16 +50,16 @@ docker compose --env-file docker-compose/.env -f docker-compose/compose.full.yam
 docker compose --env-file docker-compose/.env -f docker-compose/compose.full.yaml ps
 ```
 
-Grading nhận RabbitMQ URL (kèm credential từ `.env`) và publish `grade.completed` lên exchange `lms.events`; Grading phụ thuộc RabbitMQ healthy khi khởi động nhưng vẫn tự phục hồi nếu broker dừng rồi bật lại. Notification có thể mở HTTP khi RabbitMQ tạm unavailable, sau đó tự reconnect với một loop duy nhất. Service khai báo queue durable `notification.grade-completed.v1`, bind routing key `grade.completed`, deduplicate in-memory theo `event_id` với TTL 24 giờ/tối đa 10.000 ID và chỉ ack sau khi xử lý mô phỏng thành công. Cache không bền qua restart và không cung cấp exactly-once; fault slowdown mặc định tắt.
+Course tự chạy `prisma migrate deploy` trước khi mở HTTP (cổng `3003`, database `course_db` với role riêng `course_user`). Notification (v1) vẫn khai báo queue `notification.grade-completed.v1` cho tới khi được thay ở R-07, dù không còn producer.
 
-Compose chỉ báo thành công sau khi Gateway, Auth, Course, Enrollment, Submission, Grading, Notification, Storage Mock, PostgreSQL, Redis, RabbitMQ, Collector, Prometheus, Tempo, Loki và Grafana (20 thành phần, gồm Student, MinIO, `minio-init` và Mailpit) đều healthy. PostgreSQL tạo `auth_db`, `course_db`, `enrollment_db`, `submission_db` và `grading_db` riêng; các service có persistence tự chạy migration/seed trước khi mở HTTP. Script khởi tạo PostgreSQL chỉ chạy trên volume mới; với volume cũ chưa có `grading_db`, reset volume theo hướng dẫn bên dưới. Credential lấy từ `.env`, không đặt trực tiếp trong manifest Compose.
+Compose chỉ báo thành công sau khi Gateway, Auth, Student, Course, Notification, PostgreSQL, MinIO, `minio-init`, Mailpit, RabbitMQ, Collector, Prometheus, Tempo, Loki và Grafana (15 thành phần) đều healthy. PostgreSQL tạo `auth_db`, `student_db`, `course_db`, `media_db`, `notification_db`, `scheduler_db` và `ai_db` riêng, mỗi DB một role; các service có persistence tự chạy `prisma migrate deploy` trước khi mở HTTP. Script khởi tạo PostgreSQL chỉ chạy trên volume mới; với volume cũ (còn DB hoặc bảng v1), reset volume theo hướng dẫn bên dưới. Credential lấy từ `.env`, không đặt trực tiếp trong manifest Compose.
 
 ## Kiểm tra
 
 Kiểm tra Course từ Bash:
 
 ```bash
-curl --fail http://localhost:3002/health
+curl --fail http://localhost:3003/ready
 ```
 
 Kiểm tra Auth từ Bash:
@@ -68,27 +68,27 @@ Kiểm tra Auth từ Bash:
 curl --fail http://localhost:3001/health
 ```
 
-Kiểm tra W1–W2 qua Gateway từ Bash:
+Kiểm tra luồng Gateway → Course từ Bash (tài khoản mẫu trong `.env.example`):
 
 ```bash
-login=$(curl --fail --silent --show-error -H 'content-type: application/json' -d '{"email":"student@example.test","password":"example-password"}' http://localhost:3000/api/v1/auth/student/login)
-token=$(printf '%s' "$login" | node -e 'let text="";process.stdin.on("data",chunk=>text+=chunk);process.stdin.on("end",()=>process.stdout.write(JSON.parse(text).access_token))')
-curl --fail -H "Authorization: Bearer $token" http://localhost:3000/api/v1/courses/course-001
+login=$(curl --fail --silent --show-error -H 'content-type: application/json' -d '{"email":"instructor@example.test","password":"example-password"}' http://localhost:3000/api/v1/auth/instructor/login)
+token=$(printf '%s' "$login" | node -e 'let text="";process.stdin.on("data",chunk=>text+=chunk);process.stdin.on("end",()=>process.stdout.write(JSON.parse(text).data.access_token))')
+curl --fail -H "Authorization: Bearer $token" -H 'content-type: application/json' -d '{"name":"Khóa học thử"}' http://localhost:3000/api/v1/courses
+curl --fail -H "Authorization: Bearer $token" http://localhost:3000/api/v1/courses
 ```
 
-`course-001` là dữ liệu seed. Redis chỉ là cache; nếu Redis tạm không sẵn sàng, Course đọc từ `course_db`.
+Stack mới không seed khóa học; dữ liệu quy mô lớn do seeder ở R-10 tạo.
 
 Hoặc từ PowerShell:
 
 ```powershell
-Invoke-RestMethod http://localhost:3002/health
+Invoke-RestMethod http://localhost:3003/ready
 ```
 
 Kiểm tra readiness trực tiếp của từng dependency:
 
 ```bash
 docker compose --env-file docker-compose/.env -f docker-compose/compose.full.yaml exec -T postgres sh -c 'pg_isready -U "$POSTGRES_USER" -d "$POSTGRES_DB"'
-docker compose --env-file docker-compose/.env -f docker-compose/compose.full.yaml exec -T redis redis-cli ping
 docker compose --env-file docker-compose/.env -f docker-compose/compose.full.yaml exec -T rabbitmq rabbitmq-diagnostics -q ping
 ```
 
@@ -115,7 +115,7 @@ Không dùng lệnh reset volume với dữ liệu cần giữ lại.
 Khi Docker chỉ có khoảng 4 GB RAM, build từng image có Dockerfile theo thứ tự rồi khởi động bằng image vừa build:
 
 ```bash
-for service in gateway auth course enrollment submission submission-storage-mock grading notification; do
+for service in gateway auth student course notification; do
   docker compose --env-file docker-compose/.env -f docker-compose/compose.full.yaml build --no-cache "$service"
 done
 docker compose --env-file docker-compose/.env -f docker-compose/compose.full.yaml up -d --wait
@@ -146,7 +146,7 @@ Option canonical là `--compose-env-file` để không xung đột với option 
 
 Lệnh chỉ chấp nhận `local`, hoặc `test` với project `aiops-lms-test-*`; project local phải là `aiops-lms-local`. `--confirm` phải khớp chính xác project, còn env file và Compose file phải nằm trong repository. `production`, target rộng, file ngoài repository hoặc tham số thiếu đều bị từ chối trước khi gọi Docker.
 
-Quy trình chỉ tác động project đã xác nhận: `down --volumes --remove-orphans`, sau đó `up --build -d --wait`, kiểm tra toàn bộ service healthy và tạo fingerprint seed. Fingerprint gồm dữ liệu năm database nhưng loại `password_hash`, Redis phải có `DBSIZE=0`, RabbitMQ phải có queue Notification durable/rỗng và Storage Mock phải có `object_count=0`. Student và instructor dùng UUID cố định; các seed Enrollment, Submission và Grading dùng cùng UUID student.
+Quy trình chỉ tác động project đã xác nhận: `down --volumes --remove-orphans`, sau đó `up --build -d --wait`, kiểm tra toàn bộ service healthy và tạo fingerprint seed. Fingerprint gồm dữ liệu `auth_db`, `student_db`, `course_db` (khóa học, ghi danh) nhưng loại `password_hash`, và RabbitMQ phải có queue Notification durable/rỗng. Student và instructor dùng UUID cố định (bootstrap của `auth`).
 
 Nếu một bước lỗi, lệnh dừng với exit code khác `0` và không in thông báo thành công. Xem log bằng đúng project đã xác nhận, sửa nguyên nhân rồi chạy lại toàn bộ lệnh; không bỏ `--confirm` và không đổi sang project dùng chung khác.
 
@@ -212,7 +212,7 @@ cd lms
 pnpm run test:testbed:reset:compose
 ```
 
-Test reset hai lần trên `aiops-lms-test-reset-seed`, so fingerprint, xác nhận 20 thành phần healthy, chạy smoke sau mỗi reset và xác nhận trace cũ trả 404 sau reset. Test tự dọn đúng project test cùng volume trong `finally`. Khi RAM/build cache hạn chế, đặt `COMPOSE_PARALLEL_LIMIT=1` trước các lệnh Compose/reset/regression để tránh build đồng thời.
+Test reset hai lần trên `aiops-lms-test-reset-seed`, so fingerprint, xác nhận 15 thành phần healthy, chạy smoke sau mỗi reset và xác nhận trace cũ trả 404 sau reset. Test tự dọn đúng project test cùng volume trong `finally`. Khi RAM/build cache hạn chế, đặt `COMPOSE_PARALLEL_LIMIT=1` trước các lệnh Compose/reset/regression để tránh build đồng thời.
 
 ## Metrics runtime và broker W10
 

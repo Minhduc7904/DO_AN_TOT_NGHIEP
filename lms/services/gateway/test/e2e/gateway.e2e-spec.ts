@@ -1,4 +1,4 @@
-import { createHash, createHmac } from 'node:crypto';
+import { createHash } from 'node:crypto';
 import {
   createServer,
   type IncomingHttpHeaders,
@@ -8,6 +8,13 @@ import {
 } from 'node:http';
 import type { AddressInfo } from 'node:net';
 
+import {
+  generateSigningKey,
+  toJwk,
+  TokenVerifier,
+  StaticKeyProvider,
+} from '@aiops-lms/common/auth';
+import { mintServiceToken, mintUserToken } from '@aiops-lms/common/auth/testing';
 import { AppExceptionFilter, correlationIdMiddleware } from '@aiops-lms/common/http';
 import { apiErrorSchema, apiResponseSchema } from '@aiops-lms/contracts';
 import type { INestApplication } from '@nestjs/common';
@@ -15,16 +22,12 @@ import { Test } from '@nestjs/testing';
 import { z } from 'zod';
 import request from 'supertest';
 
-const SECRET = 'e2e-secret-with-at-least-32-characters-long';
 const USER_ID = '11111111-1111-4111-8111-111111111111';
+const GATEWAY_SECRET = 'gateway-secret-e2e-0123456789';
+const key = generateSigningKey();
 
 function token(role: string): string {
-  const header = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url');
-  const payload = Buffer.from(
-    JSON.stringify({ sub: USER_ID, role, exp: Math.floor(Date.now() / 1_000) + 3_600 }),
-  ).toString('base64url');
-  const signature = createHmac('sha256', SECRET).update(`${header}.${payload}`).digest('base64url');
-  return `${header}.${payload}.${signature}`;
+  return mintUserToken(key, { subject: USER_ID, role });
 }
 
 interface Seen {
@@ -87,7 +90,36 @@ describe('gateway (upstream HTTP giả)', () => {
   let scheduler: Stub;
 
   beforeAll(async () => {
-    auth = await startStub((_seen, res) => {
+    // Auth giả: JWKS, cấp service token (đếm số lần gọi để kiểm cache) và cửa đăng nhập.
+    auth = await startStub((seen, res) => {
+      if (seen.url === '/.well-known/jwks.json') {
+        res.writeHead(200, json).end(JSON.stringify({ keys: [toJwk(key.publicKey)] }));
+        return;
+      }
+      if (seen.url === '/internal/v1/auth/service-token') {
+        const body = JSON.parse(seen.body.toString('utf8')) as {
+          audience: string;
+          client_id: string;
+          client_secret: string;
+        };
+        if (body.client_id !== 'gateway' || body.client_secret !== GATEWAY_SECRET) {
+          res.writeHead(401, json).end('{}');
+          return;
+        }
+        res.writeHead(200, json).end(
+          envelope({
+            access_token: mintServiceToken(key, {
+              subject: 'gateway',
+              audience: body.audience,
+              scopes: ['gateway:proxy'],
+            }),
+            token_type: 'Bearer',
+            expires_in: 600,
+            scope: 'gateway:proxy',
+          }),
+        );
+        return;
+      }
       res.writeHead(200, json).end(envelope({ access_token: 'stub' }));
     });
     student = await startStub((_seen, res) => {
@@ -145,7 +177,8 @@ describe('gateway (upstream HTTP giả)', () => {
 
     Object.assign(process.env, {
       OTEL_SDK_DISABLED: 'true',
-      GATEWAY_JWT_SECRET: SECRET,
+      SERVICE_CLIENT_ID: 'gateway',
+      SERVICE_CLIENT_SECRET: GATEWAY_SECRET,
       GATEWAY_UPSTREAM_TIMEOUT_MS: '300',
       GATEWAY_AUTH_BASE_URL: auth.url,
       GATEWAY_STUDENT_BASE_URL: student.url,
@@ -211,7 +244,41 @@ describe('gateway (upstream HTTP giả)', () => {
       'x-principal-role': 'student',
       'x-correlation-id': 'corr-e2e-1',
     });
-    expect(seen?.headers).not.toHaveProperty('authorization');
+    // Authorization của client không đến upstream; thay bằng service token của gateway.
+    const upstreamToken = String(seen?.headers.authorization ?? '').replace(/^Bearer /u, '');
+    await expect(
+      new TokenVerifier(new StaticKeyProvider([key])).verify(upstreamToken, {
+        type: 'service',
+        audience: 'student',
+      }),
+    ).resolves.toMatchObject({ subject: 'gateway', scopes: ['gateway:proxy'] });
+    expect(seen?.headers.authorization).not.toBe(bearer('student').authorization);
+  });
+
+  it('service token được cache: nhiều request cùng upstream chỉ xin token một lần', async () => {
+    const tokenRequests = (): number =>
+      auth.seen.filter((entry) => entry.url === '/internal/v1/auth/service-token').length;
+    await request(app.getHttpServer()).get('/api/v1/students').set(bearer('admin')).expect(200);
+    const before = tokenRequests();
+    await Promise.all(
+      [1, 2, 3, 4].map(() =>
+        request(app.getHttpServer()).get('/api/v1/students').set(bearer('admin')).expect(200),
+      ),
+    );
+    expect(tokenRequests()).toBe(before);
+  });
+
+  it('service token không dùng được như user token → 401 TOKEN_TYPE_MISMATCH', async () => {
+    const service = mintServiceToken(key, {
+      subject: 'gateway',
+      audience: 'aiops-lms',
+      scopes: ['gateway:proxy'],
+    });
+    const response = await request(app.getHttpServer())
+      .get('/api/v1/students')
+      .set({ authorization: `Bearer ${service}` })
+      .expect(401);
+    expect(apiErrorSchema.parse(response.body).error.code).toBe('TOKEN_TYPE_MISMATCH');
   });
 
   it('thiếu hoặc sai token → 401 envelope; sai role → 403 envelope; không chạm upstream', async () => {
@@ -318,10 +385,12 @@ describe('gateway (upstream HTTP giả)', () => {
     expect(media.seen.at(-1)?.headers.range).toBe('bytes=0-3');
   });
 
-  it('không proxy /internal, dot-segment, route lạ hay route v1 chưa bật → 404 envelope', async () => {
+  it('không proxy /internal, dot-segment, route lạ hay route v1 đã gỡ → 404 envelope', async () => {
     const before = stubs.reduce((sum, stub) => sum + stub.seen.length, 0);
     const paths = [
       '/internal/v1/students',
+      '/internal/v1/auth/service-token',
+      '/.well-known/jwks.json',
       '/api/v1/auth/%2e%2e/%2e%2e/%2e%2e/internal/v1/students',
       '/api/v1/unknown',
       '/api/v1/enrollments',

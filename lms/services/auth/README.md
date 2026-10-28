@@ -1,6 +1,6 @@
 # Auth service
 
-Auth sở hữu `auth_db` (Prisma + PostgreSQL), đăng ký student, đăng nhập, refresh token, quản lý tài khoản 3 role (`student`, `instructor`, `admin`) và phát JWT HS256. Gateway verify JWT cục bộ; Auth không truy cập database của service khác.
+Auth sở hữu `auth_db` (Prisma + PostgreSQL), đăng ký student, đăng nhập, refresh token, quản lý tài khoản 3 role (`student`, `instructor`, `admin`) và phát **hai loại token ký EdDSA (Ed25519)**: user access token (đăng nhập) và service access token (client-credentials) cho xác thực service-to-service ([ADR-004](../../../docs/processed/adr/adr-004-service-access-token-and-api-surfaces-v1.md)). Gateway và mọi service verify cục bộ bằng JWKS của Auth; Auth không truy cập database của service khác.
 
 ## Route
 
@@ -16,6 +16,17 @@ Auth sở hữu `auth_db` (Prisma + PostgreSQL), đăng ký student, đăng nh�
 | GET    | `/api/v1/auth/accounts`         | admin | `list-accounts` (lọc `role`, phân trang)                                                                                                                                                                                    |
 
 Use case nằm ở `src/application/use-cases/{accounts,sessions}/`, mỗi use case một class. Mật khẩu băm scrypt; ba cửa đăng nhập dùng chung `CredentialsAuthenticator`: sai email, sai mật khẩu, tài khoản bị khóa hay đúng mật khẩu nhưng sai cửa (ví dụ student vào admin) đều trả cùng một lỗi 401 và luôn thực hiện một lần băm để thời gian phản hồi không lộ email.
+
+## Bề mặt internal và mở
+
+Tách theo thư mục `src/adapters/http/`: `public/` (`/api/v1/auth/*` ở trên, chỉ Gateway gọi) · `internal/` · `open/` · `shared/` (presenter).
+
+| Method | Path                              | Xác thực                               | Use case                                                                                                                                                                                                                                                                                                                                   |
+| ------ | --------------------------------- | -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| POST   | `/internal/v1/auth/service-token` | `client_id`/`client_secret` trong body | `issue-service-token`: kiểm secret (scrypt), `audience` và `scope` được phép trong `auth_service_clients`; trả `{access_token, token_type, expires_in, scope}` (TTL `AUTH_SERVICE_TOKEN_TTL_SECONDS`, mặc định 600). Sai secret/client lạ/client khóa cùng trả `401 SERVICE_CLIENT_INVALID`; ngoài phạm vi → `403 SERVICE_SCOPE_FORBIDDEN` |
+| GET    | `/.well-known/jwks.json`          | không                                  | `get-jwks`: khóa công khai hiện tại và khóa cũ (RFC 7517, không bọc envelope, `Cache-Control: public, max-age=60`)                                                                                                                                                                                                                         |
+
+Auth tự xin service token cho chính mình (gọi `student`) bằng cách gọi thẳng use case, và verify token của chính nó bằng khóa cục bộ nên không phụ thuộc HTTP vào chính nó lúc khởi động. `BootstrapRunner` đồng bộ client dịch vụ **trước** rồi mới seed tài khoản.
 
 ## Seed khi khởi động
 
@@ -36,4 +47,4 @@ Container chạy `prisma migrate deploy` trước khi khởi động. Volume Pos
 
 ## Biến môi trường
 
-`AUTH_DATABASE_URL` trỏ duy nhất tới `auth_db`. `AUTH_JWT_SECRET` tối thiểu 32 ký tự; chỉ dùng secret local trong `.env.example`, môi trường triển khai phải cung cấp secret riêng, không ghi vào source, log hoặc telemetry. Ngoài ra: `AUTH_JWT_TTL_SECONDS`, `AUTH_REFRESH_TTL_SECONDS`, `AUTH_STUDENT_BASE_URL`, `AUTH_STUDENT_TIMEOUT_MS`, `AUTH_STUDENT_BREAKER_{THRESHOLD,COOLDOWN_MS}`.
+`AUTH_DATABASE_URL` trỏ duy nhất tới `auth_db`. `AUTH_SIGNING_KEY_PEM` là khóa ký Ed25519 (PKCS8 PEM, xuống dòng viết `\n`); bắt buộc khi `NODE_ENV=production` trừ khi đặt `AUTH_ALLOW_EPHEMERAL_SIGNING_KEY=true` (Compose testbed đặt mặc định `true`); thiếu khóa thì sinh khóa tạm khi khởi động (token mất hiệu lực sau khi khởi động lại). `AUTH_PREVIOUS_PUBLIC_KEY_PEM` (SPKI) giữ khóa cũ trong JWKS khi xoay khóa. `SERVICE_CLIENT_ID`/`SERVICE_CLIENT_SECRET` là danh tính của chính auth; `SERVICE_CLIENTS_BOOTSTRAP` là JSON mảng `{client_id, client_secret (≥16 ký tự), audiences[], scopes[]}` đồng bộ vào `auth_service_clients`. Chỉ dùng secret local trong `.env.example`, môi trường triển khai phải cung cấp secret riêng, không ghi vào source, log hoặc telemetry. Ngoài ra: `AUTH_JWT_TTL_SECONDS` (user token), `AUTH_SERVICE_TOKEN_TTL_SECONDS`, `AUTH_REFRESH_TTL_SECONDS`, `AUTH_STUDENT_BASE_URL`, `AUTH_STUDENT_TIMEOUT_MS`, `AUTH_STUDENT_BREAKER_{THRESHOLD,COOLDOWN_MS}`.

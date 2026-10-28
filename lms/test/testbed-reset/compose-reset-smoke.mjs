@@ -57,7 +57,7 @@ function verifyObservability() {
     .trim()
     .split(/\r?\n/u)
     .map((line) => JSON.parse(line));
-  assert.equal(services.length, 20, 'Toàn bộ 20 thành phần phải được khởi động.');
+  assert.equal(services.length, 15, 'Toàn bộ 15 thành phần phải được khởi động.');
   for (const service of services) assert.equal(service.Health, 'healthy', service.Service);
   const output = run(process.execPath, ['test/observability/stack-smoke.mjs'], { cwd: lmsRoot });
   process.stdout.write(output);
@@ -68,15 +68,15 @@ try {
   const first = reset();
   const firstSmoke = verifyObservability();
 
-  run('docker', [...composeArguments, 'exec', '-T', 'redis', 'redis-cli', 'SET', 'dirty-key', '1']);
+  // Làm bẩn course_db bằng một khóa học lạ; reset phải xóa volume nên fingerprint không đổi.
   run('docker', [
     ...composeArguments,
     'exec',
     '-T',
-    'submission-storage-mock',
-    'node',
-    '-e',
-    "fetch('http://127.0.0.1:3005/api/v1/objects/dirty-object',{method:'PUT',headers:{'content-type':'application/json'},body:JSON.stringify({content:'dirty'})}).then(response=>{if(!response.ok)process.exit(1)}).catch(()=>process.exit(1))",
+    'postgres',
+    'sh',
+    '-c',
+    `psql --username "$POSTGRES_USER" --dbname course_db --command "INSERT INTO courses (id, name, status, instructor_id, updated_at) VALUES (gen_random_uuid(), 'dirty', 'DRAFT', gen_random_uuid(), now())"`,
   ]);
 
   const second = reset();

@@ -33,6 +33,9 @@ Schema chi tiết (cột, kiểu, index) nằm trong `prisma/schema.prisma` củ
 | --------------------- | -------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
 | `auth_users`          | Tài khoản: email duy nhất, mật khẩu băm, `role` (student/instructor/admin), trạng thái | Mở rộng role từ 2 lên 3; `id` dùng làm `sub` JWT và làm `id` hồ sơ student |
 | `auth_refresh_tokens` | Refresh token băm, hạn, thu hồi                                                        | Giữ như hiện tại                                                           |
+| `auth_service_clients` | Registry client dịch vụ (ADR-004): `client_id`, secret băm scrypt, `allowed_audiences`, `allowed_scopes`, `active` | Đồng bộ khi khởi động từ `SERVICE_CLIENTS_BOOTSTRAP`; không chứa secret thô |
+
+Khóa ký token (Ed25519) không nằm trong DB: lấy từ `AUTH_SIGNING_KEY_PEM`; `auth` chỉ công bố khóa công khai qua JWKS.
 
 Seed: một admin cố định (qua `AUTH_BOOTSTRAP_ADMIN_*`), một instructor mẫu và một student mẫu (kèm hồ sơ ở `student`).
 
@@ -143,6 +146,8 @@ Mục tiêu v2: các fault phải tạo triệu chứng **không nằm ở nơi 
 | **FD** | Độ trễ nhà cung cấp   | `ai`                     | `ai-llm-provider`       | Stub LLM chậm hoặc trả lỗi ngắt quãng                     | Span provider, lease hết hạn, retry job     | job AI retry chồng, outbox backlog                       |
 | **FE** | Độ trễ dependency nhỏ | `student`                | `student-postgres`      | Chèn trễ truy vấn                                         | Span student chậm ở snapshot                | batch `PARTIAL_FAILED`, số liệu lệch, log không có error |
 | **FF** | Quá tải tài nguyên    | bất kỳ service           | instance                | Giới hạn CPU/bộ nhớ container                             | CPU/RSS, độ trễ, tỉ lệ lỗi                  | latency/error lan theo dependency                        |
+| **FG** | Độ trễ/ngắt xác thực  | `auth`                   | `auth` / `auth-postgres` | Chèn trễ hoặc dừng `auth` (ADR-004)                       | Span `*-auth-token`/`*-auth-jwks` chậm hoặc lỗi, breaker mở | Chưa thấy gì trong ≤10 phút (stale-while-error), rồi mọi service lỗi 503 hàng loạt |
+| **FH** | Lệch khóa ký          | `auth`                   | JWKS / khóa ký          | Đổi `AUTH_SIGNING_KEY_PEM` mà không giữ khóa cũ           | `SERVICE_TOKEN_INVALID` tăng sau khi cache JWKS hết hạn | 401 đồng thời ở nhiều service, hạ tầng đều khỏe          |
 
 Mỗi lần chạy phải ghi ground truth theo [telemetry-and-ground-truth-schema](telemetry-and-ground-truth-schema-v0.md) (sẽ cập nhật ở R-12): `root_cause_service`, `component`, `fault_type`, thời điểm bắt đầu/kết thúc, `run_id`, cường độ. Ground truth không đưa vào payload nghiệp vụ.
 
@@ -159,6 +164,7 @@ Tiêu chí: một người đọc dashboard/trace thông thường theo đườn
 | **C3** | Job AI soạn bài mãi `RUNNING`, usage media trễ              | FD: provider AI chậm                       | Lease hết hạn → retry chồng → outbox backlog → `media-worker` trễ                                             | Hai triệu chứng ở hai service, chung nguyên nhân gián tiếp                         |
 | **C4** | Khóa học `READY` nhưng thumbnail mất, job cleanup xóa media | FA: MinIO promote chậm                     | Media `PENDING` kẹt → usage chưa gắn → `scheduler-worker` coi là không dùng và xóa                            | Lỗi lộ ở scheduler muộn, cách nguyên nhân gốc nhiều bước và nhiều phút             |
 | **C5** | Batch notification `PARTIAL_FAILED`, số item lệch           | FE: `student` chậm khi snapshot            | Snapshot timeout từng trang → thiếu recipient                                                                 | Log không có lỗi, chỉ lệch số liệu so với kỳ vọng                                  |
+| **C6** | Nhiều service cùng trả 503 sau một khoảng yên lặng          | FG: `auth` chậm/chết                       | Token đã cache còn hạn → không lỗi → hết hạn mà không làm mới được → gateway/auth không gọi được ai          | Triệu chứng ở mọi service cùng lúc nhưng chỉ sau ≤10 phút; lỗi ở cạnh `*-auth-token` chứ không ở service lỗi |
 
 Mỗi case dùng workload chạy song song (k6) để tạo nhiễu. Đối chứng thủ công: baseline tự động (ngưỡng + trace lỗi/chậm nhất) và thử nghiệm người nhỏ theo [ADR-002](../adr/adr-002-ai-primary-root-cause-analysis-v1.md).
 

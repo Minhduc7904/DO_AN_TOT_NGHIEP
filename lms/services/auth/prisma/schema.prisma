@@ -53,3 +53,17 @@ model AuthRefreshToken {
   @@index([expiresAt])
   @@map("auth_refresh_tokens")
 }
+
+/// Client xác thực dịch vụ (client-credentials, ADR-004). Secret chỉ lưu dạng băm scrypt;
+/// `allowed_audiences` là các service client được xin token, `allowed_scopes` là quyền tối đa.
+model ServiceClient {
+  clientId         String   @id @map("client_id")
+  secretHash       String   @map("secret_hash")
+  allowedAudiences String[] @map("allowed_audiences")
+  allowedScopes    String[] @map("allowed_scopes")
+  active           Boolean  @default(true)
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@map("auth_service_clients")
+}
