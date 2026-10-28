@@ -23,7 +23,9 @@ import { CreateAccountUseCase } from '../../application/use-cases/accounts/creat
 import { GetCurrentAccountUseCase } from '../../application/use-cases/accounts/get-current-account.use-case.js';
 import { ListAccountsUseCase } from '../../application/use-cases/accounts/list-accounts.use-case.js';
 import { RegisterStudentUseCase } from '../../application/use-cases/accounts/register-student.use-case.js';
-import { LoginUseCase } from '../../application/use-cases/sessions/login.use-case.js';
+import { LoginAdminUseCase } from '../../application/use-cases/sessions/login-admin.use-case.js';
+import { LoginInstructorUseCase } from '../../application/use-cases/sessions/login-instructor.use-case.js';
+import { LoginStudentUseCase } from '../../application/use-cases/sessions/login-student.use-case.js';
 import { RefreshTokenUseCase } from '../../application/use-cases/sessions/refresh-token.use-case.js';
 import { presentAccount } from './account.presenter.js';
 
@@ -31,7 +33,9 @@ import { presentAccount } from './account.presenter.js';
 export class AuthController {
   constructor(
     @Inject(RegisterStudentUseCase) private readonly registerStudent: RegisterStudentUseCase,
-    @Inject(LoginUseCase) private readonly loginUseCase: LoginUseCase,
+    @Inject(LoginStudentUseCase) private readonly loginStudent: LoginStudentUseCase,
+    @Inject(LoginInstructorUseCase) private readonly loginInstructor: LoginInstructorUseCase,
+    @Inject(LoginAdminUseCase) private readonly loginAdmin: LoginAdminUseCase,
     @Inject(RefreshTokenUseCase) private readonly refreshToken: RefreshTokenUseCase,
     @Inject(GetCurrentAccountUseCase) private readonly getCurrentAccount: GetCurrentAccountUseCase,
     @Inject(CreateAccountUseCase) private readonly createAccount: CreateAccountUseCase,
@@ -51,11 +55,26 @@ export class AuthController {
     );
   }
 
+  /** Ba cửa đăng nhập riêng theo role; refresh dùng chung vì refresh token đã gắn với tài khoản. */
   @Public()
-  @Post('login')
+  @Post('student/login')
   @HttpCode(200)
-  login(@Body() body: unknown): Promise<LoginResponseDto> {
-    return this.loginUseCase.execute(parseInput(loginRequestSchema, body));
+  studentLogin(@Body() body: unknown): Promise<LoginResponseDto> {
+    return this.loginStudent.execute(parseInput(loginRequestSchema, body));
+  }
+
+  @Public()
+  @Post('instructor/login')
+  @HttpCode(200)
+  instructorLogin(@Body() body: unknown): Promise<LoginResponseDto> {
+    return this.loginInstructor.execute(parseInput(loginRequestSchema, body));
+  }
+
+  @Public()
+  @Post('admin/login')
+  @HttpCode(200)
+  adminLogin(@Body() body: unknown): Promise<LoginResponseDto> {
+    return this.loginAdmin.execute(parseInput(loginRequestSchema, body));
   }
 
   @Public()

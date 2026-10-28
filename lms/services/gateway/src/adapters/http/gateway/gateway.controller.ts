@@ -45,7 +45,7 @@ export class GatewayController {
     private readonly proxy: GatewayProxy,
   ) {}
 
-  @Post('auth/login')
+  @Post(['auth/student/login', 'auth/instructor/login', 'auth/admin/login'])
   @HttpCode(200)
   async login(@Req() request: HttpRequest, @Res() response: HttpResponse): Promise<void> {
     this.send(response, await this.forwardPublic(request));

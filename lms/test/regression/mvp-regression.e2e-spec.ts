@@ -86,7 +86,8 @@ describe('Testbed MVP regression: hai workflow xuyên service, lỗi dependency 
     traceparent?: string,
   ): Promise<{ id: string; token: string }> {
     return step(workflow, `đăng nhập ${email}`, 'gateway → auth', async () => {
-      const call = gateway().post('/api/v1/auth/login');
+      const door = email.startsWith('instructor') ? 'instructor' : 'student';
+      const call = gateway().post(`/api/v1/auth/${door}/login`);
       if (traceparent) call.set('traceparent', traceparent);
       const response = await call.send({ email, password: PASSWORD }).expect(200);
       return {

@@ -54,7 +54,7 @@ describe('Gateway HTTP contract', () => {
     );
 
     const response = await request(app.getHttpServer())
-      .post('/api/v1/auth/login')
+      .post('/api/v1/auth/student/login')
       .send({ email: 'student@example.test', password: 'wrong-password' })
       .expect(401);
 
@@ -72,7 +72,7 @@ describe('Gateway HTTP contract', () => {
       fetchClient.mockResolvedValueOnce(new Response(null, { status: upstreamStatus }));
 
       const response = await request(app.getHttpServer())
-        .post('/api/v1/auth/login')
+        .post('/api/v1/auth/student/login')
         .send({ email: 'student@example.test', password: 'example-password' })
         .expect(expectedStatus);
 

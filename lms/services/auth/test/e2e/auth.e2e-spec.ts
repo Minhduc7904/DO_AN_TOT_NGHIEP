@@ -114,7 +114,7 @@ describe('auth service (PostgreSQL thật, student giả)', () => {
       .expect(409);
 
     const login = await request(app.getHttpServer())
-      .post('/api/v1/auth/login')
+      .post('/api/v1/auth/student/login')
       .send({ email, password: 'student-password' })
       .expect(200);
     const session = apiResponseSchema(loginResponseDtoSchema).parse(login.body);
@@ -146,7 +146,7 @@ describe('auth service (PostgreSQL thật, student giả)', () => {
       .post('/api/v1/auth/register')
       .send({ email, password: 'student-password', full_name: 'Race' });
     const login = await request(app.getHttpServer())
-      .post('/api/v1/auth/login')
+      .post('/api/v1/auth/student/login')
       .send({ email, password: 'student-password' });
 
     const results = await Promise.all(
@@ -162,7 +162,7 @@ describe('auth service (PostgreSQL thật, student giả)', () => {
 
   it('admin được seed đăng nhập, tạo instructor và liệt kê tài khoản; student bị 403', async () => {
     const admin = await request(app.getHttpServer())
-      .post('/api/v1/auth/login')
+      .post('/api/v1/auth/admin/login')
       .send({ email: 'admin@example.test', password: ADMIN_PASSWORD })
       .expect(200);
     expect(admin.body.data.principal).toEqual({ id: ADMIN_ID, role: 'admin' });
@@ -194,6 +194,53 @@ describe('auth service (PostgreSQL thật, student giả)', () => {
       .set({ 'x-principal-id': created.body.data.id, 'x-principal-role': 'student' })
       .expect(403);
     await request(app.getHttpServer()).get('/api/v1/auth/accounts').expect(401);
+  });
+
+  it('mỗi role chỉ đăng nhập qua cửa của mình, sai cửa trả cùng một 401', async () => {
+    const asAdmin = { 'x-principal-id': ADMIN_ID, 'x-principal-role': 'admin' };
+    const instructorEmail = `door-${unique}@example.test`;
+    await request(app.getHttpServer())
+      .post('/api/v1/auth/accounts')
+      .set(asAdmin)
+      .send({
+        email: instructorEmail,
+        password: 'instructor-password',
+        full_name: 'Giảng viên cửa',
+        role: 'instructor',
+      })
+      .expect(201);
+    const studentEmail = `door-student-${unique}@example.test`;
+    await request(app.getHttpServer())
+      .post('/api/v1/auth/register')
+      .send({ email: studentEmail, password: 'student-password', full_name: 'Học viên cửa' })
+      .expect(201);
+
+    const login = (door: string, email: string, password: string): request.Test =>
+      request(app.getHttpServer()).post(`/api/v1/auth/${door}/login`).send({ email, password });
+
+    const instructor = await login('instructor', instructorEmail, 'instructor-password').expect(
+      200,
+    );
+    expect(instructor.body.data.principal.role).toBe('instructor');
+
+    const denied = [
+      await login('student', instructorEmail, 'instructor-password').expect(401),
+      await login('admin', instructorEmail, 'instructor-password').expect(401),
+      await login('admin', studentEmail, 'student-password').expect(401),
+      await login('instructor', 'admin@example.test', ADMIN_PASSWORD).expect(401),
+      await login('student', 'admin@example.test', ADMIN_PASSWORD).expect(401),
+      await login('student', studentEmail, 'sai-mat-khau').expect(401),
+    ];
+    for (const response of denied) {
+      expect(apiErrorSchema.parse(response.body).error.message).toBe(
+        'Thông tin đăng nhập không hợp lệ',
+      );
+    }
+    // Cửa cũ dùng chung đã bỏ.
+    await request(app.getHttpServer())
+      .post('/api/v1/auth/login')
+      .send({ email: studentEmail, password: 'student-password' })
+      .expect(404);
   });
 
   it('phân trang nhất quán: mặc định, tổng trang và từ chối tham số sai', async () => {
@@ -234,7 +281,7 @@ describe('auth service (PostgreSQL thật, student giả)', () => {
       .expect(201);
     const studentId = registered.body.data.id as string;
     const login = (): request.Test =>
-      request(app.getHttpServer()).post('/api/v1/auth/login').send({
+      request(app.getHttpServer()).post('/api/v1/auth/student/login').send({
         email,
         password: 'student-password',
       });
@@ -263,7 +310,7 @@ describe('auth service (PostgreSQL thật, student giả)', () => {
     studentMode = 'ok';
     // Breaker có thể đang mở sau lỗi trên; bỏ qua nếu 503 vì short-circuit, chỉ kiểm tra email không bị giữ.
     await request(app.getHttpServer())
-      .post('/api/v1/auth/login')
+      .post('/api/v1/auth/student/login')
       .send({ email, password: 'student-password' })
       .expect(401);
   });
@@ -280,7 +327,7 @@ describe('auth service (PostgreSQL thật, student giả)', () => {
     ).toEqual(['email', 'full_name', 'password']);
 
     const wrong = await request(app.getHttpServer())
-      .post('/api/v1/auth/login')
+      .post('/api/v1/auth/admin/login')
       .send({ email: 'admin@example.test', password: 'sai-mat-khau' })
       .expect(401);
     expect(wrong.body.error.message).toBe('Thông tin đăng nhập không hợp lệ');

@@ -6,7 +6,10 @@ import { CreateAccountUseCase } from '../../src/application/use-cases/accounts/c
 import { GetCurrentAccountUseCase } from '../../src/application/use-cases/accounts/get-current-account.use-case.js';
 import { ListAccountsUseCase } from '../../src/application/use-cases/accounts/list-accounts.use-case.js';
 import { RegisterStudentUseCase } from '../../src/application/use-cases/accounts/register-student.use-case.js';
-import { LoginUseCase } from '../../src/application/use-cases/sessions/login.use-case.js';
+import { CredentialsAuthenticator } from '../../src/application/use-cases/sessions/credentials-authenticator.js';
+import { LoginAdminUseCase } from '../../src/application/use-cases/sessions/login-admin.use-case.js';
+import { LoginInstructorUseCase } from '../../src/application/use-cases/sessions/login-instructor.use-case.js';
+import { LoginStudentUseCase } from '../../src/application/use-cases/sessions/login-student.use-case.js';
 import { RefreshTokenUseCase } from '../../src/application/use-cases/sessions/refresh-token.use-case.js';
 import {
   InMemoryAccounts,
@@ -65,11 +68,13 @@ describe('RegisterStudentUseCase', () => {
   });
 });
 
-describe('LoginUseCase và RefreshTokenUseCase', () => {
+describe('đăng nhập theo role và RefreshTokenUseCase', () => {
   async function setup(): Promise<{
     accounts: InMemoryAccounts;
     refreshTokens: InMemoryRefreshTokens;
-    login: LoginUseCase;
+    login: LoginStudentUseCase;
+    loginInstructor: LoginInstructorUseCase;
+    loginAdmin: LoginAdminUseCase;
     refresh: RefreshTokenUseCase;
     accountId: string;
     students: RecordingStudentClient;
@@ -77,6 +82,7 @@ describe('LoginUseCase và RefreshTokenUseCase', () => {
     const accounts = new InMemoryAccounts();
     const refreshTokens = new InMemoryRefreshTokens(accounts);
     const students = new RecordingStudentClient();
+    const authenticator = new CredentialsAuthenticator(accounts);
     const account = await new RegisterStudentUseCase(accounts, students).execute({
       email: 'a@b.co',
       password: 'password-1',
@@ -87,7 +93,9 @@ describe('LoginUseCase và RefreshTokenUseCase', () => {
       refreshTokens,
       students,
       accountId: account.id,
-      login: new LoginUseCase(accounts, refreshTokens, TOKEN_SETTINGS, students),
+      login: new LoginStudentUseCase(authenticator, refreshTokens, TOKEN_SETTINGS, students),
+      loginInstructor: new LoginInstructorUseCase(authenticator, refreshTokens, TOKEN_SETTINGS),
+      loginAdmin: new LoginAdminUseCase(authenticator, refreshTokens, TOKEN_SETTINGS),
       refresh: new RefreshTokenUseCase(refreshTokens, TOKEN_SETTINGS),
     };
   }
@@ -151,8 +159,8 @@ describe('LoginUseCase và RefreshTokenUseCase', () => {
     });
   });
 
-  it('sai mật khẩu không gọi student; instructor và admin đăng nhập không cần hồ sơ student', async () => {
-    const { login, accounts, students } = await setup();
+  it('instructor và admin đăng nhập không cần hồ sơ student, chỉ qua đúng cửa của mình', async () => {
+    const { login, loginInstructor, loginAdmin, accounts, students } = await setup();
     const create = new CreateAccountUseCase(accounts);
     await create.execute({
       email: 'i@b.co',
@@ -160,14 +168,34 @@ describe('LoginUseCase và RefreshTokenUseCase', () => {
       fullName: 'I',
       role: 'instructor',
     });
+    await create.execute({
+      email: 'ad@b.co',
+      password: 'password-1',
+      fullName: 'Ad',
+      role: 'admin',
+    });
     students.failure = AppError.dependencyUnavailable('auth-student');
 
-    await expect(login.execute({ email: 'i@b.co', password: 'password-1' })).resolves.toMatchObject(
-      { principal: { role: 'instructor' } },
-    );
     await expect(
-      login.execute({ email: 'a@b.co', password: 'wrong-password' }),
-    ).rejects.toMatchObject({ status: 401 });
+      loginInstructor.execute({ email: 'i@b.co', password: 'password-1' }),
+    ).resolves.toMatchObject({ principal: { role: 'instructor' } });
+    await expect(
+      loginAdmin.execute({ email: 'ad@b.co', password: 'password-1' }),
+    ).resolves.toMatchObject({ principal: { role: 'admin' } });
+
+    // Đúng mật khẩu nhưng sai cửa: cùng lỗi 401 như sai mật khẩu, và không gọi student.
+    for (const attempt of [
+      loginAdmin.execute({ email: 'i@b.co', password: 'password-1' }),
+      loginInstructor.execute({ email: 'ad@b.co', password: 'password-1' }),
+      loginInstructor.execute({ email: 'a@b.co', password: 'password-1' }),
+      login.execute({ email: 'ad@b.co', password: 'password-1' }),
+      loginAdmin.execute({ email: 'ad@b.co', password: 'wrong-password' }),
+    ]) {
+      await expect(attempt).rejects.toMatchObject({
+        status: 401,
+        message: 'Thông tin đăng nhập không hợp lệ',
+      });
+    }
   });
 
   it('refresh xoay vòng token: token cũ dùng một lần', async () => {
