@@ -6,7 +6,9 @@ services:
     environment:
       NODE_ENV: production
       GATEWAY_AUTH_BASE_URL: http://auth:3001
+      GATEWAY_STUDENT_BASE_URL: http://student:3002
       GATEWAY_COURSE_BASE_URL: http://course:3002
+      # Route v1 tạm thời cho tới R-05 (course v2 thay enrollment/submission/grading).
       GATEWAY_ENROLLMENT_BASE_URL: http://enrollment:3003
       GATEWAY_SUBMISSION_BASE_URL: http://submission:3004
       GATEWAY_GRADING_BASE_URL: http://grading:3007
@@ -25,6 +27,8 @@ services:
       - "${GATEWAY_PORT:-3000}:3000"
     depends_on:
       auth:
+        condition: service_healthy
+      student:
         condition: service_healthy
       course:
         condition: service_healthy

@@ -1,57 +1,32 @@
+import { baseEnvironmentSchema, parseEnvironment } from '@aiops-lms/common/config';
 import { z } from 'zod';
 
-import {
-  DEFAULT_AUTH_BASE_URL,
-  DEFAULT_COURSE_BASE_URL,
-  DEFAULT_ENROLLMENT_BASE_URL,
-  DEFAULT_GRADING_BASE_URL,
-  DEFAULT_JWT_SECRET,
-  DEFAULT_OTLP_TRACES_ENDPOINT,
-  DEFAULT_PORT,
-  DEFAULT_SERVICE_INSTANCE_ID,
-  DEFAULT_SERVICE_VERSION,
-  DEFAULT_SUBMISSION_BASE_URL,
-  DEFAULT_UPSTREAM_TIMEOUT_MS,
-  NODE_ENVIRONMENTS,
-} from './app-config.js';
+const baseUrl = (port: number): z.ZodDefault<z.ZodURL> =>
+  z.url().default(`http://localhost:${port}`);
 
-const environmentBoolean = z
-  .union([z.boolean(), z.enum(['true', 'false'])])
-  .transform((value) => value === true || value === 'true');
-
-const environmentSchema = z.object({
-  NODE_ENV: z.enum(NODE_ENVIRONMENTS).default('development'),
-  PORT: z.coerce.number().int().min(1).max(65_535).default(DEFAULT_PORT),
-  GATEWAY_AUTH_BASE_URL: z.url().default(DEFAULT_AUTH_BASE_URL),
-  GATEWAY_COURSE_BASE_URL: z.url().default(DEFAULT_COURSE_BASE_URL),
-  GATEWAY_ENROLLMENT_BASE_URL: z.url().default(DEFAULT_ENROLLMENT_BASE_URL),
-  GATEWAY_SUBMISSION_BASE_URL: z.url().default(DEFAULT_SUBMISSION_BASE_URL),
-  GATEWAY_GRADING_BASE_URL: z.url().default(DEFAULT_GRADING_BASE_URL),
-  GATEWAY_JWT_SECRET: z.string().min(32).default(DEFAULT_JWT_SECRET),
-  GATEWAY_UPSTREAM_TIMEOUT_MS: z.coerce
-    .number()
-    .int()
-    .min(100)
-    .max(60_000)
-    .default(DEFAULT_UPSTREAM_TIMEOUT_MS),
-  OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: z.url().default(DEFAULT_OTLP_TRACES_ENDPOINT),
-  OTEL_EXPORTER_OTLP_METRICS_ENDPOINT: z.url().optional(),
-  OTEL_EXPORTER_OTLP_LOGS_ENDPOINT: z.url().optional(),
-  OTEL_METRIC_EXPORT_INTERVAL: z.coerce.number().int().min(1_000).max(60_000).default(5_000),
-  OTEL_SDK_DISABLED: environmentBoolean.default(false),
-  HTTP_ACCESS_LOG_ENABLED: environmentBoolean.default(true),
-  OTEL_SERVICE_INSTANCE_ID: z.string().trim().min(1).default(DEFAULT_SERVICE_INSTANCE_ID),
-  OTEL_SERVICE_VERSION: z.string().trim().min(1).default(DEFAULT_SERVICE_VERSION),
+const environmentSchema = baseEnvironmentSchema.extend({
+  PORT: z.coerce.number().int().min(1).max(65_535).default(3000),
+  GATEWAY_JWT_SECRET: z
+    .string()
+    .min(32)
+    .default('local-development-only-jwt-secret-change-before-production'),
+  // Timeout tới khi upstream trả header phản hồi; phần body stream sau đó không bị giới hạn.
+  GATEWAY_UPSTREAM_TIMEOUT_MS: z.coerce.number().int().min(100).max(300_000).default(30_000),
+  GATEWAY_AUTH_BASE_URL: baseUrl(3001),
+  GATEWAY_STUDENT_BASE_URL: baseUrl(3002),
+  GATEWAY_COURSE_BASE_URL: baseUrl(3003),
+  GATEWAY_MEDIA_BASE_URL: baseUrl(3004),
+  GATEWAY_NOTIFICATION_BASE_URL: baseUrl(3005),
+  GATEWAY_SCHEDULER_BASE_URL: baseUrl(3006),
+  GATEWAY_AI_BASE_URL: baseUrl(3007),
+  // Route v1 tạm thời cho tới khi R-05 thay bằng `course`: không đặt biến thì route không tồn tại.
+  GATEWAY_ENROLLMENT_BASE_URL: z.url().optional(),
+  GATEWAY_SUBMISSION_BASE_URL: z.url().optional(),
+  GATEWAY_GRADING_BASE_URL: z.url().optional(),
 });
 
 export type Environment = z.infer<typeof environmentSchema>;
 
 export function validateEnvironment(config: Record<string, unknown>): Environment {
-  const result = environmentSchema.safeParse(config);
-
-  if (!result.success) {
-    throw new Error(`Invalid environment configuration:\n${z.prettifyError(result.error)}`);
-  }
-
-  return result.data;
+  return parseEnvironment(environmentSchema, config);
 }

@@ -1,19 +1,38 @@
 # API Gateway
 
-Gateway là trust boundary HTTP của LMS. Các route `POST /api/v1/auth/{student,instructor,admin}/login` và `POST /api/v1/auth/refresh` được chuyển tiếp tới Auth mà không cần access token. Các route `/api/v1/courses`, `/api/v1/enrollments`, `/api/v1/submissions` và `/api/v1/grades` yêu cầu Bearer JWT HS256 hợp lệ; Gateway chỉ chuyển `x-principal-id` và `x-principal-role` do chính nó derive từ claim `sub` và `role`.
+Gateway là trust boundary HTTP duy nhất của LMS: xác thực JWT, kiểm role theo bảng route rồi chuyển tiếp request tới service phía sau. Gateway **không đọc hay sửa body** và **không đổi phản hồi của upstream**.
 
-## Chạy cục bộ
+## Việc Gateway làm
 
-Từ thư mục `lms`, sao chép `services/gateway/.env.example` thành `services/gateway/.env`, bảo đảm Auth/Course đang chạy, rồi dùng `pnpm --filter @aiops-lms/gateway start:dev`.
+1. Chuẩn hóa path (gỡ `..`, `%2e%2e`) rồi chọn upstream theo tiền tố dài nhất ở [`src/domain/route-table.ts`](src/domain/route-table.ts). Chỉ `/api/**` được proxy; `/internal/**` và path lạ trả `404 NOT_FOUND`.
+2. Route công khai (không cần JWT): `POST /api/v1/auth/{register,student/login,instructor/login,admin/login,refresh}` và các route đọc media nhúng được vào trình duyệt (`/api/v1/media/{id}/content`, `/thumbnail`, `/usages/urls`, `/usages/{id}/url`, `/usage-jobs/{id}/status`). Mọi route khác cần `Authorization: Bearer <JWT HS256>`; thiếu hoặc sai → `401 UNAUTHORIZED`.
+3. Role: `/api/v1/scheduler`, `/api/v1/ai`, `/api/v1/notification-batches` chỉ cho `admin`; các route còn lại cho mọi role đã xác thực, service tự kiểm quyền chi tiết. Sai role → `403 FORBIDDEN`.
+4. Xóa mọi `x-principal-*` và `Authorization` của client, đặt `x-principal-id`, `x-principal-role` từ claim `sub`, `role`; chuyển `x-correlation-id` và `traceparent`.
+5. Stream body tới upstream và stream phản hồi về client (multipart, byte lớn, `Range`/`Content-Range`).
 
-`GATEWAY_UPSTREAM_TIMEOUT_MS` là timeout cho từng outbound request, mặc định 5.000 ms và chỉ nhận 100–60.000 ms. Gateway không retry: local timeout hoặc upstream `504` map thành `504 DEPENDENCY_TIMEOUT`; lỗi network hoặc upstream 5xx khác map thành `503 DEPENDENCY_UNAVAILABLE`; business 4xx giữ nguyên envelope.
+## Quy tắc lỗi (giữ nguyên mã nghiệp vụ)
 
-Outbound telemetry dùng identity hữu hạn `gateway-auth`, `gateway-course`, `gateway-enrollment`, `gateway-submission`, `gateway-grading` với client span và ba metric `gateway.dependency.request.count`, `gateway.dependency.error.count`, `gateway.dependency.duration`. Metric label không chứa path động, principal hoặc resource ID. Policy đầy đủ nằm tại [`dependency-resilience-policy-v1.md`](../../../docs/processed/architecture/dependency-resilience-policy-v1.md).
+Mọi phản hồi HTTP của upstream, kể cả 4xx/5xx và các mã nghiệp vụ như `AI_PROVIDER_ERROR` (502) hay `QUIZ_HAS_ATTEMPTS`, được trả **nguyên vẹn** (status, header, body). Gateway chỉ tự sinh envelope lỗi khi:
 
-## Kiểm chứng W1
+| Tình huống                                                    | Phản hồi                                                                  |
+| ------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| Không có route                                                | `404 NOT_FOUND`                                                           |
+| Thiếu/sai/hết hạn JWT                                         | `401 UNAUTHORIZED`                                                        |
+| Sai role                                                      | `403 FORBIDDEN`                                                           |
+| Upstream không kết nối được                                   | `503 DEPENDENCY_UNAVAILABLE` (`details.dependency` = `gateway-<service>`) |
+| Upstream không trả header trong `GATEWAY_UPSTREAM_TIMEOUT_MS` | `504 DEPENDENCY_TIMEOUT`                                                  |
 
-Các bộ e2e `test:w1`, `test:w1:postgres` dựa trên repository Auth v1 đã bị gỡ khi `auth` chuyển sang Prisma (R-04). Luồng `Client → Gateway → Auth → JWT` được kiểm bằng smoke observability trên Compose (đăng nhập qua Gateway bằng tài khoản seed) và sẽ có regression mới ở R-11. Test dependency của Gateway: `node services/gateway/test/telemetry/dependency.telemetry-test.mjs`.
+Gateway không retry. Phản hồi 5xx của upstream vẫn được ghi nhận là lỗi ở span và metric `lms.dependency.*` của identity `gateway-<service>`, nên telemetry thấy lỗi dù client nhận đúng body gốc.
 
-Gateway tạo client span cho mỗi lời gọi outbound và inject trace context từ client span đó; vì vậy Auth nhận cùng trace ID nhưng một parent span ID mới thay vì nhận nguyên `traceparent` của Client.
+## Cấu hình
 
-Suite in-memory không khởi động PostgreSQL và không xác nhận span dependency `auth-postgres`; suite PostgreSQL xác nhận persistence/seed nhưng Auth vẫn chưa có instrumentation PostgreSQL. Khi có instrumentation, cần bổ sung assertion dependency signal với identity `auth-postgres`.
+Xem [`.env.example`](.env.example). `GATEWAY_*_BASE_URL` cho từng service; `GATEWAY_ENROLLMENT_BASE_URL`, `GATEWAY_SUBMISSION_BASE_URL`, `GATEWAY_GRADING_BASE_URL` là route v1 tạm thời cho tới R-05, bỏ trống thì route không tồn tại. `GATEWAY_UPSTREAM_TIMEOUT_MS` (100–300000 ms, mặc định 30000) tính tới lúc có header phản hồi; body stream sau đó không bị giới hạn.
+
+## Kiểm thử
+
+```bash
+node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config services/gateway/jest.config.ts   # unit + e2e (upstream HTTP giả)
+node services/gateway/test/telemetry/dependency.telemetry-test.mjs                                          # span/metric
+```
+
+Đăng nhập qua Gateway bằng tài khoản seed được kiểm thêm bởi smoke observability trên Compose.
