@@ -1,6 +1,6 @@
 # Docker Compose baseline
 
-Thư mục này chứa manifest orchestration root cho LMS testbed. Baseline hiện tại build Gateway, Auth, Student, Course, Media (+ worker), Notification (+ worker) và Scheduler (+ worker) từ `lms/`, đồng thời khởi động PostgreSQL, RabbitMQ, MinIO, Mailpit.
+Thư mục này chứa manifest orchestration root cho LMS testbed. Baseline hiện tại build Gateway, Auth, Student, Course, Media (+ worker), Notification (+ worker), Scheduler (+ worker) và AI từ `lms/`, đồng thời khởi động PostgreSQL, RabbitMQ, MinIO, Mailpit.
 
 > **Tách `aiops-platform/` (R-02):** 5 backend observability (Collector, Prometheus, Tempo, Loki, Grafana) cùng cấu hình đã chuyển sang [`../aiops-platform/observability/`](../aiops-platform/observability/) với `compose.yaml` và `.env.example` riêng. Có ba cách chạy:
 >
@@ -10,7 +10,7 @@ Thư mục này chứa manifest orchestration root cho LMS testbed. Baseline hi�
 >
 > Hai bên nối với nhau qua network `aiops-net` (biến `AIOPS_NETWORK_NAME`); service LMS chỉ gửi OTLP/HTTP tới `otel-collector:4318`. Các lệnh bên dưới dùng `compose.full.yaml` khi cần đủ 18 thành phần; mục observability ở dưới sẽ chuyển về `aiops-platform/` khi viết lại tài liệu ở R-12. Đường dẫn `observability/…` trong các mục đó nay là `../aiops-platform/observability/…`.
 
-> **Hạ tầng topology v2 (R-03):** `compose.yaml` đã thêm `student` (service mẫu Prisma, cổng host `3012`), `minio` + `minio-init` (5 bucket `images`, `videos`, `documents`, `audios`, `other`; API `9000`, console `9001`), `mailpit` (SMTP `1025`, UI `8025`) và các DB `student_db`, `media_db`, `notification_db`, `scheduler_db`, `ai_db` kèm role riêng (`postgres-init/02-create-v2-databases.sh`). Từ R-05 `enrollment`, `submission`, `grading`, `submission-storage-mock` và Redis đã bị gỡ; từ R-07 `notification` là service v2 (cổng `3006`) kèm `notification-worker` (cổng `3007`, gửi email qua Mailpit); từ R-09 `scheduler` (cổng `3008` trong network, publish ra host `3018` vì `3008` thuộc Grafana) kèm `scheduler-worker` (cổng `3010`, job `MEDIA_UNUSED_CLEANUP` gọi `media`). Volume Postgres cũ còn `course_db` của v1 phải tạo lại (`down --volumes`) vì `course` v2 dùng Prisma và role riêng `course_user`. Container v2 chạy `prisma migrate deploy` trước khi khởi động.
+> **Hạ tầng topology v2 (R-03):** `compose.yaml` đã thêm `student` (service mẫu Prisma, cổng host `3012`), `minio` + `minio-init` (5 bucket `images`, `videos`, `documents`, `audios`, `other`; API `9000`, console `9001`), `mailpit` (SMTP `1025`, UI `8025`) và các DB `student_db`, `media_db`, `notification_db`, `scheduler_db`, `ai_db` kèm role riêng (`postgres-init/02-create-v2-databases.sh`). Từ R-05 `enrollment`, `submission`, `grading`, `submission-storage-mock` và Redis đã bị gỡ; từ R-07 `notification` là service v2 (cổng `3006`) kèm `notification-worker` (cổng `3007`, gửi email qua Mailpit); từ R-08 `ai` (cổng `3009`, gateway LLM, sở hữu trích xuất tài liệu và job AI soạn bài; API key provider mã hóa bằng `AI_ENCRYPTION_KEY`) kèm `ai-worker` (cổng `3011`, nhận command trích xuất/chạy job, gọi `course` và `media`), `course` chỉ là facade; từ R-09 `scheduler` (cổng `3008` trong network, publish ra host `3018` vì `3008` thuộc Grafana) kèm `scheduler-worker` (cổng `3010`, job `MEDIA_UNUSED_CLEANUP` gọi `media`). Volume Postgres cũ còn `course_db` của v1 phải tạo lại (`down --volumes`) vì `course` v2 dùng Prisma và role riêng `course_user`. Container v2 chạy `prisma migrate deploy` trước khi khởi động.
 
 ## Yêu cầu
 
@@ -50,9 +50,9 @@ docker compose --env-file docker-compose/.env -f docker-compose/compose.full.yam
 docker compose --env-file docker-compose/.env -f docker-compose/compose.full.yaml ps
 ```
 
-Course tự chạy `prisma migrate deploy` trước khi mở HTTP (cổng `3003`, database `course_db` với role riêng `course_user`). Notification tự chạy `prisma migrate deploy` (cổng `3006`, `notification_db` với role `notification_user`); `notification-worker` dùng cùng image, chờ `notification` healthy, gửi email qua Mailpit (`mailpit:1025`, xem thư tại `http://localhost:8025`) và gọi `student` bằng service token `notification-worker`. `scheduler` (`scheduler_db`, role `scheduler_user`) tự migrate; `scheduler-worker` dùng cùng image, chờ `scheduler` và `media` healthy rồi gọi `media` bằng service token `scheduler-worker` (scope `media:cleanup`).
+Course tự chạy `prisma migrate deploy` trước khi mở HTTP (cổng `3003`, database `course_db` với role riêng `course_user`). Notification tự chạy `prisma migrate deploy` (cổng `3006`, `notification_db` với role `notification_user`); `notification-worker` dùng cùng image, chờ `notification` healthy, gửi email qua Mailpit (`mailpit:1025`, xem thư tại `http://localhost:8025`) và gọi `student` bằng service token `notification-worker`. `ai` (`ai_db`, role `ai_user`) tự migrate; `ai-worker` dùng cùng image, chờ `ai` healthy và gọi `course`, `media` bằng service token `ai-worker`; `AI_WORKER_LEASE_MS` phải lớn hơn `AI_COMPLETION_TIMEOUT_MS`. `scheduler` (`scheduler_db`, role `scheduler_user`) tự migrate; `scheduler-worker` dùng cùng image, chờ `scheduler` và `media` healthy rồi gọi `media` bằng service token `scheduler-worker` (scope `media:cleanup`).
 
-Compose chỉ báo thành công sau khi Gateway, Auth, Student, Course, Media, Media Worker, Notification, Notification Worker, Scheduler, Scheduler Worker, PostgreSQL, MinIO, `minio-init`, Mailpit, RabbitMQ, Collector, Prometheus, Tempo, Loki và Grafana (20 thành phần) đều healthy. PostgreSQL tạo `auth_db`, `student_db`, `course_db`, `media_db`, `notification_db`, `scheduler_db` và `ai_db` riêng, mỗi DB một role; các service có persistence tự chạy `prisma migrate deploy` trước khi mở HTTP. Script khởi tạo PostgreSQL chỉ chạy trên volume mới; với volume cũ (còn DB hoặc bảng v1), reset volume theo hướng dẫn bên dưới. Credential lấy từ `.env`, không đặt trực tiếp trong manifest Compose.
+Compose chỉ báo thành công sau khi Gateway, Auth, Student, Course, Media, Media Worker, Notification, Notification Worker, AI, AI Worker, Scheduler, Scheduler Worker, PostgreSQL, MinIO, `minio-init`, Mailpit, RabbitMQ, Collector, Prometheus, Tempo, Loki và Grafana (22 thành phần) đều healthy. PostgreSQL tạo `auth_db`, `student_db`, `course_db`, `media_db`, `notification_db`, `scheduler_db` và `ai_db` riêng, mỗi DB một role; các service có persistence tự chạy `prisma migrate deploy` trước khi mở HTTP. Script khởi tạo PostgreSQL chỉ chạy trên volume mới; với volume cũ (còn DB hoặc bảng v1), reset volume theo hướng dẫn bên dưới. Credential lấy từ `.env`, không đặt trực tiếp trong manifest Compose.
 
 ## Kiểm tra
 
@@ -115,7 +115,7 @@ Không dùng lệnh reset volume với dữ liệu cần giữ lại.
 Khi Docker chỉ có khoảng 4 GB RAM, build từng image có Dockerfile theo thứ tự rồi khởi động bằng image vừa build:
 
 ```bash
-for service in gateway auth student course media notification scheduler; do
+for service in gateway auth student course media notification ai scheduler; do
   docker compose --env-file docker-compose/.env -f docker-compose/compose.full.yaml build --no-cache "$service"
 done
 docker compose --env-file docker-compose/.env -f docker-compose/compose.full.yaml up -d --wait

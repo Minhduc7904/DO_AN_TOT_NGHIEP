@@ -34,6 +34,14 @@ describe('HttpQueryClient', () => {
         setTimeout(() => response.writeHead(200).end('{}'), 500);
       } else if (request.url?.startsWith('/boom')) {
         response.writeHead(500).end('{}');
+      } else if (request.url?.startsWith('/bad-gateway')) {
+        response
+          .writeHead(502, { 'content-type': 'application/json' })
+          .end(JSON.stringify({ error: { code: 'AI_PROVIDER_ERROR' } }));
+      } else if (request.url?.startsWith('/binary')) {
+        response
+          .writeHead(200, { 'content-type': 'application/octet-stream' })
+          .end(Buffer.from([0, 255, 1, 2]));
       } else {
         response.writeHead(200, { 'content-type': 'application/json' }).end('{"ok":true}');
       }
@@ -69,6 +77,34 @@ describe('HttpQueryClient', () => {
     expect(lastHeaders['x-principal-role']).toBe('admin');
 
     await expect(client.request({ path: '/missing' })).resolves.toMatchObject({ status: 404 });
+  });
+
+  it('responseType bytes trả Buffer nhị phân nguyên vẹn; lỗi 4xx vẫn là JSON', async () => {
+    const client = new HttpQueryClient(options());
+
+    const binary = await client.request<Buffer>({ path: '/binary', responseType: 'bytes' });
+    expect(binary.status).toBe(200);
+    expect([...binary.body]).toEqual([0, 255, 1, 2]);
+    expect(lastHeaders['accept']).toBe('*/*');
+
+    await expect(client.request({ path: '/missing', responseType: 'bytes' })).resolves.toEqual({
+      status: 404,
+      body: { code: 'NOT_FOUND' },
+    });
+  });
+
+  it('passthroughStatuses trả 5xx đã khai báo cho caller và không mở breaker; 5xx khác vẫn lỗi', async () => {
+    const client = new HttpQueryClient(options());
+
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      await expect(
+        client.request({ path: '/bad-gateway', passthroughStatuses: [502] }),
+      ).resolves.toEqual({ status: 502, body: { error: { code: 'AI_PROVIDER_ERROR' } } });
+    }
+    await expect(client.request({ path: '/bad-gateway' })).rejects.toMatchObject({ status: 503 });
+    await expect(
+      client.request({ path: '/boom', passthroughStatuses: [502] }),
+    ).rejects.toMatchObject({ status: 503 });
   });
 
   it('timeout thành DEPENDENCY_TIMEOUT', async () => {

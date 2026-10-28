@@ -22,6 +22,7 @@ export class InMemoryMedia implements MediaRepository {
 
   create(media: NewMedia): Promise<MediaObject> {
     const row: MediaObject = {
+      extractText: false,
       tmpObjectKey: null,
       uploadExpiresAt: null,
       sourceMediaId: null,
@@ -278,6 +279,10 @@ export class InMemoryUnitOfWork implements MediaUnitOfWork {
     commands: {
       requestThumbnail: (mediaId) => {
         this.commands.push(`thumbnail:${mediaId}`);
+        return Promise.resolve();
+      },
+      requestDocumentExtraction: (media) => {
+        this.commands.push(`extract:${media.id}`);
         return Promise.resolve();
       },
     },

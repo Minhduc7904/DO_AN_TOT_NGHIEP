@@ -34,6 +34,7 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import type { Response } from 'express';
 import multer from 'multer';
+import { z } from 'zod';
 
 import { CompleteDirectUploadUseCase } from '../../../application/use-cases/media/complete-direct-upload.use-case.js';
 import { CreateUploadIntentUseCase } from '../../../application/use-cases/media/create-upload-intent.use-case.js';
@@ -45,6 +46,14 @@ import { UploadMediaUseCase } from '../../../application/use-cases/media/upload-
 import { MEDIA_MULTIPART_MAX_BYTES } from '../../multipart-limit.js';
 import { presentMedia } from '../shared/media.presenter.js';
 import { streamMedia } from '../shared/stream-media.js';
+
+/** Field text kèm file trong multipart luôn là chuỗi: `extract_text` nhận `true` hoặc `false`. */
+const multipartFieldsSchema = z.object({
+  extract_text: z
+    .enum(['true', 'false'], { error: 'extract_text phải là true hoặc false' })
+    .transform((value) => value === 'true')
+    .default(false),
+});
 
 interface UploadedFileLike {
   buffer: Buffer;
@@ -76,13 +85,16 @@ export class MediaController {
   async upload(
     @CurrentPrincipal() principal: Principal,
     @UploadedFile() file: UploadedFileLike | undefined,
+    @Body() body: unknown,
   ): Promise<MediaDto> {
     if (!file) throw AppError.validation('Thiếu file trong field "file"');
+    const fields = parseInput(multipartFieldsSchema, body ?? {});
     return presentMedia(
       await this.uploadMedia.execute(principal, {
         content: file.buffer,
         originalName: file.originalname,
         mimeType: file.mimetype,
+        extractText: fields.extract_text,
       }),
     );
   }
@@ -98,6 +110,7 @@ export class MediaController {
       mimeType: input.mime_type,
       sizeBytes: input.size_bytes,
       checksumSha256: input.checksum_sha256,
+      extractText: input.extract_text,
     });
     return {
       media_id: intent.mediaId,

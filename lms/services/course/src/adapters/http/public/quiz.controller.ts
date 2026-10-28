@@ -1,6 +1,5 @@
 import { PUBLIC_PREFIX } from '@aiops-lms/contracts/http';
 import {
-  type CreateQuizRequest,
   createQuizRequestSchema,
   idSchema,
   type QuizDto,
@@ -29,21 +28,10 @@ import { ListLessonQuizzesUseCase } from '../../../application/use-cases/quizzes
 import { UpdateQuizUseCase } from '../../../application/use-cases/quizzes/update-quiz.use-case.js';
 import type { QuestionDraft } from '../../../domain/quiz-content.js';
 import { presentQuiz, presentQuizSummary } from '../shared/course.presenter.js';
-
-function toDrafts(questions: CreateQuizRequest['questions']): QuestionDraft[] {
-  return questions.map((question) => ({
-    questionMarkdown: question.question_markdown,
-    questionType: question.question_type,
-    points: question.points,
-    options: question.options.map((option) => ({
-      optionMarkdown: option.option_markdown,
-      isCorrect: option.is_correct,
-    })),
-  }));
-}
+import { toQuestionDrafts } from '../shared/quiz-drafts.js';
 
 function toDraftsIfPresent(questions: UpdateQuizRequest['questions']): QuestionDraft[] | undefined {
-  return questions === undefined ? undefined : toDrafts(questions);
+  return questions === undefined ? undefined : toQuestionDrafts(questions);
 }
 
 @Roles('admin', 'instructor')
@@ -73,7 +61,7 @@ export class QuizController {
         {
           title: input.title,
           descriptionMarkdown: input.description_markdown ?? null,
-          questions: toDrafts(input.questions),
+          questions: toQuestionDrafts(input.questions),
         },
       ),
     );

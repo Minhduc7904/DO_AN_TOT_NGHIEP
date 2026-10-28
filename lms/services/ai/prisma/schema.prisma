@@ -1,0 +1,206 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/adapters/persistence/generated"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum AiProviderKind {
+  OPENAI
+  GEMINI
+  ANTHROPIC
+  MISTRAL
+  CUSTOM
+
+  @@map("ai_provider_kind")
+}
+
+enum AiStatus {
+  ACTIVE
+  INACTIVE
+
+  @@map("ai_status")
+}
+
+enum AiInvocationStatus {
+  SUCCESS
+  FAILED
+
+  @@map("ai_invocation_status")
+}
+
+enum AiDocumentStatus {
+  PENDING
+  PROCESSING
+  EXTRACTED
+  FAILED
+  UNSUPPORTED
+
+  @@map("ai_document_status")
+}
+
+enum AiJobType {
+  SYNTHESIZE_LESSON
+  GENERATE_QUIZ
+
+  @@map("ai_job_type")
+}
+
+enum AiJobStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+
+  @@map("ai_job_status")
+}
+
+/// `apiKeyEncrypted` là base64 của `nonce(12) | tag(16) | ciphertext` (AES-256-GCM); API chỉ trả `apiKeyHint`.
+/// Tên provider duy nhất không phân biệt hoa thường: unique index `lower(name)` nằm trong migration
+/// (Prisma schema không biểu diễn được index trên biểu thức).
+model AiProvider {
+  id              String         @id @db.Uuid
+  name            String         @db.VarChar(100)
+  providerType    AiProviderKind @map("provider_type")
+  baseUrl         String         @map("base_url") @db.VarChar(500)
+  apiKeyEncrypted String         @map("api_key_encrypted")
+  apiKeyHint      String         @map("api_key_hint") @db.VarChar(16)
+  status          AiStatus       @default(ACTIVE)
+  createdAt       DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime       @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  models AiModel[]
+
+  @@index([status, createdAt(sort: Desc)])
+  @@map("ai_providers")
+}
+
+model AiModel {
+  id          String   @id @db.Uuid
+  providerId  String   @map("provider_id") @db.Uuid
+  modelName   String   @map("model_name") @db.VarChar(100)
+  displayName String   @map("display_name") @db.VarChar(100)
+  status      AiStatus @default(ACTIVE)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  provider AiProvider         @relation(fields: [providerId], references: [id], onDelete: Restrict)
+  bindings AiServiceBinding[]
+
+  @@unique([providerId, modelName])
+  @@index([status, createdAt(sort: Desc)])
+  @@map("ai_models")
+}
+
+/// Mỗi khóa tác vụ (`document-extraction`, `lesson-synthesis`, `quiz-authoring`) có tối đa một binding.
+model AiServiceBinding {
+  id        String   @id @db.Uuid
+  taskKey   String   @unique @map("task_key") @db.VarChar(50)
+  modelId   String   @map("model_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  model AiModel @relation(fields: [modelId], references: [id], onDelete: Restrict)
+
+  @@index([modelId])
+  @@map("ai_service_bindings")
+}
+
+/// Nhật ký mỗi lần gọi provider; không lưu nội dung message, tài liệu hay API key. `modelId` là tham chiếu
+/// logic (không khóa ngoại) để xóa được model mà vẫn giữ nhật ký.
+model AiInvocation {
+  id               String             @id @db.Uuid
+  taskKey          String             @map("task_key") @db.VarChar(50)
+  modelId          String             @map("model_id") @db.Uuid
+  providerType     AiProviderKind     @map("provider_type")
+  modelName        String             @map("model_name") @db.VarChar(100)
+  status           AiInvocationStatus
+  errorCode        String?            @map("error_code") @db.VarChar(60)
+  promptTokens     Int                @default(0) @map("prompt_tokens")
+  completionTokens Int                @default(0) @map("completion_tokens")
+  toolCallCount    Int                @default(0) @map("tool_call_count")
+  latencyMs        Int                @map("latency_ms")
+  createdAt        DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([taskKey, createdAt(sort: Desc)])
+  @@index([createdAt(sort: Desc)])
+  @@map("ai_invocations")
+}
+
+/// Văn bản trích xuất từ một tệp media (duy nhất theo `mediaId`, tham chiếu logic sang `media_db`). Nguồn cho job AI.
+/// `ai-worker` nhận việc bằng lease: `PENDING`, hoặc `PROCESSING` đã quá `leaseExpiresAt`.
+model AiDocument {
+  id             String           @id @db.Uuid
+  mediaId        String           @unique @map("media_id") @db.Uuid
+  fileName       String           @map("file_name") @db.VarChar(255)
+  contentType    String           @map("content_type") @db.VarChar(255)
+  mediaType      String           @map("media_type") @db.VarChar(32)
+  status         AiDocumentStatus @default(PENDING)
+  attemptCount   Int              @default(0) @map("attempt_count")
+  errorCode      String?          @map("error_code") @db.VarChar(64)
+  errorMessage   String?          @map("error_message") @db.VarChar(500)
+  extractedText  String?          @map("extracted_text")
+  leaseExpiresAt DateTime?        @map("lease_expires_at") @db.Timestamptz(6)
+  createdAt      DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@index([status, leaseExpiresAt])
+  @@map("ai_documents")
+}
+
+/// Job AI của một bài học; `courseId`/`lessonId` là tham chiếu logic sang `course_db`. Partial unique index
+/// `ai_jobs_one_active` (thêm tay trong migration): mỗi (lesson, job_type) tối đa một job `PENDING|RUNNING`.
+model AiJob {
+  id                      String      @id @db.Uuid
+  jobType                 AiJobType   @map("job_type")
+  courseId                String      @map("course_id") @db.Uuid
+  lessonId                String      @map("lesson_id") @db.Uuid
+  status                  AiJobStatus @default(PENDING)
+  mediaIds                String[]    @map("media_ids") @db.Uuid
+  questionCount           Int?        @map("question_count")
+  overwriteContent        Boolean     @default(false) @map("overwrite_content")
+  hasPreviousContent      Boolean     @default(false) @map("has_previous_content")
+  previousContentMarkdown String?     @map("previous_content_markdown")
+  resultQuizId            String?     @map("result_quiz_id") @db.Uuid
+  stepCount               Int         @default(0) @map("step_count")
+  errorCode               String?     @map("error_code") @db.VarChar(64)
+  errorMessage            String?     @map("error_message") @db.VarChar(500)
+  /// Người yêu cầu do `course` truyền tường minh; `ai-worker` ghi vào course dưới danh nghĩa này.
+  requestedById           String      @map("requested_by_id") @db.Uuid
+  requestedByRole         String      @map("requested_by_role") @db.VarChar(16)
+  leaseExpiresAt          DateTime?   @map("lease_expires_at") @db.Timestamptz(6)
+  createdAt               DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt               DateTime    @updatedAt @map("updated_at") @db.Timestamptz(6)
+  startedAt               DateTime?   @map("started_at") @db.Timestamptz(6)
+  finishedAt              DateTime?   @map("finished_at") @db.Timestamptz(6)
+
+  @@index([lessonId, createdAt(sort: Desc)])
+  @@index([status, leaseExpiresAt])
+  @@map("ai_jobs")
+}
+
+model OutboxMessage {
+  id          String    @id @db.Uuid
+  routingKey  String    @map("routing_key")
+  envelope    Json
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  availableAt DateTime  @default(now()) @map("available_at") @db.Timestamptz(6)
+  lockedUntil DateTime? @map("locked_until") @db.Timestamptz(6)
+  attempts    Int       @default(0)
+  publishedAt DateTime? @map("published_at") @db.Timestamptz(6)
+  lastError   String?   @map("last_error")
+
+  @@index([publishedAt, availableAt])
+  @@map("outbox_messages")
+}
+
+model InboxState {
+  messageId   String   @map("message_id") @db.Uuid
+  consumer    String
+  processedAt DateTime @default(now()) @map("processed_at") @db.Timestamptz(6)
+
+  @@id([messageId, consumer])
+  @@map("inbox_states")
+}

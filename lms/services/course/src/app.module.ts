@@ -14,9 +14,12 @@ import { Module, type Provider } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 
 import { CourseController } from './adapters/http/public/course.controller.js';
+import { LessonAiInternalController } from './adapters/http/internal/lesson-ai-internal.controller.js';
+import { LessonAiController } from './adapters/http/public/lesson-ai.controller.js';
 import { LessonController } from './adapters/http/public/lesson.controller.js';
 import { QuizController } from './adapters/http/public/quiz.controller.js';
 import { StudentLearningController } from './adapters/http/public/student-learning.controller.js';
+import { AiHttpClient } from './adapters/clients/ai-http.client.js';
 import { MediaHttpClient } from './adapters/clients/media-http.client.js';
 import { OUTBOX_PRODUCER } from './adapters/messaging/media-effects.outbox.js';
 import { OutboxRelayService } from './adapters/messaging/outbox-relay.service.js';
@@ -29,6 +32,18 @@ import {
 import { PrismaLessonRepository } from './adapters/persistence/prisma-lesson.repository.js';
 import { PrismaQuizRepository } from './adapters/persistence/prisma-quiz.repository.js';
 import { PrismaService } from './adapters/persistence/prisma.service.js';
+import { LESSON_AI_SERVICE, type LessonAiService } from './application/ports/lesson-ai-service.js';
+import {
+  LESSON_ATTACHMENT_SOURCE,
+  type LessonAttachmentSource,
+} from './application/ports/lesson-attachment-source.js';
+import { ApplyLessonAiContentUseCase } from './application/lesson-ai/apply-lesson-ai-content.use-case.js';
+import { CreateLessonAiJobUseCase } from './application/lesson-ai/create-lesson-ai-job.use-case.js';
+import { GetLessonAiContextUseCase } from './application/lesson-ai/get-lesson-ai-context.use-case.js';
+import { GetLessonAiDocumentsUseCase } from './application/lesson-ai/get-lesson-ai-documents.use-case.js';
+import { GetLessonAiJobUseCase } from './application/lesson-ai/get-lesson-ai-job.use-case.js';
+import { GetLessonAiJobsUseCase } from './application/lesson-ai/get-lesson-ai-jobs.use-case.js';
+import { SyncLessonAiDocumentsUseCase } from './application/lesson-ai/sync-lesson-ai-documents.use-case.js';
 import {
   ATTEMPT_REPOSITORY,
   type AttemptRepository,
@@ -103,6 +118,8 @@ const REPOSITORIES: Provider[] = [
   { provide: PROGRESS_REPOSITORY, useExisting: PrismaProgressRepository },
   { provide: ATTEMPT_REPOSITORY, useExisting: PrismaAttemptRepository },
   { provide: MEDIA_USAGE_LOOKUP, useExisting: MediaHttpClient },
+  { provide: LESSON_ATTACHMENT_SOURCE, useExisting: MediaHttpClient },
+  { provide: LESSON_AI_SERVICE, useExisting: AiHttpClient },
   {
     provide: MEDIA_EFFECTS,
     useFactory: (lookup: MediaUsageLookup) => new MediaUsageEffects(lookup),
@@ -209,6 +226,40 @@ const USE_CASES: Provider[] = [
       new useCase(courses, lessons, quizzes),
     inject: [COURSE_REPOSITORY, LESSON_REPOSITORY, QUIZ_REPOSITORY],
   })),
+  // lesson AI: mặt tiền gọi `ai` (tài liệu, job do `ai` sở hữu)
+  ...[GetLessonAiJobsUseCase, GetLessonAiJobUseCase].map((useCase) => ({
+    provide: useCase,
+    useFactory: (courses: CourseRepository, lessons: LessonRepository, ai: LessonAiService) =>
+      new useCase(courses, lessons, ai),
+    inject: [COURSE_REPOSITORY, LESSON_REPOSITORY, LESSON_AI_SERVICE],
+  })),
+  ...[GetLessonAiDocumentsUseCase, SyncLessonAiDocumentsUseCase, CreateLessonAiJobUseCase].map(
+    (useCase) => ({
+      provide: useCase,
+      useFactory: (
+        courses: CourseRepository,
+        lessons: LessonRepository,
+        ai: LessonAiService,
+        attachments: LessonAttachmentSource,
+      ) => new useCase(courses, lessons, ai, attachments),
+      inject: [COURSE_REPOSITORY, LESSON_REPOSITORY, LESSON_AI_SERVICE, LESSON_ATTACHMENT_SOURCE],
+    }),
+  ),
+  // lesson AI: bề mặt nội bộ cho `ai-worker`
+  {
+    provide: GetLessonAiContextUseCase,
+    useFactory: (lessons: LessonRepository) => new GetLessonAiContextUseCase(lessons),
+    inject: [LESSON_REPOSITORY],
+  },
+  {
+    provide: ApplyLessonAiContentUseCase,
+    useFactory: (
+      courses: CourseRepository,
+      lessons: LessonRepository,
+      updateLesson: UpdateLessonUseCase,
+    ) => new ApplyLessonAiContentUseCase(courses, lessons, updateLesson),
+    inject: [COURSE_REPOSITORY, LESSON_REPOSITORY, UpdateLessonUseCase],
+  },
   // learning
   {
     provide: EnrollCourseUseCase,
@@ -324,10 +375,13 @@ const USE_CASES: Provider[] = [
     LessonController,
     QuizController,
     StudentLearningController,
+    LessonAiController,
+    LessonAiInternalController,
   ],
   providers: [
     PrismaService,
     MediaHttpClient,
+    AiHttpClient,
     OutboxRelayService,
     ...COMMON_HTTP_PROVIDERS,
     {

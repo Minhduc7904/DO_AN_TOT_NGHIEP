@@ -1,12 +1,13 @@
 import { PostgresOutbox, runOnce } from '@aiops-lms/common/messaging';
 import type { SqlClient } from '@aiops-lms/common/prisma';
-import { MEDIA_COMMANDS } from '@aiops-lms/contracts/commands';
+import { AI_COMMANDS, MEDIA_COMMANDS } from '@aiops-lms/contracts/commands';
 
 import type {
   MediaCommands,
   MediaStores,
   MediaUnitOfWork,
 } from '../../application/ports/unit-of-work.js';
+import type { MediaObject } from '../../domain/media.js';
 import type { Db } from './db.js';
 import { PrismaJobRepository } from './prisma-job.repository.js';
 import { PrismaMediaRepository } from './prisma-media.repository.js';
@@ -25,6 +26,23 @@ class OutboxMediaCommands implements MediaCommands {
       schemaVersion: command.version,
       routingKey: command.queue,
       payload: { media_id: mediaId },
+    });
+  }
+
+  requestDocumentExtraction(
+    media: Pick<MediaObject, 'id' | 'originalName' | 'mimeType' | 'type'>,
+  ): Promise<void> {
+    const command = AI_COMMANDS.documentExtract;
+    return this.outbox.enqueue({
+      commandName: command.name,
+      schemaVersion: command.version,
+      routingKey: command.queue,
+      payload: {
+        media_id: media.id,
+        file_name: media.originalName,
+        content_type: media.mimeType,
+        media_type: media.type,
+      },
     });
   }
 }

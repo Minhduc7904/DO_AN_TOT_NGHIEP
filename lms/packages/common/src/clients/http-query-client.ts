@@ -27,6 +27,16 @@ export interface HttpRequest {
   headers?: Record<string, string>;
   /** Chỉ truyền khi downstream thật sự cần danh tính. */
   principal?: Principal;
+  /**
+   * `bytes`: phản hồi 2xx trả về `Buffer` (tải nội dung nhị phân); phản hồi khác 2xx vẫn là JSON lỗi.
+   * Mặc định `json`.
+   */
+  responseType?: 'json' | 'bytes';
+  /**
+   * Các mã 5xx mà caller muốn tự xử lý theo body lỗi của downstream (ví dụ `502 AI_PROVIDER_ERROR`):
+   * trả về như 4xx và không tính vào circuit breaker. Mã 5xx khác vẫn thành lỗi dependency.
+   */
+  passthroughStatuses?: readonly number[];
 }
 
 export interface HttpResponse<T> {
@@ -57,7 +67,7 @@ export class HttpQueryClient {
       }
       try {
         const response = await this.send<T>(method, request, token);
-        if (response.status >= 500) {
+        if (response.status >= 500 && !request.passthroughStatuses?.includes(response.status)) {
           throw response.status === 504
             ? AppError.dependencyTimeout(this.options.dependency)
             : AppError.dependencyUnavailable(this.options.dependency);
@@ -81,7 +91,11 @@ export class HttpQueryClient {
       if (value !== undefined) url.searchParams.set(key, String(value));
     }
 
-    const headers: Record<string, string> = { accept: 'application/json', ...request.headers };
+    const bytes = request.responseType === 'bytes';
+    const headers: Record<string, string> = {
+      accept: bytes ? '*/*' : 'application/json',
+      ...request.headers,
+    };
     if (token) headers.authorization = `Bearer ${token}`;
     if (request.body !== undefined) headers['content-type'] = 'application/json';
     const correlationId = getCorrelationId();
@@ -113,6 +127,9 @@ export class HttpQueryClient {
         method,
         response.status,
       );
+      if (bytes && response.ok) {
+        return { status: response.status, body: Buffer.from(await response.arrayBuffer()) as T };
+      }
       const text = await response.text();
       return { status: response.status, body: (text ? JSON.parse(text) : null) as T };
     } catch (error) {

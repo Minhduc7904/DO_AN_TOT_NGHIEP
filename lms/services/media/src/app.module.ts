@@ -45,6 +45,7 @@ import {
 } from './application/use-cases/usages/create-media-usage.use-case.js';
 import { DeleteMediaUsageUseCase } from './application/use-cases/usages/delete-media-usage.use-case.js';
 import { GetMediaUsageUrlsUseCase } from './application/use-cases/usages/get-media-usage-urls.use-case.js';
+import { ListOwnerUsagesUseCase } from './application/use-cases/usages/list-owner-usages.use-case.js';
 import { QueryUsageIdsUseCase } from './application/use-cases/usages/query-usage-ids.use-case.js';
 import { ReorderMediaUsagesUseCase } from './application/use-cases/usages/reorder-media-usages.use-case.js';
 import { UsageRules } from './application/use-cases/usages/usage-attacher.js';
@@ -230,6 +231,7 @@ const USE_CASES: Provider[] = [
     GetMediaLibraryUseCase,
     GetMediaUsageUrlsUseCase,
     QueryUsageIdsUseCase,
+    ListOwnerUsagesUseCase,
     GetUsageJobStatusUseCase,
     GetMediaSummaryUseCase,
     GetMediaBackgroundJobsUseCase,

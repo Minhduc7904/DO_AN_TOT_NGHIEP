@@ -3,6 +3,7 @@ import type { Clock, IdGenerator, Principal } from '@aiops-lms/common/ports';
 import { mediaErrors } from '../../../domain/errors.js';
 import type { MediaType } from '../../../domain/media.js';
 import { BUCKET_BY_TYPE, classifyMedia, MEDIA_SIZE_LIMITS } from '../../../domain/media-type.js';
+import { assertExtractTextAllowed } from '../../extract-text.js';
 import { buildObjectKey, buildTmpObjectKey, safeExtension } from '../../../domain/object-key.js';
 import type { ObjectStorage, PresignedUpload } from '../../ports/object-storage.js';
 import type { MediaUnitOfWork } from '../../ports/unit-of-work.js';
@@ -12,6 +13,8 @@ export interface CreateUploadIntentInput {
   mimeType: string;
   sizeBytes: number;
   checksumSha256: string;
+  /** Mặc định `false`. */
+  extractText?: boolean;
 }
 
 export interface UploadIntent {
@@ -20,7 +23,10 @@ export interface UploadIntent {
   upload: PresignedUpload;
 }
 
-/** Tạo media `PENDING` và presigned POST để client upload thẳng lên MinIO (key tạm, ghim size/type). */
+/**
+ * Tạo media `PENDING` và presigned POST để client upload thẳng lên MinIO (key tạm, ghim size/type).
+ * `extractText` được lưu lại; lệnh trích văn bản chỉ phát khi tệp READY (xem CompleteDirectUpload).
+ */
 export class CreateUploadIntentUseCase {
   constructor(
     private readonly uow: MediaUnitOfWork,
@@ -34,6 +40,8 @@ export class CreateUploadIntentUseCase {
     const type = classifyMedia(input.mimeType);
     const limit = MEDIA_SIZE_LIMITS[type];
     if (input.sizeBytes > limit) throw mediaErrors.tooLarge(limit);
+    if (input.extractText)
+      assertExtractTextAllowed(input.fileName, input.mimeType, input.sizeBytes);
 
     const id = this.ids.next();
     const now = this.clock.now();
@@ -56,6 +64,7 @@ export class CreateUploadIntentUseCase {
       mimeType: input.mimeType,
       sizeBytes: input.sizeBytes,
       checksumSha256: input.checksumSha256,
+      extractText: input.extractText === true,
       bucket,
       objectKey: buildObjectKey(now, id, extension),
       tmpObjectKey: tmpKey,

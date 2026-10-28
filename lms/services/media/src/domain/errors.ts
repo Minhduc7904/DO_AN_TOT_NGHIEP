@@ -10,6 +10,11 @@ export const MEDIA_ERROR_CODES = {
 } as const;
 
 export const mediaErrors = {
+  extractTextUnsupported: (details: unknown): AppError =>
+    AppError.validation(
+      'extract_text chỉ hợp lệ với tệp TXT/MD, DOCX, PDF hoặc ảnh PNG/JPEG/WebP/GIF dung lượng tối đa 15 MB',
+      details,
+    ),
   checksumMismatch: (): AppError =>
     new AppError(
       MEDIA_ERROR_CODES.checksumMismatch,

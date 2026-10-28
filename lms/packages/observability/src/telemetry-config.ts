@@ -27,6 +27,7 @@ const RUNTIME_SERVICE_NAMES = new Set([
   'scheduler',
   'scheduler-worker',
   'ai',
+  'ai-worker',
 ]);
 
 function resolveSignalEndpoint(
