@@ -20,9 +20,9 @@ const environmentSchema = baseEnvironmentSchema.extend({
   GATEWAY_STUDENT_BASE_URL: baseUrl(3002),
   GATEWAY_COURSE_BASE_URL: baseUrl(3003),
   GATEWAY_MEDIA_BASE_URL: baseUrl(3004),
-  GATEWAY_NOTIFICATION_BASE_URL: baseUrl(3005),
-  GATEWAY_SCHEDULER_BASE_URL: baseUrl(3006),
-  GATEWAY_AI_BASE_URL: baseUrl(3007),
+  GATEWAY_NOTIFICATION_BASE_URL: baseUrl(3006),
+  GATEWAY_SCHEDULER_BASE_URL: baseUrl(3008),
+  GATEWAY_AI_BASE_URL: baseUrl(3009),
 });
 
 export type Environment = z.infer<typeof environmentSchema>;

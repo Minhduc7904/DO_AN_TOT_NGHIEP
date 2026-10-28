@@ -1,0 +1,155 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/adapters/persistence/generated"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum NotificationSourceType {
+  SINGLE
+  BULK
+
+  @@map("notification_source_type")
+}
+
+enum NotificationStatus {
+  UNREAD
+  READ
+
+  @@map("notification_status")
+}
+
+enum NotificationEmailStatus {
+  NOT_REQUESTED
+  PENDING
+  SENT
+  FAILED
+
+  @@map("notification_email_status")
+}
+
+enum BatchTargetScope {
+  ALL_STUDENTS
+  FAILED_RECIPIENTS
+
+  @@map("notification_batch_target_scope")
+}
+
+enum BatchStatus {
+  PENDING
+  SNAPSHOTTING
+  SNAPSHOT_READY
+  PROCESSING
+  COMPLETED
+  PARTIAL_FAILED
+  FAILED
+
+  @@map("notification_batch_status")
+}
+
+enum BatchItemStatus {
+  PENDING
+  PROCESSING
+  SUCCESS
+  RETRY
+  FAILED
+
+  @@map("notification_batch_item_status")
+}
+
+/// Hộp thư của student. `studentId` và `createdBy` là tham chiếu logic sang `student`/`auth`.
+model Notification {
+  id              String                  @id @db.Uuid
+  studentId       String                  @map("student_id") @db.Uuid
+  title           String                  @db.VarChar(200)
+  contentMarkdown String                  @map("content_markdown")
+  sourceType      NotificationSourceType  @map("source_type")
+  batchId         String?                 @map("batch_id") @db.Uuid
+  status          NotificationStatus      @default(UNREAD)
+  emailStatus     NotificationEmailStatus @default(NOT_REQUESTED) @map("email_status")
+  createdBy       String?                 @map("created_by") @db.Uuid
+  createdAt       DateTime                @default(now()) @map("created_at") @db.Timestamptz(6)
+  readAt          DateTime?               @map("read_at") @db.Timestamptz(6)
+
+  // Mỗi student nhận tối đa một thông báo từ một batch (dispatch lặp không tạo trùng).
+  @@unique([batchId, studentId])
+  @@index([studentId, status, createdAt(sort: Desc)])
+  @@map("notifications")
+}
+
+model NotificationBatch {
+  id                 String           @id @db.Uuid
+  title              String           @db.VarChar(200)
+  contentMarkdown    String           @map("content_markdown")
+  targetScope        BatchTargetScope @map("target_scope")
+  status             BatchStatus      @default(PENDING)
+  batchSize          Int              @default(500) @map("batch_size")
+  /// Số recipient đã chụp (tối đa 100000).
+  requestedCount     Int              @default(0) @map("requested_count")
+  successCount       Int              @default(0) @map("success_count")
+  failedCount        Int              @default(0) @map("failed_count")
+  /// Mỗi batch nguồn chỉ có một batch retry.
+  sourceBatchId      String?          @unique @map("source_batch_id") @db.Uuid
+  createdBy          String           @map("created_by") @db.Uuid
+  /// Job theo dõi usage media của batch (id do notification sinh, media giữ trạng thái).
+  mediaUsageJobId    String?          @map("media_usage_job_id") @db.Uuid
+  mediaUsageExpected Int              @default(0) @map("media_usage_expected")
+  lastError          String?          @map("last_error")
+  createdAt          DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
+  completedAt        DateTime?        @map("completed_at") @db.Timestamptz(6)
+
+  items NotificationBatchItem[]
+
+  @@index([status, createdAt(sort: Desc)])
+  @@map("notification_batches")
+}
+
+model NotificationBatchItem {
+  id             String          @id @db.Uuid
+  batchId        String          @map("batch_id") @db.Uuid
+  studentId      String          @map("student_id") @db.Uuid
+  /// Email được chụp lúc snapshot để worker không gọi lại student khi gửi/retry.
+  email          String          @db.VarChar(320)
+  status         BatchItemStatus @default(PENDING)
+  attempts       Int             @default(0)
+  leaseToken     String?         @map("lease_token") @db.Uuid
+  leaseExpiresAt DateTime?       @map("lease_expires_at") @db.Timestamptz(6)
+  nextAttemptAt  DateTime        @default(now()) @map("next_attempt_at") @db.Timestamptz(6)
+  lastError      String?         @map("last_error")
+  notificationId String?         @map("notification_id") @db.Uuid
+  createdAt      DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime        @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  batch NotificationBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+
+  @@unique([batchId, studentId])
+  @@index([batchId, status, nextAttemptAt])
+  @@map("notification_batch_items")
+}
+
+model OutboxMessage {
+  id          String    @id @db.Uuid
+  routingKey  String    @map("routing_key")
+  envelope    Json
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  availableAt DateTime  @default(now()) @map("available_at") @db.Timestamptz(6)
+  lockedUntil DateTime? @map("locked_until") @db.Timestamptz(6)
+  attempts    Int       @default(0)
+  publishedAt DateTime? @map("published_at") @db.Timestamptz(6)
+  lastError   String?   @map("last_error")
+
+  @@index([publishedAt, availableAt])
+  @@map("outbox_messages")
+}
+
+model InboxState {
+  messageId   String   @map("message_id") @db.Uuid
+  consumer    String
+  processedAt DateTime @default(now()) @map("processed_at") @db.Timestamptz(6)
+
+  @@id([messageId, consumer])
+  @@map("inbox_states")
+}

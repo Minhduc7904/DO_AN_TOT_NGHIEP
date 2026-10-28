@@ -93,6 +93,26 @@ describe('student service (PostgreSQL thật)', () => {
       .expect(400);
   });
 
+  it('danh sách nội bộ chỉ có student ACTIVE theo id tăng dần, page_size tối đa 100', async () => {
+    const ids = [await createStudent(910), await createStudent(911), await createStudent(912)];
+
+    const response = await request(app.getHttpServer())
+      .get('/internal/v1/students?page=1&page_size=100')
+      .set(internal)
+      .expect(200);
+    const list = apiListResponseSchema(studentDtoSchema).parse(response.body);
+    const listed = list.data.map((student) => student.id);
+    for (const id of ids) expect(listed).toContain(id);
+    expect(listed).toEqual([...listed].sort());
+    expect(list.data.every((student) => student.status === 'ACTIVE')).toBe(true);
+    expect(list.meta.pagination).toMatchObject({ page: 1, page_size: 100 });
+
+    await request(app.getHttpServer())
+      .get('/internal/v1/students?page_size=101')
+      .set(internal)
+      .expect(400);
+  });
+
   it('tạo nội bộ trả envelope success, trùng thì 409 envelope lỗi', async () => {
     const id = randomUUID();
     const body = { id, email: `dup-${unique}@example.test`, full_name: 'Học viên' };

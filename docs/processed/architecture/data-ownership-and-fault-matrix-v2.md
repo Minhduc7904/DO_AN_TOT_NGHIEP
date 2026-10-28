@@ -84,6 +84,8 @@ MinIO: bucket `images`, `videos`, `documents`, `audios`, `other` do `media` sở
 
 SMTP (`notification-smtp`) thuộc `notification-worker`; email người nhận được snapshot vào item để worker không gọi lại student khi gửi/retry.
 
+Cột thực tế (R-07): `notifications.email_status` (`NOT_REQUESTED`/`PENDING`/`SENT`/`FAILED`) và unique `(batch_id, student_id)`; `notification_batches.media_usage_job_id`, `media_usage_expected`, `last_error`, `completed_at`; `notification_batch_items.attempts`, `next_attempt_at` (backoff), `last_error`, `notification_id`. Chỉ `notification_batch_items.email` là bản sao dữ liệu student, không đồng bộ lại.
+
 ## 2.6. `scheduler_db` — scheduler, scheduler-worker
 
 | Bảng                  | Ràng buộc chính                         |

@@ -51,18 +51,24 @@ export class PrismaStudentRepository implements StudentRepository {
     );
   }
 
-  list(page: number, pageSize: number): Promise<{ items: Student[]; total: number }> {
+  list(
+    page: number,
+    pageSize: number,
+    status?: Student['status'],
+  ): Promise<{ items: Student[]; total: number }> {
     return observeDependency(
       DEPENDENCY,
       'student.list',
       async () => {
+        const where = status ? { status } : {};
         const [rows, total] = await Promise.all([
           this.prisma.student.findMany({
-            orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
+            where,
+            orderBy: status ? { id: 'asc' } : [{ createdAt: 'desc' }, { id: 'asc' }],
             skip: (page - 1) * pageSize,
             take: pageSize,
           }),
-          this.prisma.student.count(),
+          this.prisma.student.count({ where }),
         ]);
         return { items: rows.map(toDomain), total };
       },

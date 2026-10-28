@@ -25,8 +25,8 @@
       "import": "./dist/http/internal/index.js"
     },
     "./commands": {
-      "types": "./dist/commands/media.d.ts",
-      "import": "./dist/commands/media.js"
+      "types": "./dist/commands/index.d.ts",
+      "import": "./dist/commands/index.js"
     }
   },
   "scripts": {
