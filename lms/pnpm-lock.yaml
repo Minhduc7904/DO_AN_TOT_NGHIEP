@@ -273,6 +273,12 @@ importers:
 
   services/gateway:
     dependencies:
+      '@aiops-lms/common':
+        specifier: workspace:*
+        version: link:../../packages/common
+      '@aiops-lms/contracts':
+        specifier: workspace:*
+        version: link:../../contracts
       '@aiops-lms/observability':
         specifier: workspace:*
         version: link:../../packages/observability
