@@ -46,7 +46,9 @@ export class InMemoryMedia implements MediaRepository {
 
   findThumbnailOf(sourceMediaId: string): Promise<MediaObject | null> {
     return Promise.resolve(
-      [...this.rows.values()].find((row) => row.sourceMediaId === sourceMediaId) ?? null,
+      [...this.rows.values()].find(
+        (row) => row.sourceMediaId === sourceMediaId && !row.deletedAt,
+      ) ?? null,
     );
   }
 
@@ -65,6 +67,74 @@ export class InMemoryMedia implements MediaRepository {
 
   summary(): Promise<never> {
     return Promise.reject(new Error('không dùng'));
+  }
+
+  /** Dùng cho cleanup: tập usage lấy từ `usages` được nối vào bằng `bindUsages`. */
+  private usages: InMemoryUsages | null = null;
+  /** Khóa giả lập: media nằm trong tập này coi như đang bị lượt khác giữ (`SKIP LOCKED`). */
+  readonly lockedByOthers = new Set<string>();
+
+  bindUsages(usages: InMemoryUsages): void {
+    this.usages = usages;
+  }
+
+  private hasUsage(mediaId: string): boolean {
+    return [...(this.usages?.rows.values() ?? [])].some((usage) => usage.mediaId === mediaId);
+  }
+
+  listUnusedReadyIds(olderThan: Date, limit: number): Promise<string[]> {
+    return Promise.resolve(
+      [...this.rows.values()]
+        .filter(
+          (row) =>
+            !row.deletedAt &&
+            row.status === 'READY' &&
+            row.sourceMediaId === null &&
+            row.createdAt < olderThan &&
+            row.updatedAt < olderThan &&
+            !this.hasUsage(row.id),
+        )
+        .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())
+        .slice(0, limit)
+        .map((row) => row.id),
+    );
+  }
+
+  listStalePendingIds(expiredBefore: Date, limit: number): Promise<string[]> {
+    return Promise.resolve(
+      [...this.rows.values()]
+        .filter(
+          (row) =>
+            !row.deletedAt &&
+            row.status === 'PENDING' &&
+            (row.uploadExpiresAt ?? row.createdAt) < expiredBefore,
+        )
+        .slice(0, limit)
+        .map((row) => row.id),
+    );
+  }
+
+  listOrphanThumbnailIds(limit: number): Promise<string[]> {
+    return Promise.resolve(
+      [...this.rows.values()]
+        .filter(
+          (row) =>
+            !row.deletedAt &&
+            row.sourceMediaId !== null &&
+            this.rows.get(row.sourceMediaId)?.deletedAt != null,
+        )
+        .slice(0, limit)
+        .map((row) => row.id),
+    );
+  }
+
+  lockForCleanup(id: string): Promise<MediaObject | null> {
+    const row = this.rows.get(id);
+    return Promise.resolve(row && !row.deletedAt && !this.lockedByOthers.has(id) ? row : null);
+  }
+
+  findIncludingDeleted(id: string): Promise<MediaObject | null> {
+    return Promise.resolve(this.rows.get(id) ?? null);
   }
 }
 
@@ -112,6 +182,10 @@ export class InMemoryUsages implements UsageRepository {
         (row) => row.ownerKind === kind && ownerIds.includes(row.ownerId),
       ),
     );
+  }
+
+  countByMedia(mediaId: string): Promise<number> {
+    return Promise.resolve([...this.rows.values()].filter((row) => row.mediaId === mediaId).length);
   }
 
   async nextPosition(group: UsageGroup): Promise<number> {
@@ -209,8 +283,21 @@ export class InMemoryUnitOfWork implements MediaUnitOfWork {
     },
   };
 
+  constructor() {
+    this.media.bindUsages(this.usages);
+  }
+
   run<T>(work: (stores: MediaStores) => Promise<T>): Promise<T> {
-    return work(this.stores);
+    // Giả lập transaction: lỗi thì hoàn tác media và usage về trạng thái trước `run`.
+    const media = new Map(this.media.rows);
+    const usages = new Map(this.usages.rows);
+    return work(this.stores).catch((error: unknown) => {
+      this.media.rows.clear();
+      media.forEach((row, id) => this.media.rows.set(id, row));
+      this.usages.rows.clear();
+      usages.forEach((row, id) => this.usages.rows.set(id, row));
+      throw error;
+    });
   }
 
   async runOnce(
@@ -229,6 +316,7 @@ export class InMemoryUnitOfWork implements MediaUnitOfWork {
 export class FakeStorage implements ObjectStorage {
   readonly objects = new Map<string, { body: Buffer; contentType: string }>();
   failPut = false;
+  failRemove = false;
 
   private k(bucket: string, key: string): string {
     return `${bucket}/${key}`;
@@ -273,6 +361,7 @@ export class FakeStorage implements ObjectStorage {
   }
 
   remove(bucket: string, key: string): Promise<void> {
+    if (this.failRemove) return Promise.reject(new Error('MinIO lỗi'));
     this.objects.delete(this.k(bucket, key));
     return Promise.resolve();
   }

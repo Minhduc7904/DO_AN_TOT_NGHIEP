@@ -16,6 +16,9 @@ import { Test } from '@nestjs/testing';
 import sharp from 'sharp';
 import request from 'supertest';
 
+import { PrismaService } from '../../src/adapters/persistence/prisma.service.js';
+import { OBJECT_STORAGE, type ObjectStorage } from '../../src/application/ports/object-storage.js';
+
 /**
  * Chạy với PostgreSQL, MinIO và RabbitMQ thật; xem `pnpm test:media:e2e`. API và worker chạy cùng
  * process nhưng là hai Nest app riêng (đúng hai module triển khai), nói chuyện qua RabbitMQ thật.
@@ -737,5 +740,308 @@ describe('media + media-worker (PostgreSQL, MinIO, RabbitMQ thật)', () => {
     expect(summary.body.data.total).toBeGreaterThan(0);
     expect(summary.body.data.by_status).toHaveProperty('READY');
     expect((await http().get('/ready')).status).toBe(200);
+  });
+  describe('cleanup (scheduler-worker → media)', () => {
+    const cleanupToken = (): string =>
+      mintServiceToken(signingKey, {
+        subject: 'scheduler-worker',
+        audience: 'media',
+        scopes: ['media:cleanup'],
+      });
+    const runCleanup = (body: unknown = {}): request.Test =>
+      http()
+        .post('/internal/v1/media/cleanup')
+        .set({ authorization: `Bearer ${cleanupToken()}` })
+        .send(body as object);
+    const HOUR = 3_600_000;
+
+    /** Đẩy mốc thời gian của media về quá khứ để vượt thời gian lưu giữ (chỉ đúng các id truyền vào). */
+    const backdate = async (ids: string[], hours: number): Promise<void> => {
+      const when = new Date(Date.now() - hours * HOUR);
+      await api.get(PrismaService).$executeRawUnsafe(
+        `UPDATE media_objects SET created_at = $1::timestamptz, updated_at = $1::timestamptz
+           WHERE id = ANY($2::uuid[])`,
+        when,
+        ids,
+      );
+    };
+    const row = (id: string): Promise<Record<string, unknown> | null> =>
+      api.get(PrismaService).mediaObject.findUnique({ where: { id } }) as Promise<Record<
+        string,
+        unknown
+      > | null>;
+    const objectExists = async (
+      id: string,
+      which: 'objectKey' | 'tmpObjectKey',
+    ): Promise<boolean> => {
+      const media = await row(id);
+      const key = media?.[which];
+      if (typeof key !== 'string') return false;
+      const stat = await api
+        .get<ObjectStorage>(OBJECT_STORAGE)
+        .stat(media?.['bucket'] as string, key);
+      return stat !== null;
+    };
+    const readyWithThumbnail = async (headers: Record<string, string>): Promise<string> => {
+      const { mediaId } = await uploadDirect(headers, await png(), 'cleanup.png', 'image/png');
+      await waitFor(async () =>
+        (await getMedia(headers, mediaId))['thumbnail_status'] === 'READY' ? true : undefined,
+      );
+      return mediaId;
+    };
+    const attachThumbnail = (mediaId: string, courseId: string): request.Test =>
+      http().post('/api/v1/media/usages').set(instructor).send({
+        media_id: mediaId,
+        owner_kind: 'COURSE',
+        owner_id: courseId,
+        usage_type: 'COURSE_THUMBNAIL',
+      });
+
+    it('dọn media không dùng quá hạn cùng thumbnail, giữ media còn usage, singleton và media mới', async () => {
+      const unused = await readyWithThumbnail(instructor);
+      const thumbnailRow = await api
+        .get(PrismaService)
+        .mediaObject.findFirst({ where: { sourceMediaId: unused } });
+      expect(thumbnailRow).not.toBeNull();
+      const used = await readyWithThumbnail(instructor);
+      const recent = await readyWithThumbnail(instructor);
+      const replaced = await readyWithThumbnail(instructor);
+      const courseId = randomUUID();
+      await attachThumbnail(used, courseId).expect(201);
+      await attachThumbnail(replaced, courseId).expect(201); // used bị thay → hết usage
+      // `replaced` đang là thumbnail của khóa học; `used` mất usage nên thành ứng viên sau khi quá hạn.
+      const avatar = (await uploadDirect(student, await png(), 'av.png', 'image/png')).mediaId;
+      await http()
+        .post('/api/v1/media/usages')
+        .set(student)
+        .send({
+          media_id: avatar,
+          owner_kind: 'STUDENT',
+          owner_id: studentId,
+          usage_type: 'STUDENT_AVATAR',
+        })
+        .expect(201);
+      await backdate([unused, used, replaced, avatar], 3);
+
+      const response = await runCleanup({ retention_hours: 1 }).expect(200);
+      expect(response.body.data).toMatchObject({
+        retention_hours: 1,
+        pending_grace_minutes: 15,
+        failed: 0,
+      });
+      expect(response.body.data.unused_deleted).toBeGreaterThanOrEqual(2);
+      expect(response.body.data.thumbnails_deleted).toBeGreaterThanOrEqual(2);
+      // Tóm tắt chỉ có số lượng, không lộ bucket/object key/credential.
+      expect(JSON.stringify(response.body)).not.toMatch(/bucket|key|secret|tmp\/|\.png|\.webp/iu);
+
+      // Media không dùng và `used` (đã bị thay) bị xóa mềm; object và thumbnail biến mất.
+      for (const id of [unused, used]) {
+        expect((await row(id))?.['deletedAt']).not.toBeNull();
+        expect(await objectExists(id, 'objectKey')).toBe(false);
+        await http().get(`/api/v1/media/${id}/content`).set(gatewayOnly).expect(404);
+      }
+      const deletedThumb = await row(thumbnailRow?.id as string);
+      expect(deletedThumb?.['deletedAt']).not.toBeNull();
+      expect(
+        await api
+          .get(PrismaService)
+          .mediaUsage.count({ where: { mediaId: thumbnailRow?.id as string } }),
+      ).toBe(0);
+      expect(
+        await api
+          .get<ObjectStorage>(OBJECT_STORAGE)
+          .stat(deletedThumb?.['bucket'] as string, deletedThumb?.['objectKey'] as string),
+      ).toBeNull();
+
+      // Media còn usage (thumbnail khóa học, avatar) và media còn mới giữ nguyên, kể cả thumbnail của chúng.
+      for (const id of [replaced, avatar, recent]) {
+        expect((await row(id))?.['deletedAt']).toBeNull();
+        expect(await objectExists(id, 'objectKey')).toBe(true);
+        await http().get(`/api/v1/media/${id}/content`).set(gatewayOnly).expect(200);
+      }
+      const keptThumbnail = await api
+        .get(PrismaService)
+        .mediaObject.findFirst({ where: { sourceMediaId: replaced } });
+      expect(keptThumbnail?.deletedAt).toBeNull();
+      await http().get(`/api/v1/media/${replaced}/thumbnail`).set(gatewayOnly).expect(200);
+
+      // Chạy lặp: không còn gì để dọn cho các media này, không lỗi.
+      const again = await runCleanup({ retention_hours: 1 }).expect(200);
+      expect(again.body.data.failed).toBe(0);
+      expect((await row(replaced))?.['deletedAt']).toBeNull();
+      expect((await row(unused))?.['deletedAt']).not.toBeNull();
+    });
+
+    it('thiếu object trong MinIO không phải lỗi: media vẫn được đánh dấu đã xóa', async () => {
+      const id = (
+        await http()
+          .post('/api/v1/media')
+          .set(instructor)
+          .attach('file', Buffer.from('mat object'), {
+            filename: 'mat.txt',
+            contentType: 'text/plain',
+          })
+          .expect(201)
+      ).body.data.id as string;
+      const media = await row(id);
+      await api
+        .get<ObjectStorage>(OBJECT_STORAGE)
+        .remove(media?.['bucket'] as string, media?.['objectKey'] as string);
+      await backdate([id], 3);
+
+      const response = await runCleanup({ retention_hours: 1 }).expect(200);
+
+      expect(response.body.data.failed).toBe(0);
+      expect((await row(id))?.['deletedAt']).not.toBeNull();
+    });
+
+    it('phục hồi upload PENDING stale: xóa object mồ côi, chuyển FAILED; upload còn hạn giữ nguyên', async () => {
+      const intent = async (name: string): Promise<{ mediaId: string; content: Buffer }> => {
+        const content = await png(9, 9);
+        const response = await http()
+          .post('/api/v1/media/upload-intents')
+          .set(instructor)
+          .send({
+            file_name: name,
+            mime_type: 'image/png',
+            size_bytes: content.length,
+            checksum_sha256: createHash('sha256').update(content).digest('hex'),
+          })
+          .expect(201);
+        return { mediaId: response.body.data.media_id as string, content };
+      };
+      const uploadTmp = async (mediaId: string, content: Buffer): Promise<void> => {
+        const media = await row(mediaId);
+        await api
+          .get<ObjectStorage>(OBJECT_STORAGE)
+          .put(
+            media?.['bucket'] as string,
+            media?.['tmpObjectKey'] as string,
+            content,
+            'image/png',
+          );
+      };
+      const expireUpload = (ids: string[]): Promise<number> =>
+        api
+          .get(PrismaService)
+          .$executeRawUnsafe(
+            `UPDATE media_objects SET upload_expires_at = now() - interval '2 hours' WHERE id = ANY($1::uuid[])`,
+            ids,
+          );
+
+      const uploadedNotCompleted = await intent('da-upload.png');
+      await uploadTmp(uploadedNotCompleted.mediaId, uploadedNotCompleted.content);
+      const crashedAfterCopy = await intent('crash-sau-copy.png');
+      await uploadTmp(crashedAfterCopy.mediaId, crashedAfterCopy.content);
+      const crashedRow = await row(crashedAfterCopy.mediaId);
+      await api
+        .get<ObjectStorage>(OBJECT_STORAGE)
+        .copy(
+          crashedRow?.['bucket'] as string,
+          crashedRow?.['tmpObjectKey'] as string,
+          crashedRow?.['objectKey'] as string,
+        );
+      const neverUploaded = await intent('khong-upload.png');
+      const fresh = await intent('con-han.png');
+      await uploadTmp(fresh.mediaId, fresh.content);
+      await expireUpload([
+        uploadedNotCompleted.mediaId,
+        crashedAfterCopy.mediaId,
+        neverUploaded.mediaId,
+      ]);
+
+      const response = await runCleanup({ pending_grace_minutes: 0 }).expect(200);
+
+      expect(response.body.data.pending_recovered).toBeGreaterThanOrEqual(3);
+      expect(response.body.data.pending_orphan_objects_removed).toBeGreaterThanOrEqual(3);
+      for (const { mediaId } of [uploadedNotCompleted, crashedAfterCopy, neverUploaded]) {
+        expect(await row(mediaId)).toMatchObject({
+          status: 'FAILED',
+          tmpObjectKey: null,
+          failureReason: 'UPLOAD_ABANDONED',
+        });
+        expect(await getMedia(instructor, mediaId)).toMatchObject({ status: 'FAILED' });
+        await http().post(`/api/v1/media/${mediaId}/upload-complete`).set(instructor).expect(409);
+      }
+      expect(await objectExists(crashedAfterCopy.mediaId, 'objectKey')).toBe(false);
+      const storage = api.get<ObjectStorage>(OBJECT_STORAGE);
+      const recovered = await row(uploadedNotCompleted.mediaId);
+      expect(recovered?.['tmpObjectKey']).toBeNull();
+      expect(
+        await storage.stat(
+          recovered?.['bucket'] as string,
+          `tmp/${uploadedNotCompleted.mediaId}.png`,
+        ),
+      ).toBeNull();
+
+      // Upload còn hạn không bị đụng tới và vẫn hoàn tất được.
+      expect(await row(fresh.mediaId)).toMatchObject({ status: 'PENDING' });
+      await http()
+        .post(`/api/v1/media/${fresh.mediaId}/upload-complete`)
+        .set(instructor)
+        .expect(200);
+
+      // Chạy lặp không còn gì để phục hồi cho các media này.
+      const again = await runCleanup({ pending_grace_minutes: 0 }).expect(200);
+      expect(again.body.data.failed).toBe(0);
+      expect(await row(uploadedNotCompleted.mediaId)).toMatchObject({ status: 'FAILED' });
+    });
+
+    it('ma trận xác thực và validate: 401/403/400', async () => {
+      const missing = await http().post('/internal/v1/media/cleanup').send({});
+      expect(missing.status).toBe(401);
+      expect(missing.body.error.code).toBe('SERVICE_TOKEN_MISSING');
+
+      // Token của gateway (scope gateway:proxy) và token course (thiếu media:cleanup) bị từ chối.
+      const gateway = await http().post('/internal/v1/media/cleanup').set(gatewayOnly).send({});
+      expect(gateway.status).toBe(403);
+      const wrongScope = await http()
+        .post('/internal/v1/media/cleanup')
+        .set({ authorization: `Bearer ${courseToken}` })
+        .send({});
+      expect(wrongScope.status).toBe(403);
+      expect(wrongScope.body.error.code).toBe('SERVICE_SCOPE_FORBIDDEN');
+
+      // Sai audience → token không hợp lệ cho media.
+      const wrongAudience = mintServiceToken(signingKey, {
+        subject: 'scheduler-worker',
+        audience: 'student',
+        scopes: ['media:cleanup'],
+      });
+      const audience = await http()
+        .post('/internal/v1/media/cleanup')
+        .set({ authorization: `Bearer ${wrongAudience}` })
+        .send({});
+      expect(audience.status).toBe(401);
+      expect(audience.body.error.code).toBe('SERVICE_TOKEN_INVALID');
+
+      // Danh tính user (x-principal-*) không có hiệu lực ở route internal.
+      const principal = await http()
+        .post('/internal/v1/media/cleanup')
+        .set({
+          authorization: `Bearer ${courseToken}`,
+          'x-principal-id': instructorId,
+          'x-principal-role': 'admin',
+        })
+        .send({});
+      expect(principal.status).toBe(403);
+
+      // Không được gọi qua bề mặt public.
+      expect((await http().post('/api/v1/media/cleanup').set(admin).send({})).status).toBe(404);
+
+      const invalid = await runCleanup({ retention_hours: -1 });
+      expect(invalid.status).toBe(400);
+      expect(invalid.body.error.code).toBe('VALIDATION_ERROR');
+      // Dưới ngưỡng tối thiểu của media (env, mặc định 1 giờ) cũng là 400.
+      expect((await runCleanup({ retention_hours: 0 })).status).toBe(400);
+      expect((await runCleanup({ limit: 5_000 })).status).toBe(400);
+      expect((await runCleanup({ unknown_field: 1 })).status).toBe(200);
+      // Không gửi body vẫn dùng mặc định.
+      const noBody = await http()
+        .post('/internal/v1/media/cleanup')
+        .set({ authorization: `Bearer ${cleanupToken()}` });
+      expect(noBody.status).toBe(200);
+      expect(noBody.body.data).toMatchObject({ retention_hours: 168, pending_grace_minutes: 15 });
+    });
   });
 });

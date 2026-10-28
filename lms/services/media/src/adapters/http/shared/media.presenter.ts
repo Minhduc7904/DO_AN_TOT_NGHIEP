@@ -1,4 +1,5 @@
 import type {
+  MediaCleanupSummaryDto,
   MediaDto,
   MediaJobDto,
   MediaSummaryDto,
@@ -7,6 +8,7 @@ import type {
 } from '@aiops-lms/contracts';
 
 import type { MediaSummary } from '../../../application/ports/repositories.js';
+import type { CleanupMediaSummary } from '../../../application/use-cases/cleanup/cleanup-media.use-case.js';
 import type { UsageUrl } from '../../../application/use-cases/usages/get-media-usage-urls.use-case.js';
 import type { MediaJob, MediaObject, MediaUsage } from '../../../domain/media.js';
 import { mediaContentUrl, mediaThumbnailUrl } from '../../../domain/urls.js';
@@ -49,6 +51,23 @@ export function presentUsageUrl(url: UsageUrl): MediaUsageUrlDto {
     media_id: url.mediaId,
     url: url.url,
     thumbnail_url: url.thumbnailUrl,
+  };
+}
+
+/** Chỉ số lượng và tham số hiệu lực; không bao giờ có object key hay credential. */
+export function presentCleanupSummary(summary: CleanupMediaSummary): MediaCleanupSummaryDto {
+  return {
+    retention_hours: summary.retentionHours,
+    pending_grace_minutes: summary.pendingGraceMinutes,
+    limit: summary.limit,
+    unused_deleted: summary.unusedDeleted,
+    thumbnails_deleted: summary.thumbnailsDeleted,
+    objects_removed: summary.objectsRemoved,
+    pending_recovered: summary.pendingRecovered,
+    pending_orphan_objects_removed: summary.pendingOrphanObjectsRemoved,
+    skipped: summary.skipped,
+    failed: summary.failed,
+    has_more: summary.hasMore,
   };
 }
 

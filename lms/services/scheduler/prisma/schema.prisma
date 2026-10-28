@@ -1,0 +1,109 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/adapters/persistence/generated"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// `scheduler` không phát và không consume command: run đã tạo trong `background_job_runs` chính là
+// hàng đợi, `scheduler-worker` nhận việc bằng lease (`FOR UPDATE SKIP LOCKED`). Vì vậy không có
+// bảng outbox/inbox (xem packages/common/README.md).
+
+enum BackgroundJobType {
+  MEDIA_UNUSED_CLEANUP
+
+  @@map("background_job_type")
+}
+
+enum ScheduleType {
+  MANUAL
+  CRON
+
+  @@map("background_job_schedule_type")
+}
+
+enum BackgroundJobStatus {
+  ACTIVE
+  PAUSED
+  DISABLED
+
+  @@map("background_job_status")
+}
+
+enum RunTriggerType {
+  MANUAL
+  CRON
+
+  @@map("background_job_run_trigger_type")
+}
+
+enum RunStatus {
+  PENDING
+  RUNNING
+  SUCCEEDED
+  FAILED
+
+  @@map("background_job_run_status")
+}
+
+/// Cấu hình một job. `payload` chỉ là tham số nhỏ (ví dụ retention), không chứa dữ liệu nghiệp vụ.
+model BackgroundJob {
+  id              String              @id @db.Uuid
+  name            String              @unique
+  type            BackgroundJobType
+  scheduleType    ScheduleType        @map("schedule_type")
+  /// Biểu thức CRON 5 trường theo UTC; null với MANUAL (ràng buộc CHECK trong migration).
+  cronExpression  String?             @map("cron_expression")
+  payload         Json                @default("{}")
+  status          BackgroundJobStatus @default(ACTIVE)
+  allowConcurrent Boolean             @default(false) @map("allow_concurrent")
+  /// Thời điểm UTC chạy CRON kế tiếp; null với MANUAL, job không ACTIVE hoặc cron hỏng.
+  nextRunAt       DateTime?           @map("next_run_at") @db.Timestamptz(6)
+  /// `auth_users.id` của admin tạo job (tham chiếu logic, không có FK).
+  createdBy       String?             @map("created_by") @db.Uuid
+  createdAt       DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime            @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  runs BackgroundJobRun[]
+
+  @@index([status, scheduleType, nextRunAt])
+  @@index([createdAt(sort: Desc)])
+  @@map("background_jobs")
+}
+
+/// Một lượt chạy. Vừa là bản ghi lịch sử vừa là hàng đợi: `PENDING` chờ worker nhận bằng lease.
+model BackgroundJobRun {
+  id              String         @id @db.Uuid
+  jobId           String         @map("background_job_id") @db.Uuid
+  triggerType     RunTriggerType @map("trigger_type")
+  /// Chặn tạo trùng: `(background_job_id, idempotency_key)` duy nhất; CRON dùng `cron:<job_id>:<scheduled_at>`.
+  idempotencyKey  String         @map("idempotency_key")
+  /// Bản chụp payload của job lúc tạo run (audit; đổi payload job không ảnh hưởng run đã tạo).
+  payloadSnapshot Json           @default("{}") @map("payload_snapshot")
+  status          RunStatus      @default(PENDING)
+  scheduledAt     DateTime       @map("scheduled_at") @db.Timestamptz(6)
+  startedAt       DateTime?      @map("started_at") @db.Timestamptz(6)
+  finishedAt      DateTime?      @map("finished_at") @db.Timestamptz(6)
+  /// Số lần worker nhận run (tăng mỗi lần claim, kể cả nhận lại sau khi lease hết hạn).
+  attempts        Int            @default(0)
+  leaseToken      String?        @map("lease_token") @db.Uuid
+  leaseExpiresAt  DateTime?      @map("lease_expires_at") @db.Timestamptz(6)
+  workerInstance  String?        @map("worker_instance")
+  /// Mã lỗi ổn định và thông báo an toàn (không credential, không object key).
+  errorCode       String?        @map("error_code")
+  errorMessage    String?        @map("error_message")
+  /// Tóm tắt kết quả; không dùng thay dữ liệu của service đích.
+  outputJson      Json?          @map("output_json")
+  createdBy       String?        @map("created_by") @db.Uuid
+  createdAt       DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime       @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  job BackgroundJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@unique([jobId, idempotencyKey])
+  @@index([jobId, scheduledAt(sort: Desc)])
+  @@index([status, scheduledAt])
+  @@map("background_job_runs")
+}

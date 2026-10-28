@@ -37,6 +37,13 @@ const apiSchema = baseEnvironmentSchema.extend({
     .min(1_024)
     .max(524_288_000)
     .default(26_214_400),
+  /** Cleanup (`POST /internal/v1/media/cleanup`): mặc định và biên của tham số trong body. */
+  MEDIA_CLEANUP_DEFAULT_RETENTION_HOURS: z.coerce.number().int().min(0).max(8_760).default(168),
+  MEDIA_CLEANUP_MIN_RETENTION_HOURS: z.coerce.number().int().min(0).max(8_760).default(1),
+  MEDIA_CLEANUP_MAX_RETENTION_HOURS: z.coerce.number().int().min(0).max(8_760).default(8_760),
+  MEDIA_CLEANUP_PENDING_GRACE_MINUTES: z.coerce.number().int().min(0).max(10_080).default(15),
+  MEDIA_CLEANUP_DEFAULT_LIMIT: z.coerce.number().int().min(1).max(1_000).default(200),
+  MEDIA_CLEANUP_MAX_LIMIT: z.coerce.number().int().min(1).max(1_000).default(1_000),
   MEDIA_STUDENT_BASE_URL: z.url().default('http://localhost:3002'),
   MEDIA_STUDENT_TIMEOUT_MS: z.coerce.number().int().min(100).max(60_000).default(3_000),
   MEDIA_STUDENT_BREAKER_THRESHOLD: z.coerce.number().int().min(1).max(100).default(3),

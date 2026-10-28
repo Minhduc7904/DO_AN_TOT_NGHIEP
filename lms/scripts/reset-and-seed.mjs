@@ -14,6 +14,8 @@ export const REQUIRED_SERVICES = Object.freeze([
   'notification-worker',
   'postgres',
   'rabbitmq',
+  'scheduler',
+  'scheduler-worker',
   'student',
 ]);
 
