@@ -6,7 +6,7 @@
 >
 > **Thay thế:** [http-and-event-contracts-v1](http-and-event-contracts-v1.md) (lịch sử).
 >
-> **Phụ thuộc:** [service-catalogue-and-topology-v2](service-catalogue-and-topology-v2.md), [ADR-001](../adr/adr-001-restructure-lms-testbed-v1.md).
+> **Phụ thuộc:** [service-catalogue-and-topology-v2](service-catalogue-and-topology-v2.md), [ADR-001](../adr/adr-001-restructure-lms-testbed-v1.md), [ADR-004](../adr/adr-004-service-access-token-and-api-surfaces-v1.md) (xác thực và hai bề mặt API).
 >
 > **Mục đích:** chốt quy ước chung, danh mục route, ma trận role và danh mục command để các service được scaffold và ghép mà không vỡ ranh giới. Request/response chi tiết từng endpoint không nằm ở đây mà được viết bằng zod trong `lms/contracts/` cùng từng service; tài liệu này là danh mục và luật chung mà schema đó phải tuân theo.
 
@@ -20,7 +20,7 @@ Giữ nguyên từ v1, chỉ nêu phần thay đổi:
 
 | Mục              | Quy tắc v2                                                                                                                |
 | ---------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| Version          | Public: `/api/v1`. Nội bộ giữa service: `/internal/v1`. Command: `schema_version` trong envelope                          |
+| Version          | Public: `/api/v1` (chỉ Gateway gọi). Nội bộ giữa service: `/internal/v1`. Command: `schema_version` trong envelope        |
 | JSON             | `snake_case`; timestamp UTC ISO-8601; ID là chuỗi UUID (v1 để opaque, v2 khóa UUID vì dùng `@db.Uuid`)                    |
 | Trace            | W3C `traceparent`/`tracestate` trên HTTP và trong header RabbitMQ; lỗi có `trace_id`, `timestamp`                         |
 | Correlation      | `x-correlation-id` được forward ở mọi HTTP nội bộ và đặt vào envelope command                                             |
@@ -28,20 +28,52 @@ Giữ nguyên từ v1, chỉ nêu phần thay đổi:
 | Timeout          | Mọi outbound HTTP có timeout cấu hình, phát telemetry khi timeout                                                         |
 | Prometheus label | Không dùng `trace_id`, `span_id`, user ID, request ID, `message_id`                                                       |
 
-## 1.1. Danh tính và role
+## 1.1. Danh tính, hai bề mặt API và hai loại token
 
-JWT do `auth` phát (access + refresh) mang `sub` và `role` ∈ `student` | `instructor` | `admin`. Gateway validate cục bộ, xóa mọi `x-principal-*` do client gửi, rồi đặt:
+Mỗi service có **hai bề mặt HTTP tách thư mục** (`adapters/http/public/`, `adapters/http/internal/`), dùng chung use case:
 
-```text
-x-principal-id     = sub
-x-principal-role   = student | instructor | admin
-```
+| Bề mặt   | Prefix                                        | Ai gọi               | Xác thực                                                             | Decorator                         |
+| -------- | --------------------------------------------- | -------------------- | -------------------------------------------------------------------- | --------------------------------- |
+| Public   | `/api/v1`                                     | Chỉ Gateway          | Service token của `gateway` (scope `gateway:proxy`) + danh tính user | `@Roles(...)` hoặc `@Anonymous()` |
+| Internal | `/internal/v1`                                | Service khác         | Service token có đủ scope của route                                  | `@InternalApi({ scopes })`        |
+| Mở       | `/health`, `/ready`, `/.well-known/jwks.json` | Hạ tầng, mọi service | Không cần token                                                      | `@SkipAuth()`                     |
 
-Service downstream tin hai header này (mạng nội bộ). Quyền được kiểm bằng decorator role ở controller; điều kiện sở hữu (ví dụ instructor chỉ sửa khóa học của mình) kiểm trong use case.
+`POST /internal/v1/auth/service-token` cũng không dùng bearer (`@SkipAuth()`): danh tính chứng minh bằng `client_id`/`client_secret` trong body.
 
-Route `/internal/v1/*` **không được Gateway proxy**; chỉ service gọi nhau trên mạng nội bộ và không cần JWT.
+`auth` phát **hai loại token**, ký EdDSA (Ed25519), verify cục bộ bằng JWKS:
 
-Route đọc nội dung media công khai (không cần JWT) vì trình duyệt nhúng ảnh/video không gửi được token: `GET /api/v1/media/{media_id}/content`, `.../thumbnail`, `/api/v1/media/usages/{usage_id}/url`. Bảo vệ bằng UUID khó đoán, `Cache-Control: no-store`; đây là giới hạn được chấp nhận và ghi nhận ở R-12.
+| Loại                 | Cấp bởi                                                         | Claim chính                                                                             | TTL                    |
+| -------------------- | --------------------------------------------------------------- | --------------------------------------------------------------------------------------- | ---------------------- |
+| User access token    | `POST /api/v1/auth/{student,instructor,admin}/login`, `refresh` | `iss=aiops-lms-auth`, `typ=user`, `sub`=user id, `role`, `aud=aiops-lms`                | 1 giờ                  |
+| Service access token | `POST /internal/v1/auth/service-token` (client-credentials)     | `typ=service`, `sub`=tên service, `aud`=service đích, `scope` (cách nhau bằng dấu cách) | 10 phút, không refresh |
+
+Header JWT có `kid` (thumbprint khóa công khai); mọi token có `jti`, `iat`, `exp`. Token sai loại bị `TOKEN_TYPE_MISMATCH`.
+
+Luồng một request người dùng:
+
+1. Client gửi user token cho Gateway. Gateway verify (JWKS), kiểm role theo bảng route, **xóa** `Authorization` và mọi `x-principal-*` do client gửi.
+2. Gateway gọi service đích với `Authorization: Bearer <service token của gateway, aud=service đích>` và đặt `x-principal-id = sub`, `x-principal-role = student | instructor | admin`.
+3. Service verify service token (`typ=service`, `aud` = tên mình, `sub=gateway`, scope `gateway:proxy`); **chỉ khi đó** mới tin `x-principal-*`. Quyền được kiểm bằng `@Roles`; điều kiện sở hữu (ví dụ instructor chỉ sửa khóa học của mình) kiểm trong use case.
+
+Luồng service-to-service: bên gọi lấy service token cho đúng `audience` (cache, làm mới nền ở 50% TTL, single-flight, stale-while-error), gọi `/internal/v1/*`. Service đích kiểm `aud` và scope của route. Header `x-principal-*` không có hiệu lực ở route internal.
+
+Route `/internal/v1/*`, `/.well-known/*` **không được Gateway proxy**.
+
+Route đọc nội dung media công khai với người dùng (không cần JWT) vì trình duyệt nhúng ảnh/video không gửi được token: `GET /api/v1/media/{media_id}/content`, `.../thumbnail`, `/api/v1/media/usages/{usage_id}/url`. Gateway vẫn gắn service token của mình khi gọi `media`. Bảo vệ bằng UUID khó đoán, `Cache-Control: no-store`; đây là giới hạn được chấp nhận và ghi nhận ở R-12.
+
+### Catalogue scope (đã dùng và dự kiến)
+
+| Scope                   | Cấp cho client                   | Dùng ở                                | Trạng thái                                                |
+| ----------------------- | -------------------------------- | ------------------------------------- | --------------------------------------------------------- |
+| `gateway:proxy`         | gateway                          | Mọi route public của mọi service      | Đã có                                                     |
+| `student:profile:write` | auth                             | `POST /internal/v1/students`          | Đã có                                                     |
+| `student:profile:read`  | auth, media, notification-worker | `GET /internal/v1/students[/{id}]`    | Đã có (client media/notification-worker thêm ở R-06/R-07) |
+| `media:usage:read`      | course                           | `ids:query`, `usages/urls`            | Dự kiến R-06                                              |
+| `media:content:read`    | course                           | `GET /internal/v1/media/{id}/content` | Dự kiến R-06                                              |
+| `media:cleanup`         | scheduler-worker                 | `POST /internal/v1/media/cleanup`     | Dự kiến R-09                                              |
+| `ai:completion`         | course                           | `POST /internal/v1/ai/completions`    | Dự kiến R-08                                              |
+
+Một client chỉ được xin token cho các `audience` và `scope` trong registry (`auth_service_clients`); xin ngoài phạm vi → `SERVICE_SCOPE_FORBIDDEN`.
 
 ## 1.2. Envelope phản hồi thống nhất
 
@@ -91,32 +123,39 @@ Request/response DTO là zod schema trong `lms/contracts/src/http/` (`@aiops-lms
 
 Lỗi dùng envelope ở mục 1.2 với `success: false`; `error.code` lấy từ bảng dưới. Trước R-04b dùng body phẳng `{ code, message, trace_id, timestamp, details }` (đã bỏ).
 
-| HTTP | `code`                   | Khi dùng                            |
-| ---: | ------------------------ | ----------------------------------- |
-|  400 | `VALIDATION_ERROR`       | Request/body/query không hợp lệ     |
-|  401 | `UNAUTHORIZED`           | JWT/credential thiếu hoặc sai       |
-|  403 | `FORBIDDEN`              | Sai role hoặc không sở hữu resource |
-|  404 | `NOT_FOUND`              | Resource không tồn tại              |
-|  409 | `CONFLICT`               | Trùng hoặc sai trạng thái           |
-|  500 | `INTERNAL_ERROR`         | Lỗi không phân loại                 |
-|  503 | `DEPENDENCY_UNAVAILABLE` | Dependency không sẵn sàng           |
-|  504 | `DEPENDENCY_TIMEOUT`     | Outbound timeout                    |
+| HTTP | `code`                    | Khi dùng                                                                                                      |
+| ---: | ------------------------- | ------------------------------------------------------------------------------------------------------------- |
+|  400 | `VALIDATION_ERROR`        | Request/body/query không hợp lệ                                                                               |
+|  401 | `UNAUTHORIZED`            | User JWT/credential thiếu hoặc sai                                                                            |
+|  403 | `FORBIDDEN`               | Sai role hoặc không sở hữu resource                                                                           |
+|  404 | `NOT_FOUND`               | Resource không tồn tại                                                                                        |
+|  409 | `CONFLICT`                | Trùng hoặc sai trạng thái                                                                                     |
+|  401 | `SERVICE_TOKEN_MISSING`   | Thiếu service access token                                                                                    |
+|  401 | `SERVICE_TOKEN_INVALID`   | Service token sai chữ ký/`aud`/hạn                                                                            |
+|  401 | `TOKEN_TYPE_MISMATCH`     | Dùng user token ở nơi cần service token (hoặc ngược lại)                                                      |
+|  401 | `SERVICE_CLIENT_INVALID`  | `client_id`/`client_secret` sai hoặc client bị khóa                                                           |
+|  403 | `SERVICE_SCOPE_FORBIDDEN` | Service token thiếu scope/không phải của gateway ở route public; xin token ngoài `audience`/`scope` được phép |
+|  500 | `INTERNAL_ERROR`          | Lỗi không phân loại                                                                                           |
+|  503 | `DEPENDENCY_UNAVAILABLE`  | Dependency không sẵn sàng                                                                                     |
+|  504 | `DEPENDENCY_TIMEOUT`      | Outbound timeout                                                                                              |
 
 Mã nghiệp vụ bổ sung (giữ từ repo mẫu, cùng envelope):
 
-| HTTP | `code`                         | Service | Ý nghĩa                                 |
-| ---: | ------------------------------ | ------- | --------------------------------------- |
-|  403 | `COURSE_NOT_ENROLLABLE`        | course  | Khóa học chưa `PUBLISHED`               |
-|  409 | `ENROLLMENT_ALREADY_EXISTS`    | course  | Đã ghi danh                             |
-|  403 | `STUDENT_NOT_ENROLLED`         | course  | Chưa ghi danh mà học/làm quiz           |
-|  409 | `QUIZ_HAS_ATTEMPTS`            | course  | Quiz đã có attempt, không sửa được      |
-|  409 | `AI_JOB_ALREADY_ACTIVE`        | course  | Đã có job active cùng lesson và loại    |
-|  422 | `AI_DOCUMENTS_NOT_EXTRACTED`   | course  | Tài liệu chưa `EXTRACTED`               |
-|  409 | `AI_TASK_NOT_CONFIGURED`       | ai      | Task chưa có binding model              |
-|  502 | `AI_PROVIDER_ERROR`            | ai      | Provider lỗi hoặc không phản hồi hợp lệ |
-|  422 | `AI_PROVIDER_REJECTED_REQUEST` | ai      | Provider từ chối request                |
-|  400 | `MEDIA_CHECKSUM_MISMATCH`      | media   | Checksum upload không khớp              |
-|  409 | `MEDIA_NOT_READY`              | media   | Media chưa `READY` cho usage này        |
+| HTTP | `code`                           | Service | Ý nghĩa                                                    |
+| ---: | -------------------------------- | ------- | ---------------------------------------------------------- |
+|  403 | `COURSE_NOT_ENROLLABLE`          | course  | Khóa học chưa `PUBLISHED`                                  |
+|  409 | `ENROLLMENT_ALREADY_EXISTS`      | course  | Đã ghi danh                                                |
+|  403 | `STUDENT_NOT_ENROLLED`           | course  | Chưa ghi danh mà học/làm quiz                              |
+|  409 | `QUIZ_HAS_ATTEMPTS`              | course  | Quiz đã có attempt, không sửa được                         |
+|  409 | `LESSON_ORDER_CONFLICT`          | course  | `display_order` trùng, hoặc reorder không khớp tập bài học |
+|  409 | `QUIZ_ATTEMPT_ALREADY_SUBMITTED` | course  | Attempt đã nộp, không lưu/nộp lại                          |
+|  409 | `AI_JOB_ALREADY_ACTIVE`          | course  | Đã có job active cùng lesson và loại                       |
+|  422 | `AI_DOCUMENTS_NOT_EXTRACTED`     | course  | Tài liệu chưa `EXTRACTED`                                  |
+|  409 | `AI_TASK_NOT_CONFIGURED`         | ai      | Task chưa có binding model                                 |
+|  502 | `AI_PROVIDER_ERROR`              | ai      | Provider lỗi hoặc không phản hồi hợp lệ                    |
+|  422 | `AI_PROVIDER_REJECTED_REQUEST`   | ai      | Provider từ chối request                                   |
+|  400 | `MEDIA_CHECKSUM_MISMATCH`        | media   | Checksum upload không khớp                                 |
+|  409 | `MEDIA_NOT_READY`                | media   | Media chưa `READY` cho usage này                           |
 
 Không trả stack trace, password, JWT, API key, hoặc chi tiết DB nội bộ. Thông báo lỗi AI phải loại bỏ API key và host của provider.
 
@@ -124,7 +163,7 @@ Không trả stack trace, password, JWT, API key, hoặc chi tiết DB nội b�
 
 # 3. Bảng route Gateway
 
-Gateway chọn service theo prefix dài nhất; không có route `/internal/*`.
+Gateway chọn service theo prefix dài nhất; chỉ proxy `/api/v1/*`, không có route `/internal/*` hay `/.well-known/*`.
 
 | Prefix công khai                                        | Service      | Ghi chú                                                           |
 | ------------------------------------------------------- | ------------ | ----------------------------------------------------------------- |
@@ -175,46 +214,54 @@ Ba cửa đăng nhập riêng theo role dùng chung bảng `auth_users` và cùn
 
 ## 4.3. course
 
-| Method | Path                                                                  | Role  | Use case                                                                    |
-| ------ | --------------------------------------------------------------------- | :---: | --------------------------------------------------------------------------- |
-| GET    | `/api/v1/courses`                                                     |   *   | `list-courses`                                                              |
-| GET    | `/api/v1/courses/{course_id}`                                         |   *   | `get-course-detail`                                                         |
-| POST   | `/api/v1/courses`                                                     | A, I  | `create-course`                                                             |
-| PUT    | `/api/v1/courses/{course_id}`                                         | A, I* | `update-course`                                                             |
-| DELETE | `/api/v1/courses/{course_id}`                                         | A, I* | `delete-course`                                                             |
-| GET    | `/api/v1/courses/summary`                                             |   A   | `get-courses-summary`                                                       |
-| GET    | `/api/v1/courses/export`                                              |   A   | `export-courses` (CSV stream, keyset, BOM UTF-8)                            |
-| GET    | `/api/v1/courses/{course_id}/lessons/{lesson_id}`                     |   *   | `get-lesson-detail`                                                         |
-| POST   | `/api/v1/courses/{course_id}/lessons`                                 | A, I* | `create-lesson`                                                             |
-| PUT    | `/api/v1/courses/{course_id}/lessons/{lesson_id}`                     | A, I* | `update-lesson`                                                             |
-| DELETE | `/api/v1/courses/{course_id}/lessons/{lesson_id}`                     | A, I* | `delete-lesson`                                                             |
-| PUT    | `/api/v1/courses/{course_id}/lessons/reorder`                         | A, I* | `reorder-lessons`                                                           |
-| GET    | `/api/v1/courses/{course_id}/lessons/{lesson_id}/quizzes`             | A, I* | `list-quizzes`                                                              |
-| POST   | `/api/v1/courses/{course_id}/lessons/{lesson_id}/quizzes`             | A, I* | `create-quiz`                                                               |
-| GET    | `/api/v1/courses/{course_id}/lessons/{lesson_id}/quizzes/{quiz_id}`   | A, I* | `get-quiz-detail`                                                           |
-| PUT    | `…/quizzes/{quiz_id}`                                                 | A, I* | `update-quiz` (409 `QUIZ_HAS_ATTEMPTS`)                                     |
-| DELETE | `…/quizzes/{quiz_id}`                                                 | A, I* | `delete-quiz`                                                               |
-| GET    | `…/lessons/{lesson_id}/ai-documents`                                  | A, I* | `get-lesson-ai-documents`                                                   |
-| POST   | `…/lessons/{lesson_id}/ai-documents/sync`                             | A, I* | `sync-lesson-ai-documents`                                                  |
-| GET    | `…/lessons/{lesson_id}/ai-jobs`                                       | A, I* | `get-lesson-ai-jobs`                                                        |
-| POST   | `…/lessons/{lesson_id}/ai-jobs`                                       | A, I* | `create-lesson-ai-job`                                                      |
-| GET    | `…/lessons/{lesson_id}/ai-jobs/{job_id}`                              | A, I* | `get-lesson-ai-job`                                                         |
-| GET    | `/api/v1/student/courses`                                             |   S   | `get-student-course-catalog`                                                |
-| GET    | `/api/v1/student/enrollments`                                         |   S   | `get-student-enrollments`                                                   |
-| GET    | `/api/v1/student/enrollments/{course_id}`                             |   S   | `get-student-enrollment-detail`                                             |
-| POST   | `/api/v1/courses/{course_id}/enrollments`                             |   S   | `enroll-course`                                                             |
-| GET    | `/api/v1/student/enrollments/{course_id}/lessons/{lesson_id}`         |   S   | `get-student-lesson-detail`                                                 |
-| GET    | `/api/v1/courses/{course_id}/my-progress`                             |   S   | `get-my-course-progress`                                                    |
-| POST   | `/api/v1/courses/{course_id}/lessons/{lesson_id}/progress/complete`   |   S   | `complete-lesson-progress`                                                  |
-| GET    | `/api/v1/student/enrollments/{course_id}/lessons/{lesson_id}/quizzes` |   S   | `get-student-quizzes`                                                       |
-| GET    | `…/quizzes/{quiz_id}`                                                 |   S   | `get-student-quiz-detail`                                                   |
-| POST   | `…/quizzes/{quiz_id}/attempts`                                        |   S   | `start-quiz-attempt` (mở hoặc tiếp tục attempt đang mở)                     |
-| GET    | `…/quizzes/{quiz_id}/attempts`                                        |   S   | `get-quiz-attempts`                                                         |
-| GET    | `…/quizzes/{quiz_id}/attempts/{attempt_id}`                           |   S   | `get-quiz-attempt-detail`                                                   |
-| PUT    | `…/attempts/{attempt_id}/answers`                                     |   S   | `save-quiz-answers`                                                         |
-| POST   | `…/attempts/{attempt_id}/submit`                                      |   S   | `submit-quiz-attempt` (chấm: đúng khi tập đáp án chọn bằng tập đáp án đúng) |
+Ký hiệu role: `A` admin, `I` instructor, `I*` instructor sở hữu khóa học (`courses.instructor_id`), `S` student, `*` mọi role đã xác thực. Mọi path dưới đây đã triển khai ở R-05 (đối chiếu `lms/services/course/src/adapters/http/`), trừ phần AI ở cuối bảng (R-08).
 
-Quy tắc: course `DRAFT|PUBLISHED|ARCHIVED`; quiz `DRAFT|PUBLISHED`; student chỉ thấy quiz `PUBLISHED`; mỗi (quiz, student) có tối đa một attempt `IN_PROGRESS`; khóa học thuộc `instructor_id` tạo ra nó (trường mới so với repo mẫu).
+| Method | Path                                                      | Role  | Use case                                                                                                                     |
+| ------ | --------------------------------------------------------- | :---: | ---------------------------------------------------------------------------------------------------------------------------- |
+| GET    | `/api/v1/courses`                                         |   *   | `list-courses` (admin: tất cả; instructor: của mình; student: chỉ `PUBLISHED`)                                               |
+| GET    | `/api/v1/courses/summary`                                 | A, I* | `get-course-summary` (đếm theo trạng thái)                                                                                   |
+| GET    | `/api/v1/courses/export`                                  | A, I* | `export-courses-csv` (stream, keyset theo `id`, khối 500, BOM UTF-8, CRLF)                                                   |
+| GET    | `/api/v1/courses/{course_id}`                             |   *   | `get-course` (kèm dàn bài; student chỉ thấy khóa `PUBLISHED`, không có nội dung)                                             |
+| POST   | `/api/v1/courses`                                         | A, I  | `create-course` (luôn `DRAFT`)                                                                                               |
+| PATCH  | `/api/v1/courses/{course_id}`                             | A, I* | `update-course` (đổi `status` để xuất bản/lưu trữ)                                                                           |
+| DELETE | `/api/v1/courses/{course_id}`                             | A, I* | `delete-course` (204; kéo theo bài học, quiz, ghi danh, tiến độ)                                                             |
+| POST   | `/api/v1/courses/{course_id}/lessons`                     | A, I* | `create-lesson` (bỏ `display_order` = thêm cuối; trùng = 409 `LESSON_ORDER_CONFLICT`)                                        |
+| PUT    | `/api/v1/courses/{course_id}/lessons/reorder`             | A, I* | `reorder-lessons` (`lesson_ids` phải đúng tập bài học hiện có, nếu không 409 `LESSON_ORDER_CONFLICT`)                        |
+| GET    | `/api/v1/courses/{course_id}/lessons/{lesson_id}`         | A, I* | `get-lesson`                                                                                                                 |
+| PATCH  | `/api/v1/courses/{course_id}/lessons/{lesson_id}`         | A, I* | `update-lesson`                                                                                                              |
+| DELETE | `/api/v1/courses/{course_id}/lessons/{lesson_id}`         | A, I* | `delete-lesson` (204)                                                                                                        |
+| GET    | `/api/v1/courses/{course_id}/lessons/{lesson_id}/quizzes` | A, I* | `list-lesson-quizzes` (cả `DRAFT`)                                                                                           |
+| POST   | `/api/v1/courses/{course_id}/lessons/{lesson_id}/quizzes` | A, I* | `create-quiz` (luôn `DRAFT`, xếp cuối bài học)                                                                               |
+| GET    | `…/quizzes/{quiz_id}`                                     | A, I* | `get-quiz` (kèm `is_correct`)                                                                                                |
+| PATCH  | `…/quizzes/{quiz_id}`                                     | A, I* | `update-quiz` (có `questions` = thay cả cây, 409 `QUIZ_HAS_ATTEMPTS` nếu đã có attempt; `status: PUBLISHED` cần ≥ 1 câu hỏi) |
+| DELETE | `…/quizzes/{quiz_id}`                                     | A, I* | `delete-quiz` (204; 409 `QUIZ_HAS_ATTEMPTS` nếu đã có attempt)                                                               |
+| GET    | `/api/v1/student/enrollments`                             |   S   | `list-my-enrollments`                                                                                                        |
+| POST   | `/api/v1/student/courses/{course_id}/enrollments`         |   S   | `enroll-course` (201; 403 `COURSE_NOT_ENROLLABLE`, 409 `ENROLLMENT_ALREADY_EXISTS`)                                          |
+| GET    | `/api/v1/student/courses/{course_id}`                     |   S   | `get-enrolled-course` (kèm nội dung bài học; 403 `STUDENT_NOT_ENROLLED`)                                                     |
+| GET    | `/api/v1/student/courses/{course_id}/progress`            |   S   | `get-my-course-progress`                                                                                                     |
+| PUT    | `/api/v1/student/lessons/{lesson_id}/progress`            |   S   | `update-lesson-progress` (`progress_percent` 0–100, chỉ tăng; 100 = hoàn thành)                                              |
+| GET    | `/api/v1/student/lessons/{lesson_id}/quizzes`             |   S   | `list-student-lesson-quizzes` (chỉ `PUBLISHED`)                                                                              |
+| GET    | `/api/v1/student/quizzes/{quiz_id}`                       |   S   | `get-student-quiz` (không có `is_correct`)                                                                                   |
+| POST   | `/api/v1/student/quizzes/{quiz_id}/attempts`              |   S   | `start-quiz-attempt` (201 mở lượt mới, 200 tiếp tục lượt `IN_PROGRESS`)                                                      |
+| GET    | `/api/v1/student/quizzes/{quiz_id}/attempts`              |   S   | `list-my-attempts` (phân trang)                                                                                              |
+| PUT    | `/api/v1/student/attempts/{attempt_id}/answers`           |   S   | `save-attempt-answers` (thay toàn bộ câu trả lời; 409 `QUIZ_ATTEMPT_ALREADY_SUBMITTED`)                                      |
+| POST   | `/api/v1/student/attempts/{attempt_id}/submit`            |   S   | `submit-quiz-attempt` (200; `QuizGrader`; 409 `QUIZ_ATTEMPT_ALREADY_SUBMITTED`)                                              |
+| GET    | `/api/v1/student/attempts/{attempt_id}`                   |   S   | `get-my-attempt` (đáp án đúng chỉ lộ sau khi đã nộp)                                                                         |
+| GET    | `…/lessons/{lesson_id}/ai-documents`                      | A, I* | `get-lesson-ai-documents` (**R-08**)                                                                                         |
+| POST   | `…/lessons/{lesson_id}/ai-documents/sync`                 | A, I* | `sync-lesson-ai-documents` (**R-08**)                                                                                        |
+| GET    | `…/lessons/{lesson_id}/ai-jobs`                           | A, I* | `get-lesson-ai-jobs` (**R-08**)                                                                                              |
+| POST   | `…/lessons/{lesson_id}/ai-jobs`                           | A, I* | `create-lesson-ai-job` (**R-08**)                                                                                            |
+| GET    | `…/lessons/{lesson_id}/ai-jobs/{job_id}`                  | A, I* | `get-lesson-ai-job` (**R-08**)                                                                                               |
+
+Quy tắc:
+
+- Course `DRAFT|PUBLISHED|ARCHIVED` (tên 3–200 ký tự); quiz `DRAFT|PUBLISHED`; khóa học thuộc `instructor_id` tạo ra nó (trường mới so với repo mẫu), admin quản lý mọi khóa.
+- Quiz: tiêu đề 2–200 ký tự, markdown ≤ 20000, lựa chọn ≤ 2000, ≤ 100 câu hỏi, mỗi câu 2–10 lựa chọn, điểm > 0, ≤ 100 và ≤ 2 chữ số thập phân; `SINGLE_CHOICE` có đúng 1 đáp án đúng, `MULTIPLE_CHOICE` có ≥ 1. Vi phạm trả 400 `VALIDATION_ERROR` kèm danh sách `path`/`message`.
+- Student chỉ thấy quiz `PUBLISHED`; mỗi (quiz, student) có tối đa một attempt `IN_PROGRESS` (partial unique index `quiz_attempts_one_in_progress`).
+- Chấm điểm: câu đúng khi tập lựa chọn bằng tập đáp án đúng (không chấm từng phần); `score` là tổng điểm các câu đúng, `max_score` là tổng điểm quiz tại thời điểm nộp (snapshot).
+- Đồng bộ usage media (`media.*` command) và luồng AI chưa có ở R-05: bảng `outbox_messages` đã sẵn, producer thêm ở R-06/R-08.
+
+---
 
 ## 4.4. media
 
@@ -289,20 +336,22 @@ Task key hợp lệ: `document-extraction`, `lesson-synthesis`, `quiz-authoring`
 
 ---
 
-# 5. Contract nội bộ `/internal/v1` (không qua Gateway)
+# 5. Contract nội bộ `/internal/v1` (không qua Gateway, cần service token)
 
-| Owner   | Method | Path                                    | Caller              | Mục đích                                                                                                             |
-| ------- | ------ | --------------------------------------- | ------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| student | POST   | `/internal/v1/students`                 | auth                | Tạo hồ sơ student cùng `id` với tài khoản                                                                            |
-| student | GET    | `/internal/v1/students`                 | notification-worker | Danh sách `ACTIVE` theo trang (`page_size` ≤ 100) để snapshot recipient                                              |
-| student | GET    | `/internal/v1/students/{student_id}`    | auth, media         | auth: kiểm tra hồ sơ tồn tại và `ACTIVE` khi student đăng nhập (404 → 403, student lỗi → 503); media: kiểm tra actor |
-| media   | POST   | `/internal/v1/media/usages/ids:query`   | course              | Lấy usage ID theo owner (xóa khóa học)                                                                               |
-| media   | GET    | `/internal/v1/media/usages/urls`        | course              | URL các usage                                                                                                        |
-| media   | GET    | `/internal/v1/media/{media_id}/content` | course              | Byte tài liệu cho trích văn bản AI                                                                                   |
-| media   | POST   | `/internal/v1/media/cleanup`            | scheduler-worker    | Dọn media không dùng (job R-09)                                                                                      |
-| ai      | POST   | `/internal/v1/ai/completions`           | course              | Hoàn thành hội thoại; body `{task, messages, tools}`, hỗ trợ phần ảnh/PDF; timeout 240 giây                          |
+| Owner   | Method | Path                                    | Caller               | Scope                   | Mục đích                                                                                                                 |
+| ------- | ------ | --------------------------------------- | -------------------- | ----------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| auth    | POST   | `/internal/v1/auth/service-token`       | mọi bên cần token    | — (client-credentials)  | Cấp service token: body `{client_id, client_secret, audience, scope?}` → `{access_token, token_type, expires_in, scope}` |
+| auth    | GET    | `/.well-known/jwks.json`                | mọi service, gateway | — (không xác thực)      | JWKS (RFC 7517) công bố khóa công khai; không bọc envelope                                                               |
+| student | POST   | `/internal/v1/students`                 | auth                 | `student:profile:write` | Tạo hồ sơ student cùng `id` với tài khoản                                                                                |
+| student | GET    | `/internal/v1/students`                 | notification-worker  | `student:profile:read`  | Danh sách `ACTIVE` theo trang (`page_size` ≤ 100) để snapshot recipient                                                  |
+| student | GET    | `/internal/v1/students/{student_id}`    | auth, media          | `student:profile:read`  | auth: kiểm tra hồ sơ tồn tại và `ACTIVE` khi student đăng nhập (404 → 403, student lỗi → 503); media: kiểm tra actor     |
+| media   | POST   | `/internal/v1/media/usages/ids:query`   | course               | `media:usage:read`      | Lấy usage ID theo owner (xóa khóa học)                                                                                   |
+| media   | GET    | `/internal/v1/media/usages/urls`        | course               | `media:usage:read`      | URL các usage                                                                                                            |
+| media   | GET    | `/internal/v1/media/{media_id}/content` | course               | `media:content:read`    | Byte tài liệu cho trích văn bản AI                                                                                       |
+| media   | POST   | `/internal/v1/media/cleanup`            | scheduler-worker     | `media:cleanup`         | Dọn media không dùng (job R-09)                                                                                          |
+| ai      | POST   | `/internal/v1/ai/completions`           | course               | `ai:completion`         | Hoàn thành hội thoại; body `{task, messages, tools}`, hỗ trợ phần ảnh/PDF; timeout 240 giây                              |
 
-Endpoint `/internal/v1/*` trả lỗi cùng envelope; header `x-principal-*` chỉ được truyền khi downstream thật sự cần (course → ai truyền actor admin hệ thống).
+Endpoint `/internal/v1/*` trả lỗi cùng envelope; header `x-principal-*` **không có hiệu lực** ở route internal (danh tính là service token); nếu một route internal cần biết actor (ví dụ course → ai), actor là tham số tường minh của request do hợp đồng của route đó quy định, không lấy từ header.
 
 ---
 
@@ -391,10 +440,13 @@ Ground truth thí nghiệm không được đưa vào payload nghiệp vụ.
 
 # 9. Contract tests tối thiểu khi scaffold
 
-- Mỗi route trong mục 4 có test: đúng role (200/201/204), sai role (403), thiếu JWT (401), body sai (400).
+- Mỗi route trong mục 4 có test: đúng role (200/201/204), sai role (403), thiếu service token (401 `SERVICE_TOKEN_MISSING`), thiếu danh tính user (401), body sai (400).
+- Mỗi route trong mục 5 có test: đủ scope (2xx), thiếu scope (403 `SERVICE_SCOPE_FORBIDDEN`), thiếu token (401), token của gateway không dùng được ở route internal.
+- Ma trận loại token: user token ở service → `TOKEN_TYPE_MISMATCH`; service token ở Gateway → `TOKEN_TYPE_MISMATCH`; giả `x-principal-*` không kèm token gateway bị từ chối.
 - Mỗi command có fixture hợp lệ/không hợp lệ và test idempotent theo `message_id`.
 - Test eslint boundary xác nhận cấm import chéo service.
-- Gateway test: route table mục 3, không proxy `/internal/*`, xóa `x-principal-*` giả của client.
+- Gateway test: route table mục 3, không proxy `/internal/*` và `/.well-known/*`, xóa `Authorization` và `x-principal-*` giả của client, gắn service token của gateway, cache token.
+- `lms/test/http-surface.test.mjs`: controller nằm đúng `public/`/`internal/`, đúng prefix và khai báo xác thực.
 
 ---
 
@@ -403,6 +455,7 @@ Ground truth thí nghiệm không được đưa vào payload nghiệp vụ.
 - Giá trị timeout/số lần retry consumer: freeze trước campaign thí nghiệm.
 - Giới hạn kích thước/ràng buộc nội dung upload thực tế khi chạy tải.
 - Cách instructor xem kết quả quiz của student (repo mẫu chưa có): ngoài phạm vi refactor này.
+- Giới hạn tốc độ và khóa tạm client cho `POST /internal/v1/auth/service-token` (chống dò secret): chưa làm, xem lại ở R-12.
 - Tính công khai của `GET /media/*/content`: xem lại nếu cần bảo mật cao hơn (ví dụ presigned GET).
 
 ---

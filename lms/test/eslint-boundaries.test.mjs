@@ -88,3 +88,33 @@ test('domain cấm import adapters và application', async () => {
 test('application cấm import adapters', async () => {
   assert.equal((await lintRestricted('../../adapters/x.js', applicationFilePath)).length, 1);
 });
+
+const publicControllerPath = 'services/student/src/adapters/http/public/boundary-check.ts';
+const internalControllerPath = 'services/student/src/adapters/http/internal/boundary-check.ts';
+
+test('controller public cấm import controller internal và ngược lại', async () => {
+  assert.equal(
+    (await lintRestricted('../internal/student-lookup.controller.js', publicControllerPath)).length,
+    1,
+  );
+  assert.equal(
+    (await lintRestricted('../public/student.controller.js', internalControllerPath)).length,
+    1,
+  );
+});
+
+test('hai bề mặt được import presenter dùng chung', async () => {
+  assert.deepEqual(
+    await lintRestricted('../shared/student.presenter.js', publicControllerPath),
+    [],
+  );
+  assert.deepEqual(
+    await lintRestricted('../shared/student.presenter.js', internalControllerPath),
+    [],
+  );
+});
+
+test('domain và application cấm import @aiops-lms/common/auth', async () => {
+  assert.equal((await lintRestricted('@aiops-lms/common/auth', domainFilePath)).length, 1);
+  assert.equal((await lintRestricted('@aiops-lms/common/auth', applicationFilePath)).length, 1);
+});

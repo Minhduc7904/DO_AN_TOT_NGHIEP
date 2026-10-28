@@ -1,6 +1,7 @@
 import { setHttpClientSpanAttributes } from '@aiops-lms/observability';
 import { context, propagation, trace } from '@opentelemetry/api';
 
+import type { TokenProvider } from '../auth/service-token.provider.js';
 import { AppError } from '../errors/index.js';
 import { CORRELATION_ID_HEADER, getCorrelationId } from '../http/correlation.js';
 import { PRINCIPAL_ID_HEADER, PRINCIPAL_ROLE_HEADER } from '../http/principal.js';
@@ -14,6 +15,8 @@ export interface HttpQueryClientOptions {
   baseUrl: string;
   timeoutMs: number;
   breaker: { cooldownMs: number; failureThreshold: number };
+  /** Gắn service access token (audience = service đích) vào mọi request tới `/internal/v1/*`. */
+  auth?: { audience: string; tokens: TokenProvider };
 }
 
 export interface HttpRequest {
@@ -43,15 +46,17 @@ export class HttpQueryClient {
     this.breaker = new CircuitBreaker(options.breaker);
   }
 
-  request<T = unknown>(request: HttpRequest): Promise<HttpResponse<T>> {
+  async request<T = unknown>(request: HttpRequest): Promise<HttpResponse<T>> {
     const method = request.method ?? 'GET';
+    // Lấy token trước khi mở span dependency: lỗi lấy token thuộc về dependency `*-auth-token`.
+    const token = await this.options.auth?.tokens.getToken(this.options.auth.audience);
     return observeDependency(this.options.dependency, `${method} ${request.path}`, async () => {
       if (!this.breaker.allowRequest()) {
         trace.getActiveSpan()?.setAttribute('circuit_breaker_open', true);
         throw AppError.dependencyUnavailable(this.options.dependency);
       }
       try {
-        const response = await this.send<T>(method, request);
+        const response = await this.send<T>(method, request, token);
         if (response.status >= 500) {
           throw response.status === 504
             ? AppError.dependencyTimeout(this.options.dependency)
@@ -66,13 +71,18 @@ export class HttpQueryClient {
     });
   }
 
-  private async send<T>(method: string, request: HttpRequest): Promise<HttpResponse<T>> {
+  private async send<T>(
+    method: string,
+    request: HttpRequest,
+    token: string | undefined,
+  ): Promise<HttpResponse<T>> {
     const url = new URL(request.path, this.options.baseUrl);
     for (const [key, value] of Object.entries(request.query ?? {})) {
       if (value !== undefined) url.searchParams.set(key, String(value));
     }
 
     const headers: Record<string, string> = { accept: 'application/json', ...request.headers };
+    if (token) headers.authorization = `Bearer ${token}`;
     if (request.body !== undefined) headers['content-type'] = 'application/json';
     const correlationId = getCorrelationId();
     if (correlationId) headers[CORRELATION_ID_HEADER] = correlationId;

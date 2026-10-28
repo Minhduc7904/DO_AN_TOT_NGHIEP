@@ -1,0 +1,199 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/adapters/persistence/generated"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum CourseStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+
+  @@map("course_status")
+}
+
+enum QuizStatus {
+  DRAFT
+  PUBLISHED
+
+  @@map("quiz_status")
+}
+
+enum QuestionType {
+  SINGLE_CHOICE
+  MULTIPLE_CHOICE
+
+  @@map("quiz_question_type")
+}
+
+enum AttemptStatus {
+  IN_PROGRESS
+  SUBMITTED
+
+  @@map("quiz_attempt_status")
+}
+
+/// `instructorId` là `auth_users.id` (tham chiếu logic, không có khóa ngoại xuyên DB).
+model Course {
+  id                  String       @id @db.Uuid
+  name                String       @db.VarChar(200)
+  descriptionMarkdown String?      @map("description_markdown")
+  status              CourseStatus @default(DRAFT)
+  instructorId        String       @map("instructor_id") @db.Uuid
+  createdAt           DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt           DateTime     @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  lessons     Lesson[]
+  enrollments Enrollment[]
+
+  @@index([status, createdAt(sort: Desc)])
+  @@index([instructorId, createdAt(sort: Desc)])
+  @@map("courses")
+}
+
+model Lesson {
+  id              String   @id @db.Uuid
+  courseId        String   @map("course_id") @db.Uuid
+  title           String   @db.VarChar(200)
+  contentMarkdown String?  @map("content_markdown")
+  displayOrder    Int      @map("display_order")
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  course     Course           @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  progresses LessonProgress[]
+  quizzes    Quiz[]
+
+  @@unique([courseId, displayOrder])
+  @@map("lessons")
+}
+
+/// `studentId` là `students.id` (tham chiếu logic).
+model Enrollment {
+  id         String   @id @db.Uuid
+  courseId   String   @map("course_id") @db.Uuid
+  studentId  String   @map("student_id") @db.Uuid
+  enrolledAt DateTime @default(now()) @map("enrolled_at") @db.Timestamptz(6)
+
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([courseId, studentId])
+  @@index([studentId, enrolledAt(sort: Desc)])
+  @@map("enrollments")
+}
+
+model LessonProgress {
+  id              String    @id @db.Uuid
+  lessonId        String    @map("lesson_id") @db.Uuid
+  studentId       String    @map("student_id") @db.Uuid
+  progressPercent Decimal   @default(0) @map("progress_percent") @db.Decimal(5, 2)
+  completedAt     DateTime? @map("completed_at") @db.Timestamptz(6)
+  updatedAt       DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@unique([lessonId, studentId])
+  @@index([studentId, updatedAt(sort: Desc)])
+  @@map("lesson_progresses")
+}
+
+model Quiz {
+  id                  String     @id @db.Uuid
+  lessonId            String     @map("lesson_id") @db.Uuid
+  title               String     @db.VarChar(200)
+  descriptionMarkdown String?    @map("description_markdown")
+  displayOrder        Int        @map("display_order")
+  status              QuizStatus @default(DRAFT)
+  createdAt           DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt           DateTime   @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  lesson    Lesson         @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  questions QuizQuestion[]
+  attempts  QuizAttempt[]
+
+  @@unique([lessonId, displayOrder])
+  @@map("quizzes")
+}
+
+model QuizQuestion {
+  id               String       @id @db.Uuid
+  quizId           String       @map("quiz_id") @db.Uuid
+  questionMarkdown String       @map("question_markdown")
+  questionType     QuestionType @map("question_type")
+  points           Decimal      @db.Decimal(6, 2)
+  displayOrder     Int          @map("display_order")
+
+  quiz    Quiz               @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  options QuizOption[]
+  answers QuizAttemptAnswer[]
+
+  @@unique([quizId, displayOrder])
+  @@map("quiz_questions")
+}
+
+model QuizOption {
+  id             String  @id @db.Uuid
+  questionId     String  @map("question_id") @db.Uuid
+  optionMarkdown String  @map("option_markdown")
+  isCorrect      Boolean @map("is_correct")
+  displayOrder   Int     @map("display_order")
+
+  question QuizQuestion        @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  answers  QuizAttemptAnswer[]
+
+  @@unique([questionId, displayOrder])
+  @@map("quiz_options")
+}
+
+/// Mỗi (quiz, student) có tối đa một lượt `IN_PROGRESS`: partial unique index nằm trong migration
+/// (Prisma schema không biểu diễn được `WHERE`).
+model QuizAttempt {
+  id          String        @id @db.Uuid
+  quizId      String        @map("quiz_id") @db.Uuid
+  studentId   String        @map("student_id") @db.Uuid
+  status      AttemptStatus @default(IN_PROGRESS)
+  startedAt   DateTime      @default(now()) @map("started_at") @db.Timestamptz(6)
+  updatedAt   DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
+  submittedAt DateTime?     @map("submitted_at") @db.Timestamptz(6)
+  score       Decimal?      @db.Decimal(8, 2)
+  maxScore    Decimal?      @map("max_score") @db.Decimal(8, 2)
+
+  quiz    Quiz                @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  answers QuizAttemptAnswer[]
+
+  @@index([quizId, studentId, startedAt(sort: Desc)])
+  @@map("quiz_attempts")
+}
+
+model QuizAttemptAnswer {
+  id               String @id @db.Uuid
+  attemptId        String @map("attempt_id") @db.Uuid
+  questionId       String @map("question_id") @db.Uuid
+  selectedOptionId String @map("selected_option_id") @db.Uuid
+
+  attempt  QuizAttempt  @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  question QuizQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  option   QuizOption   @relation(fields: [selectedOptionId], references: [id], onDelete: Cascade)
+
+  @@unique([attemptId, questionId, selectedOptionId])
+  @@map("quiz_attempt_answers")
+}
+
+// Command gửi sang media/ai (đồng bộ usage markdown, ...) đi qua outbox; thêm producer ở R-06/R-08.
+model OutboxMessage {
+  id          String    @id @db.Uuid
+  routingKey  String    @map("routing_key")
+  envelope    Json
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  availableAt DateTime  @default(now()) @map("available_at") @db.Timestamptz(6)
+  lockedUntil DateTime? @map("locked_until") @db.Timestamptz(6)
+  attempts    Int       @default(0)
+  publishedAt DateTime? @map("published_at") @db.Timestamptz(6)
+  lastError   String?   @map("last_error")
+
+  @@index([publishedAt, availableAt])
+  @@map("outbox_messages")
+}

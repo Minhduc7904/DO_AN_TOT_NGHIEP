@@ -1,5 +1,7 @@
-import { createHmac } from 'node:crypto';
+import { generateSigningKey, StaticKeyProvider, TokenVerifier } from '@aiops-lms/common/auth';
+import { mintServiceToken, mintUserToken } from '@aiops-lms/common/auth/testing';
 
+import { JwksUserTokenVerifier } from '../../src/adapters/security/jwks-user-token.verifier.js';
 import type {
   UpstreamClient,
   UpstreamRequest,
@@ -8,22 +10,18 @@ import type {
 import { ProxyRequestUseCase } from '../../src/application/use-cases/proxy-request.use-case.js';
 import type { UpstreamName } from '../../src/domain/route-table.js';
 
-const SECRET = 'unit-test-secret-with-at-least-32-characters';
 const USER_ID = '11111111-1111-4111-8111-111111111111';
+const key = generateSigningKey();
 
-function token(role: string, options: { exp?: number; secret?: string } = {}): string {
-  const header = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url');
-  const payload = Buffer.from(
-    JSON.stringify({
-      sub: USER_ID,
-      role,
-      exp: options.exp ?? Math.floor(Date.now() / 1_000) + 3_600,
-    }),
-  ).toString('base64url');
-  const signature = createHmac('sha256', options.secret ?? SECRET)
-    .update(`${header}.${payload}`)
-    .digest('base64url');
-  return `${header}.${payload}.${signature}`;
+function token(
+  role: string,
+  options: { expiresInSeconds?: number; key?: typeof key } = {},
+): string {
+  return mintUserToken(options.key ?? key, {
+    subject: USER_ID,
+    role,
+    expiresInSeconds: options.expiresInSeconds ?? 3_600,
+  });
 }
 
 class RecordingUpstream implements UpstreamClient {
@@ -39,7 +37,14 @@ class RecordingUpstream implements UpstreamClient {
 function setup(): { upstream: RecordingUpstream; useCase: ProxyRequestUseCase } {
   const upstream = new RecordingUpstream();
   const enabled = new Set<UpstreamName>(['auth', 'student', 'course', 'scheduler', 'ai', 'media']);
-  return { upstream, useCase: new ProxyRequestUseCase(upstream, enabled, SECRET) };
+  return {
+    upstream,
+    useCase: new ProxyRequestUseCase(
+      upstream,
+      enabled,
+      new JwksUserTokenVerifier(new TokenVerifier(new StaticKeyProvider([key]))),
+    ),
+  };
 }
 
 function input(
@@ -71,8 +76,8 @@ describe('ProxyRequestUseCase', () => {
       'Basic abc',
       'Bearer',
       'Bearer rác',
-      `Bearer ${token('student', { secret: 'another-secret-with-at-least-32-chars' })}`,
-      `Bearer ${token('student', { exp: Math.floor(Date.now() / 1_000) - 10 })}`,
+      `Bearer ${token('student', { key: generateSigningKey() })}`,
+      `Bearer ${token('student', { expiresInSeconds: -10 })}`,
       `Bearer ${token('superuser')}`,
     ];
 
@@ -81,6 +86,20 @@ describe('ProxyRequestUseCase', () => {
         useCase.execute(input('GET', '/api/v1/courses', { authorization })),
       ).rejects.toMatchObject({ status: 401 });
     }
+    expect(upstream.calls).toHaveLength(0);
+  });
+
+  it('service token không dùng được như user token', async () => {
+    const { upstream, useCase } = setup();
+    const service = mintServiceToken(key, {
+      subject: 'gateway',
+      audience: 'aiops-lms',
+      scopes: ['gateway:proxy'],
+    });
+
+    await expect(
+      useCase.execute(input('GET', '/api/v1/courses', { authorization: `Bearer ${service}` })),
+    ).rejects.toMatchObject({ code: 'TOKEN_TYPE_MISMATCH', status: 401 });
     expect(upstream.calls).toHaveLength(0);
   });
 

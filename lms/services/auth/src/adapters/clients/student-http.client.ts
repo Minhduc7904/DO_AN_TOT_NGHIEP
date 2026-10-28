@@ -1,11 +1,13 @@
 import {
-  studentDtoSchema,
   apiResponseSchema,
+  INTERNAL_PREFIX,
+  studentDtoSchema,
   type CreateStudentRequest,
-} from '@aiops-lms/contracts';
+} from '@aiops-lms/contracts/http';
 import { AppError } from '@aiops-lms/common/errors';
+import { SERVICE_TOKEN_PROVIDER, type TokenProvider } from '@aiops-lms/common/auth';
 import { HttpQueryClient } from '@aiops-lms/common/clients';
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
 import type {
@@ -20,10 +22,11 @@ const studentResponseSchema = apiResponseSchema(studentDtoSchema);
 export class StudentHttpClient implements StudentProfileClient {
   private readonly client: HttpQueryClient;
 
-  constructor(config: ConfigService) {
+  constructor(config: ConfigService, @Inject(SERVICE_TOKEN_PROVIDER) tokens: TokenProvider) {
     this.client = new HttpQueryClient({
       dependency: 'auth-student',
       baseUrl: config.getOrThrow<string>('AUTH_STUDENT_BASE_URL'),
+      auth: { audience: 'student', tokens },
       timeoutMs: config.getOrThrow<number>('AUTH_STUDENT_TIMEOUT_MS'),
       breaker: {
         failureThreshold: config.getOrThrow<number>('AUTH_STUDENT_BREAKER_THRESHOLD'),
@@ -40,7 +43,7 @@ export class StudentHttpClient implements StudentProfileClient {
     };
     const response = await this.client.request({
       method: 'POST',
-      path: '/internal/v1/students',
+      path: `/${INTERNAL_PREFIX}/students`,
       body,
     });
     // Student từ chối (4xx) cũng khiến đăng ký thất bại: tài khoản không có hồ sơ là trạng thái lỗi.
@@ -50,7 +53,7 @@ export class StudentHttpClient implements StudentProfileClient {
   async findStatus(id: string): Promise<StudentProfileStatus | null> {
     const response = await this.client.request({
       method: 'GET',
-      path: `/internal/v1/students/${encodeURIComponent(id)}`,
+      path: `/${INTERNAL_PREFIX}/students/${encodeURIComponent(id)}`,
     });
     if (response.status === 404) return null;
     if (response.status !== 200) throw AppError.dependencyUnavailable('auth-student');

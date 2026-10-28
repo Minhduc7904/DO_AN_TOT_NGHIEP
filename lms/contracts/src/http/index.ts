@@ -1,3 +1,3 @@
-export * from './auth.js';
-export * from './common.js';
-export * from './student.js';
+export * from './common/index.js';
+export * from './internal/index.js';
+export * from './public/index.js';

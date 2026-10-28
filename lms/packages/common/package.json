@@ -8,6 +8,14 @@
       "types": "./dist/errors/index.d.ts",
       "import": "./dist/errors/index.js"
     },
+    "./auth": {
+      "types": "./dist/auth/index.d.ts",
+      "import": "./dist/auth/index.js"
+    },
+    "./auth/testing": {
+      "types": "./dist/auth/testing.d.ts",
+      "import": "./dist/auth/testing.js"
+    },
     "./ports": {
       "types": "./dist/ports/index.d.ts",
       "import": "./dist/ports/index.js"

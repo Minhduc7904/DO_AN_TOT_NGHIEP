@@ -8,10 +8,6 @@ export const UPSTREAMS = [
   'notification',
   'scheduler',
   'ai',
-  // v1, bỏ khi R-05 chuyển enrollment/submission/grading vào `course`.
-  'enrollment',
-  'submission',
-  'grading',
 ] as const;
 
 export type UpstreamName = (typeof UPSTREAMS)[number];
@@ -40,9 +36,6 @@ export const ROUTE_RULES: readonly RouteRule[] = [
   { prefix: '/api/v1/notification-batches', upstream: 'notification', roles: ['admin'] },
   { prefix: '/api/v1/scheduler', upstream: 'scheduler', roles: ['admin'] },
   { prefix: '/api/v1/ai', upstream: 'ai', roles: ['admin'] },
-  { prefix: '/api/v1/enrollments', upstream: 'enrollment', roles: ['student', 'instructor'] },
-  { prefix: '/api/v1/submissions', upstream: 'submission', roles: ['student', 'instructor'] },
-  { prefix: '/api/v1/grades', upstream: 'grading', roles: ['student', 'instructor'] },
 ];
 
 export const PUBLIC_RULES: readonly PublicRule[] = [

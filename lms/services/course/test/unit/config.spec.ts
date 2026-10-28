@@ -1,0 +1,13 @@
+import { validateEnvironment } from '../../src/config/env.schema.js';
+
+describe('env.schema', () => {
+  it('yêu cầu COURSE_DATABASE_URL và dùng cổng mặc định', () => {
+    expect(() => validateEnvironment({})).toThrow('COURSE_DATABASE_URL');
+
+    const environment = validateEnvironment({
+      COURSE_DATABASE_URL: 'postgresql://user:pw@localhost:5432/course_db',
+    });
+
+    expect(environment.PORT).toBe(3003);
+  });
+});

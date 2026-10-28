@@ -7,12 +7,9 @@ services:
       NODE_ENV: production
       GATEWAY_AUTH_BASE_URL: http://auth:3001
       GATEWAY_STUDENT_BASE_URL: http://student:3002
-      GATEWAY_COURSE_BASE_URL: http://course:3002
-      # Route v1 tạm thời cho tới R-05 (course v2 thay enrollment/submission/grading).
-      GATEWAY_ENROLLMENT_BASE_URL: http://enrollment:3003
-      GATEWAY_SUBMISSION_BASE_URL: http://submission:3004
-      GATEWAY_GRADING_BASE_URL: http://grading:3007
-      GATEWAY_JWT_SECRET: "${AUTH_JWT_SECRET:-local-development-only-jwt-secret-change-before-production}"
+      GATEWAY_COURSE_BASE_URL: http://course:3003
+      SERVICE_CLIENT_ID: gateway
+      SERVICE_CLIENT_SECRET: "${GATEWAY_CLIENT_SECRET:-gateway-client-local-only}"
       GATEWAY_UPSTREAM_TIMEOUT_MS: "${GATEWAY_UPSTREAM_TIMEOUT_MS:-5000}"
       OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: "${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT:-http://otel-collector:4318/v1/traces}"
       OTEL_EXPORTER_OTLP_METRICS_ENDPOINT: "${OTEL_EXPORTER_OTLP_METRICS_ENDPOINT:-http://otel-collector:4318/v1/metrics}"
@@ -31,12 +28,6 @@ services:
       student:
         condition: service_healthy
       course:
-        condition: service_healthy
-      enrollment:
-        condition: service_healthy
-      submission:
-        condition: service_healthy
-      grading:
         condition: service_healthy
     healthcheck:
       test:
@@ -62,7 +53,14 @@ services:
     environment:
       NODE_ENV: production
       AUTH_DATABASE_URL: "postgresql://${AUTH_POSTGRES_USER:?AUTH_POSTGRES_USER is required}:${AUTH_POSTGRES_PASSWORD:?AUTH_POSTGRES_PASSWORD is required}@postgres:5432/auth_db"
-      AUTH_JWT_SECRET: "${AUTH_JWT_SECRET:-local-development-only-jwt-secret-change-before-production}"
+      # Khóa ký Ed25519 (PKCS8 PEM, xuống dòng viết `\n`). Để trống: khóa tạm, đổi mỗi lần khởi động.
+      AUTH_SIGNING_KEY_PEM: "${AUTH_SIGNING_KEY_PEM:-}"
+      AUTH_ALLOW_EPHEMERAL_SIGNING_KEY: "${AUTH_ALLOW_EPHEMERAL_SIGNING_KEY:-true}"
+      AUTH_SERVICE_TOKEN_TTL_SECONDS: "${AUTH_SERVICE_TOKEN_TTL_SECONDS:-600}"
+      SERVICE_CLIENT_ID: auth
+      SERVICE_CLIENT_SECRET: "${AUTH_CLIENT_SECRET:-auth-client-local-only}"
+      # Registry client dịch vụ (ADR-004): gateway được gọi mọi route public; auth gọi student.
+      SERVICE_CLIENTS_BOOTSTRAP: '[{"client_id":"gateway","client_secret":"${GATEWAY_CLIENT_SECRET:-gateway-client-local-only}","audiences":["auth","student","course"],"scopes":["gateway:proxy"]},{"client_id":"auth","client_secret":"${AUTH_CLIENT_SECRET:-auth-client-local-only}","audiences":["student"],"scopes":["student:profile:read","student:profile:write"]}]'
       AUTH_STUDENT_BASE_URL: http://student:3002
       AUTH_STUDENT_TIMEOUT_MS: "${AUTH_STUDENT_TIMEOUT_MS:-3000}"
       AUTH_BOOTSTRAP_ADMIN_ID: "${AUTH_BOOTSTRAP_ADMIN_ID:-00000000-0000-4000-8000-000000000001}"
@@ -115,10 +113,8 @@ services:
       dockerfile: services/course/Dockerfile
     environment:
       NODE_ENV: production
-      COURSE_DATABASE_URL: "postgresql://${POSTGRES_USER:?POSTGRES_USER is required}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@postgres:5432/course_db"
-      COURSE_REDIS_URL: redis://redis:6379
-      COURSE_CACHE_TTL_SECONDS: "${COURSE_CACHE_TTL_SECONDS:-60}"
-      COURSE_CACHE_TIMEOUT_MS: "${COURSE_CACHE_TIMEOUT_MS:-300}"
+      COURSE_DATABASE_URL: "postgresql://${COURSE_POSTGRES_USER:-course_user}:${COURSE_POSTGRES_PASSWORD:-course-local-only}@postgres:5432/course_db"
+      AUTH_BASE_URL: http://auth:3001
       OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: "${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT:-http://otel-collector:4318/v1/traces}"
       OTEL_EXPORTER_OTLP_METRICS_ENDPOINT: "${OTEL_EXPORTER_OTLP_METRICS_ENDPOINT:-http://otel-collector:4318/v1/metrics}"
       OTEL_EXPORTER_OTLP_LOGS_ENDPOINT: "${OTEL_EXPORTER_OTLP_LOGS_ENDPOINT:-http://otel-collector:4318/v1/logs}"
@@ -127,55 +123,9 @@ services:
       OTEL_SDK_DISABLED: "${OTEL_SDK_DISABLED:-false}"
       OTEL_SERVICE_INSTANCE_ID: "${COURSE_SERVICE_INSTANCE_ID:-course-compose-1}"
       OTEL_SERVICE_VERSION: "${COURSE_SERVICE_VERSION:-0.1.0}"
-      PORT: 3002
-    ports:
-      - "${COURSE_PORT:-3002}:3002"
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
-    healthcheck:
-      test:
-        - CMD
-        - node
-        - -e
-        - >-
-          fetch('http://127.0.0.1:3002/health')
-          .then((response) => { if (!response.ok) process.exit(1); })
-          .catch(() => process.exit(1));
-      interval: 5s
-      timeout: 3s
-      retries: 12
-      start_period: 5s
-    networks:
-      - lms-network
-      - aiops-net
-
-  enrollment:
-    build:
-      context: ../lms
-      dockerfile: services/enrollment/Dockerfile
-    environment:
-      NODE_ENV: production
-      ENROLLMENT_DATABASE_URL: "postgresql://${POSTGRES_USER:?POSTGRES_USER is required}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@postgres:5432/enrollment_db"
-      ENROLLMENT_COURSE_BASE_URL: http://course:3002
-      ENROLLMENT_COURSE_TIMEOUT_MS: "${ENROLLMENT_COURSE_TIMEOUT_MS:-3000}"
-      ENROLLMENT_COURSE_BREAKER_THRESHOLD: "${ENROLLMENT_COURSE_BREAKER_THRESHOLD:-3}"
-      ENROLLMENT_COURSE_BREAKER_COOLDOWN_MS: "${ENROLLMENT_COURSE_BREAKER_COOLDOWN_MS:-5000}"
-      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: "${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT:-http://otel-collector:4318/v1/traces}"
-      OTEL_EXPORTER_OTLP_METRICS_ENDPOINT: "${OTEL_EXPORTER_OTLP_METRICS_ENDPOINT:-http://otel-collector:4318/v1/metrics}"
-      OTEL_EXPORTER_OTLP_LOGS_ENDPOINT: "${OTEL_EXPORTER_OTLP_LOGS_ENDPOINT:-http://otel-collector:4318/v1/logs}"
-      OTEL_METRIC_EXPORT_INTERVAL: "${OTEL_METRIC_EXPORT_INTERVAL:-5000}"
-      HTTP_ACCESS_LOG_ENABLED: "${HTTP_ACCESS_LOG_ENABLED:-true}"
-      OTEL_SDK_DISABLED: "${OTEL_SDK_DISABLED:-false}"
-      OTEL_SERVICE_INSTANCE_ID: "${ENROLLMENT_SERVICE_INSTANCE_ID:-enrollment-compose-1}"
-      OTEL_SERVICE_VERSION: "${ENROLLMENT_SERVICE_VERSION:-0.1.0}"
       PORT: 3003
     ports:
-      - "${ENROLLMENT_PORT:-3003}:3003"
+      - "${COURSE_PORT:-3003}:3003"
     depends_on:
       postgres:
         condition: service_healthy
@@ -185,61 +135,13 @@ services:
         - node
         - -e
         - >-
-          fetch('http://127.0.0.1:3003/health')
+          fetch('http://127.0.0.1:3003/ready')
           .then((response) => { if (!response.ok) process.exit(1); })
           .catch(() => process.exit(1));
       interval: 5s
       timeout: 3s
       retries: 12
-      start_period: 5s
-    networks:
-      - lms-network
-      - aiops-net
-
-  submission:
-    build:
-      context: ../lms
-      dockerfile: services/submission/Dockerfile
-    environment:
-      NODE_ENV: production
-      SUBMISSION_DATABASE_URL: "postgresql://${POSTGRES_USER:?POSTGRES_USER is required}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@postgres:5432/submission_db"
-      SUBMISSION_COURSE_BASE_URL: http://course:3002
-      SUBMISSION_ENROLLMENT_BASE_URL: http://enrollment:3003
-      SUBMISSION_STORAGE_BASE_URL: http://submission-storage-mock:3005
-      SUBMISSION_DEPENDENCY_TIMEOUT_MS: "${SUBMISSION_DEPENDENCY_TIMEOUT_MS:-3000}"
-      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: "${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT:-http://otel-collector:4318/v1/traces}"
-      OTEL_EXPORTER_OTLP_METRICS_ENDPOINT: "${OTEL_EXPORTER_OTLP_METRICS_ENDPOINT:-http://otel-collector:4318/v1/metrics}"
-      OTEL_EXPORTER_OTLP_LOGS_ENDPOINT: "${OTEL_EXPORTER_OTLP_LOGS_ENDPOINT:-http://otel-collector:4318/v1/logs}"
-      OTEL_METRIC_EXPORT_INTERVAL: "${OTEL_METRIC_EXPORT_INTERVAL:-5000}"
-      HTTP_ACCESS_LOG_ENABLED: "${HTTP_ACCESS_LOG_ENABLED:-true}"
-      OTEL_SDK_DISABLED: "${OTEL_SDK_DISABLED:-false}"
-      OTEL_SERVICE_INSTANCE_ID: "${SUBMISSION_SERVICE_INSTANCE_ID:-submission-compose-1}"
-      OTEL_SERVICE_VERSION: "${SUBMISSION_SERVICE_VERSION:-0.1.0}"
-      PORT: 3004
-    ports:
-      - "${SUBMISSION_PORT:-3004}:3004"
-    depends_on:
-      postgres:
-        condition: service_healthy
-      course:
-        condition: service_healthy
-      enrollment:
-        condition: service_healthy
-      submission-storage-mock:
-        condition: service_healthy
-    healthcheck:
-      test:
-        - CMD
-        - node
-        - -e
-        - >-
-          fetch('http://127.0.0.1:3004/health')
-          .then((response) => { if (!response.ok) process.exit(1); })
-          .catch(() => process.exit(1));
-      interval: 5s
-      timeout: 3s
-      retries: 12
-      start_period: 5s
+      start_period: 10s
     networks:
       - lms-network
       - aiops-net
@@ -290,91 +192,6 @@ services:
       - lms-network
       - aiops-net
 
-  grading:
-    build:
-      context: ../lms
-      dockerfile: services/grading/Dockerfile
-    environment:
-      NODE_ENV: production
-      GRADING_DATABASE_URL: "postgresql://${POSTGRES_USER:?POSTGRES_USER is required}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@postgres:5432/grading_db"
-      GRADING_SUBMISSION_BASE_URL: http://submission:3004
-      GRADING_DEPENDENCY_TIMEOUT_MS: "${GRADING_DEPENDENCY_TIMEOUT_MS:-3000}"
-      GRADING_RABBITMQ_URL: "amqp://${RABBITMQ_DEFAULT_USER:-lms}:${RABBITMQ_DEFAULT_PASS:-lms-local-only}@rabbitmq:5672"
-      GRADING_GRADE_COMPLETED_EXCHANGE: "${GRADING_GRADE_COMPLETED_EXCHANGE:-lms.events}"
-      GRADING_PUBLISH_CONFIRM_TIMEOUT_MS: "${GRADING_PUBLISH_CONFIRM_TIMEOUT_MS:-3000}"
-      GRADING_EVENT_RETRY_INTERVAL_MS: "${GRADING_EVENT_RETRY_INTERVAL_MS:-5000}"
-      GRADING_EVENT_RETRY_BATCH_SIZE: "${GRADING_EVENT_RETRY_BATCH_SIZE:-20}"
-      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: "${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT:-http://otel-collector:4318/v1/traces}"
-      OTEL_EXPORTER_OTLP_METRICS_ENDPOINT: "${OTEL_EXPORTER_OTLP_METRICS_ENDPOINT:-http://otel-collector:4318/v1/metrics}"
-      OTEL_EXPORTER_OTLP_LOGS_ENDPOINT: "${OTEL_EXPORTER_OTLP_LOGS_ENDPOINT:-http://otel-collector:4318/v1/logs}"
-      OTEL_METRIC_EXPORT_INTERVAL: "${OTEL_METRIC_EXPORT_INTERVAL:-5000}"
-      HTTP_ACCESS_LOG_ENABLED: "${HTTP_ACCESS_LOG_ENABLED:-true}"
-      OTEL_SDK_DISABLED: "${OTEL_SDK_DISABLED:-false}"
-      OTEL_SERVICE_INSTANCE_ID: "${GRADING_SERVICE_INSTANCE_ID:-grading-compose-1}"
-      OTEL_SERVICE_VERSION: "${GRADING_SERVICE_VERSION:-0.1.0}"
-      PORT: 3007
-    ports:
-      - "${GRADING_PORT:-3007}:3007"
-    depends_on:
-      postgres:
-        condition: service_healthy
-      submission:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
-    healthcheck:
-      test:
-        - CMD
-        - node
-        - -e
-        - >-
-          fetch('http://127.0.0.1:3007/health')
-          .then((response) => { if (!response.ok) process.exit(1); })
-          .catch(() => process.exit(1));
-      interval: 5s
-      timeout: 3s
-      retries: 12
-      start_period: 5s
-    networks:
-      - lms-network
-      - aiops-net
-
-  submission-storage-mock:
-    build:
-      context: ../lms
-      dockerfile: services/submission-storage-mock/Dockerfile
-    environment:
-      NODE_ENV: production
-      STORAGE_MOCK_DEFAULT_LATENCY_MS: "${STORAGE_MOCK_DEFAULT_LATENCY_MS:-0}"
-      STORAGE_MOCK_DEFAULT_ERROR_MODE: "${STORAGE_MOCK_DEFAULT_ERROR_MODE:-none}"
-      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: "${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT:-http://otel-collector:4318/v1/traces}"
-      OTEL_EXPORTER_OTLP_METRICS_ENDPOINT: "${OTEL_EXPORTER_OTLP_METRICS_ENDPOINT:-http://otel-collector:4318/v1/metrics}"
-      OTEL_EXPORTER_OTLP_LOGS_ENDPOINT: "${OTEL_EXPORTER_OTLP_LOGS_ENDPOINT:-http://otel-collector:4318/v1/logs}"
-      OTEL_METRIC_EXPORT_INTERVAL: "${OTEL_METRIC_EXPORT_INTERVAL:-5000}"
-      HTTP_ACCESS_LOG_ENABLED: "${HTTP_ACCESS_LOG_ENABLED:-true}"
-      OTEL_SDK_DISABLED: "${OTEL_SDK_DISABLED:-false}"
-      OTEL_SERVICE_INSTANCE_ID: "${STORAGE_MOCK_SERVICE_INSTANCE_ID:-submission-storage-compose-1}"
-      OTEL_SERVICE_VERSION: "${STORAGE_MOCK_SERVICE_VERSION:-0.1.0}"
-      PORT: 3005
-    ports:
-      - "${STORAGE_MOCK_PORT:-3005}:3005"
-    healthcheck:
-      test:
-        - CMD
-        - node
-        - -e
-        - >-
-          fetch('http://127.0.0.1:3005/health')
-          .then((response) => { if (!response.ok) process.exit(1); })
-          .catch(() => process.exit(1));
-      interval: 5s
-      timeout: 3s
-      retries: 12
-      start_period: 5s
-    networks:
-      - lms-network
-      - aiops-net
-
   student:
     build:
       context: ../lms
@@ -382,6 +199,7 @@ services:
     environment:
       NODE_ENV: production
       STUDENT_DATABASE_URL: "postgresql://${STUDENT_POSTGRES_USER:-student_user}:${STUDENT_POSTGRES_PASSWORD:-student-local-only}@postgres:5432/student_db"
+      AUTH_BASE_URL: http://auth:3001
       OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: "${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT:-http://otel-collector:4318/v1/traces}"
       OTEL_EXPORTER_OTLP_METRICS_ENDPOINT: "${OTEL_EXPORTER_OTLP_METRICS_ENDPOINT:-http://otel-collector:4318/v1/metrics}"
       OTEL_EXPORTER_OTLP_LOGS_ENDPOINT: "${OTEL_EXPORTER_OTLP_LOGS_ENDPOINT:-http://otel-collector:4318/v1/logs}"
@@ -416,13 +234,15 @@ services:
   postgres:
     image: postgres:17.6-alpine
     environment:
-      POSTGRES_DB: "${POSTGRES_DB:-course_db}"
+      POSTGRES_DB: "${POSTGRES_DB:-postgres}"
       POSTGRES_USER: "${POSTGRES_USER:-lms}"
       POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:-lms-local-only}"
       AUTH_POSTGRES_USER: "${AUTH_POSTGRES_USER:?AUTH_POSTGRES_USER is required}"
       AUTH_POSTGRES_PASSWORD: "${AUTH_POSTGRES_PASSWORD:?AUTH_POSTGRES_PASSWORD is required}"
       STUDENT_POSTGRES_USER: "${STUDENT_POSTGRES_USER:-student_user}"
       STUDENT_POSTGRES_PASSWORD: "${STUDENT_POSTGRES_PASSWORD:-student-local-only}"
+      COURSE_POSTGRES_USER: "${COURSE_POSTGRES_USER:-course_user}"
+      COURSE_POSTGRES_PASSWORD: "${COURSE_POSTGRES_PASSWORD:-course-local-only}"
       MEDIA_POSTGRES_USER: "${MEDIA_POSTGRES_USER:-media_user}"
       MEDIA_POSTGRES_PASSWORD: "${MEDIA_POSTGRES_PASSWORD:-media-local-only}"
       NOTIFICATION_POSTGRES_USER: "${NOTIFICATION_POSTGRES_USER:-notification_user}"
@@ -447,30 +267,6 @@ services:
     networks:
       - lms-network
 
-  redis:
-    image: redis:8.2.1-alpine
-    command:
-      - redis-server
-      - --appendonly
-      - "yes"
-    ports:
-      - "${REDIS_PORT:-6379}:6379"
-    volumes:
-      - redis-data:/data
-    healthcheck:
-      test:
-        - CMD
-        - redis-cli
-        - ping
-      interval: 5s
-      timeout: 3s
-      retries: 12
-      start_period: 5s
-    networks:
-      - lms-network
-
-  # MinIO ngừng phát hành image cộng đồng nên dùng bản bitnamilegacy đã ghim phiên bản (2025.7.23).
-  # Đủ cho testbed; thay bằng image tự build/registry nội bộ nếu cần bản vá bảo mật mới.
   minio:
     image: bitnamilegacy/minio:2025.7.23-debian-12-r5
     environment:
@@ -493,6 +289,7 @@ services:
       - aiops-net
 
   # Tạo bucket do service `media` sở hữu rồi nằm chờ; service khác không truy cập MinIO.
+
   minio-init:
     image: bitnamilegacy/minio-client:2025.7.21-debian-12-r3
     depends_on:
@@ -570,5 +367,4 @@ networks:
 volumes:
   minio-data:
   postgres-data:
-  redis-data:
   rabbitmq-data:

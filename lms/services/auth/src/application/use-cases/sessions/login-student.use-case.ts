@@ -1,10 +1,8 @@
 import { AppError } from '@aiops-lms/common/errors';
 
-import type { RefreshTokenRepository } from '../../ports/refresh-token-repository.js';
 import type { StudentProfileClient } from '../../ports/student-profile-client.js';
-import type { TokenSettings } from '../../token-settings.js';
+import type { TokenIssuer } from '../../token-issuer.js';
 import type { CredentialsAuthenticator } from './credentials-authenticator.js';
-import { issueTokenPair } from './issue-token-pair.js';
 import type { LoginInput, LoginResult } from './login-result.js';
 
 /**
@@ -14,8 +12,7 @@ import type { LoginInput, LoginResult } from './login-result.js';
 export class LoginStudentUseCase {
   constructor(
     private readonly authenticator: CredentialsAuthenticator,
-    private readonly refreshTokens: RefreshTokenRepository,
-    private readonly settings: TokenSettings,
+    private readonly tokens: TokenIssuer,
     private readonly students: StudentProfileClient,
   ) {}
 
@@ -27,7 +24,7 @@ export class LoginStudentUseCase {
       throw AppError.forbidden('Hồ sơ student không tồn tại hoặc không hoạt động');
     }
 
-    const pair = await issueTokenPair(account, this.settings, this.refreshTokens);
+    const pair = await this.tokens.issue(account);
     return { ...pair, principal: { id: account.id, role: account.role } };
   }
 }

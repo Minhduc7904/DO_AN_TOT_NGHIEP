@@ -1,9 +1,9 @@
 #!/bin/sh
 # Topology v2: mỗi service một database và một role riêng, role không đọc được DB khác.
-# `auth_db` đã được script 00 tạo; script 01 giữ DB của service v1 cho tới khi bị gỡ.
+# `auth_db` đã được script 00 tạo; `course_db` do script này tạo (POSTGRES_DB mặc định là `postgres`).
 set -eu
 
-for service in student media notification scheduler ai; do
+for service in student course media notification scheduler ai; do
   user_var="$(echo "$service" | tr '[:lower:]' '[:upper:]')_POSTGRES_USER"
   password_var="$(echo "$service" | tr '[:lower:]' '[:upper:]')_POSTGRES_PASSWORD"
   db_user="$(printenv "$user_var" || true)"

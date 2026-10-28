@@ -69,3 +69,14 @@ Metric label chỉ chứa identity/operation/status hữu hạn. Cấm đưa rou
 - Gateway telemetry test kiểm tra đủ năm identity, client span, request/error/duration metrics và không có resource/principal/credential trong metric labels.
 - Integration test hiện hành của Submission/Grading tiếp tục chứng minh timeout/unavailable propagation và business `404` không bị tính sai thành dependency failure.
 - `format:check`, build, lint, unit test, `test:telemetry`, `ci:verify`, `git diff --check` và `docker compose config` phải pass trước khi chuyển `Chờ review`.
+
+## 7. Bổ sung v2: xác thực service-to-service (ADR-004)
+
+Áp dụng cho phiên bản v2 của topology; phần còn lại của tài liệu này là lịch sử MVP và sẽ được viết lại ở R-12.
+
+- **Lấy service token** (`<caller>-auth-token`) và **tải JWKS** (`<caller>-auth-jwks`) là outbound HTTP có timeout bắt buộc và telemetry như mọi dependency; lấy token có circuit breaker, **không retry**.
+- **Không chặn request thường**: token được cache theo audience, làm mới nền ở 50% TTL (single-flight); chỉ khi chưa có token hoặc đã hết hạn thì request mới chờ lấy token.
+- **Stale-while-error**: lấy token lỗi thì dùng token cũ đến hết hạn; JWKS lỗi thì dùng khóa đã cache. Làm mới nền thất bại bị giãn (5 giây) để không dồn lên `auth` đang lỗi.
+- JWKS chỉ tải lại khi hết hạn cache (mặc định 5 phút) hoặc gặp `kid` lạ, tối đa một lần mỗi 10 giây.
+- Error mapping: timeout/network/5xx từ `auth` → `DEPENDENCY_TIMEOUT`/`DEPENDENCY_UNAVAILABLE` với `details.dependency` là identity trên; `401/403` từ `auth` khi xin token → `SERVICE_CLIENT_INVALID` (cấu hình sai, không phải dependency lỗi); token không hợp lệ ở bên nhận → `SERVICE_TOKEN_*` (xem `http-and-event-contracts-v2` §2).
+

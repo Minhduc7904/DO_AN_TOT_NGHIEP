@@ -1,8 +1,8 @@
 import { AppError } from '@aiops-lms/common/errors';
-import { ROLES, type Principal, type Role } from '@aiops-lms/common/ports';
+import type { Principal } from '@aiops-lms/common/ports';
 
-import { verifyAccessToken } from '../../domain/access-token.js';
 import { normalizeTarget, resolveRoute, type UpstreamName } from '../../domain/route-table.js';
+import type { UserTokenVerifier } from '../ports/user-token-verifier.js';
 import type {
   UpstreamClient,
   UpstreamResponse,
@@ -42,14 +42,14 @@ function firstHeader(value: string | string[] | undefined): string | undefined {
 }
 
 /**
- * Gateway: xác thực JWT, kiểm role theo bảng route rồi chuyển tiếp. Xóa mọi `x-principal-*` do
+ * Gateway: xác thực user access token (JWKS), kiểm role theo bảng route rồi chuyển tiếp. Xóa mọi `x-principal-*` do
  * client gửi và đặt lại từ claim JWT; không đọc hay sửa body.
  */
 export class ProxyRequestUseCase {
   constructor(
     private readonly upstream: UpstreamClient,
     private readonly enabled: ReadonlySet<UpstreamName>,
-    private readonly jwtSecret: string,
+    private readonly tokens: UserTokenVerifier,
   ) {}
 
   async execute(input: ProxyInput): Promise<UpstreamResponse> {
@@ -58,7 +58,7 @@ export class ProxyRequestUseCase {
     const route = target ? resolveRoute(method, target.path, this.enabled) : null;
     if (!target || !route) throw AppError.notFound('Không tìm thấy route');
 
-    const principal = route.isPublic ? undefined : this.authenticate(input.headers);
+    const principal = route.isPublic ? undefined : await this.authenticate(input.headers);
     if (principal && route.roles && !route.roles.includes(principal.role)) {
       throw AppError.forbidden();
     }
@@ -72,13 +72,10 @@ export class ProxyRequestUseCase {
     });
   }
 
-  private authenticate(headers: ProxyInput['headers']): Principal {
+  private async authenticate(headers: ProxyInput['headers']): Promise<Principal> {
     const token = firstHeader(headers.authorization)?.match(/^Bearer\s+(.+)$/iu)?.[1];
-    const verified = token ? verifyAccessToken(token, this.jwtSecret) : null;
-    if (!verified || !(ROLES as readonly string[]).includes(verified.role)) {
-      throw AppError.unauthorized('Bearer JWT không hợp lệ hoặc đã hết hạn');
-    }
-    return { id: verified.id, role: verified.role as Role };
+    if (!token) throw AppError.unauthorized('Bearer JWT không hợp lệ hoặc đã hết hạn');
+    return this.tokens.verify(token);
   }
 
   private forwardedHeaders(

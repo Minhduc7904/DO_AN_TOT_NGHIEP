@@ -42,7 +42,7 @@ Gateway
     └── grade.completed -> RabbitMQ -> Notification
 ```
 
-- Auth phát JWT; Gateway kiểm tra JWT cục bộ.
+- Auth phát hai loại token EdDSA: user access token (đăng nhập) và service access token (client-credentials); mọi service verify cục bộ bằng JWKS. API tách `/api/v1` (public, chỉ Gateway gọi) và `/internal/v1` (service-to-service), xem [ADR-004](docs/processed/adr/adr-004-service-access-token-and-api-surfaces-v1.md).
 - Backend testbed dùng TypeScript + NestJS; analysis/anomaly/RCA dùng Python.
 - Runtime dùng Docker Compose; workload dùng k6.
 - Observability dùng OpenTelemetry, Prometheus, Tempo, Loki và Grafana.

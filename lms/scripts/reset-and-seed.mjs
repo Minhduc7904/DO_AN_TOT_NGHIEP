@@ -7,15 +7,11 @@ import { spawn } from 'node:child_process';
 export const REQUIRED_SERVICES = Object.freeze([
   'auth',
   'course',
-  'enrollment',
   'gateway',
-  'grading',
   'notification',
   'postgres',
   'rabbitmq',
-  'redis',
-  'submission',
-  'submission-storage-mock',
+  'student',
 ]);
 
 const SCRIPT_PATH = fileURLToPath(import.meta.url);
@@ -280,65 +276,44 @@ export async function collectFingerprint(options, runner = runProcess) {
     'printenv',
     'POSTGRES_USER',
   ]);
-  const [auth, courses, enrollments, submissions, grades, redisSize, rabbit, storage] =
-    await Promise.all([
-      queryPostgres(
-        options,
-        runner,
-        postgresUser,
-        'auth_db',
-        "SELECT id::text,email,role,created_at AT TIME ZONE 'UTC' FROM auth_users ORDER BY email;",
-      ),
-      queryPostgres(
-        options,
-        runner,
-        postgresUser,
-        'course_db',
-        "SELECT id,title,created_at AT TIME ZONE 'UTC' FROM courses ORDER BY id;",
-      ),
-      queryPostgres(
-        options,
-        runner,
-        postgresUser,
-        'enrollment_db',
-        "SELECT id,principal_id,course_id,created_at AT TIME ZONE 'UTC' FROM enrollments ORDER BY id;",
-      ),
-      queryPostgres(
-        options,
-        runner,
-        postgresUser,
-        'submission_db',
-        "SELECT id,principal_id,course_id,storage_object_key,submitted_at AT TIME ZONE 'UTC' FROM submissions ORDER BY id;",
-      ),
-      queryPostgres(
-        options,
-        runner,
-        postgresUser,
-        'grading_db',
-        "SELECT id::text,submission_id,principal_id,course_id,score::text,completed_at AT TIME ZONE 'UTC',event_id::text,publish_status,publish_attempts,published_at AT TIME ZONE 'UTC' FROM grades ORDER BY id;",
-      ),
-      composeExec(options, runner, 'redis', ['redis-cli', '--raw', 'DBSIZE']),
-      waitForRabbitBaseline(options, runner),
-      composeExec(options, runner, 'submission-storage-mock', [
-        'node',
-        '-e',
-        "fetch('http://127.0.0.1:3005/internal/v1/state').then(async response=>{if(!response.ok)throw new Error(String(response.status));process.stdout.write(await response.text())}).catch(()=>process.exit(1))",
-      ]),
-    ]);
-
-  if (Number(redisSize) !== 0) fail('Redis không sạch sau reset.');
-  const storageState = JSON.parse(storage);
-  if (storageState.object_count !== 0) fail('Storage Mock không sạch sau reset.');
+  const [auth, students, courses, enrollments, rabbit] = await Promise.all([
+    queryPostgres(
+      options,
+      runner,
+      postgresUser,
+      'auth_db',
+      "SELECT id::text,email,role::text,created_at AT TIME ZONE 'UTC' FROM auth_users ORDER BY email;",
+    ),
+    queryPostgres(
+      options,
+      runner,
+      postgresUser,
+      'student_db',
+      'SELECT id::text,email,full_name,status::text FROM students ORDER BY email;',
+    ),
+    queryPostgres(
+      options,
+      runner,
+      postgresUser,
+      'course_db',
+      'SELECT id::text,name,status::text,instructor_id::text FROM courses ORDER BY id;',
+    ),
+    queryPostgres(
+      options,
+      runner,
+      postgresUser,
+      'course_db',
+      'SELECT id::text,course_id::text,student_id::text FROM enrollments ORDER BY id;',
+    ),
+    waitForRabbitBaseline(options, runner),
+  ]);
 
   const fingerprint = {
     auth: lines(auth),
     courses: lines(courses),
     enrollments: lines(enrollments),
-    grades: lines(grades),
     rabbit,
-    redis: { database_size: Number(redisSize) },
-    storage: storageState,
-    submissions: lines(submissions),
+    students: lines(students),
   };
   const canonical = JSON.stringify(fingerprint);
   return { fingerprint, sha256: createHash('sha256').update(canonical).digest('hex') };

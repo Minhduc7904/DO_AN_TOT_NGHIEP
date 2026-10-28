@@ -15,6 +15,7 @@ const frameworkImports = [
   '@aws-sdk/*',
   'minio',
   '@aiops-lms/observability',
+  '@aiops-lms/common/auth',
   '@aiops-lms/common/http',
   '@aiops-lms/common/clients',
   '@aiops-lms/common/telemetry',
@@ -171,9 +172,37 @@ export default tseslint.config(
     },
   },
   {
-    // Gateway v1 import observability trong application; gỡ ngoại lệ này khi R-04 viết lại gateway.
-    files: ['services/gateway/src/application/gateway-proxy.ts'],
-    rules: { 'no-restricted-imports': 'off' },
+    // Hai bề mặt HTTP không được dùng chung controller/DTO của nhau; dùng `shared/` cho phần chung.
+    files: ['services/*/src/adapters/http/public/**/*.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['../internal/**', '**/http/internal/**'],
+              message: 'Public không import controller internal.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ['services/*/src/adapters/http/internal/**/*.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['../public/**', '**/http/public/**'],
+              message: 'Internal không import controller public.',
+            },
+          ],
+        },
+      ],
+    },
   },
   {
     files: ['services/**/test/**/*.ts'],

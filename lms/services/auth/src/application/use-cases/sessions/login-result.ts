@@ -1,5 +1,5 @@
 import type { Account } from '../../../domain/account.js';
-import type { TokenPair } from './issue-token-pair.js';
+import type { TokenPair } from '../../token-issuer.js';
 
 export interface LoginInput {
   email: string;

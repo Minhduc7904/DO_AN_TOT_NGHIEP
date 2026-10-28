@@ -1,4 +1,9 @@
-import { baseEnvironmentSchema, parseEnvironment } from '@aiops-lms/common/config';
+import {
+  baseEnvironmentSchema,
+  jwksCacheEnvironmentShape,
+  parseEnvironment,
+  serviceClientEnvironmentShape,
+} from '@aiops-lms/common/config';
 import { z } from 'zod';
 
 const baseUrl = (port: number): z.ZodDefault<z.ZodURL> =>
@@ -6,10 +11,9 @@ const baseUrl = (port: number): z.ZodDefault<z.ZodURL> =>
 
 const environmentSchema = baseEnvironmentSchema.extend({
   PORT: z.coerce.number().int().min(1).max(65_535).default(3000),
-  GATEWAY_JWT_SECRET: z
-    .string()
-    .min(32)
-    .default('local-development-only-jwt-secret-change-before-production'),
+  // Danh tính của Gateway với auth (client-credentials) và cache JWKS để verify user token.
+  ...serviceClientEnvironmentShape,
+  ...jwksCacheEnvironmentShape,
   // Timeout tới khi upstream trả header phản hồi; phần body stream sau đó không bị giới hạn.
   GATEWAY_UPSTREAM_TIMEOUT_MS: z.coerce.number().int().min(100).max(300_000).default(30_000),
   GATEWAY_AUTH_BASE_URL: baseUrl(3001),
@@ -19,10 +23,6 @@ const environmentSchema = baseEnvironmentSchema.extend({
   GATEWAY_NOTIFICATION_BASE_URL: baseUrl(3005),
   GATEWAY_SCHEDULER_BASE_URL: baseUrl(3006),
   GATEWAY_AI_BASE_URL: baseUrl(3007),
-  // Route v1 tạm thời cho tới khi R-05 thay bằng `course`: không đặt biến thì route không tồn tại.
-  GATEWAY_ENROLLMENT_BASE_URL: z.url().optional(),
-  GATEWAY_SUBMISSION_BASE_URL: z.url().optional(),
-  GATEWAY_GRADING_BASE_URL: z.url().optional(),
 });
 
 export type Environment = z.infer<typeof environmentSchema>;

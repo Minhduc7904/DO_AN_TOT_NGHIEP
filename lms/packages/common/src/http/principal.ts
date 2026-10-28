@@ -1,11 +1,4 @@
-import {
-  type CanActivate,
-  createParamDecorator,
-  type ExecutionContext,
-  Injectable,
-  SetMetadata,
-} from '@nestjs/common';
-import { Reflector } from '@nestjs/core';
+import { createParamDecorator, type ExecutionContext, SetMetadata } from '@nestjs/common';
 
 import { AppError } from '../errors/index.js';
 import { type Principal, ROLES, type Role } from '../ports/index.js';
@@ -13,24 +6,45 @@ import { type Principal, ROLES, type Role } from '../ports/index.js';
 export const PRINCIPAL_ID_HEADER = 'x-principal-id';
 export const PRINCIPAL_ROLE_HEADER = 'x-principal-role';
 
-const ROLES_KEY = 'lms:roles';
-const PUBLIC_KEY = 'lms:public';
+export const ROLES_KEY = 'lms:roles';
+export const ANONYMOUS_KEY = 'lms:anonymous';
+export const SKIP_AUTH_KEY = 'lms:skip-auth';
+export const INTERNAL_API_KEY = 'lms:internal-api';
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/iu;
 
-interface RequestWithPrincipal {
+export interface RequestWithPrincipal {
   headers: Record<string, string | string[] | undefined>;
   principal?: Principal;
 }
 
-/** Route yêu cầu một trong các role; không khai báo thì chỉ cần đã xác thực. */
+export interface InternalApiOptions {
+  /** Scope service token phải có (ví dụ `student:profile:write`); thiếu thì 403. */
+  scopes: readonly string[];
+}
+
+/** Route public yêu cầu một trong các role; không khai báo thì chỉ cần đã có danh tính user. */
 export const Roles = (...roles: Role[]): MethodDecorator & ClassDecorator =>
   SetMetadata(ROLES_KEY, roles);
 
-/** Route công khai hoặc nội bộ (`/internal/v1/*`): không cần `x-principal-*`. */
-export const Public = (): MethodDecorator & ClassDecorator => SetMetadata(PUBLIC_KEY, true);
+/**
+ * Route public (`/api/v1`) không cần danh tính user (đăng ký, đăng nhập, refresh). Vẫn chỉ
+ * Gateway mới gọi được: yêu cầu service token của gateway.
+ */
+export const Anonymous = (): MethodDecorator & ClassDecorator => SetMetadata(ANONYMOUS_KEY, true);
+
+/** Route không cần token nào: health/ready và JWKS. */
+export const SkipAuth = (): MethodDecorator & ClassDecorator => SetMetadata(SKIP_AUTH_KEY, true);
+
+/** Route nội bộ (`/internal/v1`): chỉ service token có đủ scope, không có danh tính user. */
+export const InternalApi = (options: InternalApiOptions): MethodDecorator & ClassDecorator =>
+  SetMetadata(INTERNAL_API_KEY, options);
 
 function firstHeader(value: string | string[] | undefined): string | undefined {
   return Array.isArray(value) ? value[0] : value;
+}
+
+export function readBearerToken(headers: RequestWithPrincipal['headers']): string | undefined {
+  return firstHeader(headers.authorization)?.match(/^Bearer\s+(.+)$/iu)?.[1];
 }
 
 /** Đọc danh tính do Gateway đặt; trả undefined nếu thiếu hoặc sai định dạng. */
@@ -41,30 +55,6 @@ export function readPrincipal(headers: RequestWithPrincipal['headers']): Princip
     return undefined;
   }
   return { id, role: role as Role };
-}
-
-/**
- * Guard toàn cục: Gateway đã verify JWT và đặt `x-principal-*`; service chỉ tin hai header này
- * (mạng nội bộ). Điều kiện sở hữu resource do use case kiểm tra.
- */
-@Injectable()
-export class PrincipalGuard implements CanActivate {
-  constructor(private readonly reflector: Reflector) {}
-
-  canActivate(context: ExecutionContext): boolean {
-    const targets = [context.getHandler(), context.getClass()];
-    if (this.reflector.getAllAndOverride<boolean | undefined>(PUBLIC_KEY, targets)) return true;
-
-    const request = context.switchToHttp().getRequest<RequestWithPrincipal>();
-    const principal = readPrincipal(request.headers);
-    if (!principal) throw AppError.unauthorized();
-
-    const roles = this.reflector.getAllAndOverride<Role[] | undefined>(ROLES_KEY, targets);
-    if (roles && roles.length > 0 && !roles.includes(principal.role)) throw AppError.forbidden();
-
-    request.principal = principal;
-    return true;
-  }
 }
 
 /** Tham số controller: danh tính đã được guard xác thực. */

@@ -1,13 +1,13 @@
 import { Controller, Get, Header, Inject, ServiceUnavailableException } from '@nestjs/common';
 
-import { Public } from './principal.js';
+import { SkipAuth } from './principal.js';
 
 export type ReadinessCheck = () => Promise<void>;
 
 /** Service cung cấp provider này (map tên → kiểm tra) rồi đăng ký `HealthController`. */
 export const READINESS_CHECKS = Symbol('LMS_READINESS_CHECKS');
 
-@Public()
+@SkipAuth()
 @Controller()
 export class HealthController {
   constructor(@Inject(READINESS_CHECKS) private readonly checks: Record<string, ReadinessCheck>) {}

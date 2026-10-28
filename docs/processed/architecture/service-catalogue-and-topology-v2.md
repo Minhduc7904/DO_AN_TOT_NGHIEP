@@ -208,6 +208,8 @@ scheduler-worker -> media            # cleanup media không dùng
 
 `gateway -> student` chỉ phục vụ route public của student; route `/internal/v1/*` không đi qua Gateway.
 
+Mọi cạnh trên đều xác thực bằng service access token ([ADR-004](../adr/adr-004-service-access-token-and-api-surfaces-v1.md)): bên gọi lấy token từ `auth` (§5.4), bên nhận verify cục bộ bằng JWKS. Cạnh `gateway -> *` dùng bề mặt public `/api/v1`, các cạnh còn lại dùng `/internal/v1`.
+
 ## 5.2. Service-to-service (command qua RabbitMQ)
 
 ```text
@@ -229,6 +231,19 @@ ai -> ai-llm-provider
 course, media, notification -> <service>-rabbitmq (publish)
 media-worker, notification-worker -> <service>-rabbitmq (consume)
 ```
+
+---
+
+## 5.4. Cạnh xác thực (token và JWKS)
+
+```text
+gateway, auth -> auth                 # lấy service token (POST /internal/v1/auth/service-token)
+gateway, student, course, ... -> auth # tải JWKS (GET /.well-known/jwks.json)
+```
+
+- Lấy token: định danh dependency `<caller>-auth-token` (`gateway-auth-token`; `auth` tự lấy cho mình bằng gọi thẳng use case nên không có cạnh mạng). Tần suất thấp và theo chu kỳ (làm mới nền ở 50% TTL = ~5 phút mỗi cặp caller/audience), request thường không chờ cạnh này.
+- Tải JWKS: định danh `<caller>-auth-jwks`. Chỉ khi khởi động/cache hết hạn (mặc định 5 phút)/gặp `kid` lạ.
+- Khi `auth` lỗi: token đã có vẫn dùng đến khi hết hạn (stale-while-error), JWKS đã cache vẫn dùng. Sau đó lỗi lan sang mọi service (triệu chứng ở service khác, gốc ở `auth`): xem FG/FH/C6 ở [data-ownership-and-fault-matrix-v2](data-ownership-and-fault-matrix-v2.md).
 
 ---
 
@@ -260,6 +275,8 @@ media-worker, notification-worker -> <service>-rabbitmq (consume)
 | `e22`   | ai                                | ai-llm-provider      | dependency    | W6         | `dependency_identity=ai-llm-provider`                 |
 | `e23`   | `<service>`                       | `<service>-postgres` | DB            | tất cả     | `dependency_identity=<service>-postgres` (7 identity) |
 | `e24`   | publisher / consumer              | `<service>-rabbitmq` | messaging     | W2, W4, W5 | publish/consume span + broker metrics                 |
+| `e25`   | gateway, mọi service              | auth (JWKS)          | HTTP          | nền        | `dependency_identity=<caller>-auth-jwks`, tần suất thấp |
+| `e26`   | gateway                           | auth (token)         | HTTP          | nền        | `dependency_identity=<caller>-auth-token`, chu kỳ ~5 phút |
 
 ### Edge observability rule
 
@@ -331,7 +348,7 @@ Giữ nguyên quy tắc v1: thêm/xóa service, đổi ownership dữ liệu, th
 | Notification        | Log fixture             | SMTP thật + inbox REST              |
 | Workflow            | W1–W5                   | W1–W7                               |
 | Dependency identity | 9                       | 15                                  |
-| Edge                | e01–e20                 | e01–e24                             |
+| Edge                | e01–e20                 | e01–e26 (e25–e26: JWKS và token, ADR-004) |
 
 ---
 
@@ -340,7 +357,7 @@ Giữ nguyên quy tắc v1: thêm/xóa service, đổi ownership dữ liệu, th
 Đức tự xác nhận trước khi chuyển R-01 sang hoàn thành (refactor do một mình Đức làm, không cần Bách review):
 
 - [ ] `service.name` và dependency identity ở mục 2 đủ ổn định cho telemetry/feature.
-- [ ] Edge `e02–e24` đủ để dựng dynamic graph cho W1–W7.
+- [ ] Edge `e02–e26` đủ để dựng dynamic graph cho W1–W7.
 - [ ] Async command có thể nối bằng RabbitMQ trace context.
 - [ ] Candidate set mục 8 hợp lý; worker tách `service.name` riêng được chấp nhận.
 - [ ] Fault v0 ở mục 9 đủ làm nền cho danh mục case phức tạp.

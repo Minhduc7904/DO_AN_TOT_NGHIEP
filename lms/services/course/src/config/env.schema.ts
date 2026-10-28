@@ -1,56 +1,18 @@
+import {
+  baseEnvironmentSchema,
+  parseEnvironment,
+  serviceAuthEnvironmentShape,
+} from '@aiops-lms/common/config';
 import { z } from 'zod';
 
-import {
-  DEFAULT_COURSE_DATABASE_URL,
-  DEFAULT_COURSE_REDIS_URL,
-  DEFAULT_COURSE_CACHE_TTL_SECONDS,
-  DEFAULT_COURSE_CACHE_TIMEOUT_MS,
-  DEFAULT_OTLP_TRACES_ENDPOINT,
-  DEFAULT_PORT,
-  DEFAULT_SERVICE_INSTANCE_ID,
-  DEFAULT_SERVICE_VERSION,
-  NODE_ENVIRONMENTS,
-} from './app-config.js';
-
-const environmentBoolean = z
-  .union([z.boolean(), z.enum(['true', 'false'])])
-  .transform((value) => value === true || value === 'true');
-
-const environmentSchema = z.object({
-  NODE_ENV: z.enum(NODE_ENVIRONMENTS).default('development'),
-  OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: z.url().default(DEFAULT_OTLP_TRACES_ENDPOINT),
-  OTEL_EXPORTER_OTLP_METRICS_ENDPOINT: z.url().optional(),
-  OTEL_EXPORTER_OTLP_LOGS_ENDPOINT: z.url().optional(),
-  OTEL_METRIC_EXPORT_INTERVAL: z.coerce.number().int().min(1_000).max(60_000).default(5_000),
-  OTEL_SDK_DISABLED: environmentBoolean.default(false),
-  HTTP_ACCESS_LOG_ENABLED: environmentBoolean.default(true),
-  OTEL_SERVICE_INSTANCE_ID: z.string().trim().min(1).default(DEFAULT_SERVICE_INSTANCE_ID),
-  OTEL_SERVICE_VERSION: z.string().trim().min(1).default(DEFAULT_SERVICE_VERSION),
-  PORT: z.coerce.number().int().min(1).max(65_535).default(DEFAULT_PORT),
-  COURSE_DATABASE_URL: z.url().default(DEFAULT_COURSE_DATABASE_URL),
-  COURSE_REDIS_URL: z.url().default(DEFAULT_COURSE_REDIS_URL),
-  COURSE_CACHE_TTL_SECONDS: z.coerce
-    .number()
-    .int()
-    .min(1)
-    .max(3_600)
-    .default(DEFAULT_COURSE_CACHE_TTL_SECONDS),
-  COURSE_CACHE_TIMEOUT_MS: z.coerce
-    .number()
-    .int()
-    .min(1)
-    .max(5_000)
-    .default(DEFAULT_COURSE_CACHE_TIMEOUT_MS),
+const environmentSchema = baseEnvironmentSchema.extend({
+  ...serviceAuthEnvironmentShape,
+  PORT: z.coerce.number().int().min(1).max(65_535).default(3003),
+  COURSE_DATABASE_URL: z.url(),
 });
 
 export type Environment = z.infer<typeof environmentSchema>;
 
 export function validateEnvironment(config: Record<string, unknown>): Environment {
-  const result = environmentSchema.safeParse(config);
-
-  if (!result.success) {
-    throw new Error(`Invalid environment configuration:\n${z.prettifyError(result.error)}`);
-  }
-
-  return result.data;
+  return parseEnvironment(environmentSchema, config);
 }

@@ -53,12 +53,12 @@ describe('resolveRoute', () => {
     expect(isPublic('GET', '/api/v1/media/summary')).toBe(false);
   });
 
-  it('route v1 chỉ tồn tại khi upstream tương ứng được bật', () => {
-    expect(resolveRoute('GET', '/api/v1/enrollments', V2)).toBeNull();
-    const legacy = new Set<UpstreamName>([...V2, 'enrollment']);
-    expect(resolveRoute('GET', '/api/v1/enrollments', legacy)).toMatchObject({
-      upstream: 'enrollment',
-      roles: ['student', 'instructor'],
+  it('route v1 (enrollments, submissions, grades) đã bị gỡ vì enrollment và quiz attempt thuộc course', () => {
+    for (const path of ['/api/v1/enrollments', '/api/v1/submissions/x', '/api/v1/grades']) {
+      expect(resolveRoute('GET', path, V2)).toBeNull();
+    }
+    expect(resolveRoute('GET', '/api/v1/student/enrollments', V2)).toMatchObject({
+      upstream: 'course',
     });
   });
 });

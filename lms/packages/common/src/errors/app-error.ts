@@ -8,6 +8,12 @@ export const ERROR_CODES = {
   internal: 'INTERNAL_ERROR',
   dependencyUnavailable: 'DEPENDENCY_UNAVAILABLE',
   dependencyTimeout: 'DEPENDENCY_TIMEOUT',
+  // Xác thực service-to-service (ADR-004).
+  serviceTokenMissing: 'SERVICE_TOKEN_MISSING',
+  serviceTokenInvalid: 'SERVICE_TOKEN_INVALID',
+  serviceScopeForbidden: 'SERVICE_SCOPE_FORBIDDEN',
+  serviceClientInvalid: 'SERVICE_CLIENT_INVALID',
+  tokenTypeMismatch: 'TOKEN_TYPE_MISMATCH',
 } as const;
 
 export type CommonErrorCode = (typeof ERROR_CODES)[keyof typeof ERROR_CODES];
@@ -60,5 +66,42 @@ export class AppError extends Error {
     return new AppError(ERROR_CODES.dependencyTimeout, 504, 'Dịch vụ phụ thuộc phản hồi quá hạn', {
       dependency,
     });
+  }
+
+  static serviceTokenMissing(): AppError {
+    return new AppError(ERROR_CODES.serviceTokenMissing, 401, 'Thiếu service access token');
+  }
+
+  static serviceTokenInvalid(): AppError {
+    return new AppError(
+      ERROR_CODES.serviceTokenInvalid,
+      401,
+      'Service access token không hợp lệ hoặc đã hết hạn',
+    );
+  }
+
+  static tokenTypeMismatch(expected: 'user' | 'service'): AppError {
+    return new AppError(
+      ERROR_CODES.tokenTypeMismatch,
+      401,
+      `Loại token không đúng, route này cần ${expected} access token`,
+    );
+  }
+
+  static serviceScopeForbidden(required: readonly string[]): AppError {
+    return new AppError(
+      ERROR_CODES.serviceScopeForbidden,
+      403,
+      'Service không đủ scope cho route này',
+      { required },
+    );
+  }
+
+  static serviceClientInvalid(): AppError {
+    return new AppError(
+      ERROR_CODES.serviceClientInvalid,
+      401,
+      'Thông tin xác thực dịch vụ không hợp lệ',
+    );
   }
 }

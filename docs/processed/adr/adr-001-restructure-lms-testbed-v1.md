@@ -18,7 +18,7 @@ Testbed MVP (W5–W10) có 8 runtime, SQL viết tay bằng `pg`, schema tạo b
 2. Bỏ `enrollment`, `submission`, `grading`, `submission-storage-mock`. Enrollment, tiến độ và quiz attempt chuyển vào `course`; lưu file dùng MinIO thật qua `media`.
 3. Giữ NestJS/TypeScript. Dùng **Prisma + PostgreSQL 17**, mỗi service một database riêng; migration bằng `prisma migrate`, thay `migrate.ts`.
 4. Mỗi use case là một class riêng (`application/use-cases/<area>/<verb-noun>.use-case.ts`, phương thức `execute`); controller chỉ ánh xạ HTTP sang use case.
-5. Giữ `auth` riêng với JWT + refresh token + mật khẩu hiện có, mở rộng thành 3 role: `student`, `instructor`, `admin`.
+5. Giữ `auth` riêng với JWT + refresh token + mật khẩu hiện có, mở rộng thành 3 role: `student`, `instructor`, `admin`. _Cập nhật 28/10/2026 ([ADR-004](adr-004-service-access-token-and-api-surfaces-v1.md)): token ký EdDSA + JWKS thay HS256; thêm service access token và tách bề mặt `/api/v1` / `/internal/v1`._
 6. `notification` gửi email thật qua SMTP (nodemailer; Mailpit cho dev/CI) và có inbox REST.
 7. Bỏ Redis; kênh bất đồng bộ dùng RabbitMQ theo kiểu command (`service--message-type-kebab`) với outbox/inbox.
 8. Tách thành phần thu thập dữ liệu sang `aiops-platform/` (xem ADR-002 và [tách observability](../plan/refactor/refactor-board-v1.md)); LMS chỉ gửi OTLP/HTTP tới collector.
