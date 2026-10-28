@@ -137,6 +137,12 @@ Gateway chọn service theo prefix dài nhất; không có route `/internal/*`.
 | `/api/v1/ai`                                            | ai           |                                                                   |
 | `/health`                                               | gateway      | Mỗi service còn `/health` và `/ready` nội bộ                      |
 
+Quy tắc Gateway (chi tiết: [`lms/services/gateway/README.md`](../../../lms/services/gateway/README.md)):
+
+- Role ở mức Gateway: `/api/v1/scheduler`, `/api/v1/ai`, `/api/v1/notification-batches` chỉ `admin`; còn lại mọi role đã xác thực và service kiểm quyền chi tiết.
+- Mọi phản hồi của service phía sau (kể cả 4xx/5xx và mã nghiệp vụ ở mục 2) được trả **nguyên vẹn**; Gateway chỉ tự sinh envelope cho `404`, `401`, `403`, `503 DEPENDENCY_UNAVAILABLE` (không kết nối được) và `504 DEPENDENCY_TIMEOUT` (không có header phản hồi trong `GATEWAY_UPSTREAM_TIMEOUT_MS`).
+- Body và phản hồi được stream (multipart, byte lớn, `Range`); Gateway không parse body.
+
 ---
 
 # 4. Danh mục contract theo owner
