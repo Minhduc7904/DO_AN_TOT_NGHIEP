@@ -5,6 +5,7 @@ import type {
   AttemptResult,
   NewAttempt,
 } from '../../src/application/ports/attempt-repository.js';
+import type { MediaEffect } from '../../src/application/ports/media-effects.js';
 import type {
   CourseCounts,
   CourseFilter,
@@ -73,8 +74,10 @@ function page<T>(all: T[], pageNumber: number, pageSize: number): { items: T[]; 
 
 export class InMemoryCourses implements CourseRepository {
   readonly rows = new Map<string, Course>();
+  readonly effects: MediaEffect[] = [];
 
-  create(course: NewCourse): Promise<Course> {
+  create(course: NewCourse, effects: readonly MediaEffect[] = []): Promise<Course> {
+    this.effects.push(...effects);
     const row: Course = { ...course, status: 'DRAFT', createdAt: NOW, updatedAt: NOW };
     this.rows.set(row.id, row);
     return Promise.resolve(row);
@@ -84,9 +87,14 @@ export class InMemoryCourses implements CourseRepository {
     return Promise.resolve(this.rows.get(id) ?? null);
   }
 
-  update(id: string, patch: CoursePatch): Promise<Course | null> {
+  update(
+    id: string,
+    patch: CoursePatch,
+    effects: readonly MediaEffect[] = [],
+  ): Promise<Course | null> {
     const current = this.rows.get(id);
     if (!current) return Promise.resolve(null);
+    this.effects.push(...effects);
     const next: Course = {
       ...current,
       ...(patch.name !== undefined ? { name: patch.name } : {}),
@@ -99,8 +107,10 @@ export class InMemoryCourses implements CourseRepository {
     return Promise.resolve(next);
   }
 
-  delete(id: string): Promise<boolean> {
-    return Promise.resolve(this.rows.delete(id));
+  delete(id: string, effects: readonly MediaEffect[] = []): Promise<boolean> {
+    const removed = this.rows.delete(id);
+    if (removed) this.effects.push(...effects);
+    return Promise.resolve(removed);
   }
 
   private matching(filter: CourseFilter): Course[] {
@@ -144,8 +154,10 @@ export class InMemoryCourses implements CourseRepository {
 
 export class InMemoryLessons implements LessonRepository {
   readonly rows = new Map<string, Lesson>();
+  readonly effects: MediaEffect[] = [];
 
-  create(lesson: NewLesson): Promise<Lesson | null> {
+  create(lesson: NewLesson, effects: readonly MediaEffect[] = []): Promise<Lesson | null> {
+    this.effects.push(...effects);
     const siblings = [...this.rows.values()].filter((row) => row.courseId === lesson.courseId);
     const displayOrder =
       lesson.displayOrder ?? Math.max(0, ...siblings.map((row) => row.displayOrder)) + 1;
@@ -180,7 +192,12 @@ export class InMemoryLessons implements LessonRepository {
     );
   }
 
-  update(lessonId: string, patch: LessonPatch): Promise<Lesson | null> {
+  update(
+    lessonId: string,
+    patch: LessonPatch,
+    effects: readonly MediaEffect[] = [],
+  ): Promise<Lesson | null> {
+    this.effects.push(...effects);
     const current = this.rows.get(lessonId);
     if (!current) return Promise.resolve(null);
     const next: Lesson = {
@@ -192,8 +209,10 @@ export class InMemoryLessons implements LessonRepository {
     return Promise.resolve(next);
   }
 
-  delete(lessonId: string): Promise<boolean> {
-    return Promise.resolve(this.rows.delete(lessonId));
+  delete(lessonId: string, effects: readonly MediaEffect[] = []): Promise<boolean> {
+    const removed = this.rows.delete(lessonId);
+    if (removed) this.effects.push(...effects);
+    return Promise.resolve(removed);
   }
 
   async reorder(courseId: string, orderedIds: readonly string[]): Promise<Lesson[]> {
@@ -208,8 +227,10 @@ export class InMemoryLessons implements LessonRepository {
 export class InMemoryQuizzes implements QuizRepository {
   readonly rows = new Map<string, Quiz>();
   readonly attemptedQuizIds = new Set<string>();
+  readonly effects: MediaEffect[] = [];
 
-  create(quiz: NewQuiz): Promise<Quiz | null> {
+  create(quiz: NewQuiz, effects: readonly MediaEffect[] = []): Promise<Quiz | null> {
+    this.effects.push(...effects);
     const siblings = [...this.rows.values()].filter((row) => row.lessonId === quiz.lessonId);
     const row: Quiz = {
       id: quiz.id,
@@ -244,7 +265,12 @@ export class InMemoryQuizzes implements QuizRepository {
     );
   }
 
-  update(quizId: string, patch: QuizPatch): Promise<Quiz | null> {
+  update(
+    quizId: string,
+    patch: QuizPatch,
+    effects: readonly MediaEffect[] = [],
+  ): Promise<Quiz | null> {
+    this.effects.push(...effects);
     const current = this.rows.get(quizId);
     if (!current) return Promise.resolve(null);
     const next: Quiz = {
@@ -260,8 +286,10 @@ export class InMemoryQuizzes implements QuizRepository {
     return Promise.resolve(next);
   }
 
-  delete(quizId: string): Promise<boolean> {
-    return Promise.resolve(this.rows.delete(quizId));
+  delete(quizId: string, effects: readonly MediaEffect[] = []): Promise<boolean> {
+    const removed = this.rows.delete(quizId);
+    if (removed) this.effects.push(...effects);
+    return Promise.resolve(removed);
   }
 
   hasAttempts(quizId: string): Promise<boolean> {

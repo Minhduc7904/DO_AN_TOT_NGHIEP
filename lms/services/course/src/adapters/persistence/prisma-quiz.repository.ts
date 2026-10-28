@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 
 import type { Quiz, QuizQuestion, QuizSummary } from '../../domain/course.js';
 import { courseErrors } from '../../domain/errors.js';
@@ -7,6 +7,12 @@ import type {
   QuizPatch,
   QuizRepository,
 } from '../../application/ports/quiz-repository.js';
+import type { MediaEffect } from '../../application/ports/media-effects.js';
+import {
+  enqueueMediaEffects,
+  OUTBOX_PRODUCER,
+  type OutboxProducer,
+} from '../messaging/media-effects.outbox.js';
 import type { Prisma, Quiz as QuizRow } from './generated/client.js';
 import { isRecordNotFound, isUniqueViolation, observeDb, omitUndefined } from './prisma-support.js';
 import { PrismaService } from './prisma.service.js';
@@ -73,9 +79,12 @@ function toSummary(row: QuizRow & { _count: { questions: number } }): QuizSummar
 
 @Injectable()
 export class PrismaQuizRepository implements QuizRepository {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Inject(OUTBOX_PRODUCER) private readonly producer: OutboxProducer,
+  ) {}
 
-  create(quiz: NewQuiz): Promise<Quiz | null> {
+  create(quiz: NewQuiz, effects: readonly MediaEffect[] = []): Promise<Quiz | null> {
     return observeDb('quiz.create', async () => {
       try {
         const row = await this.prisma.$transaction(async (tx) => {
@@ -83,7 +92,7 @@ export class PrismaQuizRepository implements QuizRepository {
             where: { lessonId: quiz.lessonId },
             _max: { displayOrder: true },
           });
-          return tx.quiz.create({
+          const created = await tx.quiz.create({
             data: {
               id: quiz.id,
               lessonId: quiz.lessonId,
@@ -94,6 +103,8 @@ export class PrismaQuizRepository implements QuizRepository {
             },
             include: WITH_TREE,
           });
+          await enqueueMediaEffects(tx, this.producer, effects);
+          return created;
         });
         return toQuiz(row);
       } catch (error) {
@@ -131,7 +142,11 @@ export class PrismaQuizRepository implements QuizRepository {
     });
   }
 
-  update(quizId: string, patch: QuizPatch): Promise<Quiz | null> {
+  update(
+    quizId: string,
+    patch: QuizPatch,
+    effects: readonly MediaEffect[] = [],
+  ): Promise<Quiz | null> {
     return observeDb('quiz.update', async () => {
       try {
         const row = await this.prisma.$transaction(async (tx) => {
@@ -146,7 +161,7 @@ export class PrismaQuizRepository implements QuizRepository {
               await tx.quizQuestion.create({ data: { ...questionData(question), quizId } });
             }
           }
-          return tx.quiz.update({
+          const updated = await tx.quiz.update({
             where: { id: quizId },
             data: omitUndefined({
               title: patch.title,
@@ -155,6 +170,8 @@ export class PrismaQuizRepository implements QuizRepository {
             }),
             include: WITH_TREE,
           });
+          await enqueueMediaEffects(tx, this.producer, effects);
+          return updated;
         });
         return toQuiz(row);
       } catch (error) {
@@ -164,11 +181,15 @@ export class PrismaQuizRepository implements QuizRepository {
     });
   }
 
-  delete(quizId: string): Promise<boolean> {
-    return observeDb('quiz.delete', async () => {
-      const result = await this.prisma.quiz.deleteMany({ where: { id: quizId } });
-      return result.count > 0;
-    });
+  delete(quizId: string, effects: readonly MediaEffect[] = []): Promise<boolean> {
+    return observeDb('quiz.delete', () =>
+      this.prisma.$transaction(async (tx) => {
+        const result = await tx.quiz.deleteMany({ where: { id: quizId } });
+        if (result.count === 0) return false;
+        await enqueueMediaEffects(tx, this.producer, effects);
+        return true;
+      }),
+    );
   }
 
   hasAttempts(quizId: string): Promise<boolean> {

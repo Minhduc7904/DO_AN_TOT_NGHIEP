@@ -1,6 +1,13 @@
 import { randomUUID } from 'node:crypto';
 
-import { createHttpServiceAuth, SERVICE_AUTH } from '@aiops-lms/common/auth';
+import {
+  createHttpServiceAuth,
+  HttpServiceTokenSource,
+  SERVICE_AUTH,
+  SERVICE_TOKEN_PROVIDER,
+  ServiceTokenProvider,
+  type TokenProvider,
+} from '@aiops-lms/common/auth';
 import { COMMON_HTTP_PROVIDERS, HealthController, READINESS_CHECKS } from '@aiops-lms/common/http';
 import { type Clock, type IdGenerator, systemClock } from '@aiops-lms/common/ports';
 import { Module, type Provider } from '@nestjs/common';
@@ -10,6 +17,9 @@ import { CourseController } from './adapters/http/public/course.controller.js';
 import { LessonController } from './adapters/http/public/lesson.controller.js';
 import { QuizController } from './adapters/http/public/quiz.controller.js';
 import { StudentLearningController } from './adapters/http/public/student-learning.controller.js';
+import { MediaHttpClient } from './adapters/clients/media-http.client.js';
+import { OUTBOX_PRODUCER } from './adapters/messaging/media-effects.outbox.js';
+import { OutboxRelayService } from './adapters/messaging/outbox-relay.service.js';
 import { PrismaAttemptRepository } from './adapters/persistence/prisma-attempt.repository.js';
 import { PrismaCourseRepository } from './adapters/persistence/prisma-course.repository.js';
 import {
@@ -23,6 +33,8 @@ import {
   ATTEMPT_REPOSITORY,
   type AttemptRepository,
 } from './application/ports/attempt-repository.js';
+import { MediaUsageEffects } from './application/media-usage-effects.js';
+import { MEDIA_USAGE_LOOKUP, type MediaUsageLookup } from './application/ports/media-effects.js';
 import { COURSE_REPOSITORY, type CourseRepository } from './application/ports/course-repository.js';
 import {
   ENROLLMENT_REPOSITORY,
@@ -74,6 +86,9 @@ import { validateEnvironment } from './config/env.schema.js';
  */
 const uuidGenerator: IdGenerator = { next: () => randomUUID() };
 
+/** Dựng tác động `media` cho use case: lookup usage đi qua HTTP nội bộ tới `media`. */
+const MEDIA_EFFECTS = Symbol('MEDIA_EFFECTS');
+
 const REPOSITORIES: Provider[] = [
   PrismaCourseRepository,
   PrismaLessonRepository,
@@ -87,6 +102,12 @@ const REPOSITORIES: Provider[] = [
   { provide: ENROLLMENT_REPOSITORY, useExisting: PrismaEnrollmentRepository },
   { provide: PROGRESS_REPOSITORY, useExisting: PrismaProgressRepository },
   { provide: ATTEMPT_REPOSITORY, useExisting: PrismaAttemptRepository },
+  { provide: MEDIA_USAGE_LOOKUP, useExisting: MediaHttpClient },
+  {
+    provide: MEDIA_EFFECTS,
+    useFactory: (lookup: MediaUsageLookup) => new MediaUsageEffects(lookup),
+    inject: [MEDIA_USAGE_LOOKUP],
+  },
   { provide: CLOCK, useValue: systemClock },
   { provide: ID_GENERATOR, useValue: uuidGenerator },
   { provide: QuizGrader, useValue: new QuizGrader() },
@@ -96,17 +117,27 @@ const USE_CASES: Provider[] = [
   // courses
   {
     provide: CreateCourseUseCase,
-    useFactory: (courses: CourseRepository, ids: IdGenerator) =>
-      new CreateCourseUseCase(courses, ids),
-    inject: [COURSE_REPOSITORY, ID_GENERATOR],
+    useFactory: (courses: CourseRepository, ids: IdGenerator, media: MediaUsageEffects) =>
+      new CreateCourseUseCase(courses, ids, media),
+    inject: [COURSE_REPOSITORY, ID_GENERATOR, MEDIA_EFFECTS],
   },
-  ...[
-    UpdateCourseUseCase,
-    DeleteCourseUseCase,
-    ListCoursesUseCase,
-    GetCourseSummaryUseCase,
-    ExportCoursesCsvUseCase,
-  ].map((useCase) => ({
+  {
+    provide: UpdateCourseUseCase,
+    useFactory: (courses: CourseRepository, media: MediaUsageEffects) =>
+      new UpdateCourseUseCase(courses, media),
+    inject: [COURSE_REPOSITORY, MEDIA_EFFECTS],
+  },
+  {
+    provide: DeleteCourseUseCase,
+    useFactory: (
+      courses: CourseRepository,
+      lessons: LessonRepository,
+      quizzes: QuizRepository,
+      media: MediaUsageEffects,
+    ) => new DeleteCourseUseCase(courses, lessons, quizzes, media),
+    inject: [COURSE_REPOSITORY, LESSON_REPOSITORY, QUIZ_REPOSITORY, MEDIA_EFFECTS],
+  },
+  ...[ListCoursesUseCase, GetCourseSummaryUseCase, ExportCoursesCsvUseCase].map((useCase) => ({
     provide: useCase,
     useFactory: (courses: CourseRepository) => new useCase(courses),
     inject: [COURSE_REPOSITORY],
@@ -120,18 +151,36 @@ const USE_CASES: Provider[] = [
   // lessons
   {
     provide: CreateLessonUseCase,
-    useFactory: (courses: CourseRepository, lessons: LessonRepository, ids: IdGenerator) =>
-      new CreateLessonUseCase(courses, lessons, ids),
-    inject: [COURSE_REPOSITORY, LESSON_REPOSITORY, ID_GENERATOR],
+    useFactory: (
+      courses: CourseRepository,
+      lessons: LessonRepository,
+      ids: IdGenerator,
+      media: MediaUsageEffects,
+    ) => new CreateLessonUseCase(courses, lessons, ids, media),
+    inject: [COURSE_REPOSITORY, LESSON_REPOSITORY, ID_GENERATOR, MEDIA_EFFECTS],
   },
-  ...[UpdateLessonUseCase, DeleteLessonUseCase, GetLessonUseCase, ReorderLessonsUseCase].map(
-    (useCase) => ({
-      provide: useCase,
-      useFactory: (courses: CourseRepository, lessons: LessonRepository) =>
-        new useCase(courses, lessons),
-      inject: [COURSE_REPOSITORY, LESSON_REPOSITORY],
-    }),
-  ),
+  {
+    provide: UpdateLessonUseCase,
+    useFactory: (courses: CourseRepository, lessons: LessonRepository, media: MediaUsageEffects) =>
+      new UpdateLessonUseCase(courses, lessons, media),
+    inject: [COURSE_REPOSITORY, LESSON_REPOSITORY, MEDIA_EFFECTS],
+  },
+  {
+    provide: DeleteLessonUseCase,
+    useFactory: (
+      courses: CourseRepository,
+      lessons: LessonRepository,
+      quizzes: QuizRepository,
+      media: MediaUsageEffects,
+    ) => new DeleteLessonUseCase(courses, lessons, quizzes, media),
+    inject: [COURSE_REPOSITORY, LESSON_REPOSITORY, QUIZ_REPOSITORY, MEDIA_EFFECTS],
+  },
+  ...[GetLessonUseCase, ReorderLessonsUseCase].map((useCase) => ({
+    provide: useCase,
+    useFactory: (courses: CourseRepository, lessons: LessonRepository) =>
+      new useCase(courses, lessons),
+    inject: [COURSE_REPOSITORY, LESSON_REPOSITORY],
+  })),
   // quizzes
   ...[CreateQuizUseCase, UpdateQuizUseCase].map((useCase) => ({
     provide: useCase,
@@ -140,10 +189,21 @@ const USE_CASES: Provider[] = [
       lessons: LessonRepository,
       quizzes: QuizRepository,
       ids: IdGenerator,
-    ) => new useCase(courses, lessons, quizzes, ids),
-    inject: [COURSE_REPOSITORY, LESSON_REPOSITORY, QUIZ_REPOSITORY, ID_GENERATOR],
+      media: MediaUsageEffects,
+    ) => new useCase(courses, lessons, quizzes, ids, media),
+    inject: [COURSE_REPOSITORY, LESSON_REPOSITORY, QUIZ_REPOSITORY, ID_GENERATOR, MEDIA_EFFECTS],
   })),
-  ...[DeleteQuizUseCase, GetQuizUseCase, ListLessonQuizzesUseCase].map((useCase) => ({
+  {
+    provide: DeleteQuizUseCase,
+    useFactory: (
+      courses: CourseRepository,
+      lessons: LessonRepository,
+      quizzes: QuizRepository,
+      media: MediaUsageEffects,
+    ) => new DeleteQuizUseCase(courses, lessons, quizzes, media),
+    inject: [COURSE_REPOSITORY, LESSON_REPOSITORY, QUIZ_REPOSITORY, MEDIA_EFFECTS],
+  },
+  ...[GetQuizUseCase, ListLessonQuizzesUseCase].map((useCase) => ({
     provide: useCase,
     useFactory: (courses: CourseRepository, lessons: LessonRepository, quizzes: QuizRepository) =>
       new useCase(courses, lessons, quizzes),
@@ -267,7 +327,35 @@ const USE_CASES: Provider[] = [
   ],
   providers: [
     PrismaService,
+    MediaHttpClient,
+    OutboxRelayService,
     ...COMMON_HTTP_PROVIDERS,
+    {
+      provide: OUTBOX_PRODUCER,
+      useFactory: (config: ConfigService) => ({
+        serviceName: COURSE_SERVICE_NAME,
+        serviceVersion: config.getOrThrow<string>('OTEL_SERVICE_VERSION'),
+      }),
+      inject: [ConfigService],
+    },
+    {
+      provide: SERVICE_TOKEN_PROVIDER,
+      useFactory: (config: ConfigService): TokenProvider =>
+        new ServiceTokenProvider(
+          new HttpServiceTokenSource({
+            dependency: 'course-auth-token',
+            baseUrl: config.getOrThrow<string>('AUTH_BASE_URL'),
+            clientId: config.getOrThrow<string>('SERVICE_CLIENT_ID'),
+            clientSecret: config.getOrThrow<string>('SERVICE_CLIENT_SECRET'),
+            timeoutMs: config.getOrThrow<number>('AUTH_TOKEN_TIMEOUT_MS'),
+            breaker: {
+              failureThreshold: config.getOrThrow<number>('AUTH_TOKEN_BREAKER_THRESHOLD'),
+              cooldownMs: config.getOrThrow<number>('AUTH_TOKEN_BREAKER_COOLDOWN_MS'),
+            },
+          }),
+        ),
+      inject: [ConfigService],
+    },
     {
       provide: SERVICE_AUTH,
       useFactory: (config: ConfigService) =>

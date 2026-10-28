@@ -7,6 +7,7 @@ export {
   type CommandEnvelope,
 } from './command-envelope.js';
 export { runOnce } from './inbox.js';
+export { OutboxRelayLoop, type OutboxRelayLoopOptions } from './outbox-relay-loop.js';
 export {
   PostgresOutbox,
   relayOutboxOnce,

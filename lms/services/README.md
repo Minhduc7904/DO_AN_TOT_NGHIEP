@@ -29,7 +29,7 @@ Mỗi use case một class có method `execute`; controller chỉ map HTTP ↔ `
 | `adapters/http/open/`     | tùy (JWKS…)                           | hạ tầng      | `@SkipAuth()`                   |
 | `adapters/http/shared/`   | —                                     | —            | presenter dùng chung hai bề mặt |
 
-Mọi request, kể cả route public, phải mang service access token (guard `ServiceAuthGuard` toàn cục). Client gọi service khác nằm ở `adapters/clients/` và dùng `HttpQueryClient` với `auth: { audience, tokens }`. `public/` và `internal/` không import nhau (ESLint); `lms/test/http-surface.test.mjs` kiểm tra thư mục, prefix và decorator. Tạo service mới bằng `pnpm new-service <name> --port <port>` (template ở `lms/templates/service/`); `student` là service mẫu đầy đủ, `course` là service lớn nhất (30 use case). Service v1 còn lại: `notification` (thay ở R-07); `enrollment`, `submission`, `grading`, `submission-storage-mock` đã bị gỡ ở R-05.
+Mọi request, kể cả route public, phải mang service access token (guard `ServiceAuthGuard` toàn cục). Client gọi service khác nằm ở `adapters/clients/` và dùng `HttpQueryClient` với `auth: { audience, tokens }`. `public/` và `internal/` không import nhau (ESLint); `lms/test/http-surface.test.mjs` kiểm tra thư mục, prefix và decorator. Tạo service mới bằng `pnpm new-service <name> --port <port>` (template ở `lms/templates/service/`); `student` là service mẫu đầy đủ, `course` là service lớn nhất (30 use case), `media` là mẫu cho service có object storage và worker (một image, hai entrypoint). Service v1 còn lại: `notification` (thay ở R-07); `enrollment`, `submission`, `grading`, `submission-storage-mock` đã bị gỡ ở R-05.
 
 ## Thay thế README
 

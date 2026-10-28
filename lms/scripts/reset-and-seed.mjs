@@ -8,6 +8,8 @@ export const REQUIRED_SERVICES = Object.freeze([
   'auth',
   'course',
   'gateway',
+  'media',
+  'media-worker',
   'notification',
   'postgres',
   'rabbitmq',

@@ -45,9 +45,26 @@ jobs:
           --health-timeout 5s
           --health-retries 12
           --health-start-period 20s
+      minio:
+        image: bitnamilegacy/minio:2025.7.23-debian-12-r5
+        env:
+          MINIO_ROOT_USER: lms-minio
+          MINIO_ROOT_PASSWORD: lms-minio-local-only
+          MINIO_DEFAULT_BUCKETS: images,videos,documents,audios,other
+        ports:
+          - 9000:9000
+        options: >-
+          --health-cmd "curl -fsS http://127.0.0.1:9000/minio/health/live"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 12
+          --health-start-period 5s
     env:
       W1_AUTH_DATABASE_URL: postgresql://w1_test:w1_test_password@127.0.0.1:5432/auth_db
       NOTIFICATION_RABBITMQ_URL: amqp://w1_test:w1_test_password@127.0.0.1:5672
+      MEDIA_RABBITMQ_URL: amqp://w1_test:w1_test_password@127.0.0.1:5672
+      MINIO_ENDPOINT: 127.0.0.1
+      MINIO_PORT: 9000
     steps:
       - name: Checkout source
         uses: actions/checkout@v6
@@ -73,7 +90,7 @@ jobs:
 
       - name: Create service databases
         run: |
-          for database in student_db course_db; do
+          for database in student_db course_db media_db; do
             PGPASSWORD=w1_test_password psql -h 127.0.0.1 -U w1_test -d auth_db -c "CREATE DATABASE $database"
           done
 
@@ -83,11 +100,13 @@ jobs:
           export AUTH_DATABASE_URL="$W1_AUTH_DATABASE_URL"
           export STUDENT_DATABASE_URL="$base/student_db"
           export COURSE_DATABASE_URL="$base/course_db"
+          export MEDIA_DATABASE_URL="$base/media_db"
           pnpm run build
           (cd services/auth && pnpm exec prisma migrate deploy)
           (cd services/student && pnpm exec prisma migrate deploy)
           (cd services/course && pnpm exec prisma migrate deploy)
-          pnpm run test:auth:e2e && pnpm run test:student:e2e && pnpm run test:course:e2e && pnpm run ci:verify
+          (cd services/media && pnpm exec prisma migrate deploy)
+          pnpm run test:auth:e2e && pnpm run test:student:e2e && pnpm run test:course:e2e && pnpm run test:media:e2e && pnpm run ci:verify
 
   compose-config:
     name: Validate Compose without local configuration

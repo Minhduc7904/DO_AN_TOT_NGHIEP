@@ -19,7 +19,7 @@
 | R-04b | DTO dùng chung trong `contracts`, envelope phản hồi thống nhất (success và lỗi), phân trang nhất quán                                                                                                               | 3–5  | R-04 (auth) | Hoàn thành (27/10/2026; PR #55)                                                                                                   |
 | R-05  | `course`: course/lesson/quiz, enrollment, progress, quiz attempt, export CSV                                                                                                                                        | 4–8  | R-04        | Hoàn thành (28/10/2026; chạy cục bộ, chưa có PR, bỏ qua CI theo chỉ thị của Đức; phần media/AI hoãn sang R-06/R-08, xem bên dưới) |
 | R-05b | Tách API `public` (`/api/v1`) / `internal` (`/internal/v1`); auth cấp user token và service token (EdDSA + JWKS); tách thư mục theo hai bề mặt (ADR-004)                                                            | 5–6  | R-04, R-05  | Hoàn thành cục bộ (28/10/2026; chưa commit/PR, bỏ qua CI theo chỉ thị của Đức; xem bằng chứng bên dưới)                           |
-| R-06  | `media` + worker: upload trực tiếp MinIO, thumbnail, usage, job                                                                                                                                                     | 5–8  | R-03        | Chưa bắt đầu                                                                                                                      |
+| R-06  | `media` + worker: upload trực tiếp MinIO, thumbnail, usage, job                                                                                                                                                     | 5–8  | R-03        | Hoàn thành (28/10/2026; chạy cục bộ, chưa có PR, bỏ qua CI theo chỉ thị của Đức; xem bên dưới) |
 | R-07  | `notification` + worker: single, batch, email thật, inbox REST                                                                                                                                                      | 6–9  | R-03, R-04  | Chưa bắt đầu                                                                                                                      |
 | R-08  | `ai` gateway + luồng AI trong `course`                                                                                                                                                                              | 7–10 | R-05, R-06  | Chưa bắt đầu                                                                                                                      |
 | R-09  | `scheduler`: job `MEDIA_UNUSED_CLEANUP`                                                                                                                                                                             | 8–9  | R-06        | Chưa bắt đầu                                                                                                                      |
@@ -107,7 +107,7 @@ Bỏ qua theo chỉ thị: CI GitHub Actions chưa đối chiếu cho nhánh nà
 
 **Hoãn có chủ đích (không cắt scope, đã chuyển chủ):**
 
-- Đồng bộ usage media bằng command (`media.*`) → R-06; luồng AI (`ai-documents`, `ai-jobs`) → R-08. `outbox_messages` đã có trong `course_db` cho các producer này.
+- Đồng bộ usage media bằng command (`media.*`) → R-06 (đã làm); luồng AI (`ai-documents`, `ai-jobs`) → R-08. `outbox_messages` đã có trong `course_db` cho các producer này.
 - Smoke `tracing/metrics/logs/acceptance`, `test/regression/*`, Postman v1 và hai job CI `mvp-regression`, `w7-compose` gắn với luồng v1 (enrollment/submission/grading) nên không chạy được với topology v2: job CI đã gỡ, các script còn nguyên trong repo để làm nền cho R-11 (regression, Postman) và R-12 (smoke telemetry).
 - Seed dữ liệu: stack không còn khóa học `course-001`; seeder quy mô lớn ở R-10.
 
@@ -130,3 +130,25 @@ Bỏ qua theo chỉ thị: CI GitHub Actions chưa đối chiếu cho nhánh nà
 - `test/regression/*`, Postman v1 và biến JWT trong `test/regression/testbed.ts` còn theo HS256 → R-11.
 - Giới hạn tốc độ cho `POST /internal/v1/auth/service-token` (chống dò secret) → R-12.
 - Chưa kiểm luồng đăng nhập → gateway → course/student trên stack compose thật (smoke không đăng nhập); các luồng này đã có e2e từng service và test gateway.
+
+### R-06 (chạy cục bộ ngày 28/10/2026, Node 22.13.1, pnpm 11.19.0)
+
+| Hạng mục              | Kết quả                                                                                                                                                                                                                                                                                                        |
+| --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Service `media`       | Dựng trên Prisma (`media_objects`, `media_usages`, `media_background_jobs`, outbox/inbox; partial unique index một thumbnail/course, một avatar/student); một image, hai entrypoint `media` (3004) và `media-worker` (3005); public/internal tách bề mặt, 7 queue `media-worker--*-v1`                          |
+| Object key (đã chốt)  | Upload trực tiếp ghi `tmp/{uuid}.{ext}` cùng bucket; `upload-complete` kiểm tra kích thước + SHA-256 rồi copy sang `yyyy/MM/dd/{uuid}.{ext}` (UTC) và xóa `tmp/`; thumbnail là một dòng `media_objects` (`source_media_id`) ở bucket `images`, key `.webp`                                                    |
+| Producer phía course  | Create/update course, lesson, quiz ghi `media.markdown-usage.synchronize` vào outbox cùng transaction; xóa course/lesson/quiz hỏi `media` (`ids:query`) rồi ghi `media.usages.delete-by-ids` cùng transaction; media chết thì 503 và không xóa. `OutboxRelayLoop` dùng chung ở `packages/common`                  |
+| Unit                  | media 64, course 42 (thêm 7 test tác động media), toàn `pnpm run test` exit 0                                                                                                                                                                                                                                 |
+| e2e (thật)            | `test:media:e2e` 11 test với PostgreSQL 17, MinIO và RabbitMQ thật: upload trực tiếp → `READY` → Range/416 → thumbnail WebP; checksum sai; chưa upload; quá dung lượng; multipart; quy tắc usage (singleton, thay thế, reorder, quyền xóa); avatar qua student giả; retry thumbnail; sync/xóa markdown qua RabbitMQ; thứ tự đảo của job notification; ma trận scope. `test:course:e2e` 5 test gồm outbox và media chết |
+| Luồng thật trên stack | Compose `up` 6 service: đăng nhập instructor qua Gateway → `upload-intents` → POST thẳng MinIO (204) → `upload-complete` `READY` → thumbnail WebP `READY` cho cả PNG (96 B) và MP4 (1512 B, ffmpeg trong image) → content `200` đúng content-type; tạo course có ảnh trong markdown → usage `COURSE_DESCRIPTION` xuất hiện; xóa course → usage về 0 |
+| Compose/CI            | Thêm `media`, `media-worker` (17 thành phần); client `media` (→ student) và `course` (→ media) trong registry, gateway được gọi audience `media`; CI thêm MinIO, `media_db`, migrate và `test:media:e2e`. `compose-reset-smoke` exit 0, fingerprint `4816e6c73dc1…ee69`, 17 thành phần healthy, trace cũ 404 sau reset   |
+| Toàn repo             | `pnpm run lint` (thêm `media` vào glob), `format:check`, `test`, `test:architecture` xanh                                                                                                                                                                                                                     |
+
+**Hoãn có chủ đích (không cắt scope, đã chuyển chủ):**
+
+- `POST /internal/v1/media/cleanup` và job `MEDIA_UNUSED_CLEANUP` → R-09; thuộc scope `media:cleanup`.
+- Producer các command usage của notification (`register`, `register-batch`, `start-job`, `complete-job`): worker và job đã sẵn, producer thêm cùng R-07.
+- Luồng AI đọc byte tài liệu (`GET /internal/v1/media/{id}/content`, scope `media:content:read`): endpoint đã có, client phía course thêm ở R-08.
+
+Bỏ qua theo chỉ thị: CI GitHub Actions chưa đối chiếu cho nhánh này; job `quality` đã thêm MinIO và `test:media:e2e` nhưng chưa chạy trên GitHub.
+

@@ -1,7 +1,9 @@
 import { randomUUID } from 'node:crypto';
+import { createServer, type Server } from 'node:http';
+import type { AddressInfo } from 'node:net';
 
-import { generateSigningKey } from '@aiops-lms/common/auth';
-import { mintGatewayToken, startJwksStub } from '@aiops-lms/common/auth/testing';
+import { generateSigningKey, toJwk } from '@aiops-lms/common/auth';
+import { mintGatewayToken, mintServiceToken } from '@aiops-lms/common/auth/testing';
 import { AppExceptionFilter, correlationIdMiddleware } from '@aiops-lms/common/http';
 import {
   apiErrorSchema,
@@ -28,7 +30,11 @@ import request from 'supertest';
 /** Chạy với PostgreSQL thật đã migrate (`COURSE_DATABASE_URL`); xem `pnpm test:course:e2e`. */
 describe('course service (PostgreSQL thật)', () => {
   let app: INestApplication;
-  let jwks: Awaited<ReturnType<typeof startJwksStub>>;
+  let stub: Server;
+  // Stub của `auth` (JWKS + service-token) và `media` (usage id theo owner) trong một server.
+  const usagesByOwner = new Map<string, string[]>();
+  const mediaQueries: string[][] = [];
+  let mediaDown = false;
 
   // Mọi request public đi qua Gateway nên mang service token của gateway kèm danh tính user.
   const signingKey = generateSigningKey();
@@ -55,8 +61,69 @@ describe('course service (PostgreSQL thật)', () => {
       throw new Error('COURSE_DATABASE_URL là bắt buộc cho e2e của course');
     }
     process.env.OTEL_SDK_DISABLED = 'true';
-    jwks = await startJwksStub(signingKey);
-    process.env.AUTH_BASE_URL = jwks.baseUrl;
+    stub = createServer((req, res) => {
+      const send = (status: number, body: unknown): void => {
+        res.writeHead(status, { 'content-type': 'application/json' });
+        res.end(JSON.stringify(body));
+      };
+      const envelope = (data: unknown): unknown => ({
+        success: true,
+        data,
+        error: null,
+        meta: { trace_id: 'stub', timestamp: new Date().toISOString(), pagination: null },
+      });
+      if (req.url === '/.well-known/jwks.json') {
+        return send(200, { keys: [toJwk(signingKey.publicKey)] });
+      }
+      if (req.method === 'POST' && req.url === '/internal/v1/auth/service-token') {
+        const token = mintServiceToken(signingKey, {
+          subject: 'course',
+          audience: 'media',
+          scopes: ['media:usage:read'],
+        });
+        return send(
+          200,
+          envelope({
+            access_token: token,
+            token_type: 'Bearer',
+            expires_in: 600,
+            scope: 'media:usage:read',
+          }),
+        );
+      }
+      if (req.method === 'POST' && req.url === '/internal/v1/media/usages/ids:query') {
+        let raw = '';
+        req.on('data', (chunk: Buffer) => (raw += chunk.toString()));
+        req.on('end', () => {
+          if (mediaDown) return send(503, { success: false, data: null, error: null, meta: null });
+          const ownerIds = (JSON.parse(raw) as { owner_ids: string[] }).owner_ids;
+          mediaQueries.push(ownerIds);
+          send(
+            200,
+            envelope({
+              items: ownerIds.map((id) => ({
+                owner_id: id,
+                usage_ids: usagesByOwner.get(id) ?? [],
+              })),
+            }),
+          );
+        });
+        return;
+      }
+      return send(404, { success: false, data: null, error: null, meta: null });
+    });
+    await new Promise<void>((resolve) => stub.listen(0, '127.0.0.1', resolve));
+    const stubUrl = `http://127.0.0.1:${(stub.address() as AddressInfo).port}`;
+    Object.assign(process.env, {
+      AUTH_BASE_URL: stubUrl,
+      COURSE_MEDIA_BASE_URL: stubUrl,
+      COURSE_MEDIA_BREAKER_COOLDOWN_MS: '50',
+      SERVICE_CLIENT_ID: 'course',
+      SERVICE_CLIENT_SECRET: 'course-client-secret-local-only',
+      // Không có broker: relay chỉ cảnh báo, command nằm lại trong outbox để test kiểm tra.
+      COURSE_RABBITMQ_URL: 'amqp://lms:lms-local-only@127.0.0.1:1',
+      COURSE_OUTBOX_POLL_MS: '60000',
+    });
     const { AppModule } = await import('../../src/app.module.js');
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
     app = moduleRef.createNestApplication();
@@ -67,7 +134,8 @@ describe('course service (PostgreSQL thật)', () => {
 
   afterAll(async () => {
     await app?.close();
-    await jwks?.close();
+    stub?.closeAllConnections();
+    await new Promise<void>((resolve) => (stub ? stub.close(() => resolve()) : resolve()));
   });
 
   const http = (): ReturnType<typeof request> => request(app.getHttpServer());
@@ -531,6 +599,108 @@ describe('course service (PostgreSQL thật)', () => {
       .expect(401);
     await http().get('/api/v1/courses/khong-phai-uuid').set(admin).expect(400);
     await http().get(`/api/v1/courses/${randomUUID()}`).set(admin).expect(404);
+  });
+
+  it('thay đổi markdown/xóa ghi command media vào outbox cùng transaction; media chết thì không xóa', async () => {
+    const { PrismaService } = await import('../../src/adapters/persistence/prisma.service.js');
+    const prisma = app.get(PrismaService);
+    const mediaId = randomUUID();
+    const outboxFor = async (
+      routingKey: string,
+      predicate: (payload: Record<string, unknown>) => boolean,
+    ): Promise<Record<string, unknown>[]> => {
+      const rows = await prisma.$queryRawUnsafe<
+        { envelope: { payload: Record<string, unknown> } }[]
+      >(
+        `SELECT envelope FROM outbox_messages WHERE routing_key = $1 ORDER BY created_at`,
+        routingKey,
+      );
+      return rows.map((row) => row.envelope.payload).filter(predicate);
+    };
+    const syncQueue = 'media-worker--synchronize-markdown-media-usage-v1';
+    const deleteQueue = 'media-worker--delete-media-usages-by-ids-v1';
+
+    const created = await http()
+      .post('/api/v1/courses')
+      .set(instructor)
+      .send({
+        name: `Media ${unique}`,
+        description_markdown: `![x](/api/v1/media/${mediaId}/content)`,
+      })
+      .expect(201);
+    const courseId = (created.body as { data: { id: string } }).data.id;
+    const lesson = await createLesson(courseId, { title: 'Bài', content_markdown: 'Nội dung' });
+    const quizResponse = await http()
+      .post(`/api/v1/courses/${courseId}/lessons/${lesson.id}/quizzes`)
+      .set(instructor)
+      .send({ title: 'Quiz', description_markdown: 'Mô tả', questions })
+      .expect(201);
+    const quizId = (quizResponse.body as { data: { id: string } }).data.id;
+
+    expect(await outboxFor(syncQueue, (p) => p['owner_id'] === courseId)).toEqual([
+      {
+        owner_kind: 'COURSE',
+        owner_id: courseId,
+        usage_type: 'COURSE_DESCRIPTION',
+        markdown: `![x](/api/v1/media/${mediaId}/content)`,
+        actor_id: instructorId,
+      },
+    ]);
+    expect(await outboxFor(syncQueue, (p) => p['owner_id'] === lesson.id)).toHaveLength(1);
+    const quizSync = await outboxFor(syncQueue, (p) => p['owner_id'] === quizId);
+    expect(quizSync[0]).toMatchObject({ usage_type: 'QUIZ_CONTENT', actor_id: instructorId });
+    expect(quizSync[0]?.['markdown']).toContain('2 + 2 = ?');
+
+    // Sửa không đụng markdown thì không phát thêm command.
+    await http()
+      .patch(`/api/v1/courses/${courseId}`)
+      .set(instructor)
+      .send({ name: 'Đổi tên' })
+      .expect(200);
+    expect(await outboxFor(syncQueue, (p) => p['owner_id'] === courseId)).toHaveLength(1);
+    await http()
+      .patch(`/api/v1/courses/${courseId}`)
+      .set(instructor)
+      .send({ description_markdown: null })
+      .expect(200);
+    const afterClear = await outboxFor(syncQueue, (p) => p['owner_id'] === courseId);
+    expect(afterClear[1]).toMatchObject({ markdown: null });
+
+    // Xóa quiz: usage lấy từ media rồi gửi command xóa.
+    usagesByOwner.set(quizId, [randomUUID()]);
+    mediaQueries.length = 0;
+    await http()
+      .delete(`/api/v1/courses/${courseId}/lessons/${lesson.id}/quizzes/${quizId}`)
+      .set(instructor)
+      .expect(204);
+    expect(mediaQueries).toEqual([[quizId]]);
+    expect(
+      await outboxFor(deleteQueue, (p) =>
+        (p['usage_ids'] as string[]).includes(usagesByOwner.get(quizId)?.[0] ?? ''),
+      ),
+    ).toHaveLength(1);
+
+    // Media chết: xóa course lỗi 503 và không có gì bị xóa (cũng không có command).
+    const courseUsage = randomUUID();
+    const lessonUsage = randomUUID();
+    usagesByOwner.set(courseId, [courseUsage]);
+    usagesByOwner.set(lesson.id, [lessonUsage]);
+    mediaDown = true;
+    const refused = await http().delete(`/api/v1/courses/${courseId}`).set(instructor).expect(503);
+    expect(apiErrorSchema.parse(refused.body).error.code).toBe('DEPENDENCY_UNAVAILABLE');
+    await http().get(`/api/v1/courses/${courseId}`).set(instructor).expect(200);
+    mediaDown = false;
+
+    // Media phục hồi (đợi breaker đóng lại): usage của course và bài học được gom vào một command.
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    mediaQueries.length = 0;
+    await http().delete(`/api/v1/courses/${courseId}`).set(instructor).expect(204);
+    expect(mediaQueries).toEqual([[courseId, lesson.id]]);
+    const deleted = await outboxFor(deleteQueue, (p) =>
+      (p['usage_ids'] as string[]).includes(courseUsage),
+    );
+    expect(deleted).toEqual([{ usage_ids: [courseUsage, lessonUsage] }]);
+    await http().get(`/api/v1/courses/${courseId}`).set(instructor).expect(404);
   });
 
   async function createLesson(

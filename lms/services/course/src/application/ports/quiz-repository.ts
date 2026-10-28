@@ -1,4 +1,5 @@
 import type { Quiz, QuizQuestion, QuizStatus, QuizSummary } from '../../domain/course.js';
+import type { MediaEffect } from './media-effects.js';
 
 export const QUIZ_REPOSITORY = Symbol('QUIZ_REPOSITORY');
 
@@ -20,11 +21,11 @@ export interface QuizPatch {
 
 export interface QuizRepository {
   /** Thêm vào cuối bài học. */
-  create(quiz: NewQuiz): Promise<Quiz | null>;
+  create(quiz: NewQuiz, effects?: readonly MediaEffect[]): Promise<Quiz | null>;
   findInLesson(lessonId: string, quizId: string): Promise<Quiz | null>;
   findById(quizId: string): Promise<Quiz | null>;
   listByLesson(lessonId: string, publishedOnly: boolean): Promise<QuizSummary[]>;
-  update(quizId: string, patch: QuizPatch): Promise<Quiz | null>;
-  delete(quizId: string): Promise<boolean>;
+  update(quizId: string, patch: QuizPatch, effects?: readonly MediaEffect[]): Promise<Quiz | null>;
+  delete(quizId: string, effects?: readonly MediaEffect[]): Promise<boolean>;
   hasAttempts(quizId: string): Promise<boolean>;
 }

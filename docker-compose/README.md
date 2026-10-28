@@ -8,7 +8,7 @@ Thư mục này chứa manifest orchestration root cho LMS testbed. Baseline hi�
 > - `../aiops-platform/observability/compose.yaml`: chỉ stack observability.
 > - `compose.full.yaml`: ghép cả hai trong một project (dùng `include`), là file mặc định của script reset/seed, smoke observability và CI.
 >
-> Hai bên nối với nhau qua network `aiops-net` (biến `AIOPS_NETWORK_NAME`); service LMS chỉ gửi OTLP/HTTP tới `otel-collector:4318`. Các lệnh bên dưới dùng `compose.full.yaml` khi cần đủ 15 thành phần; mục observability ở dưới sẽ chuyển về `aiops-platform/` khi viết lại tài liệu ở R-12. Đường dẫn `observability/…` trong các mục đó nay là `../aiops-platform/observability/…`.
+> Hai bên nối với nhau qua network `aiops-net` (biến `AIOPS_NETWORK_NAME`); service LMS chỉ gửi OTLP/HTTP tới `otel-collector:4318`. Các lệnh bên dưới dùng `compose.full.yaml` khi cần đủ 17 thành phần; mục observability ở dưới sẽ chuyển về `aiops-platform/` khi viết lại tài liệu ở R-12. Đường dẫn `observability/…` trong các mục đó nay là `../aiops-platform/observability/…`.
 
 > **Hạ tầng topology v2 (R-03):** `compose.yaml` đã thêm `student` (service mẫu Prisma, cổng host `3012`), `minio` + `minio-init` (5 bucket `images`, `videos`, `documents`, `audios`, `other`; API `9000`, console `9001`), `mailpit` (SMTP `1025`, UI `8025`) và các DB `student_db`, `media_db`, `notification_db`, `scheduler_db`, `ai_db` kèm role riêng (`postgres-init/02-create-v2-databases.sh`). Từ R-05 `enrollment`, `submission`, `grading`, `submission-storage-mock` và Redis đã bị gỡ; `notification` (v1) còn tới R-07. Volume Postgres cũ còn `course_db` của v1 phải tạo lại (`down --volumes`) vì `course` v2 dùng Prisma và role riêng `course_user`. Container v2 chạy `prisma migrate deploy` trước khi khởi động.
 
@@ -16,7 +16,7 @@ Thư mục này chứa manifest orchestration root cho LMS testbed. Baseline hi�
 
 - Docker Engine đang chạy.
 - Docker Compose v2 hỗ trợ `docker compose up --wait`.
-- Các port mặc định `3000`–`3003`, `3006`, `3012`, `5432`, `5672`, `15672`, `9000`–`9001`, `1025` và `8025` chưa bị chiếm, hoặc đã được đổi trong file `.env` local.
+- Các port mặc định `3000`–`3006`, `3012`, `5432`, `5672`, `15672`, `9000`–`9001`, `1025` và `8025` chưa bị chiếm, hoặc đã được đổi trong file `.env` local.
 - Docker được cấp khoảng 8 GB RAM khi bật cả observability. Với bộ nhớ hạn chế, build lại toàn bộ image không dùng cache bằng một lệnh `build --no-cache` có thể lỗi `cannot allocate memory` vì các image build song song; khi đó build tuần tự theo mục [Build lại image không dùng cache](#build-lại-image-không-dùng-cache).
 - Reset/seed và regression cần toolchain của `lms/` (Node.js `22.13.1`, pnpm `11.19.0`) và dependency đã cài theo [`../lms/README.md`](../lms/README.md#cài-đặt-và-kiểm-tra).
 
@@ -52,7 +52,7 @@ docker compose --env-file docker-compose/.env -f docker-compose/compose.full.yam
 
 Course tự chạy `prisma migrate deploy` trước khi mở HTTP (cổng `3003`, database `course_db` với role riêng `course_user`). Notification (v1) vẫn khai báo queue `notification.grade-completed.v1` cho tới khi được thay ở R-07, dù không còn producer.
 
-Compose chỉ báo thành công sau khi Gateway, Auth, Student, Course, Notification, PostgreSQL, MinIO, `minio-init`, Mailpit, RabbitMQ, Collector, Prometheus, Tempo, Loki và Grafana (15 thành phần) đều healthy. PostgreSQL tạo `auth_db`, `student_db`, `course_db`, `media_db`, `notification_db`, `scheduler_db` và `ai_db` riêng, mỗi DB một role; các service có persistence tự chạy `prisma migrate deploy` trước khi mở HTTP. Script khởi tạo PostgreSQL chỉ chạy trên volume mới; với volume cũ (còn DB hoặc bảng v1), reset volume theo hướng dẫn bên dưới. Credential lấy từ `.env`, không đặt trực tiếp trong manifest Compose.
+Compose chỉ báo thành công sau khi Gateway, Auth, Student, Course, Media, Media Worker, Notification, PostgreSQL, MinIO, `minio-init`, Mailpit, RabbitMQ, Collector, Prometheus, Tempo, Loki và Grafana (17 thành phần) đều healthy. PostgreSQL tạo `auth_db`, `student_db`, `course_db`, `media_db`, `notification_db`, `scheduler_db` và `ai_db` riêng, mỗi DB một role; các service có persistence tự chạy `prisma migrate deploy` trước khi mở HTTP. Script khởi tạo PostgreSQL chỉ chạy trên volume mới; với volume cũ (còn DB hoặc bảng v1), reset volume theo hướng dẫn bên dưới. Credential lấy từ `.env`, không đặt trực tiếp trong manifest Compose.
 
 ## Kiểm tra
 
@@ -212,7 +212,7 @@ cd lms
 pnpm run test:testbed:reset:compose
 ```
 
-Test reset hai lần trên `aiops-lms-test-reset-seed`, so fingerprint, xác nhận 15 thành phần healthy, chạy smoke sau mỗi reset và xác nhận trace cũ trả 404 sau reset. Test tự dọn đúng project test cùng volume trong `finally`. Khi RAM/build cache hạn chế, đặt `COMPOSE_PARALLEL_LIMIT=1` trước các lệnh Compose/reset/regression để tránh build đồng thời.
+Test reset hai lần trên `aiops-lms-test-reset-seed`, so fingerprint, xác nhận 17 thành phần healthy, chạy smoke sau mỗi reset và xác nhận trace cũ trả 404 sau reset. Test tự dọn đúng project test cùng volume trong `finally`. Khi RAM/build cache hạn chế, đặt `COMPOSE_PARALLEL_LIMIT=1` trước các lệnh Compose/reset/regression để tránh build đồng thời.
 
 ## Metrics runtime và broker W10
 

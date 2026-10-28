@@ -1,0 +1,171 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/adapters/persistence/generated"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum MediaType {
+  IMAGE
+  VIDEO
+  DOCUMENT
+  AUDIO
+  OTHER
+
+  @@map("media_type")
+}
+
+enum MediaStatus {
+  PENDING
+  READY
+  FAILED
+
+  @@map("media_status")
+}
+
+enum ThumbnailStatus {
+  NOT_APPLICABLE
+  PENDING
+  PROCESSING
+  READY
+  FAILED
+
+  @@map("media_thumbnail_status")
+}
+
+enum UsageOwnerKind {
+  COURSE
+  NOTIFICATION
+  STUDENT
+  MEDIA
+
+  @@map("media_usage_owner_kind")
+}
+
+enum UsageType {
+  COURSE_THUMBNAIL
+  COURSE_GALLERY
+  COURSE_DESCRIPTION
+  LESSON_CONTENT
+  LESSON_ATTACHMENT
+  QUIZ_CONTENT
+  NOTIFICATION_BODY
+  STUDENT_AVATAR
+  MEDIA_THUMBNAIL
+
+  @@map("media_usage_type")
+}
+
+enum JobType {
+  THUMBNAIL_DERIVATION
+  MARKDOWN_USAGE_SYNC
+  MEDIA_USAGE_DELETE
+  NOTIFICATION_USAGE
+
+  @@map("media_job_type")
+}
+
+enum JobStatus {
+  QUEUED
+  PROCESSING
+  COMPLETED
+  PARTIAL_FAILED
+  FAILED
+
+  @@map("media_job_status")
+}
+
+/// Metadata object trong MinIO. `uploadedBy` là `auth_users.id` (tham chiếu logic). Client không
+/// bao giờ thấy `bucket`/`objectKey`; `tmpObjectKey` chỉ tồn tại khi upload trực tiếp chưa hoàn tất.
+model MediaObject {
+  id              String          @id @db.Uuid
+  type            MediaType
+  status          MediaStatus
+  thumbnailStatus ThumbnailStatus @default(NOT_APPLICABLE) @map("thumbnail_status")
+  originalName    String          @map("original_name")
+  mimeType        String          @map("mime_type")
+  sizeBytes       Int             @map("size_bytes")
+  checksumSha256  String          @map("checksum_sha256")
+  bucket          String
+  objectKey       String          @map("object_key")
+  tmpObjectKey    String?         @map("tmp_object_key")
+  uploadExpiresAt DateTime?       @map("upload_expires_at") @db.Timestamptz(6)
+  uploadedBy      String          @map("uploaded_by") @db.Uuid
+  sourceMediaId   String?         @unique @map("source_media_id") @db.Uuid
+  failureReason   String?         @map("failure_reason")
+  createdAt       DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime        @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt       DateTime?       @map("deleted_at") @db.Timestamptz(6)
+
+  source MediaObject?  @relation("Thumbnail", fields: [sourceMediaId], references: [id], onDelete: Cascade)
+  thumbnail MediaObject? @relation("Thumbnail")
+  usages MediaUsage[]
+
+  @@unique([bucket, objectKey])
+  @@index([uploadedBy, createdAt(sort: Desc)])
+  @@index([type, status])
+  @@map("media_objects")
+}
+
+/// Liên kết media ↔ owner. Chỉ ảnh gốc READY mới làm thumbnail/gallery/avatar (kiểm ở use case);
+/// partial unique index (một thumbnail mỗi course, một avatar mỗi student) nằm trong migration.
+model MediaUsage {
+  id        String         @id @db.Uuid
+  mediaId   String         @map("media_id") @db.Uuid
+  ownerKind UsageOwnerKind @map("owner_kind")
+  ownerId   String         @map("owner_id") @db.Uuid
+  usageType UsageType      @map("usage_type")
+  position  Int            @default(0)
+  createdBy String         @map("created_by") @db.Uuid
+  createdAt DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  media MediaObject @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+
+  @@unique([mediaId, ownerKind, ownerId, usageType])
+  @@index([ownerKind, ownerId, usageType, position])
+  @@map("media_usages")
+}
+
+model MediaBackgroundJob {
+  id               String    @id @db.Uuid
+  type             JobType
+  status           JobStatus @default(QUEUED)
+  /// Khóa chống tạo trùng job cho cùng một đầu việc (ví dụ `thumbnail:<media_id>`).
+  deduplicationKey String    @unique @map("deduplication_key")
+  referenceId      String?   @map("reference_id")
+  expectedCount    Int?      @map("expected_count")
+  processedCount   Int       @default(0) @map("processed_count")
+  failedCount      Int       @default(0) @map("failed_count")
+  lastError        String?   @map("last_error")
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@index([type, status, createdAt(sort: Desc)])
+  @@map("media_background_jobs")
+}
+
+model OutboxMessage {
+  id          String    @id @db.Uuid
+  routingKey  String    @map("routing_key")
+  envelope    Json
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  availableAt DateTime  @default(now()) @map("available_at") @db.Timestamptz(6)
+  lockedUntil DateTime? @map("locked_until") @db.Timestamptz(6)
+  attempts    Int       @default(0)
+  publishedAt DateTime? @map("published_at") @db.Timestamptz(6)
+  lastError   String?   @map("last_error")
+
+  @@index([publishedAt, availableAt])
+  @@map("outbox_messages")
+}
+
+model InboxState {
+  messageId   String   @map("message_id") @db.Uuid
+  consumer    String
+  processedAt DateTime @default(now()) @map("processed_at") @db.Timestamptz(6)
+
+  @@id([messageId, consumer])
+  @@map("inbox_states")
+}

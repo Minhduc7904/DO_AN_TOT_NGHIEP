@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 
 import type { Course } from '../../domain/course.js';
 import type {
@@ -8,6 +8,12 @@ import type {
   CourseRepository,
   NewCourse,
 } from '../../application/ports/course-repository.js';
+import type { MediaEffect } from '../../application/ports/media-effects.js';
+import {
+  enqueueMediaEffects,
+  OUTBOX_PRODUCER,
+  type OutboxProducer,
+} from '../messaging/media-effects.outbox.js';
 import type { Course as CourseRow, Prisma } from './generated/client.js';
 import { isRecordNotFound, observeDb, omitUndefined } from './prisma-support.js';
 import { PrismaService } from './prisma.service.js';
@@ -26,11 +32,18 @@ function whereOf(filter: CourseFilter): Prisma.CourseWhereInput {
 
 @Injectable()
 export class PrismaCourseRepository implements CourseRepository {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Inject(OUTBOX_PRODUCER) private readonly producer: OutboxProducer,
+  ) {}
 
-  create(course: NewCourse): Promise<Course> {
-    return observeDb('course.create', async () =>
-      toCourse(await this.prisma.course.create({ data: course })),
+  create(course: NewCourse, effects: readonly MediaEffect[] = []): Promise<Course> {
+    return observeDb('course.create', () =>
+      this.prisma.$transaction(async (tx) => {
+        const row = await tx.course.create({ data: course });
+        await enqueueMediaEffects(tx, this.producer, effects);
+        return toCourse(row);
+      }),
     );
   }
 
@@ -41,12 +54,18 @@ export class PrismaCourseRepository implements CourseRepository {
     });
   }
 
-  update(id: string, patch: CoursePatch): Promise<Course | null> {
+  update(
+    id: string,
+    patch: CoursePatch,
+    effects: readonly MediaEffect[] = [],
+  ): Promise<Course | null> {
     return observeDb('course.update', async () => {
       try {
-        return toCourse(
-          await this.prisma.course.update({ where: { id }, data: omitUndefined(patch) }),
-        );
+        return await this.prisma.$transaction(async (tx) => {
+          const row = await tx.course.update({ where: { id }, data: omitUndefined(patch) });
+          await enqueueMediaEffects(tx, this.producer, effects);
+          return toCourse(row);
+        });
       } catch (error) {
         if (isRecordNotFound(error)) return null;
         throw error;
@@ -54,11 +73,15 @@ export class PrismaCourseRepository implements CourseRepository {
     });
   }
 
-  delete(id: string): Promise<boolean> {
-    return observeDb('course.delete', async () => {
-      const result = await this.prisma.course.deleteMany({ where: { id } });
-      return result.count > 0;
-    });
+  delete(id: string, effects: readonly MediaEffect[] = []): Promise<boolean> {
+    return observeDb('course.delete', () =>
+      this.prisma.$transaction(async (tx) => {
+        const result = await tx.course.deleteMany({ where: { id } });
+        if (result.count === 0) return false;
+        await enqueueMediaEffects(tx, this.producer, effects);
+        return true;
+      }),
+    );
   }
 
   list(
