@@ -10,7 +10,12 @@ export interface StudentRepository {
   /** Trả `null` khi `id` hoặc email đã tồn tại. */
   create(student: NewStudent): Promise<Student | null>;
   findById(id: string): Promise<Student | null>;
-  list(page: number, pageSize: number): Promise<{ items: Student[]; total: number }>;
+  /** `status` lọc theo trạng thái và chuyển sang thứ tự `id` ổn định cho việc duyệt toàn bộ. */
+  list(
+    page: number,
+    pageSize: number,
+    status?: Student['status'],
+  ): Promise<{ items: Student[]; total: number }>;
   /** Kiểm tra truy cập CSDL; ném lỗi khi không sẵn sàng. */
   ping(): Promise<void>;
 }

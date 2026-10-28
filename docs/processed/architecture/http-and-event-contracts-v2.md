@@ -67,7 +67,7 @@ Route đọc nội dung media công khai với người dùng (không cần JWT)
 | ----------------------- | -------------------------------- | ------------------------------------- | --------------------------------------------------------- |
 | `gateway:proxy`         | gateway                          | Mọi route public của mọi service      | Đã có                                                     |
 | `student:profile:write` | auth                             | `POST /internal/v1/students`          | Đã có                                                     |
-| `student:profile:read`  | auth, media, notification-worker | `GET /internal/v1/students[/{id}]`    | Đã có (client media ở R-06; notification-worker thêm ở R-07) |
+| `student:profile:read`  | auth, media, notification-worker | `GET /internal/v1/students[/{id}]`    | Đã có (client media ở R-06, notification-worker ở R-07)      |
 | `media:usage:read`      | course                           | `ids:query`, `usages/urls`            | Đã có (R-06)                                              |
 | `media:content:read`    | course                           | `GET /internal/v1/media/{id}/content` | Đã có (R-06)                                              |
 | `media:cleanup`         | scheduler-worker                 | `POST /internal/v1/media/cleanup`     | Dự kiến R-09                                              |
@@ -159,6 +159,8 @@ Mã nghiệp vụ bổ sung (giữ từ repo mẫu, cùng envelope):
 |  413 | `MEDIA_TOO_LARGE`                | media   | Vượt giới hạn kích thước theo loại media                   |
 |  409 | `MEDIA_UPLOAD_NOT_COMPLETED`     | media   | `upload-complete` nhưng object chưa được tải lên           |
 |  409 | `MEDIA_USAGE_CONFLICT`           | media   | Usage vi phạm quy tắc (trùng, singleton, sai loại owner)   |
+|  409 | `NOTIFICATION_BATCH_NOT_RETRYABLE` | notification | Batch chưa kết thúc hoặc không có recipient `FAILED`  |
+|  409 | `NOTIFICATION_BATCH_RETRY_EXISTS`  | notification | Batch nguồn đã có batch retry (`details.retry_batch_id`) |
 
 Không trả stack trace, password, JWT, API key, hoặc chi tiết DB nội bộ. Thông báo lỗi AI phải loại bỏ API key và host của provider.
 
@@ -313,7 +315,7 @@ Presigned POST bắt buộc lộ key `tmp/…` cho trình duyệt; key cuối c�
 
 **Command và queue** (xem §6): `media-worker--generate-media-thumbnail-v1`, `…--synchronize-markdown-media-usage-v1`, `…--delete-media-usages-by-ids-v1`, `…--register-notification-media-usage-v1`, `…--register-notification-media-usages-v1`, `…--start-notification-media-usage-job-v1`, `…--complete-notification-media-usage-job-v1`. Worker xử lý idempotent qua `inbox_states` và retry rồi chuyển `<queue>.error`.
 
-Chưa làm ở R-06 (chuyển chủ): `POST /internal/v1/media/cleanup` → R-09; producer command usage của notification → R-07.
+Chưa làm ở R-06 (chuyển chủ): `POST /internal/v1/media/cleanup` → R-09. Producer command usage của notification đã có từ R-07 (§4.5).
 
 ## 4.5. notification
 
@@ -321,9 +323,9 @@ Chưa làm ở R-06 (chuyển chủ): `POST /internal/v1/media/cleanup` → R-09
 | ------ | ---------------------------------------------- | :--: | -------------------------------------------------------------------------- |
 | POST   | `/api/v1/notifications`                        |  A   | `create-notification` (đơn; gửi email + ghi inbox)                         |
 | GET    | `/api/v1/notifications/{notification_id}`      |  A   | `get-notification`                                                         |
-| GET    | `/api/v1/notifications/me`                     |  S   | `list-my-notifications` (inbox, phân trang, lọc `UNREAD`)                  |
+| GET    | `/api/v1/notifications/me`                     |  S   | `list-my-notifications` (inbox, phân trang, lọc `status=UNREAD\|READ`)     |
 | PATCH  | `/api/v1/notifications/{notification_id}/read` |  S   | `mark-notification-read`                                                   |
-| POST   | `/api/v1/notifications/read-all`               |  S   | `mark-all-notifications-read`                                              |
+| POST   | `/api/v1/notifications/read-all`               |  S   | `mark-all-notifications-read` (200, `{updated_count}`)                     |
 | POST   | `/api/v1/notification-batches`                 |  A   | `create-notification-batch` (`target_scope=ALL_STUDENTS`)                  |
 | GET    | `/api/v1/notification-batches`                 |  A   | `list-notification-batches`                                                |
 | GET    | `/api/v1/notification-batches/{batch_id}`      |  A   | `get-notification-batch`                                                   |
@@ -333,6 +335,15 @@ Chưa làm ở R-06 (chuyển chủ): `POST /internal/v1/media/cleanup` → R-09
 | POST   | `…/{batch_id}/retry-failed`                    |  A   | `retry-failed-notification-batch` (một batch nguồn chỉ có một batch retry) |
 
 Phần inbox là mới so với repo mẫu. Email đi qua SMTP; lỗi gửi ghi vào item `RETRY`/`FAILED`, không làm hỏng response tạo batch (xử lý bất đồng bộ).
+
+**Đã triển khai ở R-07** (contract DTO ở `lms/contracts/src/http/public/notification.ts`):
+
+- `POST /api/v1/notifications` nhận `{student_id, title, content_markdown, send_email=true}`, trả 201. Thông báo luôn vào inbox; `email_status` là `PENDING` (chờ `notification-worker` gửi), `SENT`, `FAILED` hoặc `NOT_REQUESTED` (`send_email=false`). Student không còn `ACTIVE` khi gửi thì `email_status=FAILED`, không retry; lỗi SMTP/student tạm thời được consumer retry rồi mới `FAILED`.
+- `POST /api/v1/notification-batches` nhận `{title, content_markdown, batch_size?}` (mặc định 500, tối đa 1000), trả 201 với `status=PENDING`; recipient được chụp bất đồng bộ. `snapshot-status` trả `{batch_id, status, snapshotted_count, snapshot_finished}`, `delivery-status` trả `{batch_id, status, total, pending, processing, retry, success, failed}`, `failed-items` phân trang `{id, student_id, email, attempts, last_error, updated_at}`.
+- `retry-failed` trả 201 batch mới `target_scope=FAILED_RECIPIENTS`, `source_batch_id` trỏ batch nguồn; lỗi `NOTIFICATION_BATCH_NOT_RETRYABLE` / `NOTIFICATION_BATCH_RETRY_EXISTS` (409, §3).
+- Mỗi item gửi tối đa `NOTIFICATION_ITEM_MAX_ATTEMPTS` lần (mặc định 3, backoff nhân đôi từ `NOTIFICATION_ITEM_RETRY_DELAY_MS`); trạng thái cuối batch: mọi item `SUCCESS` → `COMPLETED`, lẫn → `PARTIAL_FAILED`, toàn `FAILED` → `FAILED`. Inbox của batch chỉ ghi cho recipient gửi thành công (unique `(batch_id, student_id)` nên redelivery không trùng).
+- Markdown tham chiếu `/api/v1/media/{uuid}/(content|thumbnail)` đăng ký usage `NOTIFICATION_BODY`: thông báo đơn gửi `media.notification-usage.register`; batch gửi `start-job` khi tạo, `register-batch` (≤ 500 item mỗi lô) từ worker sau mỗi lượt gửi và `complete-job` kèm `expected_usage_count` khi batch kết thúc hoặc `FAILED`.
+- Hai tiến trình dùng cùng image: `notification` (API, cổng 3006, relay outbox) và `notification-worker` (cổng 3007, `node dist/worker.js`, chỉ `/health` `/ready`).
 
 ## 4.6. scheduler
 
@@ -372,7 +383,7 @@ Task key hợp lệ: `document-extraction`, `lesson-synthesis`, `quiz-authoring`
 | auth    | POST   | `/internal/v1/auth/service-token`       | mọi bên cần token    | — (client-credentials)  | Cấp service token: body `{client_id, client_secret, audience, scope?}` → `{access_token, token_type, expires_in, scope}` |
 | auth    | GET    | `/.well-known/jwks.json`                | mọi service, gateway | — (không xác thực)      | JWKS (RFC 7517) công bố khóa công khai; không bọc envelope                                                               |
 | student | POST   | `/internal/v1/students`                 | auth                 | `student:profile:write` | Tạo hồ sơ student cùng `id` với tài khoản                                                                                |
-| student | GET    | `/internal/v1/students`                 | notification-worker  | `student:profile:read`  | Danh sách `ACTIVE` theo trang (`page_size` ≤ 100) để snapshot recipient                                                  |
+| student | GET    | `/internal/v1/students`                 | notification-worker  | `student:profile:read`  | Danh sách `ACTIVE` theo trang (`page_size` ≤ 100, sắp theo `id`) để snapshot recipient (đã có từ R-07)                    |
 | student | GET    | `/internal/v1/students/{student_id}`    | auth, media          | `student:profile:read`  | auth: kiểm tra hồ sơ tồn tại và `ACTIVE` khi student đăng nhập (404 → 403, student lỗi → 503); media: kiểm tra actor     |
 | media   | POST   | `/internal/v1/media/usages/ids:query`   | course               | `media:usage:read`      | Lấy usage ID theo owner (xóa khóa học)                                                                                   |
 | media   | GET    | `/internal/v1/media/usages/urls`        | course               | `media:usage:read`      | URL các usage                                                                                                            |
@@ -427,11 +438,12 @@ Trace context được inject vào header/properties RabbitMQ làm carrier chín
 | `media.usages.delete-by-ids`              | course                            | media-worker        | Xóa usage khi xóa course/lesson/quiz                                    |
 | `media.thumbnail.generate`                | media                             | media-worker        | Tạo thumbnail WebP (ảnh, khung hình video)                              |
 | `media.notification-usage.register`       | notification                      | media-worker        | Đăng ký usage đơn                                                       |
-| `media.notification-usage.register-batch` | notification                      | media-worker        | Đăng ký usage theo batch                                                |
+| `media.notification-usage.register-batch` | notification-worker               | media-worker        | Đăng ký usage theo batch (≤ 500 item mỗi lô, kèm `job_id`)              |
 | `media.notification-usage.start-job`      | notification                      | media-worker        | Mở job usage cho batch                                                  |
 | `media.notification-usage.complete-job`   | notification-worker               | media-worker        | Hoàn tất job usage (kèm số usage kỳ vọng)                               |
 | `notification.batch.snapshot`             | notification                      | notification-worker | Chụp danh sách recipient theo trang, chèn item idempotent               |
-| `notification.batch.dispatch`             | notification, notification-worker | notification-worker | Nhận một lô item bằng lease, gửi email, tự enqueue lại tới khi hết      |
+| `notification.batch.dispatch`             | notification-worker               | notification-worker | Nhận một lô item bằng lease, gửi email, tự enqueue lại tới khi hết      |
+| `notification.single.dispatch`            | notification                      | notification-worker | Gửi email cho thông báo đơn đã nằm trong inbox                          |
 
 Payload từng command là zod schema trong `lms/contracts/src/commands/`, mỗi command có fixture và contract test.
 

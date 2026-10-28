@@ -29,8 +29,12 @@ class InMemoryStudents implements StudentRepository {
     return Promise.resolve(this.rows.get(id) ?? null);
   }
 
-  list(page: number, pageSize: number): Promise<{ items: Student[]; total: number }> {
-    const all = [...this.rows.values()];
+  list(
+    page: number,
+    pageSize: number,
+    status?: Student['status'],
+  ): Promise<{ items: Student[]; total: number }> {
+    const all = [...this.rows.values()].filter((row) => !status || row.status === status);
     return Promise.resolve({
       items: all.slice((page - 1) * pageSize, page * pageSize),
       total: all.length,

@@ -57,7 +57,7 @@ function verifyObservability() {
     .trim()
     .split(/\r?\n/u)
     .map((line) => JSON.parse(line));
-  assert.equal(services.length, 17, 'Toàn bộ 17 thành phần phải được khởi động.');
+  assert.equal(services.length, 18, 'Toàn bộ 18 thành phần phải được khởi động.');
   for (const service of services) assert.equal(service.Health, 'healthy', service.Service);
   const output = run(process.execPath, ['test/observability/stack-smoke.mjs'], { cwd: lmsRoot });
   process.stdout.write(output);

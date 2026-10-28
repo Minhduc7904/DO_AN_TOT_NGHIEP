@@ -11,6 +11,7 @@ export const REQUIRED_SERVICES = Object.freeze([
   'media',
   'media-worker',
   'notification',
+  'notification-worker',
   'postgres',
   'rabbitmq',
   'student',
@@ -248,7 +249,7 @@ async function waitForRabbitBaseline(options, runner) {
       ]);
       const queues = JSON.parse(output);
       const notificationQueue = queues.find(
-        (queue) => queue.name === 'notification.grade-completed.v1',
+        (queue) => queue.name === 'notification-worker--snapshot-notification-batch-v1',
       );
       if (
         notificationQueue?.durable === true &&
@@ -264,7 +265,9 @@ async function waitForRabbitBaseline(options, runner) {
           }))
           .sort((left, right) => left.name.localeCompare(right.name));
       }
-      lastError = new Error('Queue Notification chưa ở baseline rỗng và durable.');
+      lastError = new Error(
+        'Queue snapshot của notification-worker chưa ở baseline rỗng và durable.',
+      );
     } catch (error) {
       lastError = error;
     }

@@ -22,11 +22,13 @@ try {
   const { bootstrapApplication } = await import('./bootstrap.js');
   const app = await bootstrapApplication();
   let shutdownPromise: Promise<void> | undefined;
+
   const shutdown = (): Promise<void> => {
     // Đóng app trước để span/log phát ra lúc shutdown còn được flush.
     shutdownPromise ??= app.close().finally(() => telemetry.shutdown());
     return shutdownPromise;
   };
+
   process.once('SIGINT', () => void shutdown());
   process.once('SIGTERM', () => void shutdown());
 } catch (error) {

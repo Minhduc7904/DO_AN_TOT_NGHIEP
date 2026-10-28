@@ -1,91 +1,68 @@
+import {
+  baseEnvironmentSchema,
+  environmentBoolean,
+  parseEnvironment,
+  serviceAuthEnvironmentShape,
+  serviceClientEnvironmentShape,
+} from '@aiops-lms/common/config';
 import { z } from 'zod';
 
-import {
-  DEFAULT_GRADE_COMPLETED_EXCHANGE,
-  DEFAULT_GRADE_COMPLETED_QUEUE,
-  DEFAULT_NOTIFICATION_CONSUMER_PREFETCH,
-  DEFAULT_NOTIFICATION_DEDUP_MAX_EVENT_IDS,
-  DEFAULT_NOTIFICATION_DEDUP_TTL_SECONDS,
-  DEFAULT_NOTIFICATION_RECONNECT_DELAY_MS,
-  DEFAULT_NOTIFICATION_CONSUMER_SLOWDOWN_ENABLED,
-  DEFAULT_NOTIFICATION_CONSUMER_SLOWDOWN_MS,
-  DEFAULT_NOTIFICATION_RABBITMQ_URL,
-  DEFAULT_OTLP_TRACES_ENDPOINT,
-  DEFAULT_PORT,
-  DEFAULT_SERVICE_INSTANCE_ID,
-  DEFAULT_SERVICE_VERSION,
-  NODE_ENVIRONMENTS,
-} from './app-config.js';
+const positiveInt = (
+  min: number,
+  max: number,
+  fallback: number,
+): z.ZodDefault<z.ZodCoercedNumber> => z.coerce.number().int().min(min).max(max).default(fallback);
 
-const environmentBoolean = z
-  .union([z.boolean(), z.enum(['true', 'false'])])
-  .transform((value) => value === true || value === 'true');
+const sharedShape = {
+  NOTIFICATION_DATABASE_URL: z.url(),
+  NOTIFICATION_RABBITMQ_URL: z.url().default('amqp://lms:lms-local-only@localhost:5672'),
+  NOTIFICATION_RABBITMQ_CONNECT_TIMEOUT_MS: positiveInt(100, 60_000, 5_000),
+  NOTIFICATION_RABBITMQ_CONFIRM_TIMEOUT_MS: positiveInt(100, 60_000, 3_000),
+  NOTIFICATION_OUTBOX_POLL_MS: positiveInt(50, 60_000, 500),
+  NOTIFICATION_OUTBOX_BATCH_SIZE: positiveInt(1, 500, 20),
+  NOTIFICATION_OUTBOX_LEASE_MS: positiveInt(1_000, 300_000, 30_000),
+};
 
-const environmentSchema = z.object({
-  NODE_ENV: z.enum(NODE_ENVIRONMENTS).default('development'),
-  NOTIFICATION_GRADE_COMPLETED_EXCHANGE: z
-    .string()
-    .trim()
-    .min(1)
-    .max(128)
-    .default(DEFAULT_GRADE_COMPLETED_EXCHANGE),
-  NOTIFICATION_GRADE_COMPLETED_QUEUE: z
-    .string()
-    .trim()
-    .min(1)
-    .max(128)
-    .default(DEFAULT_GRADE_COMPLETED_QUEUE),
-  NOTIFICATION_CONSUMER_PREFETCH: z.coerce
-    .number()
-    .int()
-    .min(1)
-    .max(32)
-    .default(DEFAULT_NOTIFICATION_CONSUMER_PREFETCH),
-  NOTIFICATION_RECONNECT_DELAY_MS: z.coerce
-    .number()
-    .int()
-    .min(100)
-    .max(60_000)
-    .default(DEFAULT_NOTIFICATION_RECONNECT_DELAY_MS),
-  NOTIFICATION_DEDUP_TTL_SECONDS: z.coerce
-    .number()
-    .int()
-    .min(1)
-    .max(604_800)
-    .default(DEFAULT_NOTIFICATION_DEDUP_TTL_SECONDS),
-  NOTIFICATION_DEDUP_MAX_EVENT_IDS: z.coerce
-    .number()
-    .int()
-    .min(1)
-    .max(100_000)
-    .default(DEFAULT_NOTIFICATION_DEDUP_MAX_EVENT_IDS),
-  NOTIFICATION_CONSUMER_SLOWDOWN_ENABLED: environmentBoolean.default(
-    DEFAULT_NOTIFICATION_CONSUMER_SLOWDOWN_ENABLED,
-  ),
-  NOTIFICATION_CONSUMER_SLOWDOWN_MS: z.coerce
-    .number()
-    .int()
-    .min(0)
-    .max(60_000)
-    .default(DEFAULT_NOTIFICATION_CONSUMER_SLOWDOWN_MS),
-  NOTIFICATION_RABBITMQ_URL: z.url().default(DEFAULT_NOTIFICATION_RABBITMQ_URL),
-  OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: z.url().default(DEFAULT_OTLP_TRACES_ENDPOINT),
-  OTEL_EXPORTER_OTLP_METRICS_ENDPOINT: z.url().optional(),
-  OTEL_EXPORTER_OTLP_LOGS_ENDPOINT: z.url().optional(),
-  OTEL_METRIC_EXPORT_INTERVAL: z.coerce.number().int().min(1_000).max(60_000).default(5_000),
-  OTEL_SDK_DISABLED: environmentBoolean.default(false),
-  HTTP_ACCESS_LOG_ENABLED: environmentBoolean.default(true),
-  OTEL_SERVICE_INSTANCE_ID: z.string().trim().min(1).default(DEFAULT_SERVICE_INSTANCE_ID),
-  OTEL_SERVICE_VERSION: z.string().trim().min(1).default(DEFAULT_SERVICE_VERSION),
-  PORT: z.coerce.number().int().min(1).max(65_535).default(DEFAULT_PORT),
+const apiSchema = baseEnvironmentSchema.extend({
+  ...serviceAuthEnvironmentShape,
+  ...sharedShape,
+  PORT: positiveInt(1, 65_535, 3006),
 });
 
-export type Environment = z.infer<typeof environmentSchema>;
+const workerSchema = baseEnvironmentSchema.extend({
+  ...serviceAuthEnvironmentShape,
+  ...serviceClientEnvironmentShape,
+  ...sharedShape,
+  PORT: positiveInt(1, 65_535, 3007),
+  NOTIFICATION_WORKER_PREFETCH: positiveInt(1, 100, 4),
+  NOTIFICATION_WORKER_MAX_ATTEMPTS: positiveInt(1, 20, 5),
+  NOTIFICATION_WORKER_RETRY_DELAY_MS: positiveInt(0, 300_000, 1_000),
+  NOTIFICATION_STUDENT_BASE_URL: z.url().default('http://localhost:3002'),
+  NOTIFICATION_STUDENT_TIMEOUT_MS: positiveInt(100, 60_000, 3_000),
+  NOTIFICATION_STUDENT_BREAKER_THRESHOLD: positiveInt(1, 100, 3),
+  NOTIFICATION_STUDENT_BREAKER_COOLDOWN_MS: positiveInt(1, 300_000, 5_000),
+  NOTIFICATION_SMTP_HOST: z.string().trim().min(1).default('localhost'),
+  NOTIFICATION_SMTP_PORT: positiveInt(1, 65_535, 1_025),
+  NOTIFICATION_SMTP_SECURE: environmentBoolean.default(false),
+  NOTIFICATION_SMTP_USER: z.string().optional(),
+  NOTIFICATION_SMTP_PASSWORD: z.string().optional(),
+  NOTIFICATION_SMTP_FROM: z.string().trim().min(3).default('LMS <no-reply@lms.local>'),
+  NOTIFICATION_SMTP_TIMEOUT_MS: positiveInt(100, 120_000, 5_000),
+  /** Số lần gửi tối đa cho một recipient trước khi item `FAILED`. */
+  NOTIFICATION_ITEM_MAX_ATTEMPTS: positiveInt(1, 20, 3),
+  NOTIFICATION_ITEM_RETRY_DELAY_MS: positiveInt(0, 600_000, 1_000),
+  NOTIFICATION_DISPATCH_LEASE_MS: positiveInt(1_000, 3_600_000, 120_000),
+  NOTIFICATION_DISPATCH_CONCURRENCY: positiveInt(1, 50, 5),
+  NOTIFICATION_DISPATCH_IDLE_WAIT_MS: positiveInt(0, 60_000, 5_000),
+});
+
+export type Environment = z.infer<typeof apiSchema>;
+export type WorkerEnvironment = z.infer<typeof workerSchema>;
 
 export function validateEnvironment(config: Record<string, unknown>): Environment {
-  const result = environmentSchema.safeParse(config);
-  if (!result.success) {
-    throw new Error(`Invalid environment configuration:\n${z.prettifyError(result.error)}`);
-  }
-  return result.data;
+  return parseEnvironment(apiSchema, config);
+}
+
+export function validateWorkerEnvironment(config: Record<string, unknown>): WorkerEnvironment {
+  return parseEnvironment(workerSchema, config);
 }

@@ -9,6 +9,7 @@ services:
       GATEWAY_STUDENT_BASE_URL: http://student:3002
       GATEWAY_COURSE_BASE_URL: http://course:3003
       GATEWAY_MEDIA_BASE_URL: http://media:3004
+      GATEWAY_NOTIFICATION_BASE_URL: http://notification:3006
       SERVICE_CLIENT_ID: gateway
       SERVICE_CLIENT_SECRET: "${GATEWAY_CLIENT_SECRET:-gateway-client-local-only}"
       GATEWAY_UPSTREAM_TIMEOUT_MS: "${GATEWAY_UPSTREAM_TIMEOUT_MS:-5000}"
@@ -31,6 +32,8 @@ services:
       course:
         condition: service_healthy
       media:
+        condition: service_healthy
+      notification:
         condition: service_healthy
     healthcheck:
       test:
@@ -63,7 +66,7 @@ services:
       SERVICE_CLIENT_ID: auth
       SERVICE_CLIENT_SECRET: "${AUTH_CLIENT_SECRET:-auth-client-local-only}"
       # Registry client dịch vụ (ADR-004): gateway được gọi mọi route public; auth gọi student.
-      SERVICE_CLIENTS_BOOTSTRAP: '[{"client_id":"gateway","client_secret":"${GATEWAY_CLIENT_SECRET:-gateway-client-local-only}","audiences":["auth","student","course","media"],"scopes":["gateway:proxy"]},{"client_id":"auth","client_secret":"${AUTH_CLIENT_SECRET:-auth-client-local-only}","audiences":["student"],"scopes":["student:profile:read","student:profile:write"]},{"client_id":"media","client_secret":"${MEDIA_CLIENT_SECRET:-media-client-local-only}","audiences":["student"],"scopes":["student:profile:read"]},{"client_id":"course","client_secret":"${COURSE_CLIENT_SECRET:-course-client-local-only}","audiences":["media"],"scopes":["media:usage:read","media:content:read"]}]'
+      SERVICE_CLIENTS_BOOTSTRAP: '[{"client_id":"gateway","client_secret":"${GATEWAY_CLIENT_SECRET:-gateway-client-local-only}","audiences":["auth","student","course","media","notification"],"scopes":["gateway:proxy"]},{"client_id":"auth","client_secret":"${AUTH_CLIENT_SECRET:-auth-client-local-only}","audiences":["student"],"scopes":["student:profile:read","student:profile:write"]},{"client_id":"media","client_secret":"${MEDIA_CLIENT_SECRET:-media-client-local-only}","audiences":["student"],"scopes":["student:profile:read"]},{"client_id":"notification-worker","client_secret":"${NOTIFICATION_WORKER_CLIENT_SECRET:-notification-worker-client-local-only}","audiences":["student"],"scopes":["student:profile:read"]},{"client_id":"course","client_secret":"${COURSE_CLIENT_SECRET:-course-client-local-only}","audiences":["media"],"scopes":["media:usage:read","media:content:read"]}]'
       AUTH_STUDENT_BASE_URL: http://student:3002
       AUTH_STUDENT_TIMEOUT_MS: "${AUTH_STUDENT_TIMEOUT_MS:-3000}"
       AUTH_BOOTSTRAP_ADMIN_ID: "${AUTH_BOOTSTRAP_ADMIN_ID:-00000000-0000-4000-8000-000000000001}"
@@ -269,15 +272,9 @@ services:
       dockerfile: services/notification/Dockerfile
     environment:
       NODE_ENV: production
+      NOTIFICATION_DATABASE_URL: "postgresql://${NOTIFICATION_POSTGRES_USER:-notification_user}:${NOTIFICATION_POSTGRES_PASSWORD:-notification-local-only}@postgres:5432/notification_db"
       NOTIFICATION_RABBITMQ_URL: "amqp://${RABBITMQ_DEFAULT_USER:-lms}:${RABBITMQ_DEFAULT_PASS:-lms-local-only}@rabbitmq:5672"
-      NOTIFICATION_GRADE_COMPLETED_EXCHANGE: "${NOTIFICATION_GRADE_COMPLETED_EXCHANGE:-lms.events}"
-      NOTIFICATION_GRADE_COMPLETED_QUEUE: "${NOTIFICATION_GRADE_COMPLETED_QUEUE:-notification.grade-completed.v1}"
-      NOTIFICATION_CONSUMER_PREFETCH: "${NOTIFICATION_CONSUMER_PREFETCH:-1}"
-      NOTIFICATION_RECONNECT_DELAY_MS: "${NOTIFICATION_RECONNECT_DELAY_MS:-1000}"
-      NOTIFICATION_DEDUP_TTL_SECONDS: "${NOTIFICATION_DEDUP_TTL_SECONDS:-86400}"
-      NOTIFICATION_DEDUP_MAX_EVENT_IDS: "${NOTIFICATION_DEDUP_MAX_EVENT_IDS:-10000}"
-      NOTIFICATION_CONSUMER_SLOWDOWN_ENABLED: "${NOTIFICATION_CONSUMER_SLOWDOWN_ENABLED:-false}"
-      NOTIFICATION_CONSUMER_SLOWDOWN_MS: "${NOTIFICATION_CONSUMER_SLOWDOWN_MS:-0}"
+      AUTH_BASE_URL: http://auth:3001
       OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: "${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT:-http://otel-collector:4318/v1/traces}"
       OTEL_EXPORTER_OTLP_METRICS_ENDPOINT: "${OTEL_EXPORTER_OTLP_METRICS_ENDPOINT:-http://otel-collector:4318/v1/metrics}"
       OTEL_EXPORTER_OTLP_LOGS_ENDPOINT: "${OTEL_EXPORTER_OTLP_LOGS_ENDPOINT:-http://otel-collector:4318/v1/logs}"
@@ -290,21 +287,79 @@ services:
     ports:
       - "${NOTIFICATION_PORT:-3006}:3006"
     depends_on:
+      postgres:
+        condition: service_healthy
       rabbitmq:
-        condition: service_started
+        condition: service_healthy
     healthcheck:
       test:
         - CMD
         - node
         - -e
         - >-
-          fetch('http://127.0.0.1:3006/health')
+          fetch('http://127.0.0.1:3006/ready')
           .then((response) => { if (!response.ok) process.exit(1); })
           .catch(() => process.exit(1));
       interval: 5s
       timeout: 3s
       retries: 12
-      start_period: 5s
+      start_period: 10s
+    networks:
+      - lms-network
+      - aiops-net
+
+  notification-worker:
+    build:
+      context: ../lms
+      dockerfile: services/notification/Dockerfile
+    # Cùng image với `notification`, chạy entrypoint worker (snapshot recipient, gửi email SMTP).
+    command: ["node", "dist/worker.js"]
+    environment:
+      NODE_ENV: production
+      NOTIFICATION_DATABASE_URL: "postgresql://${NOTIFICATION_POSTGRES_USER:-notification_user}:${NOTIFICATION_POSTGRES_PASSWORD:-notification-local-only}@postgres:5432/notification_db"
+      NOTIFICATION_RABBITMQ_URL: "amqp://${RABBITMQ_DEFAULT_USER:-lms}:${RABBITMQ_DEFAULT_PASS:-lms-local-only}@rabbitmq:5672"
+      NOTIFICATION_STUDENT_BASE_URL: http://student:3002
+      NOTIFICATION_STUDENT_TIMEOUT_MS: "${NOTIFICATION_STUDENT_TIMEOUT_MS:-3000}"
+      NOTIFICATION_SMTP_HOST: mailpit
+      NOTIFICATION_SMTP_PORT: 1025
+      NOTIFICATION_SMTP_FROM: "${NOTIFICATION_SMTP_FROM:-LMS <no-reply@lms.local>}"
+      NOTIFICATION_WORKER_PREFETCH: "${NOTIFICATION_WORKER_PREFETCH:-4}"
+      NOTIFICATION_WORKER_MAX_ATTEMPTS: "${NOTIFICATION_WORKER_MAX_ATTEMPTS:-5}"
+      NOTIFICATION_WORKER_RETRY_DELAY_MS: "${NOTIFICATION_WORKER_RETRY_DELAY_MS:-1000}"
+      NOTIFICATION_DISPATCH_CONCURRENCY: "${NOTIFICATION_DISPATCH_CONCURRENCY:-5}"
+      AUTH_BASE_URL: http://auth:3001
+      SERVICE_CLIENT_ID: notification-worker
+      SERVICE_CLIENT_SECRET: "${NOTIFICATION_WORKER_CLIENT_SECRET:-notification-worker-client-local-only}"
+      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: "${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT:-http://otel-collector:4318/v1/traces}"
+      OTEL_EXPORTER_OTLP_METRICS_ENDPOINT: "${OTEL_EXPORTER_OTLP_METRICS_ENDPOINT:-http://otel-collector:4318/v1/metrics}"
+      OTEL_EXPORTER_OTLP_LOGS_ENDPOINT: "${OTEL_EXPORTER_OTLP_LOGS_ENDPOINT:-http://otel-collector:4318/v1/logs}"
+      OTEL_METRIC_EXPORT_INTERVAL: "${OTEL_METRIC_EXPORT_INTERVAL:-5000}"
+      HTTP_ACCESS_LOG_ENABLED: "${HTTP_ACCESS_LOG_ENABLED:-true}"
+      OTEL_SDK_DISABLED: "${OTEL_SDK_DISABLED:-false}"
+      OTEL_SERVICE_INSTANCE_ID: "${NOTIFICATION_WORKER_SERVICE_INSTANCE_ID:-notification-worker-compose-1}"
+      OTEL_SERVICE_VERSION: "${NOTIFICATION_SERVICE_VERSION:-0.1.0}"
+      PORT: 3007
+    ports:
+      - "${NOTIFICATION_WORKER_PORT:-3007}:3007"
+    # Chờ `notification` healthy để schema đã migrate trước khi worker tiêu thụ command.
+    depends_on:
+      notification:
+        condition: service_healthy
+      mailpit:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - >-
+          fetch('http://127.0.0.1:3007/ready')
+          .then((response) => { if (!response.ok) process.exit(1); })
+          .catch(() => process.exit(1));
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 10s
     networks:
       - lms-network
       - aiops-net
