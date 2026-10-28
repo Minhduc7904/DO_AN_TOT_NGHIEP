@@ -92,6 +92,12 @@ export class PrismaUsageRepository implements UsageRepository {
     });
   }
 
+  countByMedia(mediaId: string): Promise<number> {
+    return observeDb('usage.count-by-media', () =>
+      this.db.mediaUsage.count({ where: { mediaId } }),
+    );
+  }
+
   deleteGroup(group: UsageGroup): Promise<number> {
     return observeDb('usage.delete-group', async () => {
       const result = await this.db.mediaUsage.deleteMany({ where: group });

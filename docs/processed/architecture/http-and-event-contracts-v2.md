@@ -70,7 +70,7 @@ Route đọc nội dung media công khai với người dùng (không cần JWT)
 | `student:profile:read`  | auth, media, notification-worker | `GET /internal/v1/students[/{id}]`    | Đã có (client media ở R-06, notification-worker ở R-07)      |
 | `media:usage:read`      | course                           | `ids:query`, `usages/urls`            | Đã có (R-06)                                              |
 | `media:content:read`    | course                           | `GET /internal/v1/media/{id}/content` | Đã có (R-06)                                              |
-| `media:cleanup`         | scheduler-worker                 | `POST /internal/v1/media/cleanup`     | Dự kiến R-09                                              |
+| `media:cleanup`         | scheduler-worker                 | `POST /internal/v1/media/cleanup`     | Đã có (R-09)                                              |
 | `ai:completion`         | course                           | `POST /internal/v1/ai/completions`    | Dự kiến R-08                                              |
 
 Một client chỉ được xin token cho các `audience` và `scope` trong registry (`auth_service_clients`); xin ngoài phạm vi → `SERVICE_SCOPE_FORBIDDEN`.
@@ -176,6 +176,7 @@ Gateway chọn service theo prefix dài nhất; chỉ proxy `/api/v1/*`, không 
 | `/api/v1/students`                                      | student      |                                                                   |
 | `/api/v1/courses`, `/api/v1/student`                    | course       | `/api/v1/student/*` là route học của student                      |
 | `/api/v1/media`                                         | media        |                                                                   |
+|  409 | `SCHEDULER_JOB_NOT_ACTIVE`         | scheduler | Tạo run cho job `PAUSED`/`DISABLED` (`details.status`) |
 | `/api/v1/notifications`, `/api/v1/notification-batches` | notification |                                                                   |
 | `/api/v1/scheduler`                                     | scheduler    |                                                                   |
 | `/api/v1/ai`                                            | ai           |                                                                   |
@@ -315,7 +316,26 @@ Presigned POST bắt buộc lộ key `tmp/…` cho trình duyệt; key cuối c�
 
 **Command và queue** (xem §6): `media-worker--generate-media-thumbnail-v1`, `…--synchronize-markdown-media-usage-v1`, `…--delete-media-usages-by-ids-v1`, `…--register-notification-media-usage-v1`, `…--register-notification-media-usages-v1`, `…--start-notification-media-usage-job-v1`, `…--complete-notification-media-usage-job-v1`. Worker xử lý idempotent qua `inbox_states` và retry rồi chuyển `<queue>.error`.
 
-Chưa làm ở R-06 (chuyển chủ): `POST /internal/v1/media/cleanup` → R-09. Producer command usage của notification đã có từ R-07 (§4.5).
+**Cleanup (R-09)**: `POST /internal/v1/media/cleanup` (scope `media:cleanup`, chỉ `scheduler-worker` gọi; không qua Gateway). Body tùy chọn, mọi trường có mặc định và biên do `media` quyết định qua env `MEDIA_CLEANUP_*`:
+
+| Trường                  | Ý nghĩa                                                                                       | Mặc định (env)                               | Biên                |
+| ----------------------- | --------------------------------------------------------------------------------------------- | -------------------------------------------- | ------------------- |
+| `retention_hours`       | Media gốc `READY` không còn usage và có `created_at`, `updated_at` cũ hơn ngần này giờ mới bị dọn | 168 (`MEDIA_CLEANUP_DEFAULT_RETENTION_HOURS`) | `MEDIA_CLEANUP_MIN/MAX_RETENTION_HOURS` (mặc định 1–8760) |
+| `pending_grace_minutes` | Upload `PENDING` stale = quá `upload_expires_at` (hoặc `created_at` nếu không có hạn) cộng ngần này phút | 15 (`MEDIA_CLEANUP_PENDING_GRACE_MINUTES`) | 0–10080             |
+| `limit`                 | Số media tối đa mỗi pha trong một lần gọi                                                       | 200 (`MEDIA_CLEANUP_DEFAULT_LIMIT`)          | 1–`MEDIA_CLEANUP_MAX_LIMIT` (mặc định 1000) |
+
+Giá trị ngoài biên trả `400 VALIDATION_ERROR`. Idempotent, ba pha mỗi lần gọi: (1) upload `PENDING` stale → xóa object tạm/object cuối mồ côi (kiểm bằng `stat` MinIO) rồi chuyển `FAILED` với `failure_reason=UPLOAD_ABANDONED`; (2) media gốc `READY` không còn usage nào → xóa mềm (`deleted_at`) cùng thumbnail của nó (dòng `source_media_id` và usage `MEDIA_THUMBNAIL`) rồi xóa object; (3) thumbnail mồ côi (media gốc đã xóa mềm). Mỗi media một transaction: khóa dòng `FOR UPDATE SKIP LOCKED`, kiểm lại điều kiện và đếm usage sau khi giữ khóa; MinIO lỗi thì rollback, media đó được tính vào `failed` và thử lại ở lần sau. Media còn usage (kể cả singleton `COURSE_THUMBNAIL`, `STUDENT_AVATAR`) không bao giờ bị chọn; object đã mất sẵn không phải lỗi. Thời gian lưu giữ tính từ `created_at`/`updated_at` của media, không phải từ lúc usage cuối bị gỡ. Phản hồi 200 là bản tóm tắt an toàn, không lộ bucket, object key hay credential:
+
+```json
+{
+  "retention_hours": 168, "pending_grace_minutes": 15, "limit": 200,
+  "unused_deleted": 2, "thumbnails_deleted": 1, "objects_removed": 3,
+  "pending_recovered": 1, "pending_orphan_objects_removed": 1,
+  "skipped": 0, "failed": 0, "has_more": false
+}
+```
+
+Producer command usage của notification đã có từ R-07 (§4.5).
 
 ## 4.5. notification
 
@@ -347,16 +367,27 @@ Phần inbox là mới so với repo mẫu. Email đi qua SMTP; lỗi gửi ghi 
 
 ## 4.6. scheduler
 
-| Method | Path                                   | Role | Use case                                 |
-| ------ | -------------------------------------- | :--: | ---------------------------------------- |
-| GET    | `/api/v1/scheduler/jobs`               |  A   | `list-jobs`                              |
-| POST   | `/api/v1/scheduler/jobs`               |  A   | `create-job` (`MANUAL` hoặc `CRON`)      |
-| GET    | `/api/v1/scheduler/jobs/{job_id}`      |  A   | `get-job`                                |
-| PATCH  | `/api/v1/scheduler/jobs/{job_id}`      |  A   | `update-job-status` (`ACTIVE             | PAUSED | DISABLED`) |
-| POST   | `/api/v1/scheduler/jobs/{job_id}/runs` |  A   | `trigger-job-run` (có `idempotency_key`) |
-| GET    | `/api/v1/scheduler/jobs/{job_id}/runs` |  A   | `list-job-runs`                          |
+| Method | Path                                   | Role | Use case                                               |
+| ------ | -------------------------------------- | :--: | ------------------------------------------------------ |
+| GET    | `/api/v1/scheduler/jobs`               |  A   | `list-jobs` (lọc `status`, `type`; phân trang)         |
+| POST   | `/api/v1/scheduler/jobs`               |  A   | `create-job` (`MANUAL` hoặc `CRON`)                    |
+| GET    | `/api/v1/scheduler/jobs/{job_id}`      |  A   | `get-job`                                              |
+| PATCH  | `/api/v1/scheduler/jobs/{job_id}`      |  A   | `update-job-status` (`ACTIVE`, `PAUSED`, `DISABLED`)   |
+| POST   | `/api/v1/scheduler/jobs/{job_id}/runs` |  A   | `trigger-job-run` (có `idempotency_key`)               |
+| GET    | `/api/v1/scheduler/jobs/{job_id}/runs` |  A   | `list-job-runs` (lọc `status`; phân trang)             |
 
-Job loại `MEDIA_UNUSED_CLEANUP` là job tích hợp sẵn; thiết kế theo tài liệu repo mẫu `docs/business-flows/scheduler/media-cleanup.md` (còn là bản thiết kế, sẽ chi tiết ở R-09).
+**Đã triển khai ở R-09** (DTO ở `lms/contracts/src/http/public/scheduler.ts`). Hai tiến trình dùng chung một image: `scheduler` (API, cổng 3008) và `scheduler-worker` (cổng 3010, `node dist/worker.js`, chỉ `/health` `/ready`). Scheduler **không dùng command RabbitMQ** nên §6.3 không đổi: bảng `background_job_runs` vừa là lịch sử vừa là hàng đợi, worker nhận việc bằng lease `FOR UPDATE SKIP LOCKED` (cùng kiểu `notification-worker`), để tạo run chỉ là một câu `INSERT` (không có ghi kép DB và broker) và worker chết chỉ làm lease hết hạn.
+
+- `POST /jobs` nhận `{name, type, schedule_type, cron_expression?, payload?, allow_concurrent=false}`, trả 201 job `ACTIVE`. `type` hiện chỉ có `MEDIA_UNUSED_CLEANUP` (job tích hợp sẵn). `cron_expression` bắt buộc với `CRON`, cấm với `MANUAL`; là CRON 5 trường theo UTC (`*`, danh sách, khoảng, bước, tên tháng/thứ, macro `@hourly` `@daily` `@weekly` `@monthly` `@yearly`; ngày-trong-tháng và ngày-trong-tuần cùng bị giới hạn thì khớp một trong hai); sai cú pháp hoặc không bao giờ khớp → `400 VALIDATION_ERROR` (`details[].path = cron_expression`). `payload` (≤ 4 KB) của `MEDIA_UNUSED_CLEANUP` là đúng body cleanup của §4.4 (`retention_hours`, `pending_grace_minutes`, `limit`), sai → 400. `name` duy nhất, trùng → `409 CONFLICT`. Job `CRON` có `next_run_at` tính ngay.
+- `PATCH /jobs/{job_id}` nhận `{status}`. `PAUSED`/`DISABLED` xóa `next_run_at`; `ACTIVE` lại tính `next_run_at` từ bây giờ (không chạy bù lúc tạm dừng); cùng trạng thái là no-op. `DISABLED` đóng các run `PENDING` của job bằng `FAILED`/`JOB_DISABLED`; run `PENDING` của job `PAUSED` giữ nguyên chờ chạy tiếp khi `ACTIVE`.
+- `POST /jobs/{job_id}/runs` nhận `{idempotency_key}` (1–128 ký tự) và tạo run `MANUAL` `PENDING` (snapshot payload của job). **Ngữ nghĩa lũy đẳng**: unique `(background_job_id, idempotency_key)` với `INSERT … ON CONFLICT DO NOTHING`; trả **201** khi tạo run mới, **200** kèm đúng run đã có khi khóa đã dùng cho job đó (kể cả đang chạy, đã xong hay job đã bị tạm dừng sau đó), không bao giờ tạo run thứ hai. Job không `ACTIVE` mà khóa chưa dùng → `409 SCHEDULER_JOB_NOT_ACTIVE` (`details.status`). Job không tồn tại → 404.
+- Lịch CRON: mỗi chu kỳ `scheduler-worker` khóa (`SKIP LOCKED`) các job `CRON` `ACTIVE` đến hạn, tạo run `CRON` với khóa lũy đẳng `cron:<job_id>:<scheduled_at ISO UTC>` rồi dời `next_run_at` sang mốc kế tiếp **sau bây giờ**; nhiều instance hoặc `next_run_at` bị đặt lại không tạo run trùng, và worker ngừng lâu chỉ chạy bù một lần (không dồn các mốc đã lỡ).
+- Thực thi: worker nhận run `PENDING` của job `ACTIVE` bằng lease (`SCHEDULER_RUN_LEASE_MS`), đặt `RUNNING`, gọi handler theo `type`, ghi `SUCCEEDED`/`FAILED`. Job không `allow_concurrent` chỉ có một run `RUNNING` tại một thời điểm (tuần tự hóa bằng khóa dòng job). Lease hết hạn (worker chết) thì run được nhận lại tới `SCHEDULER_RUN_MAX_ATTEMPTS`, sau đó `FAILED`/`RUN_LEASE_EXPIRED`; handler vì vậy phải idempotent. Không tự động retry run `FAILED`: tạo run mới bằng `trigger-job-run` với khóa khác.
+- Run (`BackgroundJobRunDto`): `trigger_type` `MANUAL|CRON`, `status` `PENDING|RUNNING|SUCCEEDED|FAILED`, `attempts`, `scheduled_at`, `started_at`, `finished_at`, `worker_instance`, `error_code`, `error_message`, `output` (tóm tắt an toàn, `output_json` trong DB). Không trả `lease_token`.
+- Mã lỗi của **run** (cột `error_code`, không phải mã HTTP; thông báo luôn an toàn, không token, không object key): `MEDIA_CLEANUP_INCOMPLETE` (media trả `failed > 0`, giữ `output`), `MEDIA_CLEANUP_REJECTED` (media trả 4xx), `MEDIA_CLEANUP_INVALID_RESPONSE`, `DEPENDENCY_UNAVAILABLE`/`DEPENDENCY_TIMEOUT` (media chết hoặc quá hạn, theo §2), `RUN_LEASE_EXPIRED`, `JOB_DISABLED`, `INTERNAL_ERROR`.
+- Mã lỗi HTTP: `SCHEDULER_JOB_NOT_ACTIVE` (409, §2); còn lại dùng mã chung (`VALIDATION_ERROR`, `NOT_FOUND`, `CONFLICT`).
+
+**Job `MEDIA_UNUSED_CLEANUP`** (thiết kế gốc: repo mẫu `docs/business-flows/scheduler/media-cleanup.md`): handler của `scheduler-worker` gọi `POST /internal/v1/media/cleanup` (§4.4, §5) bằng `HttpQueryClient` với service token của client `scheduler-worker` (audience `media`, scope `media:cleanup`) và body là payload của run. Scheduler không biết MinIO, không đọc `media_db`; `output` của run là bản tóm tắt mà media trả về. Cạnh phụ thuộc: timeout `SCHEDULER_MEDIA_TIMEOUT_MS` (mặc định 60 giây, nhỏ hơn lease), circuit breaker, không retry HTTP (§1).
 
 ## 4.7. ai
 
@@ -388,7 +419,7 @@ Task key hợp lệ: `document-extraction`, `lesson-synthesis`, `quiz-authoring`
 | media   | POST   | `/internal/v1/media/usages/ids:query`   | course               | `media:usage:read`      | Lấy usage ID theo owner (xóa khóa học)                                                                                   |
 | media   | GET    | `/internal/v1/media/usages/urls`        | course               | `media:usage:read`      | URL các usage                                                                                                            |
 | media   | GET    | `/internal/v1/media/{media_id}/content` | course               | `media:content:read`    | Byte tài liệu cho trích văn bản AI                                                                                       |
-| media   | POST   | `/internal/v1/media/cleanup`            | scheduler-worker     | `media:cleanup`         | Dọn media không dùng (job R-09)                                                                                          |
+| media   | POST   | `/internal/v1/media/cleanup`            | scheduler-worker     | `media:cleanup`         | Dọn media không dùng quá hạn và phục hồi upload `PENDING` stale; body tùy chọn `{retention_hours, pending_grace_minutes, limit}`, trả tóm tắt số lượng (job `MEDIA_UNUSED_CLEANUP`, §4.4, §4.6; đã có từ R-09) |
 | ai      | POST   | `/internal/v1/ai/completions`           | course               | `ai:completion`         | Hoàn thành hội thoại; body `{task, messages, tools}`, hỗ trợ phần ảnh/PDF; timeout 240 giây                              |
 
 Endpoint `/internal/v1/*` trả lỗi cùng envelope; header `x-principal-*` **không có hiệu lực** ở route internal (danh tính là service token); nếu một route internal cần biết actor (ví dụ course → ai), actor là tham số tường minh của request do hợp đồng của route đó quy định, không lấy từ header.

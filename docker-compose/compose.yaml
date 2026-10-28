@@ -10,6 +10,7 @@ services:
       GATEWAY_COURSE_BASE_URL: http://course:3003
       GATEWAY_MEDIA_BASE_URL: http://media:3004
       GATEWAY_NOTIFICATION_BASE_URL: http://notification:3006
+      GATEWAY_SCHEDULER_BASE_URL: http://scheduler:3008
       SERVICE_CLIENT_ID: gateway
       SERVICE_CLIENT_SECRET: "${GATEWAY_CLIENT_SECRET:-gateway-client-local-only}"
       GATEWAY_UPSTREAM_TIMEOUT_MS: "${GATEWAY_UPSTREAM_TIMEOUT_MS:-5000}"
@@ -34,6 +35,8 @@ services:
       media:
         condition: service_healthy
       notification:
+        condition: service_healthy
+      scheduler:
         condition: service_healthy
     healthcheck:
       test:
@@ -66,7 +69,7 @@ services:
       SERVICE_CLIENT_ID: auth
       SERVICE_CLIENT_SECRET: "${AUTH_CLIENT_SECRET:-auth-client-local-only}"
       # Registry client dịch vụ (ADR-004): gateway được gọi mọi route public; auth gọi student.
-      SERVICE_CLIENTS_BOOTSTRAP: '[{"client_id":"gateway","client_secret":"${GATEWAY_CLIENT_SECRET:-gateway-client-local-only}","audiences":["auth","student","course","media","notification"],"scopes":["gateway:proxy"]},{"client_id":"auth","client_secret":"${AUTH_CLIENT_SECRET:-auth-client-local-only}","audiences":["student"],"scopes":["student:profile:read","student:profile:write"]},{"client_id":"media","client_secret":"${MEDIA_CLIENT_SECRET:-media-client-local-only}","audiences":["student"],"scopes":["student:profile:read"]},{"client_id":"notification-worker","client_secret":"${NOTIFICATION_WORKER_CLIENT_SECRET:-notification-worker-client-local-only}","audiences":["student"],"scopes":["student:profile:read"]},{"client_id":"course","client_secret":"${COURSE_CLIENT_SECRET:-course-client-local-only}","audiences":["media"],"scopes":["media:usage:read","media:content:read"]}]'
+      SERVICE_CLIENTS_BOOTSTRAP: '[{"client_id":"gateway","client_secret":"${GATEWAY_CLIENT_SECRET:-gateway-client-local-only}","audiences":["auth","student","course","media","notification","scheduler"],"scopes":["gateway:proxy"]},{"client_id":"auth","client_secret":"${AUTH_CLIENT_SECRET:-auth-client-local-only}","audiences":["student"],"scopes":["student:profile:read","student:profile:write"]},{"client_id":"media","client_secret":"${MEDIA_CLIENT_SECRET:-media-client-local-only}","audiences":["student"],"scopes":["student:profile:read"]},{"client_id":"notification-worker","client_secret":"${NOTIFICATION_WORKER_CLIENT_SECRET:-notification-worker-client-local-only}","audiences":["student"],"scopes":["student:profile:read"]},{"client_id":"course","client_secret":"${COURSE_CLIENT_SECRET:-course-client-local-only}","audiences":["media"],"scopes":["media:usage:read","media:content:read"]},{"client_id":"scheduler-worker","client_secret":"${SCHEDULER_WORKER_CLIENT_SECRET:-scheduler-worker-client-local-only}","audiences":["media"],"scopes":["media:cleanup"]}]'
       AUTH_STUDENT_BASE_URL: http://student:3002
       AUTH_STUDENT_TIMEOUT_MS: "${AUTH_STUDENT_TIMEOUT_MS:-3000}"
       AUTH_BOOTSTRAP_ADMIN_ID: "${AUTH_BOOTSTRAP_ADMIN_ID:-00000000-0000-4000-8000-000000000001}"
@@ -354,6 +357,96 @@ services:
         - -e
         - >-
           fetch('http://127.0.0.1:3007/ready')
+          .then((response) => { if (!response.ok) process.exit(1); })
+          .catch(() => process.exit(1));
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 10s
+    networks:
+      - lms-network
+      - aiops-net
+
+  scheduler:
+    build:
+      context: ../lms
+      dockerfile: services/scheduler/Dockerfile
+    environment:
+      NODE_ENV: production
+      SCHEDULER_DATABASE_URL: "postgresql://${SCHEDULER_POSTGRES_USER:-scheduler_user}:${SCHEDULER_POSTGRES_PASSWORD:-scheduler-local-only}@postgres:5432/scheduler_db"
+      AUTH_BASE_URL: http://auth:3001
+      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: "${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT:-http://otel-collector:4318/v1/traces}"
+      OTEL_EXPORTER_OTLP_METRICS_ENDPOINT: "${OTEL_EXPORTER_OTLP_METRICS_ENDPOINT:-http://otel-collector:4318/v1/metrics}"
+      OTEL_EXPORTER_OTLP_LOGS_ENDPOINT: "${OTEL_EXPORTER_OTLP_LOGS_ENDPOINT:-http://otel-collector:4318/v1/logs}"
+      OTEL_METRIC_EXPORT_INTERVAL: "${OTEL_METRIC_EXPORT_INTERVAL:-5000}"
+      HTTP_ACCESS_LOG_ENABLED: "${HTTP_ACCESS_LOG_ENABLED:-true}"
+      OTEL_SDK_DISABLED: "${OTEL_SDK_DISABLED:-false}"
+      OTEL_SERVICE_INSTANCE_ID: "${SCHEDULER_SERVICE_INSTANCE_ID:-scheduler-compose-1}"
+      OTEL_SERVICE_VERSION: "${SCHEDULER_SERVICE_VERSION:-0.1.0}"
+      PORT: 3008
+    ports:
+      # Cổng host 3008 thuộc Grafana (aiops-platform), nên scheduler publish ra 3018; trong network vẫn là scheduler:3008.
+      - "${SCHEDULER_PORT:-3018}:3008"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - >-
+          fetch('http://127.0.0.1:3008/ready')
+          .then((response) => { if (!response.ok) process.exit(1); })
+          .catch(() => process.exit(1));
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 10s
+    networks:
+      - lms-network
+      - aiops-net
+
+  scheduler-worker:
+    build:
+      context: ../lms
+      dockerfile: services/scheduler/Dockerfile
+    # Cùng image với `scheduler`, chạy entrypoint worker (nhận run bằng lease, tick CRON, gọi media cleanup).
+    command: ["node", "dist/worker.js"]
+    environment:
+      NODE_ENV: production
+      SCHEDULER_DATABASE_URL: "postgresql://${SCHEDULER_POSTGRES_USER:-scheduler_user}:${SCHEDULER_POSTGRES_PASSWORD:-scheduler-local-only}@postgres:5432/scheduler_db"
+      SCHEDULER_MEDIA_BASE_URL: http://media:3004
+      SCHEDULER_MEDIA_TIMEOUT_MS: "${SCHEDULER_MEDIA_TIMEOUT_MS:-60000}"
+      SCHEDULER_WORKER_POLL_MS: "${SCHEDULER_WORKER_POLL_MS:-1000}"
+      SCHEDULER_CRON_TICK_MS: "${SCHEDULER_CRON_TICK_MS:-5000}"
+      AUTH_BASE_URL: http://auth:3001
+      SERVICE_CLIENT_ID: scheduler-worker
+      SERVICE_CLIENT_SECRET: "${SCHEDULER_WORKER_CLIENT_SECRET:-scheduler-worker-client-local-only}"
+      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: "${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT:-http://otel-collector:4318/v1/traces}"
+      OTEL_EXPORTER_OTLP_METRICS_ENDPOINT: "${OTEL_EXPORTER_OTLP_METRICS_ENDPOINT:-http://otel-collector:4318/v1/metrics}"
+      OTEL_EXPORTER_OTLP_LOGS_ENDPOINT: "${OTEL_EXPORTER_OTLP_LOGS_ENDPOINT:-http://otel-collector:4318/v1/logs}"
+      OTEL_METRIC_EXPORT_INTERVAL: "${OTEL_METRIC_EXPORT_INTERVAL:-5000}"
+      HTTP_ACCESS_LOG_ENABLED: "${HTTP_ACCESS_LOG_ENABLED:-true}"
+      OTEL_SDK_DISABLED: "${OTEL_SDK_DISABLED:-false}"
+      OTEL_SERVICE_INSTANCE_ID: "${SCHEDULER_WORKER_SERVICE_INSTANCE_ID:-scheduler-worker-compose-1}"
+      OTEL_SERVICE_VERSION: "${SCHEDULER_SERVICE_VERSION:-0.1.0}"
+      PORT: 3010
+    ports:
+      - "${SCHEDULER_WORKER_PORT:-3010}:3010"
+    # Chờ `scheduler` healthy để schema đã migrate; media phải sống để job cleanup gọi được.
+    depends_on:
+      scheduler:
+        condition: service_healthy
+      media:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - >-
+          fetch('http://127.0.0.1:3010/ready')
           .then((response) => { if (!response.ok) process.exit(1); })
           .catch(() => process.exit(1));
       interval: 5s

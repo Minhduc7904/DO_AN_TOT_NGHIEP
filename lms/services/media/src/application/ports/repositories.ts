@@ -68,6 +68,19 @@ export interface MediaRepository {
     pageSize: number,
   ): Promise<{ items: MediaObject[]; total: number }>;
   summary(): Promise<MediaSummary>;
+  /** Cleanup: media gốc `READY` chưa xóa, không còn usage, tạo và cập nhật trước `olderThan`. */
+  listUnusedReadyIds(olderThan: Date, limit: number): Promise<string[]>;
+  /** Cleanup: upload `PENDING` có hạn presigned (hoặc ngày tạo nếu không có hạn) trước `expiredBefore`. */
+  listStalePendingIds(expiredBefore: Date, limit: number): Promise<string[]>;
+  /** Cleanup: thumbnail chưa xóa mà media gốc đã bị xóa mềm. */
+  listOrphanThumbnailIds(limit: number): Promise<string[]>;
+  /**
+   * Khóa dòng media chưa xóa trong transaction hiện tại (`FOR UPDATE SKIP LOCKED`) rồi đọc lại.
+   * `null` nếu đã xóa, không tồn tại hoặc đang bị lượt khác khóa.
+   */
+  lockForCleanup(id: string): Promise<MediaObject | null>;
+  /** Như `findById` nhưng cả media đã xóa mềm (cleanup kiểm tra media gốc của thumbnail). */
+  findIncludingDeleted(id: string): Promise<MediaObject | null>;
 }
 
 export interface NewUsage {
@@ -97,6 +110,7 @@ export interface UsageRepository {
   /** Đặt `position` theo thứ tự của `orderedIds`; trả usage sau khi sắp xếp. */
   reorder(group: UsageGroup, orderedIds: readonly string[]): Promise<MediaUsage[]>;
   deleteByIds(ids: readonly string[]): Promise<number>;
+  countByMedia(mediaId: string): Promise<number>;
   /** Xóa usage thuộc tất cả group của owner mà `isSingleton` thay thế (thumbnail/avatar cũ). */
   deleteGroup(group: UsageGroup): Promise<number>;
 }

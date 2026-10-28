@@ -88,10 +88,12 @@ Cột thực tế (R-07): `notifications.email_status` (`NOT_REQUESTED`/`PENDING
 
 ## 2.6. `scheduler_db` — scheduler, scheduler-worker
 
-| Bảng                  | Ràng buộc chính                         |
-| --------------------- | --------------------------------------- |
-| `background_jobs`     | `schedule_type` `MANUAL                 | CRON`, `cron_expression`, `status` `ACTIVE     | PAUSED | DISABLED`, `allow_concurrent`, `max_retry_count`, `timeout_seconds`, `next_run_at` |
-| `background_job_runs` | `trigger_type`, `status` (có `TIMED_OUT | SKIPPED`), `idempotency_key` duy nhất theo job |
+| Bảng                  | Ràng buộc chính                                                                                                                                                                                                                           |
+| --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `background_jobs`     | `name` duy nhất; `type` (`MEDIA_UNUSED_CLEANUP`); `schedule_type` `MANUAL` hoặc `CRON`; `cron_expression`; `status` `ACTIVE`, `PAUSED` hoặc `DISABLED`; `payload` nhỏ (tham số retention); `allow_concurrent`; `next_run_at` (UTC)        |
+| `background_job_runs` | unique `(background_job_id, idempotency_key)`; `trigger_type` `MANUAL`/`CRON`; `status` `PENDING`/`RUNNING`/`SUCCEEDED`/`FAILED`; lease (`lease_token`, `lease_expires_at`, `worker_instance`, `attempts`); `output_json` tóm tắt an toàn; `error_code`/`error_message` |
+
+Run `CRON` có khóa lũy đẳng `cron:<job_id>:<scheduled_at>`. `scheduler-worker` nhận run bằng lease `FOR UPDATE SKIP LOCKED`; worker chết thì lease hết hạn và run được nhận lại tới `SCHEDULER_RUN_MAX_ATTEMPTS`, sau đó `FAILED`/`RUN_LEASE_EXPIRED`. Scheduler không có hạ tầng nào ngoài PostgreSQL; MinIO và `media_db` chỉ `media` được chạm.
 
 ## 2.7. `ai_db` — ai
 

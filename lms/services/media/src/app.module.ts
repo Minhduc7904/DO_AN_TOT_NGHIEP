@@ -10,7 +10,7 @@ import {
 } from '@aiops-lms/common/auth';
 import { COMMON_HTTP_PROVIDERS, HealthController, READINESS_CHECKS } from '@aiops-lms/common/http';
 import { type Clock, type IdGenerator, systemClock } from '@aiops-lms/common/ports';
-import { Module, type Provider } from '@nestjs/common';
+import { Logger, Module, type Provider } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 
 import { MediaInternalController } from './adapters/http/internal/media-internal.controller.js';
@@ -26,6 +26,7 @@ import { OBJECT_STORAGE, type ObjectStorage } from './application/ports/object-s
 import { STUDENT_CLIENT, type StudentClient } from './application/ports/student-client.js';
 import { MEDIA_UNIT_OF_WORK, type MediaUnitOfWork } from './application/ports/unit-of-work.js';
 import { CLOCK, ID_GENERATOR } from './application/runtime.js';
+import { CleanupMediaUseCase } from './application/use-cases/cleanup/cleanup-media.use-case.js';
 import {
   GetMediaBackgroundJobsUseCase,
   GetMediaSummaryUseCase,
@@ -195,6 +196,25 @@ const USE_CASES: Provider[] = [
     useFactory: (uow: MediaUnitOfWork, ids: IdGenerator) =>
       new RetryMediaThumbnailUseCase(uow, ids),
     inject: [MEDIA_UNIT_OF_WORK, ID_GENERATOR],
+  },
+  {
+    provide: CleanupMediaUseCase,
+    useFactory: (uow: MediaUnitOfWork, storage: ObjectStorage, clock: Clock, config: Config) => {
+      const logger = new Logger(CleanupMediaUseCase.name);
+      return new CleanupMediaUseCase(uow, storage, clock, {
+        defaultRetentionHours: config.getOrThrow('MEDIA_CLEANUP_DEFAULT_RETENTION_HOURS'),
+        minRetentionHours: config.getOrThrow('MEDIA_CLEANUP_MIN_RETENTION_HOURS'),
+        maxRetentionHours: config.getOrThrow('MEDIA_CLEANUP_MAX_RETENTION_HOURS'),
+        defaultPendingGraceMinutes: config.getOrThrow('MEDIA_CLEANUP_PENDING_GRACE_MINUTES'),
+        defaultLimit: config.getOrThrow('MEDIA_CLEANUP_DEFAULT_LIMIT'),
+        maxLimit: config.getOrThrow('MEDIA_CLEANUP_MAX_LIMIT'),
+        onItemError: (mediaId, error) =>
+          logger.warn(
+            `Cleanup bỏ qua media ${mediaId}: ${error instanceof Error ? error.name : 'lỗi không rõ'}`,
+          ),
+      });
+    },
+    inject: [MEDIA_UNIT_OF_WORK, OBJECT_STORAGE, CLOCK, ConfigService],
   },
   ...[
     CreateMediaUsageUseCase,

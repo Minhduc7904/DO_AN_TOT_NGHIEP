@@ -116,4 +116,74 @@ export class PrismaMediaRepository implements MediaRepository {
       };
     });
   }
+  listUnusedReadyIds(olderThan: Date, limit: number): Promise<string[]> {
+    return observeDb('media.list-unused-ready', async () => {
+      const rows = await this.db.mediaObject.findMany({
+        where: {
+          deletedAt: null,
+          status: 'READY',
+          sourceMediaId: null,
+          createdAt: { lt: olderThan },
+          updatedAt: { lt: olderThan },
+          usages: { none: {} },
+        },
+        select: { id: true },
+        orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+        take: limit,
+      });
+      return rows.map((row) => row.id);
+    });
+  }
+
+  listStalePendingIds(expiredBefore: Date, limit: number): Promise<string[]> {
+    return observeDb('media.list-stale-pending', async () => {
+      const rows = await this.db.mediaObject.findMany({
+        where: {
+          deletedAt: null,
+          status: 'PENDING',
+          OR: [
+            { uploadExpiresAt: { lt: expiredBefore } },
+            { uploadExpiresAt: null, createdAt: { lt: expiredBefore } },
+          ],
+        },
+        select: { id: true },
+        orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+        take: limit,
+      });
+      return rows.map((row) => row.id);
+    });
+  }
+
+  listOrphanThumbnailIds(limit: number): Promise<string[]> {
+    return observeDb('media.list-orphan-thumbnails', async () => {
+      const rows = await this.db.mediaObject.findMany({
+        where: { deletedAt: null, source: { is: { deletedAt: { not: null } } } },
+        select: { id: true },
+        orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+        take: limit,
+      });
+      return rows.map((row) => row.id);
+    });
+  }
+
+  lockForCleanup(id: string): Promise<MediaObject | null> {
+    return observeDb('media.lock-for-cleanup', async () => {
+      const locked = await this.db.$queryRawUnsafe<{ id: string }[]>(
+        `SELECT id::text AS "id" FROM media_objects
+         WHERE id = $1::uuid AND deleted_at IS NULL
+         FOR UPDATE SKIP LOCKED`,
+        id,
+      );
+      if (locked.length === 0) return null;
+      const row = await this.db.mediaObject.findFirst({ where: { id, deletedAt: null } });
+      return row ? toMedia(row) : null;
+    });
+  }
+
+  findIncludingDeleted(id: string): Promise<MediaObject | null> {
+    return observeDb('media.find-including-deleted', async () => {
+      const row = await this.db.mediaObject.findUnique({ where: { id } });
+      return row ? toMedia(row) : null;
+    });
+  }
 }

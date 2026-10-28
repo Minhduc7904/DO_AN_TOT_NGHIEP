@@ -79,20 +79,21 @@ export class MinioObjectStorage implements ObjectStorage {
     });
   }
 
-  async stat(bucket: string, key: string): Promise<ObjectStat | null> {
-    try {
-      return await observe('stat-object', async () => {
+  stat(bucket: string, key: string): Promise<ObjectStat | null> {
+    // "Không có object" là kết quả bình thường (cleanup, upload-complete), không phải lỗi dependency.
+    return observe('stat-object', async () => {
+      try {
         const stat = await this.client.statObject(bucket, key);
         const contentType = stat.metaData?.['content-type'];
         return {
           sizeBytes: stat.size,
           contentType: typeof contentType === 'string' ? contentType : null,
         };
-      });
-    } catch (error) {
-      if (isNotFound(error)) return null;
-      throw error;
-    }
+      } catch (error) {
+        if (isNotFound(error)) return null;
+        throw error;
+      }
+    });
   }
 
   sha256(bucket: string, key: string): Promise<string> {
