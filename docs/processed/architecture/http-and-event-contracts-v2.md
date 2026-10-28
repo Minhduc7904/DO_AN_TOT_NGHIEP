@@ -126,16 +126,16 @@ Không trả stack trace, password, JWT, API key, hoặc chi tiết DB nội b�
 
 Gateway chọn service theo prefix dài nhất; không có route `/internal/*`.
 
-| Prefix công khai                                        | Service      | Ghi chú                                      |
-| ------------------------------------------------------- | ------------ | -------------------------------------------- |
-| `/api/v1/auth`                                          | auth         | Public: `register`, `login`, `refresh`       |
-| `/api/v1/students`                                      | student      |                                              |
-| `/api/v1/courses`, `/api/v1/student`                    | course       | `/api/v1/student/*` là route học của student |
-| `/api/v1/media`                                         | media        |                                              |
-| `/api/v1/notifications`, `/api/v1/notification-batches` | notification |                                              |
-| `/api/v1/scheduler`                                     | scheduler    |                                              |
-| `/api/v1/ai`                                            | ai           |                                              |
-| `/health`                                               | gateway      | Mỗi service còn `/health` và `/ready` nội bộ |
+| Prefix công khai                                        | Service      | Ghi chú                                                           |
+| ------------------------------------------------------- | ------------ | ----------------------------------------------------------------- |
+| `/api/v1/auth`                                          | auth         | Public: `register`, `{student,instructor,admin}/login`, `refresh` |
+| `/api/v1/students`                                      | student      |                                                                   |
+| `/api/v1/courses`, `/api/v1/student`                    | course       | `/api/v1/student/*` là route học của student                      |
+| `/api/v1/media`                                         | media        |                                                                   |
+| `/api/v1/notifications`, `/api/v1/notification-batches` | notification |                                                                   |
+| `/api/v1/scheduler`                                     | scheduler    |                                                                   |
+| `/api/v1/ai`                                            | ai           |                                                                   |
+| `/health`                                               | gateway      | Mỗi service còn `/health` và `/ready` nội bộ                      |
 
 ---
 
@@ -145,14 +145,18 @@ Quy ước cột Role: `A`=admin, `I`=instructor, `S`=student, `*`=bất kỳ ro
 
 ## 4.1. auth
 
-| Method | Path                    | Role | Use case                                                  |
-| ------ | ----------------------- | :--: | --------------------------------------------------------- |
-| POST   | `/api/v1/auth/register` |  –   | `register-student` (tạo tài khoản, gọi student tạo hồ sơ) |
-| POST   | `/api/v1/auth/login`    |  –   | `login`                                                   |
-| POST   | `/api/v1/auth/refresh`  |  –   | `refresh-token`                                           |
-| GET    | `/api/v1/auth/me`       |  *   | `get-current-account`                                     |
-| POST   | `/api/v1/auth/accounts` |  A   | `create-account` (instructor/admin)                       |
-| GET    | `/api/v1/auth/accounts` |  A   | `list-accounts`                                           |
+Ba cửa đăng nhập riêng theo role dùng chung bảng `auth_users` và cùng body `{ email, password }`. Chỉ tài khoản đúng role đăng nhập được qua cửa tương ứng; sai email, sai mật khẩu, tài khoản bị khóa và đúng mật khẩu nhưng sai cửa đều trả cùng một `401 UNAUTHORIZED` ("Thông tin đăng nhập không hợp lệ") để không lộ tài khoản tồn tại hay thuộc role nào. `refresh` dùng chung vì refresh token đã gắn với tài khoản.
+
+| Method | Path                            | Role | Use case                                                      |
+| ------ | ------------------------------- | :--: | ------------------------------------------------------------- |
+| POST   | `/api/v1/auth/register`         |  –   | `register-student` (tạo tài khoản, gọi student tạo hồ sơ)     |
+| POST   | `/api/v1/auth/student/login`    |  –   | `login-student` (cần hồ sơ `ACTIVE` ở student; sai cửa → 401) |
+| POST   | `/api/v1/auth/instructor/login` |  –   | `login-instructor`                                            |
+| POST   | `/api/v1/auth/admin/login`      |  –   | `login-admin`                                                 |
+| POST   | `/api/v1/auth/refresh`          |  –   | `refresh-token`                                               |
+| GET    | `/api/v1/auth/me`               |  *   | `get-current-account`                                         |
+| POST   | `/api/v1/auth/accounts`         |  A   | `create-account` (instructor/admin)                           |
+| GET    | `/api/v1/auth/accounts`         |  A   | `list-accounts`                                               |
 
 ## 4.2. student
 

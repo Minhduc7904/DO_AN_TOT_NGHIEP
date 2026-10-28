@@ -15,7 +15,7 @@
 | R-01 | ADR, `service-catalogue-v2`, `http-and-event-contracts-v2`, `data-ownership-v2`; chốt `service.name` | 1–2 | — | Hoàn thành (27/10/2026; Đức xác nhận qua chỉ thị merge trực tiếp, không có review của Bách theo quyết định refactor một người) |
 | R-02 | Tách `aiops-platform/observability/`, compose riêng, network external `aiops-net` | 1–2 | — | Hoàn thành (27/10/2026; PR #52) |
 | R-03 | Nền tảng: `packages/common`, skeleton service, eslint boundaries, compose LMS (Postgres, RabbitMQ, MinIO, Mailpit), Prisma | 2–3 | R-01 | Hoàn thành (27/10/2026; PR #53, bỏ qua CI theo chỉ thị của Đức, bằng chứng chạy cục bộ bên dưới) |
-| R-04 | `auth` (3 role), `student`, `gateway` (bỏ `admin`, ADR-003) | 3–5 | R-03 | Đang thực hiện (`student` xong ở R-03, `auth` xong ở PR #54; còn `gateway`, phải sinh lỗi đúng envelope mới) |
+| R-04 | `auth` (3 role), `student`, `gateway` (bỏ `admin`, ADR-003) | 3–5 | R-03 | Đang thực hiện (`student` xong ở R-03, `auth` xong ở PR #54, đăng nhập tách 3 cửa theo role ở R-04c; còn `gateway`, phải sinh lỗi đúng envelope mới) |
 | R-04b | DTO dùng chung trong `contracts`, envelope phản hồi thống nhất (success và lỗi), phân trang nhất quán | 3–5 | R-04 (auth) | Hoàn thành (27/10/2026; PR #55) |
 | R-05 | `course`: course/lesson/quiz, enrollment, progress, quiz attempt, export CSV | 4–8 | R-04 | Chưa bắt đầu |
 | R-06 | `media` + worker: upload trực tiếp MinIO, thumbnail, usage, job | 5–8 | R-03 | Chưa bắt đầu |

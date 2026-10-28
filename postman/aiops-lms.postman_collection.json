@@ -11,67 +11,100 @@
       "item": [
         {
           "name": "Login - Student",
-          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
-            "pm.test('Dang nhap student thanh cong', () => pm.response.to.have.status(200));",
-            "if (pm.response.code === 200) {",
-            "  const data = pm.response.json().data;",
-            "  pm.environment.set('access_token', data.access_token);",
-            "  pm.environment.set('refresh_token', data.refresh_token);",
-            "  pm.environment.set('student_access_token', data.access_token);",
-            "  pm.environment.set('student_refresh_token', data.refresh_token);",
-            "  pm.environment.set('principal_id', data.principal.id);",
-            "  pm.environment.set('principal_role', data.principal.role);",
-            "  pm.environment.set('student_id', data.principal.id);",
-            "}"
-          ] } }],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Dang nhap student thanh cong', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code === 200) {",
+                  "  const data = pm.response.json().data;",
+                  "  pm.environment.set('access_token', data.access_token);",
+                  "  pm.environment.set('refresh_token', data.refresh_token);",
+                  "  pm.environment.set('student_access_token', data.access_token);",
+                  "  pm.environment.set('student_refresh_token', data.refresh_token);",
+                  "  pm.environment.set('principal_id', data.principal.id);",
+                  "  pm.environment.set('principal_role', data.principal.role);",
+                  "  pm.environment.set('student_id', data.principal.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "POST",
             "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": { "mode": "raw", "raw": "{\n  \"email\": \"{{student_email}}\",\n  \"password\": \"{{student_password}}\"\n}" },
-            "url": "{{gateway_base_url}}/api/v1/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{student_email}}\",\n  \"password\": \"{{student_password}}\"\n}"
+            },
+            "url": "{{gateway_base_url}}/api/v1/auth/student/login",
             "description": "Dang nhap student va tu dong luu token, refresh token, principal ID/role."
           }
         },
         {
           "name": "Login - Instructor",
-          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
-            "pm.test('Dang nhap instructor thanh cong', () => pm.response.to.have.status(200));",
-            "if (pm.response.code === 200) {",
-            "  const data = pm.response.json().data;",
-            "  pm.environment.set('access_token', data.access_token);",
-            "  pm.environment.set('refresh_token', data.refresh_token);",
-            "  pm.environment.set('instructor_access_token', data.access_token);",
-            "  pm.environment.set('instructor_refresh_token', data.refresh_token);",
-            "  pm.environment.set('principal_id', data.principal.id);",
-            "  pm.environment.set('principal_role', data.principal.role);",
-            "  pm.environment.set('instructor_id', data.principal.id);",
-            "}"
-          ] } }],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Dang nhap instructor thanh cong', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code === 200) {",
+                  "  const data = pm.response.json().data;",
+                  "  pm.environment.set('access_token', data.access_token);",
+                  "  pm.environment.set('refresh_token', data.refresh_token);",
+                  "  pm.environment.set('instructor_access_token', data.access_token);",
+                  "  pm.environment.set('instructor_refresh_token', data.refresh_token);",
+                  "  pm.environment.set('principal_id', data.principal.id);",
+                  "  pm.environment.set('principal_role', data.principal.role);",
+                  "  pm.environment.set('instructor_id', data.principal.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "POST",
             "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": { "mode": "raw", "raw": "{\n  \"email\": \"{{instructor_email}}\",\n  \"password\": \"{{instructor_password}}\"\n}" },
-            "url": "{{gateway_base_url}}/api/v1/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{instructor_email}}\",\n  \"password\": \"{{instructor_password}}\"\n}"
+            },
+            "url": "{{gateway_base_url}}/api/v1/auth/instructor/login",
             "description": "Dang nhap instructor va tu dong luu token, refresh token, principal ID/role."
           }
         },
         {
           "name": "Refresh Current Token",
-          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
-            "pm.test('Refresh token thanh cong', () => pm.response.to.have.status(200));",
-            "if (pm.response.code === 200) {",
-            "  const data = pm.response.json().data;",
-            "  pm.environment.set('access_token', data.access_token);",
-            "  pm.environment.set('refresh_token', data.refresh_token);",
-            "  const role = pm.environment.get('principal_role');",
-            "  if (role === 'student') { pm.environment.set('student_access_token', data.access_token); pm.environment.set('student_refresh_token', data.refresh_token); }",
-            "  if (role === 'instructor') { pm.environment.set('instructor_access_token', data.access_token); pm.environment.set('instructor_refresh_token', data.refresh_token); }",
-            "}"
-          ] } }],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Refresh token thanh cong', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code === 200) {",
+                  "  const data = pm.response.json().data;",
+                  "  pm.environment.set('access_token', data.access_token);",
+                  "  pm.environment.set('refresh_token', data.refresh_token);",
+                  "  const role = pm.environment.get('principal_role');",
+                  "  if (role === 'student') { pm.environment.set('student_access_token', data.access_token); pm.environment.set('student_refresh_token', data.refresh_token); }",
+                  "  if (role === 'instructor') { pm.environment.set('instructor_access_token', data.access_token); pm.environment.set('instructor_refresh_token', data.refresh_token); }",
+                  "}"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "POST",
             "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": { "mode": "raw", "raw": "{\n  \"refresh_token\": \"{{refresh_token}}\"\n}" },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refresh_token\": \"{{refresh_token}}\"\n}"
+            },
             "url": "{{gateway_base_url}}/api/v1/auth/refresh"
           }
         }
@@ -82,26 +115,63 @@
       "item": [
         {
           "name": "Create Course - Instructor",
-          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
-            "pm.test('Tao course thanh cong', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));",
-            "if (pm.response.code >= 200 && pm.response.code < 300) { const data = pm.response.json(); if (data.id) pm.environment.set('course_id', data.id); }"
-          ] } }],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Tao course thanh cong', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));",
+                  "if (pm.response.code >= 200 && pm.response.code < 300) { const data = pm.response.json(); if (data.id) pm.environment.set('course_id', data.id); }"
+                ]
+              }
+            }
+          ],
           "request": {
-            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{instructor_access_token}}", "type": "string" }] },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{instructor_access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "POST",
             "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": { "mode": "raw", "raw": "{\n  \"title\": \"{{course_title}}\"\n}" },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"{{course_title}}\"\n}"
+            },
             "url": "{{gateway_base_url}}/api/v1/courses"
           }
         },
         {
           "name": "List Courses",
-          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
-            "pm.test('Lay danh sach course thanh cong', () => pm.response.to.have.status(200));",
-            "if (pm.response.code === 200) { const data = pm.response.json(); if (data.items && data.items[0] && data.items[0].id) pm.environment.set('course_id', data.items[0].id); }"
-          ] } }],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Lay danh sach course thanh cong', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code === 200) { const data = pm.response.json(); if (data.items && data.items[0] && data.items[0].id) pm.environment.set('course_id', data.items[0].id); }"
+                ]
+              }
+            }
+          ],
           "request": {
-            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{student_access_token}}", "type": "string" }] },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{student_access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "GET",
             "url": "{{gateway_base_url}}/api/v1/courses?limit={{limit}}"
           }
@@ -109,7 +179,16 @@
         {
           "name": "Get Course By ID",
           "request": {
-            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{student_access_token}}", "type": "string" }] },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{student_access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "GET",
             "url": "{{gateway_base_url}}/api/v1/courses/{{course_id}}"
           }
@@ -121,26 +200,63 @@
       "item": [
         {
           "name": "Create Enrollment - Student",
-          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
-            "pm.test('Tao enrollment thanh cong', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));",
-            "if (pm.response.code >= 200 && pm.response.code < 300) { const data = pm.response.json(); if (data.id) pm.environment.set('enrollment_id', data.id); if (data.course_id) pm.environment.set('course_id', data.course_id); if (data.principal_id) pm.environment.set('student_id', data.principal_id); }"
-          ] } }],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Tao enrollment thanh cong', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));",
+                  "if (pm.response.code >= 200 && pm.response.code < 300) { const data = pm.response.json(); if (data.id) pm.environment.set('enrollment_id', data.id); if (data.course_id) pm.environment.set('course_id', data.course_id); if (data.principal_id) pm.environment.set('student_id', data.principal_id); }"
+                ]
+              }
+            }
+          ],
           "request": {
-            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{student_access_token}}", "type": "string" }] },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{student_access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "POST",
             "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": { "mode": "raw", "raw": "{\n  \"course_id\": \"{{course_id}}\"\n}" },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"course_id\": \"{{course_id}}\"\n}"
+            },
             "url": "{{gateway_base_url}}/api/v1/enrollments"
           }
         },
         {
           "name": "List My Enrollments - Student",
-          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
-            "pm.test('Lay enrollment thanh cong', () => pm.response.to.have.status(200));",
-            "if (pm.response.code === 200) { const data = pm.response.json(); if (data.items && data.items[0]) { pm.environment.set('enrollment_id', data.items[0].id); pm.environment.set('course_id', data.items[0].course_id); } }"
-          ] } }],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Lay enrollment thanh cong', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code === 200) { const data = pm.response.json(); if (data.items && data.items[0]) { pm.environment.set('enrollment_id', data.items[0].id); pm.environment.set('course_id', data.items[0].course_id); } }"
+                ]
+              }
+            }
+          ],
           "request": {
-            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{student_access_token}}", "type": "string" }] },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{student_access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "GET",
             "url": "{{gateway_base_url}}/api/v1/enrollments?limit={{limit}}"
           }
@@ -148,7 +264,16 @@
         {
           "name": "List Enrollments By Course - Instructor",
           "request": {
-            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{instructor_access_token}}", "type": "string" }] },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{instructor_access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "GET",
             "url": "{{gateway_base_url}}/api/v1/enrollments?course_id={{course_id}}&limit={{limit}}"
           }
@@ -156,7 +281,16 @@
         {
           "name": "List Enrollments By Student - Instructor",
           "request": {
-            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{instructor_access_token}}", "type": "string" }] },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{instructor_access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "GET",
             "url": "{{gateway_base_url}}/api/v1/enrollments?principal_id={{student_id}}&limit={{limit}}"
           }
@@ -168,26 +302,63 @@
       "item": [
         {
           "name": "Create Submission - Student",
-          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
-            "pm.test('Tao submission thanh cong', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));",
-            "if (pm.response.code >= 200 && pm.response.code < 300) { const data = pm.response.json(); if (data.id) pm.environment.set('submission_id', data.id); if (data.course_id) pm.environment.set('course_id', data.course_id); if (data.storage_object_key) pm.environment.set('storage_object_key', data.storage_object_key); }"
-          ] } }],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Tao submission thanh cong', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));",
+                  "if (pm.response.code >= 200 && pm.response.code < 300) { const data = pm.response.json(); if (data.id) pm.environment.set('submission_id', data.id); if (data.course_id) pm.environment.set('course_id', data.course_id); if (data.storage_object_key) pm.environment.set('storage_object_key', data.storage_object_key); }"
+                ]
+              }
+            }
+          ],
           "request": {
-            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{student_access_token}}", "type": "string" }] },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{student_access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "POST",
             "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": { "mode": "raw", "raw": "{\n  \"course_id\": \"{{course_id}}\",\n  \"content\": \"{{submission_content}}\"\n}" },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"course_id\": \"{{course_id}}\",\n  \"content\": \"{{submission_content}}\"\n}"
+            },
             "url": "{{gateway_base_url}}/api/v1/submissions"
           }
         },
         {
           "name": "Get Submission By ID - Student",
-          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
-            "pm.test('Lay submission thanh cong', () => pm.response.to.have.status(200));",
-            "if (pm.response.code === 200) { const data = pm.response.json(); if (data.storage_object_key) pm.environment.set('storage_object_key', data.storage_object_key); }"
-          ] } }],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Lay submission thanh cong', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code === 200) { const data = pm.response.json(); if (data.storage_object_key) pm.environment.set('storage_object_key', data.storage_object_key); }"
+                ]
+              }
+            }
+          ],
           "request": {
-            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{student_access_token}}", "type": "string" }] },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{student_access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "GET",
             "url": "{{gateway_base_url}}/api/v1/submissions/{{submission_id}}"
           }
@@ -195,7 +366,16 @@
         {
           "name": "Get Submission By ID - Instructor",
           "request": {
-            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{instructor_access_token}}", "type": "string" }] },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{instructor_access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "GET",
             "url": "{{gateway_base_url}}/api/v1/submissions/{{submission_id}}"
           }
@@ -207,22 +387,51 @@
       "item": [
         {
           "name": "Create Grade - Instructor",
-          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
-            "pm.test('Tao grade thanh cong', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202]));",
-            "if (pm.response.code >= 200 && pm.response.code < 300) { const data = pm.response.json(); if (data.id) pm.environment.set('grade_id', data.id); if (data.submission_id) pm.environment.set('submission_id', data.submission_id); }"
-          ] } }],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Tao grade thanh cong', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202]));",
+                  "if (pm.response.code >= 200 && pm.response.code < 300) { const data = pm.response.json(); if (data.id) pm.environment.set('grade_id', data.id); if (data.submission_id) pm.environment.set('submission_id', data.submission_id); }"
+                ]
+              }
+            }
+          ],
           "request": {
-            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{instructor_access_token}}", "type": "string" }] },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{instructor_access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "POST",
             "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": { "mode": "raw", "raw": "{\n  \"submission_id\": \"{{submission_id}}\",\n  \"score\": {{grade_score}}\n}" },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"submission_id\": \"{{submission_id}}\",\n  \"score\": {{grade_score}}\n}"
+            },
             "url": "{{gateway_base_url}}/api/v1/grades"
           }
         },
         {
           "name": "Get Grade By ID - Student",
           "request": {
-            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{student_access_token}}", "type": "string" }] },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{student_access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "GET",
             "url": "{{gateway_base_url}}/api/v1/grades/{{grade_id}}"
           }
@@ -230,7 +439,16 @@
         {
           "name": "Get Grade By ID - Instructor",
           "request": {
-            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{instructor_access_token}}", "type": "string" }] },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{instructor_access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "GET",
             "url": "{{gateway_base_url}}/api/v1/grades/{{grade_id}}"
           }
@@ -246,22 +464,40 @@
           "item": [
             {
               "name": "Login Direct",
-              "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
-                "if (pm.response.code === 200) { const data = pm.response.json(); pm.environment.set('access_token', data.access_token); pm.environment.set('refresh_token', data.refresh_token); pm.environment.set('principal_id', data.principal.id); pm.environment.set('principal_role', data.principal.role); }"
-              ] } }],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "if (pm.response.code === 200) { const data = pm.response.json(); pm.environment.set('access_token', data.access_token); pm.environment.set('refresh_token', data.refresh_token); pm.environment.set('principal_id', data.principal.id); pm.environment.set('principal_role', data.principal.role); }"
+                    ]
+                  }
+                }
+              ],
               "request": {
                 "method": "POST",
-                "header": [{ "key": "Content-Type", "value": "application/json" }],
-                "body": { "mode": "raw", "raw": "{\n  \"email\": \"{{student_email}}\",\n  \"password\": \"{{student_password}}\"\n}" },
-                "url": "{{auth_base_url}}/api/v1/auth/login"
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"{{student_email}}\",\n  \"password\": \"{{student_password}}\"\n}"
+                },
+                "url": "{{auth_base_url}}/api/v1/auth/student/login"
               }
             },
             {
               "name": "Refresh Direct",
               "request": {
                 "method": "POST",
-                "header": [{ "key": "Content-Type", "value": "application/json" }],
-                "body": { "mode": "raw", "raw": "{\n  \"refresh_token\": \"{{refresh_token}}\"\n}" },
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"refresh_token\": \"{{refresh_token}}\"\n}"
+                },
                 "url": "{{auth_base_url}}/api/v1/auth/refresh"
               }
             }
@@ -274,18 +510,39 @@
               "name": "Create Direct",
               "request": {
                 "method": "POST",
-                "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "x-principal-id", "value": "{{instructor_id}}" }, { "key": "x-principal-role", "value": "instructor" }],
-                "body": { "mode": "raw", "raw": "{\n  \"title\": \"{{course_title}}\"\n}" },
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "x-principal-id", "value": "{{instructor_id}}" },
+                  { "key": "x-principal-role", "value": "instructor" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"title\": \"{{course_title}}\"\n}"
+                },
                 "url": "{{course_base_url}}/api/v1/courses"
               }
             },
             {
               "name": "List Direct",
-              "request": { "method": "GET", "header": [{ "key": "x-principal-id", "value": "{{student_id}}" }, { "key": "x-principal-role", "value": "student" }], "url": "{{course_base_url}}/api/v1/courses?limit={{limit}}" }
+              "request": {
+                "method": "GET",
+                "header": [
+                  { "key": "x-principal-id", "value": "{{student_id}}" },
+                  { "key": "x-principal-role", "value": "student" }
+                ],
+                "url": "{{course_base_url}}/api/v1/courses?limit={{limit}}"
+              }
             },
             {
               "name": "Get By ID Direct",
-              "request": { "method": "GET", "header": [{ "key": "x-principal-id", "value": "{{student_id}}" }, { "key": "x-principal-role", "value": "student" }], "url": "{{course_base_url}}/api/v1/courses/{{course_id}}" }
+              "request": {
+                "method": "GET",
+                "header": [
+                  { "key": "x-principal-id", "value": "{{student_id}}" },
+                  { "key": "x-principal-role", "value": "student" }
+                ],
+                "url": "{{course_base_url}}/api/v1/courses/{{course_id}}"
+              }
             }
           ]
         },
@@ -296,22 +553,46 @@
               "name": "Create Direct",
               "request": {
                 "method": "POST",
-                "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "x-principal-id", "value": "{{student_id}}" }, { "key": "x-principal-role", "value": "student" }],
-                "body": { "mode": "raw", "raw": "{\n  \"course_id\": \"{{course_id}}\"\n}" },
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "x-principal-id", "value": "{{student_id}}" },
+                  { "key": "x-principal-role", "value": "student" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"course_id\": \"{{course_id}}\"\n}"
+                },
                 "url": "{{enrollment_base_url}}/api/v1/enrollments"
               }
             },
             {
               "name": "Check Enrollment Internal",
-              "request": { "method": "GET", "url": "{{enrollment_base_url}}/api/v1/enrollments/check?principal_id={{student_id}}&course_id={{course_id}}" }
+              "request": {
+                "method": "GET",
+                "url": "{{enrollment_base_url}}/api/v1/enrollments/check?principal_id={{student_id}}&course_id={{course_id}}"
+              }
             },
             {
               "name": "List Direct - Student",
-              "request": { "method": "GET", "header": [{ "key": "x-principal-id", "value": "{{student_id}}" }, { "key": "x-principal-role", "value": "student" }], "url": "{{enrollment_base_url}}/api/v1/enrollments?limit={{limit}}" }
+              "request": {
+                "method": "GET",
+                "header": [
+                  { "key": "x-principal-id", "value": "{{student_id}}" },
+                  { "key": "x-principal-role", "value": "student" }
+                ],
+                "url": "{{enrollment_base_url}}/api/v1/enrollments?limit={{limit}}"
+              }
             },
             {
               "name": "List Direct - Instructor",
-              "request": { "method": "GET", "header": [{ "key": "x-principal-id", "value": "{{instructor_id}}" }, { "key": "x-principal-role", "value": "instructor" }], "url": "{{enrollment_base_url}}/api/v1/enrollments?course_id={{course_id}}&limit={{limit}}" }
+              "request": {
+                "method": "GET",
+                "header": [
+                  { "key": "x-principal-id", "value": "{{instructor_id}}" },
+                  { "key": "x-principal-role", "value": "instructor" }
+                ],
+                "url": "{{enrollment_base_url}}/api/v1/enrollments?course_id={{course_id}}&limit={{limit}}"
+              }
             }
           ]
         },
@@ -322,18 +603,35 @@
               "name": "Create Direct",
               "request": {
                 "method": "POST",
-                "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "x-principal-id", "value": "{{student_id}}" }, { "key": "x-principal-role", "value": "student" }],
-                "body": { "mode": "raw", "raw": "{\n  \"course_id\": \"{{course_id}}\",\n  \"content\": \"{{submission_content}}\"\n}" },
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "x-principal-id", "value": "{{student_id}}" },
+                  { "key": "x-principal-role", "value": "student" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"course_id\": \"{{course_id}}\",\n  \"content\": \"{{submission_content}}\"\n}"
+                },
                 "url": "{{submission_base_url}}/api/v1/submissions"
               }
             },
             {
               "name": "Get By ID Direct",
-              "request": { "method": "GET", "header": [{ "key": "x-principal-id", "value": "{{student_id}}" }, { "key": "x-principal-role", "value": "student" }], "url": "{{submission_base_url}}/api/v1/submissions/{{submission_id}}" }
+              "request": {
+                "method": "GET",
+                "header": [
+                  { "key": "x-principal-id", "value": "{{student_id}}" },
+                  { "key": "x-principal-role", "value": "student" }
+                ],
+                "url": "{{submission_base_url}}/api/v1/submissions/{{submission_id}}"
+              }
             },
             {
               "name": "Get By ID Internal",
-              "request": { "method": "GET", "url": "{{submission_base_url}}/api/v1/submissions/{{submission_id}}" }
+              "request": {
+                "method": "GET",
+                "url": "{{submission_base_url}}/api/v1/submissions/{{submission_id}}"
+              }
             }
           ]
         },
@@ -344,14 +642,28 @@
               "name": "Create Direct",
               "request": {
                 "method": "POST",
-                "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "x-principal-id", "value": "{{instructor_id}}" }, { "key": "x-principal-role", "value": "instructor" }],
-                "body": { "mode": "raw", "raw": "{\n  \"submission_id\": \"{{submission_id}}\",\n  \"score\": {{grade_score}}\n}" },
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "x-principal-id", "value": "{{instructor_id}}" },
+                  { "key": "x-principal-role", "value": "instructor" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"submission_id\": \"{{submission_id}}\",\n  \"score\": {{grade_score}}\n}"
+                },
                 "url": "{{grading_base_url}}/api/v1/grades"
               }
             },
             {
               "name": "Get By ID Direct",
-              "request": { "method": "GET", "header": [{ "key": "x-principal-id", "value": "{{student_id}}" }, { "key": "x-principal-role", "value": "student" }], "url": "{{grading_base_url}}/api/v1/grades/{{grade_id}}" }
+              "request": {
+                "method": "GET",
+                "header": [
+                  { "key": "x-principal-id", "value": "{{student_id}}" },
+                  { "key": "x-principal-role", "value": "student" }
+                ],
+                "url": "{{grading_base_url}}/api/v1/grades/{{grade_id}}"
+              }
             }
           ]
         }
@@ -362,41 +674,106 @@
       "item": [
         {
           "name": "Put Object",
-          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
-            "if (pm.response.code === 200) { const data = pm.response.json(); if (data.object_key) pm.environment.set('storage_object_key', data.object_key); }"
-          ] } }],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) { const data = pm.response.json(); if (data.object_key) pm.environment.set('storage_object_key', data.object_key); }"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "PUT",
             "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": { "mode": "raw", "raw": "{\n  \"content\": \"{{storage_content}}\"\n}" },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"{{storage_content}}\"\n}"
+            },
             "url": "{{storage_base_url}}/api/v1/objects/{{storage_object_key}}"
           }
         },
-        { "name": "Get Object", "request": { "method": "GET", "url": "{{storage_base_url}}/api/v1/objects/{{storage_object_key}}" } },
+        {
+          "name": "Get Object",
+          "request": {
+            "method": "GET",
+            "url": "{{storage_base_url}}/api/v1/objects/{{storage_object_key}}"
+          }
+        },
         {
           "name": "Configure Fault",
           "request": {
             "method": "PUT",
             "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": { "mode": "raw", "raw": "{\n  \"error_mode\": \"{{fault_error_mode}}\",\n  \"latency_ms\": {{fault_latency_ms}}\n}" },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"error_mode\": \"{{fault_error_mode}}\",\n  \"latency_ms\": {{fault_latency_ms}}\n}"
+            },
             "url": "{{storage_base_url}}/internal/v1/fault"
           }
         },
-        { "name": "Reset Fault", "request": { "method": "DELETE", "url": "{{storage_base_url}}/internal/v1/fault" } },
-        { "name": "Get State", "request": { "method": "GET", "url": "{{storage_base_url}}/internal/v1/state" } }
+        {
+          "name": "Reset Fault",
+          "request": {
+            "method": "DELETE",
+            "url": "{{storage_base_url}}/internal/v1/fault"
+          }
+        },
+        {
+          "name": "Get State",
+          "request": {
+            "method": "GET",
+            "url": "{{storage_base_url}}/internal/v1/state"
+          }
+        }
       ]
     },
     {
       "name": "08 - Health Checks",
       "item": [
-        { "name": "Gateway Health", "request": { "method": "GET", "url": "{{gateway_base_url}}/health" } },
-        { "name": "Auth Health", "request": { "method": "GET", "url": "{{auth_base_url}}/health" } },
-        { "name": "Course Health", "request": { "method": "GET", "url": "{{course_base_url}}/health" } },
-        { "name": "Enrollment Health", "request": { "method": "GET", "url": "{{enrollment_base_url}}/health" } },
-        { "name": "Submission Health", "request": { "method": "GET", "url": "{{submission_base_url}}/health" } },
-        { "name": "Storage Mock Health", "request": { "method": "GET", "url": "{{storage_base_url}}/health" } },
-        { "name": "Notification Health", "request": { "method": "GET", "url": "{{notification_base_url}}/health" } },
-        { "name": "Grading Health", "request": { "method": "GET", "url": "{{grading_base_url}}/health" } }
+        {
+          "name": "Gateway Health",
+          "request": { "method": "GET", "url": "{{gateway_base_url}}/health" }
+        },
+        {
+          "name": "Auth Health",
+          "request": { "method": "GET", "url": "{{auth_base_url}}/health" }
+        },
+        {
+          "name": "Course Health",
+          "request": { "method": "GET", "url": "{{course_base_url}}/health" }
+        },
+        {
+          "name": "Enrollment Health",
+          "request": {
+            "method": "GET",
+            "url": "{{enrollment_base_url}}/health"
+          }
+        },
+        {
+          "name": "Submission Health",
+          "request": {
+            "method": "GET",
+            "url": "{{submission_base_url}}/health"
+          }
+        },
+        {
+          "name": "Storage Mock Health",
+          "request": { "method": "GET", "url": "{{storage_base_url}}/health" }
+        },
+        {
+          "name": "Notification Health",
+          "request": {
+            "method": "GET",
+            "url": "{{notification_base_url}}/health"
+          }
+        },
+        {
+          "name": "Grading Health",
+          "request": { "method": "GET", "url": "{{grading_base_url}}/health" }
+        }
       ]
     }
   ],

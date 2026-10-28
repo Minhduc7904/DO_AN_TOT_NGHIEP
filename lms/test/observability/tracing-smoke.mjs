@@ -125,13 +125,13 @@ async function traceSpans(traceId) {
 
 // Auth v2 trả envelope `{ success, data, error, meta }`; token nằm trong `data`.
 const student = (
-  await request(gateway, '/api/v1/auth/login', {
+  await request(gateway, '/api/v1/auth/student/login', {
     method: 'POST',
     body: { email: 'student@example.test', password: 'example-password' },
   })
 ).data;
 const instructor = (
-  await request(gateway, '/api/v1/auth/login', {
+  await request(gateway, '/api/v1/auth/instructor/login', {
     method: 'POST',
     body: { email: 'instructor@example.test', password: 'example-password' },
   })

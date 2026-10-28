@@ -189,7 +189,7 @@ await poll('Dependency/messaging latency thật', async () => {
   ])
     assert.ok((await scalar(selector)) > 0, `Thiếu latency series ${selector}`);
 });
-const login = await json(`${gateway}/api/v1/auth/login`, {
+const login = await json(`${gateway}/api/v1/auth/student/login`, {
   method: 'POST',
   headers: { 'content-type': 'application/json' },
   body: JSON.stringify({ email: 'student@example.test', password: 'example-password' }),

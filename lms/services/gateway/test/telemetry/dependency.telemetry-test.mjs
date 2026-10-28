@@ -59,7 +59,10 @@ function request(dependency, hostname, path, method = 'GET') {
 }
 
 try {
-  await proxy.forward(request('gateway-auth', 'auth.test', '/api/v1/auth/login', 'POST'), 100);
+  await proxy.forward(
+    request('gateway-auth', 'auth.test', '/api/v1/auth/student/login', 'POST'),
+    100,
+  );
   const notFound = await proxy.forward(
     request('gateway-course', 'course.test', '/api/v1/courses/course-001'),
     100,

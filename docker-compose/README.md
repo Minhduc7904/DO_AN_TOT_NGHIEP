@@ -71,7 +71,7 @@ curl --fail http://localhost:3001/health
 Kiểm tra W1–W2 qua Gateway từ Bash:
 
 ```bash
-login=$(curl --fail --silent --show-error -H 'content-type: application/json' -d '{"email":"student@example.test","password":"example-password"}' http://localhost:3000/api/v1/auth/login)
+login=$(curl --fail --silent --show-error -H 'content-type: application/json' -d '{"email":"student@example.test","password":"example-password"}' http://localhost:3000/api/v1/auth/student/login)
 token=$(printf '%s' "$login" | node -e 'let text="";process.stdin.on("data",chunk=>text+=chunk);process.stdin.on("end",()=>process.stdout.write(JSON.parse(text).access_token))')
 curl --fail -H "Authorization: Bearer $token" http://localhost:3000/api/v1/courses/course-001
 ```

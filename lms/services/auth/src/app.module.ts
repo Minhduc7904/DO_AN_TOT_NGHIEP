@@ -26,7 +26,10 @@ import { CreateAccountUseCase } from './application/use-cases/accounts/create-ac
 import { GetCurrentAccountUseCase } from './application/use-cases/accounts/get-current-account.use-case.js';
 import { ListAccountsUseCase } from './application/use-cases/accounts/list-accounts.use-case.js';
 import { RegisterStudentUseCase } from './application/use-cases/accounts/register-student.use-case.js';
-import { LoginUseCase } from './application/use-cases/sessions/login.use-case.js';
+import { CredentialsAuthenticator } from './application/use-cases/sessions/credentials-authenticator.js';
+import { LoginAdminUseCase } from './application/use-cases/sessions/login-admin.use-case.js';
+import { LoginInstructorUseCase } from './application/use-cases/sessions/login-instructor.use-case.js';
+import { LoginStudentUseCase } from './application/use-cases/sessions/login-student.use-case.js';
 import { RefreshTokenUseCase } from './application/use-cases/sessions/refresh-token.use-case.js';
 import { validateEnvironment } from './config/env.schema.js';
 
@@ -64,20 +67,34 @@ import { validateEnvironment } from './config/env.schema.js';
       inject: [ACCOUNT_REPOSITORY, STUDENT_PROFILE_CLIENT],
     },
     {
-      provide: LoginUseCase,
+      provide: CredentialsAuthenticator,
+      useFactory: (accounts: AccountRepository) => new CredentialsAuthenticator(accounts),
+      inject: [ACCOUNT_REPOSITORY],
+    },
+    {
+      provide: LoginStudentUseCase,
       useFactory: (
-        accounts: AccountRepository,
+        authenticator: CredentialsAuthenticator,
         refreshTokens: RefreshTokenRepository,
         settings: TokenSettings,
         students: StudentProfileClient,
-      ) => new LoginUseCase(accounts, refreshTokens, settings, students),
+      ) => new LoginStudentUseCase(authenticator, refreshTokens, settings, students),
       inject: [
-        ACCOUNT_REPOSITORY,
+        CredentialsAuthenticator,
         REFRESH_TOKEN_REPOSITORY,
         TOKEN_SETTINGS,
         STUDENT_PROFILE_CLIENT,
       ],
     },
+    ...[LoginInstructorUseCase, LoginAdminUseCase].map((useCase) => ({
+      provide: useCase,
+      useFactory: (
+        authenticator: CredentialsAuthenticator,
+        refreshTokens: RefreshTokenRepository,
+        settings: TokenSettings,
+      ) => new useCase(authenticator, refreshTokens, settings),
+      inject: [CredentialsAuthenticator, REFRESH_TOKEN_REPOSITORY, TOKEN_SETTINGS],
+    })),
     {
       provide: RefreshTokenUseCase,
       useFactory: (refreshTokens: RefreshTokenRepository, settings: TokenSettings) =>

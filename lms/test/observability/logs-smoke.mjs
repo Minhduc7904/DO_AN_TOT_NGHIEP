@@ -173,7 +173,7 @@ for (const service of tracing.services.filter((name) => name !== 'notification')
     { event: 'http.server.request', severity_text: 'INFO' },
   ]);
 
-const login = await json(`${gateway}/api/v1/auth/login`, {
+const login = await json(`${gateway}/api/v1/auth/student/login`, {
   method: 'POST',
   headers: { 'content-type': 'application/json' },
   body: JSON.stringify({ email: 'student@example.test', password: 'example-password' }),
