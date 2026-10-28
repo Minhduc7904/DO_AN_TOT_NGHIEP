@@ -9,6 +9,7 @@ import {
   validateQuizTitle,
 } from '../../../domain/quiz-content.js';
 import { loadManagedQuiz } from '../../course-access.js';
+import { MediaUsageEffects } from '../../media-usage-effects.js';
 import type { CourseRepository } from '../../ports/course-repository.js';
 import type { LessonRepository } from '../../ports/lesson-repository.js';
 import type { QuizPatch, QuizRepository } from '../../ports/quiz-repository.js';
@@ -27,6 +28,7 @@ export class UpdateQuizUseCase {
     private readonly lessons: LessonRepository,
     private readonly quizzes: QuizRepository,
     private readonly ids: IdGenerator,
+    private readonly media: MediaUsageEffects = new MediaUsageEffects(),
   ) {}
 
   async execute(
@@ -49,7 +51,22 @@ export class UpdateQuizUseCase {
       assertPublishable(patch.questions?.length ?? quiz.questions.length);
     }
 
-    const updated = await this.quizzes.update(quiz.id, patch);
+    const touchesMarkdown =
+      input.descriptionMarkdown !== undefined || input.questions !== undefined;
+    const effects = touchesMarkdown
+      ? this.media.syncQuiz(
+          {
+            id: quiz.id,
+            descriptionMarkdown:
+              input.descriptionMarkdown === undefined
+                ? quiz.descriptionMarkdown
+                : input.descriptionMarkdown,
+            questions: patch.questions ?? quiz.questions,
+          },
+          principal.id,
+        )
+      : [];
+    const updated = await this.quizzes.update(quiz.id, patch, effects);
     if (!updated) throw AppError.notFound('Không tìm thấy quiz');
     return updated;
   }

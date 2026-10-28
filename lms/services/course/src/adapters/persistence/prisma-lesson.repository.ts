@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 
 import type { Lesson } from '../../domain/course.js';
 import type {
@@ -6,6 +6,12 @@ import type {
   LessonRepository,
   NewLesson,
 } from '../../application/ports/lesson-repository.js';
+import type { MediaEffect } from '../../application/ports/media-effects.js';
+import {
+  enqueueMediaEffects,
+  OUTBOX_PRODUCER,
+  type OutboxProducer,
+} from '../messaging/media-effects.outbox.js';
 import type { Lesson as LessonRow } from './generated/client.js';
 import { isRecordNotFound, isUniqueViolation, observeDb, omitUndefined } from './prisma-support.js';
 import { PrismaService } from './prisma.service.js';
@@ -16,9 +22,12 @@ function toLesson(row: LessonRow): Lesson {
 
 @Injectable()
 export class PrismaLessonRepository implements LessonRepository {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Inject(OUTBOX_PRODUCER) private readonly producer: OutboxProducer,
+  ) {}
 
-  create(lesson: NewLesson): Promise<Lesson | null> {
+  create(lesson: NewLesson, effects: readonly MediaEffect[] = []): Promise<Lesson | null> {
     return observeDb('lesson.create', async () => {
       try {
         const row = await this.prisma.$transaction(async (tx) => {
@@ -30,7 +39,7 @@ export class PrismaLessonRepository implements LessonRepository {
             });
             displayOrder = (last._max.displayOrder ?? 0) + 1;
           }
-          return tx.lesson.create({
+          const created = await tx.lesson.create({
             data: {
               id: lesson.id,
               courseId: lesson.courseId,
@@ -39,6 +48,8 @@ export class PrismaLessonRepository implements LessonRepository {
               displayOrder,
             },
           });
+          await enqueueMediaEffects(tx, this.producer, effects);
+          return created;
         });
         return toLesson(row);
       } catch (error) {
@@ -72,12 +83,21 @@ export class PrismaLessonRepository implements LessonRepository {
     });
   }
 
-  update(lessonId: string, patch: LessonPatch): Promise<Lesson | null> {
+  update(
+    lessonId: string,
+    patch: LessonPatch,
+    effects: readonly MediaEffect[] = [],
+  ): Promise<Lesson | null> {
     return observeDb('lesson.update', async () => {
       try {
-        return toLesson(
-          await this.prisma.lesson.update({ where: { id: lessonId }, data: omitUndefined(patch) }),
-        );
+        return await this.prisma.$transaction(async (tx) => {
+          const row = await tx.lesson.update({
+            where: { id: lessonId },
+            data: omitUndefined(patch),
+          });
+          await enqueueMediaEffects(tx, this.producer, effects);
+          return toLesson(row);
+        });
       } catch (error) {
         if (isRecordNotFound(error)) return null;
         throw error;
@@ -85,11 +105,15 @@ export class PrismaLessonRepository implements LessonRepository {
     });
   }
 
-  delete(lessonId: string): Promise<boolean> {
-    return observeDb('lesson.delete', async () => {
-      const result = await this.prisma.lesson.deleteMany({ where: { id: lessonId } });
-      return result.count > 0;
-    });
+  delete(lessonId: string, effects: readonly MediaEffect[] = []): Promise<boolean> {
+    return observeDb('lesson.delete', () =>
+      this.prisma.$transaction(async (tx) => {
+        const result = await tx.lesson.deleteMany({ where: { id: lessonId } });
+        if (result.count === 0) return false;
+        await enqueueMediaEffects(tx, this.producer, effects);
+        return true;
+      }),
+    );
   }
 
   reorder(courseId: string, orderedIds: readonly string[]): Promise<Lesson[]> {

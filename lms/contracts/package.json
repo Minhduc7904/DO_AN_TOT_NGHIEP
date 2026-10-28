@@ -23,6 +23,10 @@
     "./http/internal": {
       "types": "./dist/http/internal/index.d.ts",
       "import": "./dist/http/internal/index.js"
+    },
+    "./commands": {
+      "types": "./dist/commands/media.d.ts",
+      "import": "./dist/commands/media.js"
     }
   },
   "scripts": {

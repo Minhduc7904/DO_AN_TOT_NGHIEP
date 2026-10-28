@@ -67,9 +67,9 @@ Route đọc nội dung media công khai với người dùng (không cần JWT)
 | ----------------------- | -------------------------------- | ------------------------------------- | --------------------------------------------------------- |
 | `gateway:proxy`         | gateway                          | Mọi route public của mọi service      | Đã có                                                     |
 | `student:profile:write` | auth                             | `POST /internal/v1/students`          | Đã có                                                     |
-| `student:profile:read`  | auth, media, notification-worker | `GET /internal/v1/students[/{id}]`    | Đã có (client media/notification-worker thêm ở R-06/R-07) |
-| `media:usage:read`      | course                           | `ids:query`, `usages/urls`            | Dự kiến R-06                                              |
-| `media:content:read`    | course                           | `GET /internal/v1/media/{id}/content` | Dự kiến R-06                                              |
+| `student:profile:read`  | auth, media, notification-worker | `GET /internal/v1/students[/{id}]`    | Đã có (client media ở R-06; notification-worker thêm ở R-07) |
+| `media:usage:read`      | course                           | `ids:query`, `usages/urls`            | Đã có (R-06)                                              |
+| `media:content:read`    | course                           | `GET /internal/v1/media/{id}/content` | Đã có (R-06)                                              |
 | `media:cleanup`         | scheduler-worker                 | `POST /internal/v1/media/cleanup`     | Dự kiến R-09                                              |
 | `ai:completion`         | course                           | `POST /internal/v1/ai/completions`    | Dự kiến R-08                                              |
 
@@ -155,7 +155,10 @@ Mã nghiệp vụ bổ sung (giữ từ repo mẫu, cùng envelope):
 |  502 | `AI_PROVIDER_ERROR`              | ai      | Provider lỗi hoặc không phản hồi hợp lệ                    |
 |  422 | `AI_PROVIDER_REJECTED_REQUEST`   | ai      | Provider từ chối request                                   |
 |  400 | `MEDIA_CHECKSUM_MISMATCH`        | media   | Checksum upload không khớp                                 |
-|  409 | `MEDIA_NOT_READY`                | media   | Media chưa `READY` cho usage này                           |
+|  409 | `MEDIA_NOT_READY`                | media   | Media (hoặc thumbnail) chưa `READY` cho thao tác này       |
+|  413 | `MEDIA_TOO_LARGE`                | media   | Vượt giới hạn kích thước theo loại media                   |
+|  409 | `MEDIA_UPLOAD_NOT_COMPLETED`     | media   | `upload-complete` nhưng object chưa được tải lên           |
+|  409 | `MEDIA_USAGE_CONFLICT`           | media   | Usage vi phạm quy tắc (trùng, singleton, sai loại owner)   |
 
 Không trả stack trace, password, JWT, API key, hoặc chi tiết DB nội bộ. Thông báo lỗi AI phải loại bỏ API key và host của provider.
 
@@ -259,7 +262,7 @@ Quy tắc:
 - Quiz: tiêu đề 2–200 ký tự, markdown ≤ 20000, lựa chọn ≤ 2000, ≤ 100 câu hỏi, mỗi câu 2–10 lựa chọn, điểm > 0, ≤ 100 và ≤ 2 chữ số thập phân; `SINGLE_CHOICE` có đúng 1 đáp án đúng, `MULTIPLE_CHOICE` có ≥ 1. Vi phạm trả 400 `VALIDATION_ERROR` kèm danh sách `path`/`message`.
 - Student chỉ thấy quiz `PUBLISHED`; mỗi (quiz, student) có tối đa một attempt `IN_PROGRESS` (partial unique index `quiz_attempts_one_in_progress`).
 - Chấm điểm: câu đúng khi tập lựa chọn bằng tập đáp án đúng (không chấm từng phần); `score` là tổng điểm các câu đúng, `max_score` là tổng điểm quiz tại thời điểm nộp (snapshot).
-- Đồng bộ usage media (`media.*` command) và luồng AI chưa có ở R-05: bảng `outbox_messages` đã sẵn, producer thêm ở R-06/R-08.
+- Đồng bộ usage media đã có từ R-06: create/update course, lesson, quiz ghi command `media.markdown-usage.synchronize` vào `outbox_messages` cùng transaction; xóa course/lesson/quiz hỏi `media` (`ids:query`) rồi ghi `media.usages.delete-by-ids` cùng transaction (media không trả lời thì 503 và không xóa). Luồng AI chưa có: producer thêm ở R-08.
 
 ---
 
@@ -284,7 +287,33 @@ Quy tắc:
 | GET    | `/api/v1/media/summary`                    |  A   | `get-media-summary`                                                                                  |
 | GET    | `/api/v1/media/jobs`                       |  A   | `get-media-background-jobs`                                                                          |
 
-Bucket MinIO: `images`, `videos`, `documents`, `audios`, `other`; object key `yyyy/MM/dd/{uuid}.{ext}`; client không bao giờ thấy bucket hay key. Giới hạn kích thước theo loại là cấu hình (ảnh 10 MB, video 500 MB, tài liệu 50 MB, audio 100 MB, khác 25 MB).
+Bucket MinIO: `images`, `videos`, `documents`, `audios`, `other` (chọn theo loại media suy ra từ MIME). Client không bao giờ thấy bucket hay object key cuối cùng; response chỉ có `content_url` và `thumbnail_url` qua Gateway.
+
+**Object key** (múi giờ UTC):
+
+| Loại object      | Bucket           | Key                                                                                                |
+| ---------------- | ---------------- | -------------------------------------------------------------------------------------------------- |
+| Upload tạm       | cùng bucket đích | `tmp/{uuid}.{ext}` (presigned POST ghim bucket, key, content-type và đúng kích thước khai báo)     |
+| Media gốc        | theo loại        | `yyyy/MM/dd/{uuid}.{ext}`; `upload-complete` kiểm tra kích thước và SHA-256 rồi copy sang key này, xóa `tmp/` |
+| Thumbnail        | `images`         | `yyyy/MM/dd/{uuid}.webp`; là một dòng `media_objects` có `source_media_id` trỏ về media gốc          |
+
+Presigned POST bắt buộc lộ key `tmp/…` cho trình duyệt; key cuối cùng chỉ `media` biết. Phần mở rộng lấy từ tên file, chỉ giữ ký tự an toàn `[a-z0-9]`, mặc định `bin`.
+
+**Giới hạn kích thước** theo loại (cấu hình trong code): ảnh 10 MB, video 500 MB, tài liệu 50 MB, audio 100 MB, khác 25 MB; vượt giới hạn trả `MEDIA_TOO_LARGE` (413). Upload multipart qua `media` bị chặn thêm bởi `MEDIA_MULTIPART_MAX_BYTES` (mặc định 25 MB); file lớn hơn phải dùng `upload-intents`.
+
+**Thumbnail**: ảnh dùng `sharp` (WebP, cạnh dài tối đa 480 px), video lấy một khung hình bằng `ffmpeg` (có trong image `media`). `GET /thumbnail` stream WebP khi `thumbnail_status=READY`; ngược lại trả `MEDIA_NOT_READY` kèm `thumbnail_status` trong `details`. `thumbnail/retry` đặt lại job và gửi lại command `media.thumbnail.generate`.
+
+**Quy tắc usage**:
+
+- Ma trận loại: `owner_kind` quyết định `usage_type` hợp lệ (COURSE: thumbnail, gallery, description, lesson content, lesson attachment, quiz content; NOTIFICATION: body; STUDENT: avatar; MEDIA: thumbnail). `COURSE_THUMBNAIL`, `COURSE_GALLERY`, `STUDENT_AVATAR` chỉ nhận ảnh gốc `READY`.
+- Singleton (`COURSE_THUMBNAIL`, `STUDENT_AVATAR`): gắn media mới thay usage cũ trong cùng transaction; có partial unique index chống đua.
+- Avatar kiểm tra student tồn tại và `ACTIVE` qua `GET /internal/v1/students/{id}` (cạnh `media → student`).
+- Xóa và sắp xếp lại usage: chỉ người tạo usage hoặc admin; sai quyền trả 403.
+- `GET /usages/urls?usage_ids=a,b` tối đa 100 id (phân tách bằng dấu phẩy).
+
+**Command và queue** (xem §6): `media-worker--generate-media-thumbnail-v1`, `…--synchronize-markdown-media-usage-v1`, `…--delete-media-usages-by-ids-v1`, `…--register-notification-media-usage-v1`, `…--register-notification-media-usages-v1`, `…--start-notification-media-usage-job-v1`, `…--complete-notification-media-usage-job-v1`. Worker xử lý idempotent qua `inbox_states` và retry rồi chuyển `<queue>.error`.
+
+Chưa làm ở R-06 (chuyển chủ): `POST /internal/v1/media/cleanup` → R-09; producer command usage của notification → R-07.
 
 ## 4.5. notification
 

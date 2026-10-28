@@ -4,7 +4,7 @@
 
 Sở hữu `course_db`: khóa học, bài học, quiz (câu hỏi, lựa chọn), ghi danh, tiến độ bài học và lượt làm quiz. Gộp phần enrollment và chấm điểm quiz của topology v1. Danh mục route và mã lỗi: [`http-and-event-contracts-v2.md` §4.3](../../../docs/processed/architecture/http-and-event-contracts-v2.md); sở hữu dữ liệu: [`data-ownership-and-fault-matrix-v2.md` §2.3](../../../docs/processed/architecture/data-ownership-and-fault-matrix-v2.md).
 
-Chưa có ở R-05 (để R-06/R-08): đồng bộ usage media bằng command, luồng AI soạn bài. Bảng `outbox_messages` đã có sẵn cho các producer đó.
+Đồng bộ usage media bằng command đã có từ R-06 (xem bên dưới). Chưa có (để R-08): luồng AI soạn bài.
 
 ## Cấu trúc
 
@@ -18,6 +18,13 @@ prisma/                          schema.prisma và migrations (kèm partial uniq
 ```
 
 `domain/` và `application/` không import `@nestjs/*`, `@prisma/client` hay `@aiops-lms/common/{http,clients,...}`; ESLint chặn các import này.
+
+## Đồng bộ usage media (R-06)
+
+- Use case dựng `MediaEffect` (port `application/ports/media-effects.ts`, helper `MediaUsageEffects`) và truyền vào repository; Prisma repository ghi chúng vào `outbox_messages` **trong cùng transaction** với thay đổi nghiệp vụ (`adapters/messaging/media-effects.outbox.ts`). Tên command và queue chỉ xuất hiện ở adapter, lấy từ `@aiops-lms/contracts/commands`.
+- Tạo/sửa course, lesson, quiz: lệnh `media.markdown-usage.synchronize` chỉ phát khi markdown thay đổi. Markdown của quiz gồm mô tả, câu hỏi và đáp án.
+- Xóa course/lesson/quiz: `MediaHttpClient` (`course-media`, scope `media:usage:read`) hỏi `POST /internal/v1/media/usages/ids:query` theo lô ≤ 500 owner để lấy usage id, rồi ghi `media.usages.delete-by-ids`. Media không trả lời thì xóa thất bại với 503 `DEPENDENCY_UNAVAILABLE` và không xóa gì (không để usage mồ côi).
+- `OutboxRelayService` (trong process API) dùng `OutboxRelayLoop` của `@aiops-lms/common/messaging` để phát outbox sang RabbitMQ; broker chết thì command nằm lại trong outbox.
 
 ## Quy ước nghiệp vụ đáng chú ý
 

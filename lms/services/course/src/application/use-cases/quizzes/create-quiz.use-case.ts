@@ -4,6 +4,7 @@ import type { IdGenerator, Principal } from '@aiops-lms/common/ports';
 import type { Quiz } from '../../../domain/course.js';
 import { type QuestionDraft, validateQuizTitle } from '../../../domain/quiz-content.js';
 import { loadManagedLesson } from '../../course-access.js';
+import { MediaUsageEffects } from '../../media-usage-effects.js';
 import type { CourseRepository } from '../../ports/course-repository.js';
 import type { LessonRepository } from '../../ports/lesson-repository.js';
 import type { QuizRepository } from '../../ports/quiz-repository.js';
@@ -21,6 +22,7 @@ export class CreateQuizUseCase {
     private readonly lessons: LessonRepository,
     private readonly quizzes: QuizRepository,
     private readonly ids: IdGenerator,
+    private readonly media: MediaUsageEffects = new MediaUsageEffects(),
   ) {}
 
   /** Quiz mới luôn là `DRAFT`, xếp cuối bài học. */
@@ -34,13 +36,14 @@ export class CreateQuizUseCase {
     const title = validateQuizTitle(input.title);
     const questions = buildQuestionTree(input.questions, this.ids);
 
-    const quiz = await this.quizzes.create({
-      id: this.ids.next(),
-      lessonId,
-      title,
-      descriptionMarkdown: input.descriptionMarkdown,
-      questions,
-    });
+    const id = this.ids.next();
+    const quiz = await this.quizzes.create(
+      { id, lessonId, title, descriptionMarkdown: input.descriptionMarkdown, questions },
+      this.media.syncQuiz(
+        { id, descriptionMarkdown: input.descriptionMarkdown, questions },
+        principal.id,
+      ),
+    );
     if (!quiz) throw AppError.conflict('Không xếp được quiz vào cuối bài học, hãy thử lại');
     return quiz;
   }

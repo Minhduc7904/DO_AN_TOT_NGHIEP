@@ -7,6 +7,7 @@ allowBuilds:
   prisma: true
   '@parcel/watcher': false
   protobufjs: true
+  sharp: false
   unrs-resolver: false
 minimumReleaseAgeExclude:
   - zod@4.5.4

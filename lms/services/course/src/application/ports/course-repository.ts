@@ -1,4 +1,5 @@
 import type { Course, CourseStatus } from '../../domain/course.js';
+import type { MediaEffect } from './media-effects.js';
 
 export const COURSE_REPOSITORY = Symbol('COURSE_REPOSITORY');
 
@@ -31,10 +32,10 @@ export interface CourseCounts {
 }
 
 export interface CourseRepository {
-  create(course: NewCourse): Promise<Course>;
+  create(course: NewCourse, effects?: readonly MediaEffect[]): Promise<Course>;
   findById(id: string): Promise<Course | null>;
-  update(id: string, patch: CoursePatch): Promise<Course | null>;
-  delete(id: string): Promise<boolean>;
+  update(id: string, patch: CoursePatch, effects?: readonly MediaEffect[]): Promise<Course | null>;
+  delete(id: string, effects?: readonly MediaEffect[]): Promise<boolean>;
   list(
     filter: CourseFilter,
     page: number,

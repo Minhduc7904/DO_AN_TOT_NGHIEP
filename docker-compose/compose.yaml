@@ -8,6 +8,7 @@ services:
       GATEWAY_AUTH_BASE_URL: http://auth:3001
       GATEWAY_STUDENT_BASE_URL: http://student:3002
       GATEWAY_COURSE_BASE_URL: http://course:3003
+      GATEWAY_MEDIA_BASE_URL: http://media:3004
       SERVICE_CLIENT_ID: gateway
       SERVICE_CLIENT_SECRET: "${GATEWAY_CLIENT_SECRET:-gateway-client-local-only}"
       GATEWAY_UPSTREAM_TIMEOUT_MS: "${GATEWAY_UPSTREAM_TIMEOUT_MS:-5000}"
@@ -28,6 +29,8 @@ services:
       student:
         condition: service_healthy
       course:
+        condition: service_healthy
+      media:
         condition: service_healthy
     healthcheck:
       test:
@@ -60,7 +63,7 @@ services:
       SERVICE_CLIENT_ID: auth
       SERVICE_CLIENT_SECRET: "${AUTH_CLIENT_SECRET:-auth-client-local-only}"
       # Registry client dịch vụ (ADR-004): gateway được gọi mọi route public; auth gọi student.
-      SERVICE_CLIENTS_BOOTSTRAP: '[{"client_id":"gateway","client_secret":"${GATEWAY_CLIENT_SECRET:-gateway-client-local-only}","audiences":["auth","student","course"],"scopes":["gateway:proxy"]},{"client_id":"auth","client_secret":"${AUTH_CLIENT_SECRET:-auth-client-local-only}","audiences":["student"],"scopes":["student:profile:read","student:profile:write"]}]'
+      SERVICE_CLIENTS_BOOTSTRAP: '[{"client_id":"gateway","client_secret":"${GATEWAY_CLIENT_SECRET:-gateway-client-local-only}","audiences":["auth","student","course","media"],"scopes":["gateway:proxy"]},{"client_id":"auth","client_secret":"${AUTH_CLIENT_SECRET:-auth-client-local-only}","audiences":["student"],"scopes":["student:profile:read","student:profile:write"]},{"client_id":"media","client_secret":"${MEDIA_CLIENT_SECRET:-media-client-local-only}","audiences":["student"],"scopes":["student:profile:read"]},{"client_id":"course","client_secret":"${COURSE_CLIENT_SECRET:-course-client-local-only}","audiences":["media"],"scopes":["media:usage:read","media:content:read"]}]'
       AUTH_STUDENT_BASE_URL: http://student:3002
       AUTH_STUDENT_TIMEOUT_MS: "${AUTH_STUDENT_TIMEOUT_MS:-3000}"
       AUTH_BOOTSTRAP_ADMIN_ID: "${AUTH_BOOTSTRAP_ADMIN_ID:-00000000-0000-4000-8000-000000000001}"
@@ -114,7 +117,12 @@ services:
     environment:
       NODE_ENV: production
       COURSE_DATABASE_URL: "postgresql://${COURSE_POSTGRES_USER:-course_user}:${COURSE_POSTGRES_PASSWORD:-course-local-only}@postgres:5432/course_db"
+      COURSE_RABBITMQ_URL: "amqp://${RABBITMQ_DEFAULT_USER:-lms}:${RABBITMQ_DEFAULT_PASS:-lms-local-only}@rabbitmq:5672"
+      COURSE_MEDIA_BASE_URL: http://media:3004
+      COURSE_MEDIA_TIMEOUT_MS: "${COURSE_MEDIA_TIMEOUT_MS:-3000}"
       AUTH_BASE_URL: http://auth:3001
+      SERVICE_CLIENT_ID: course
+      SERVICE_CLIENT_SECRET: "${COURSE_CLIENT_SECRET:-course-client-local-only}"
       OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: "${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT:-http://otel-collector:4318/v1/traces}"
       OTEL_EXPORTER_OTLP_METRICS_ENDPOINT: "${OTEL_EXPORTER_OTLP_METRICS_ENDPOINT:-http://otel-collector:4318/v1/metrics}"
       OTEL_EXPORTER_OTLP_LOGS_ENDPOINT: "${OTEL_EXPORTER_OTLP_LOGS_ENDPOINT:-http://otel-collector:4318/v1/logs}"
@@ -129,6 +137,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
     healthcheck:
       test:
         - CMD
@@ -136,6 +146,113 @@ services:
         - -e
         - >-
           fetch('http://127.0.0.1:3003/ready')
+          .then((response) => { if (!response.ok) process.exit(1); })
+          .catch(() => process.exit(1));
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 10s
+    networks:
+      - lms-network
+      - aiops-net
+
+  media:
+    build:
+      context: ../lms
+      dockerfile: services/media/Dockerfile
+    environment:
+      NODE_ENV: production
+      MEDIA_DATABASE_URL: "postgresql://${MEDIA_POSTGRES_USER:-media_user}:${MEDIA_POSTGRES_PASSWORD:-media-local-only}@postgres:5432/media_db"
+      MEDIA_RABBITMQ_URL: "amqp://${RABBITMQ_DEFAULT_USER:-lms}:${RABBITMQ_DEFAULT_PASS:-lms-local-only}@rabbitmq:5672"
+      MINIO_ENDPOINT: minio
+      MINIO_PORT: 9000
+      MINIO_USE_SSL: "false"
+      MINIO_ACCESS_KEY: "${MINIO_ROOT_USER:-lms-minio}"
+      MINIO_SECRET_KEY: "${MINIO_ROOT_PASSWORD:-lms-minio-local-only}"
+      # Địa chỉ MinIO mà trình duyệt truy cập được (ký presigned POST cho upload trực tiếp).
+      MINIO_PUBLIC_URL: "${MINIO_PUBLIC_URL:-http://localhost:9000}"
+      MEDIA_UPLOAD_EXPIRES_SECONDS: "${MEDIA_UPLOAD_EXPIRES_SECONDS:-900}"
+      MEDIA_MULTIPART_MAX_BYTES: "${MEDIA_MULTIPART_MAX_BYTES:-26214400}"
+      MEDIA_STUDENT_BASE_URL: http://student:3002
+      MEDIA_STUDENT_TIMEOUT_MS: "${MEDIA_STUDENT_TIMEOUT_MS:-3000}"
+      AUTH_BASE_URL: http://auth:3001
+      SERVICE_CLIENT_ID: media
+      SERVICE_CLIENT_SECRET: "${MEDIA_CLIENT_SECRET:-media-client-local-only}"
+      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: "${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT:-http://otel-collector:4318/v1/traces}"
+      OTEL_EXPORTER_OTLP_METRICS_ENDPOINT: "${OTEL_EXPORTER_OTLP_METRICS_ENDPOINT:-http://otel-collector:4318/v1/metrics}"
+      OTEL_EXPORTER_OTLP_LOGS_ENDPOINT: "${OTEL_EXPORTER_OTLP_LOGS_ENDPOINT:-http://otel-collector:4318/v1/logs}"
+      OTEL_METRIC_EXPORT_INTERVAL: "${OTEL_METRIC_EXPORT_INTERVAL:-5000}"
+      HTTP_ACCESS_LOG_ENABLED: "${HTTP_ACCESS_LOG_ENABLED:-true}"
+      OTEL_SDK_DISABLED: "${OTEL_SDK_DISABLED:-false}"
+      OTEL_SERVICE_INSTANCE_ID: "${MEDIA_SERVICE_INSTANCE_ID:-media-compose-1}"
+      OTEL_SERVICE_VERSION: "${MEDIA_SERVICE_VERSION:-0.1.0}"
+      PORT: 3004
+    ports:
+      - "${MEDIA_PORT:-3004}:3004"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio-init:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - >-
+          fetch('http://127.0.0.1:3004/ready')
+          .then((response) => { if (!response.ok) process.exit(1); })
+          .catch(() => process.exit(1));
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 10s
+    networks:
+      - lms-network
+      - aiops-net
+
+  media-worker:
+    build:
+      context: ../lms
+      dockerfile: services/media/Dockerfile
+    # Cùng image với `media`, chạy entrypoint worker (consumer RabbitMQ, thumbnail, đồng bộ usage).
+    command: ["node", "dist/worker.js"]
+    environment:
+      NODE_ENV: production
+      MEDIA_DATABASE_URL: "postgresql://${MEDIA_POSTGRES_USER:-media_user}:${MEDIA_POSTGRES_PASSWORD:-media-local-only}@postgres:5432/media_db"
+      MEDIA_RABBITMQ_URL: "amqp://${RABBITMQ_DEFAULT_USER:-lms}:${RABBITMQ_DEFAULT_PASS:-lms-local-only}@rabbitmq:5672"
+      MINIO_ENDPOINT: minio
+      MINIO_PORT: 9000
+      MINIO_USE_SSL: "false"
+      MINIO_ACCESS_KEY: "${MINIO_ROOT_USER:-lms-minio}"
+      MINIO_SECRET_KEY: "${MINIO_ROOT_PASSWORD:-lms-minio-local-only}"
+      MEDIA_WORKER_PREFETCH: "${MEDIA_WORKER_PREFETCH:-4}"
+      MEDIA_WORKER_MAX_ATTEMPTS: "${MEDIA_WORKER_MAX_ATTEMPTS:-5}"
+      MEDIA_WORKER_RETRY_DELAY_MS: "${MEDIA_WORKER_RETRY_DELAY_MS:-1000}"
+      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: "${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT:-http://otel-collector:4318/v1/traces}"
+      OTEL_EXPORTER_OTLP_METRICS_ENDPOINT: "${OTEL_EXPORTER_OTLP_METRICS_ENDPOINT:-http://otel-collector:4318/v1/metrics}"
+      OTEL_EXPORTER_OTLP_LOGS_ENDPOINT: "${OTEL_EXPORTER_OTLP_LOGS_ENDPOINT:-http://otel-collector:4318/v1/logs}"
+      OTEL_METRIC_EXPORT_INTERVAL: "${OTEL_METRIC_EXPORT_INTERVAL:-5000}"
+      HTTP_ACCESS_LOG_ENABLED: "${HTTP_ACCESS_LOG_ENABLED:-true}"
+      OTEL_SDK_DISABLED: "${OTEL_SDK_DISABLED:-false}"
+      OTEL_SERVICE_INSTANCE_ID: "${MEDIA_WORKER_SERVICE_INSTANCE_ID:-media-worker-compose-1}"
+      OTEL_SERVICE_VERSION: "${MEDIA_SERVICE_VERSION:-0.1.0}"
+      PORT: 3005
+    ports:
+      - "${MEDIA_WORKER_PORT:-3005}:3005"
+    # Chờ `media` healthy để schema đã migrate trước khi worker tiêu thụ command.
+    depends_on:
+      media:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - >-
+          fetch('http://127.0.0.1:3005/ready')
           .then((response) => { if (!response.ok) process.exit(1); })
           .catch(() => process.exit(1));
       interval: 5s

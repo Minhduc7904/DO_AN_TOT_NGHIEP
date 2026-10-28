@@ -6,8 +6,11 @@ describe('env.schema', () => {
 
     const environment = validateEnvironment({
       COURSE_DATABASE_URL: 'postgresql://user:pw@localhost:5432/course_db',
+      SERVICE_CLIENT_ID: 'course',
+      SERVICE_CLIENT_SECRET: 'course-local-only-secret',
     });
 
     expect(environment.PORT).toBe(3003);
+    expect(environment.COURSE_MEDIA_BASE_URL).toBe('http://localhost:3004');
   });
 });
