@@ -1,5 +1,7 @@
 # Blueprint triển khai Analysis, Anomaly Detection và RCA
 
+> **Đã được thay thế** bởi [analysis-anomaly-rca-blueprint-v1.md](analysis-anomaly-rca-blueprint-v1.md) (R-12, theo topology v2). File này giữ làm lịch sử, mô tả topology v1; không dùng cho dataset và triển khai mới.
+
 > **Trạng thái:** Canonical source of truth cho định hướng và implementation architecture của phần Analysis/AI/RCA.
 >
 > **Nguồn khôi phục:** Phần Observability, dữ liệu và AI/RCA trong bản cũ của `docs/processed/direction/khung_dinh_huong_tong_the_lms_microservice_ai_rca.md` tại nhánh `main`, commit `a3ff193`.

@@ -25,7 +25,7 @@
 | R-09  | `scheduler`: job `MEDIA_UNUSED_CLEANUP`                                                                                                                                                                             | 8–9  | R-06        | Hoàn thành (28/10/2026; PR #64, bỏ qua CI theo chỉ thị của Đức; xem bên dưới) |
 | R-10  | Data seeder quy mô lớn cho PostgreSQL                                                                                                                                                                               | 9–10 | R-04, R-05  | Hoàn thành (29/10/2026; PR #66, bỏ qua CI theo chỉ thị của Đức; xem bên dưới) |
 | R-11  | Test, CI, Postman v2; viết lại regression và job CI `mvp-regression`/`w7-compose` (gỡ ở R-05); đổi tên test `w1/w2/w3/w5` theo nghiệp vụ                                                                            | 8–10 | R-04…R-09   | Hoàn thành (29/10/2026; PR #67, CI GitHub xanh trừ GitGuardian báo nhầm; xem bên dưới) |
-| R-12  | Viết lại docs, viết lại smoke tracing/metrics/logs/acceptance (đang gắn luồng v1), kiểm chứng telemetry xuyên service, danh mục case phức tạp v0; ghi nhận schema kết quả RCA và nơi lưu (cho MCP thứ yếu, ADR-002) | 9–10 | tất cả      | Chưa bắt đầu                                                                                                                      |
+| R-12  | Viết lại docs, viết lại smoke tracing/metrics/logs/acceptance (đang gắn luồng v1), kiểm chứng telemetry xuyên service, danh mục case phức tạp v0; ghi nhận schema kết quả RCA và nơi lưu (cho MCP thứ yếu, ADR-002) | 9–10 | tất cả      | Hoàn thành (29/10/2026; chạy cục bộ, xem "R-12" bên dưới) |
 
 ## Mốc kiểm tra
 
@@ -281,3 +281,48 @@ Phạm vi đã làm: sửa hai lỗi e2e tồn đọng, viết lại `lms/test/r
 - Theo dõi vài tuần chạy thật của `regression.yml` (nightly, push `main`) trước khi nâng `compose-reset`, `regression`, `postman` thành required check; `main` hiện chưa bật branch protection → Đức quyết định.
 - Cảnh báo GitGuardian báo nhầm trên commit cũ của PR #67: đánh dấu false positive trên dashboard GitGuardian → Đức.
 - Script smoke observability (`test/observability/*`) vẫn dùng fixture `grade.completed` của v1; compose observability và cấu hình OTel còn queue `notification.grade-completed.v1`; tài liệu v1 và sơ đồ `w1/w4/w5` còn tham chiếu → R-12.
+
+### R-12 (chạy cục bộ ngày 29/10/2026, Node 22.13.1, pnpm 11.19.0)
+
+Phạm vi đã làm: khôi phục metric RabbitMQ, viết lại 5 smoke observability theo topology v2 (có runner `pnpm run test:observability`), đo telemetry xuyên service, viết lại docs còn gắn v1 theo hướng "thêm bản v+1, giữ bản cũ làm lịch sử", xóa toàn bộ sơ đồ v1 (không vẽ mới), lập danh mục case phức tạp v0 và ghi nhận schema kết quả RCA. Lệnh: `LOKI_PORT=13100 node test/observability/run-observability.mjs --environment test --project aiops-lms-test-obs --confirm aiops-lms-test-obs` (cổng 3100 do container dự án khác trên máy giữ).
+
+| DoD | Bằng chứng |
+| --- | --- |
+| Trace đủ span xuyên service | Runner dựng stack `compose.full.yaml` sạch, chạy 7 workflow regression (46/46 đạt) rồi 5 smoke theo thứ tự stack, tracing, logs, acceptance, metrics: **đạt (exit 0)**. `tracing-smoke` kiểm 9 luồng, mỗi luồng cần đúng 1 span gốc đúng chủ, không đứt parent, không span lỗi, đủ span bắt buộc, `service.version`/`service.instance.id` khớp compose. Luồng: đăng nhập (gateway, auth), đăng ký (gateway, auth, student), soạn khóa học (gateway, course), upload media (gateway, media, media-worker), đồng bộ usage markdown (gateway, course, media-worker), batch thông báo (gateway, notification, notification-worker, student; 50 span), job AI (gateway, course, ai, ai-worker; 37 span), trích văn bản (gateway, media, ai-worker), dọn media theo lịch (scheduler-worker, media). `logs-smoke`: 12/12 runtime có log, `trace_id`/`span_id` khớp span thật. `metrics-smoke`: RED, CPU, RSS của 12 runtime; 42 cạnh dependency; 24 queue đủ nhãn `service_name`/`dependency_identity`/`queue`; dừng worker thì consumer về 0 và backlog tăng, mở lại thì drain và lệnh lỗi vào `.error`. `acceptance-smoke`: mọi query panel dashboard có dữ liệu, data link metric → TraceQL → Loki dùng được. |
+| Docs đối chiếu code | Viết bản mới, giữ bản cũ kèm banner "Đã được thay thế": `backend-microservice-testbed-blueprint-v2`, `dependency-resilience-policy-v2`, `evaluation-protocol-v1`, `analysis-anomaly-rca-blueprint-v1`, `telemetry-and-ground-truth-schema-v1`, `project-scope-v2`, `research-questions-and-metrics-v2`, `khung-dinh-huong-tong-the-lms-microservice-ai-rca-v1`. Sửa tại chỗ: `data-ownership-and-fault-matrix-v2` (mục 5–8), `docker-compose/README.md`, `lms/packages/observability/README.md`, `lms/infrastructure/README.md`, README gốc. Mới: `aiops-platform/observability/README.md`. Chính sách resilience viết lại theo hành vi code (không retry HTTP, breaker 3 lỗi/5 giây, retry trong consumer rồi `.error`, backoff outbox). Mọi link tương đối trong các file mới/sửa đã kiểm: 0 link hỏng. 41 file sơ đồ v1 và `system-diagrams-v1.md` đã xóa. Phần tài liệu mới do agent soạn song song: đã kiểm link, cấu trúc và đối chiếu các điểm lệch agent báo (component FB, mã 504 của FG); **chưa** đọc lại từng mục từng file dài, nên Đức cần xem lại trước khi coi là chốt. |
+| Danh mục case phức tạp v0 có ground truth | `docs/processed/architecture/complex-case-catalogue-and-rca-result-v0.md`: C1–C7, mỗi case có kịch bản, triệu chứng, ground truth, tín hiệu xác nhận, trạng thái. Chỉ **C6** chạy thật (`tracing-smoke`: `docker pause auth`, login 504 ngay, token người dùng còn hạn vẫn 200, lỗi tại cạnh `gateway-auth-token` sau 70–74 giây với TTL 60 giây, request không tới course, phục hồi sau `unpause`). C1–C5, C7 mới **đo tín hiệu**, cơ chế gây lỗi chưa chạy. Schema `RcaIncidentResult` và nơi lưu ở mục 5 (chỉ tài liệu, thuộc mảng AI theo ADR-002). |
+
+**Số đo thật (stack một node):** 12/12 runtime có telemetry; 42 cạnh dependency; 24 queue (media-worker 7, notification-worker 3, ai-worker 2, mỗi queue thêm `.error`), 1 consumer mỗi queue canonical. Độ trễ từ request đến thấy được: log khoảng 2 giây, trace 2,5–5,6 giây, metric 1–10 giây; backlog hiện sau 5–10 giây khi dừng worker, drain thấy sau 8–14 giây.
+
+**Cổng chất lượng:** `build`, `lint`, `format:check` (Prettier chỉ trong `lms/`), `test` (mọi package đạt, `common` 44 test), `test:architecture` đạt; `docker compose config` đạt cho `compose.yaml` và `compose.full.yaml`.
+
+**Lỗi tìm thấy và đã sửa:**
+
+- Trace bất đồng bộ đứt: relay outbox publish trong context rỗng nên chuỗi command là trace riêng. Sửa ở `RabbitMqCommandPublisher` (dùng `traceparent` trong envelope làm parent), 2 unit test mới.
+- Identity RabbitMQ ghi chung `rabbitmq`: đổi thành `<service.name>-rabbitmq` (`publisher.dependencyIdentity` bắt buộc; 7 call site, test và e2e cập nhật).
+- Metric broker mất: collector chỉ scrape queue v1 đã xóa; viết lại pipeline `metrics/rabbitmq` (giữ queue canonical, gán `service.name` theo tiền tố), thêm test `queue-scrape.test.mjs` so khớp regex collector với `contracts`.
+- `packages/observability` còn danh sách service/cạnh v1 (kể cả `admin`): dọn theo v2.
+- `compose.yaml` observability còn `NOTIFICATION_GRADE_COMPLETED_QUEUE`, dashboard còn metric v1: gỡ và viết lại.
+- Healthcheck Postgres gây race khi khởi tạo (`student` chạy migrate lúc server tạm chỉ nghe unix socket, lỗi `P1001`): đổi thành `pg_isready -h 127.0.0.1`.
+- Tempo bị OOM-kill (giới hạn 512 MiB) khi truy vấn hàng nghìn trace song song: smoke truy vấn tuần tự, hạn chế số trace; RCA engine không nên kéo trace hàng loạt từ Tempo của testbed.
+- Một lần chạy `acceptance-smoke` đỏ do trace lỗi mới nhất chưa có log trong Loki: kiểm tra thử các trace ứng viên và thử lại tới 30 giây; chạy lại cả runner đạt.
+- Giả thuyết ban đầu về C6 (lỗi ở `course-auth-token`) sai: triệu chứng nằm ở `gateway-auth-token`; smoke và catalogue đã sửa.
+
+**Khác với kế hoạch / phát hiện:**
+
+- Khi chạy từ stack sạch, `MEDIA_CLEANUP_MIN_RETENTION_HOURS=0` và `AUTH_SERVICE_TOKEN_TTL_SECONDS=60` do runner đặt (`extraEnv`), stack thường không đổi.
+- `HttpQueryClient` đặt `operation_name` là `<METHOD> <path>` thô nên có ID trong nhãn metric ở nhiều cạnh (do agent tài liệu phát hiện, chưa sửa).
+- Lỗi publish RabbitMQ ném `details.dependency=rabbitmq`, chưa theo identity `<service>-rabbitmq` (chưa sửa).
+- Cạnh `media→student` có trong mapping code nhưng không có trong danh sách cạnh đo ở catalogue.
+- Không thêm smoke vào CI trong task này (xem dưới).
+
+**Hoãn có chủ đích (đã chuyển chủ):**
+
+- Fault injector (FA–FH), workload k6, dataset, RCA engine, MCP server, chạy cơ chế C1–C5 và C7 → mảng AI (`aiops-platform/`), task sau.
+- Metric còn thiếu cho RCA (pool DB, tuổi message cũ nhất, publish/consume RabbitMQ, outbox, log worker ngoài `/ready`, trace nối scheduler với worker) → Đức quyết định có bổ sung trước khi thu dataset.
+- Quyết định mở trong tài liệu đánh giá: candidate set 11 (không có `gateway`) hay 12; `R = 3` thừa kế từ v0, chưa có bằng chứng v2; số người, time cap và brief thử nghiệm người; luật `base-manual-auto`; cách nạp lại telemetry khi quá retention 24 giờ → Đức.
+- Sửa `operation_name` có ID và identity lỗi publish RabbitMQ (hai mục trên) → task sau.
+- Đưa smoke observability vào CI (`regression.yml` hoặc workflow riêng, chạy `actionlint` trước): lần chạy cần ~10 phút và cổng Loki/Grafana riêng → Đức quyết định.
+- Các mục R-05b/R-08/R-09 từng ghi "→ R-12" mà R-12 không làm: giới hạn tốc độ `POST /internal/v1/auth/service-token`; retention cho `ai_documents`/`ai_jobs` mồ côi; ràng buộc `AI_WORKER_LEASE_MS > AI_COMPLETION_TIMEOUT_MS` bằng schema; header `Location` cho `POST …/ai-jobs`; tệp thật cho media seed; chạy thử với provider LLM thật → Đức phân công lại (không thuộc DoD của R-12).
+- Cảnh báo GitGuardian báo nhầm ở PR #67 vẫn chờ Đức đánh dấu false positive (từ R-11).
+- Thư mục `docs/processed/description/` (mô tả đề tài) chưa rà soát → Đức.

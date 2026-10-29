@@ -1,5 +1,7 @@
 # Project scope v1 — MVP, Target, Stretch và Out-of-scope
 
+> **Đã được thay thế** bởi [project-scope-v2.md](project-scope-v2.md) (R-12, theo topology v2). File này giữ làm lịch sử, mô tả topology v1; không dùng cho dataset và triển khai mới.
+
 > **Trạng thái:** Review-ready artifact cho `task-01_define-mvp-scope`.
 >
 > **Vai trò:** Chốt phạm vi triển khai để ngăn scope creep và giữ toàn bộ hệ thống phục vụ trực tiếp bài toán anomaly detection + root-cause candidate ranking.

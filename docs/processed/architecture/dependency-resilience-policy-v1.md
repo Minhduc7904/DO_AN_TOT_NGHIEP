@@ -1,5 +1,7 @@
 # Dependency resilience policy v1
 
+> **Đã được thay thế** bởi [dependency-resilience-policy-v2.md](dependency-resilience-policy-v2.md) (R-12, theo topology v2). File này giữ làm lịch sử, mô tả topology v1; không dùng cho dataset và triển khai mới.
+
 > **Phạm vi:** các outbound HTTP dependency của Gateway, Enrollment, Submission và Grading trong Testbed MVP.
 >
 > **Nguồn canonical liên quan:** [`http-and-event-contracts-v1.md`](http-and-event-contracts-v1.md), [`data-ownership-and-fault-matrix-v1.md`](data-ownership-and-fault-matrix-v1.md).

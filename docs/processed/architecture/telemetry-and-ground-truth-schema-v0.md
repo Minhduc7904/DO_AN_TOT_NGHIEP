@@ -1,5 +1,7 @@
 # Telemetry và ground-truth schema v0
 
+> **Đã được thay thế** bởi [telemetry-and-ground-truth-schema-v1.md](telemetry-and-ground-truth-schema-v1.md) (R-12, theo topology v2). File này giữ làm lịch sử, mô tả topology v1; không dùng cho dataset và triển khai mới.
+
 > **Task:** `task-04_define-telemetry-and-ground-truth-schema`
 >
 > **Vị trí canonical dự kiến:** `docs/processed/architecture/telemetry-and-ground-truth-schema-v0.md`

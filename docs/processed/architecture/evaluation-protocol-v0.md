@@ -1,5 +1,7 @@
 # Evaluation protocol v0
 
+> **Đã được thay thế** bởi [evaluation-protocol-v1.md](evaluation-protocol-v1.md) (R-12, theo topology v2). File này giữ làm lịch sử, mô tả topology v1; không dùng cho dataset và triển khai mới.
+
 > **Task:** `task-05_define-evaluation-protocol`
 >
 > **Trạng thái:** Review-ready artifact cho W4-T5.
