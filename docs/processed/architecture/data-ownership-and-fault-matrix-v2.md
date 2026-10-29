@@ -113,6 +113,10 @@ Mất hoặc đổi `AI_ENCRYPTION_KEY` thì mọi API key đã lưu không gi�
 
 `gateway` không sở hữu dữ liệu.
 
+## 2.9. Dữ liệu seed quy mô lớn (R-10)
+
+Seeder (`lms/scripts/seed-data.mjs`) ghi **trực tiếp bằng SQL** vào từng DB nên dữ liệu seed không đi qua API, outbox hay command: không có `outbox_messages`, `inbox_states`, trace hay log nghiệp vụ nào cho các dòng này, và không có media usage được đồng bộ bằng command. Quy ước để dữ liệu seed không kích hoạt việc ngầm: mọi `id` bắt đầu bằng `5eed` (dọn lại được theo khoảng id), không seed dòng đang xử lý dở (`PENDING`, `RUNNING`, `PROCESSING`, `RETRY`, `SNAPSHOT_*`) để relay và worker không nhặt, mọi tệp gốc ở `media_db` có ít nhất một `media_usages` để job `MEDIA_UNUSED_CLEANUP` không dọn nhầm, và tệp seed không có đối tượng trong MinIO. Tham chiếu chéo DB giữ nhất quán bằng id sinh theo chỉ số (`auth_users.id` = `students.id`). Chi tiết: `lms/scripts/seed-data/README.md`.
+
 ---
 
 # 3. Tham chiếu logic chéo service
