@@ -25,7 +25,7 @@
 | R-09  | `scheduler`: job `MEDIA_UNUSED_CLEANUP`                                                                                                                                                                             | 8–9  | R-06        | Hoàn thành (28/10/2026; PR #64, bỏ qua CI theo chỉ thị của Đức; xem bên dưới) |
 | R-10  | Data seeder quy mô lớn cho PostgreSQL                                                                                                                                                                               | 9–10 | R-04, R-05  | Hoàn thành (29/10/2026; PR #66, bỏ qua CI theo chỉ thị của Đức; xem bên dưới) |
 | R-11  | Test, CI, Postman v2; viết lại regression và job CI `mvp-regression`/`w7-compose` (gỡ ở R-05); đổi tên test `w1/w2/w3/w5` theo nghiệp vụ                                                                            | 8–10 | R-04…R-09   | Hoàn thành (29/10/2026; PR #67, CI GitHub xanh trừ GitGuardian báo nhầm; xem bên dưới) |
-| R-12  | Viết lại docs, viết lại smoke tracing/metrics/logs/acceptance (đang gắn luồng v1), kiểm chứng telemetry xuyên service, danh mục case phức tạp v0; ghi nhận schema kết quả RCA và nơi lưu (cho MCP thứ yếu, ADR-002) | 9–10 | tất cả      | Hoàn thành (29/10/2026; chạy cục bộ, xem "R-12" bên dưới) |
+| R-12  | Viết lại docs, viết lại smoke tracing/metrics/logs/acceptance (đang gắn luồng v1), kiểm chứng telemetry xuyên service, danh mục case phức tạp v0; ghi nhận schema kết quả RCA và nơi lưu (cho MCP thứ yếu, ADR-002) | 9–10 | tất cả      | Hoàn thành (29/10/2026; PR #68, CI GitHub xanh; xem "R-12" bên dưới) |
 
 ## Mốc kiểm tra
 
@@ -283,6 +283,8 @@ Phạm vi đã làm: sửa hai lỗi e2e tồn đọng, viết lại `lms/test/r
 - Script smoke observability (`test/observability/*`) vẫn dùng fixture `grade.completed` của v1; compose observability và cấu hình OTel còn queue `notification.grade-completed.v1`; tài liệu v1 và sơ đồ `w1/w4/w5` còn tham chiếu → R-12.
 
 ### R-12 (chạy cục bộ ngày 29/10/2026, Node 22.13.1, pnpm 11.19.0)
+
+**CI trên GitHub (PR #68):** `static`, `unit`, 7 job `e2e`, `integration-db`, `compose-config`, `compose-reset` (11 phút 49 giây) và GitGuardian đều đạt. `regression.yml` không chạy (PR không gắn label `run-regression`); regression đã chạy cục bộ 46/46.
 
 Phạm vi đã làm: khôi phục metric RabbitMQ, viết lại 5 smoke observability theo topology v2 (có runner `pnpm run test:observability`), đo telemetry xuyên service, viết lại docs còn gắn v1 theo hướng "thêm bản v+1, giữ bản cũ làm lịch sử", xóa toàn bộ sơ đồ v1 (không vẽ mới), lập danh mục case phức tạp v0 và ghi nhận schema kết quả RCA. Lệnh: `LOKI_PORT=13100 node test/observability/run-observability.mjs --environment test --project aiops-lms-test-obs --confirm aiops-lms-test-obs` (cổng 3100 do container dự án khác trên máy giữ).
 
