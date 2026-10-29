@@ -49,7 +49,7 @@ export class OutboxRelayService implements OnApplicationBootstrap, OnApplication
   }
 
   async onApplicationShutdown(): Promise<void> {
-    this.loop.stop();
+    await this.loop.stop();
     await this.session.close();
   }
 }

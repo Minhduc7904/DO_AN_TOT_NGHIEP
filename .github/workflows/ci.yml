@@ -1,5 +1,7 @@
-name: CI baseline
+name: CI
 
+# Luồng nhanh chạy trên mọi PR và mỗi lần merge vào main. Regression và Postman (dựng cả stack
+# compose, 10–25 phút) nằm ở regression.yml.
 on:
   pull_request:
     branches:
@@ -11,10 +13,83 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  PGUSER: lms_test
+  PGPASSWORD: lms_test_password
+  AUTH_DATABASE_URL: postgresql://lms_test:lms_test_password@127.0.0.1:5432/auth_db
+  STUDENT_DATABASE_URL: postgresql://lms_test:lms_test_password@127.0.0.1:5432/student_db
+  COURSE_DATABASE_URL: postgresql://lms_test:lms_test_password@127.0.0.1:5432/course_db
+  MEDIA_DATABASE_URL: postgresql://lms_test:lms_test_password@127.0.0.1:5432/media_db
+  NOTIFICATION_DATABASE_URL: postgresql://lms_test:lms_test_password@127.0.0.1:5432/notification_db
+  AI_DATABASE_URL: postgresql://lms_test:lms_test_password@127.0.0.1:5432/ai_db
+  SCHEDULER_DATABASE_URL: postgresql://lms_test:lms_test_password@127.0.0.1:5432/scheduler_db
+  NOTIFICATION_RABBITMQ_URL: amqp://lms_test:lms_test_password@127.0.0.1:5672
+  MEDIA_RABBITMQ_URL: amqp://lms_test:lms_test_password@127.0.0.1:5672
+  AI_RABBITMQ_URL: amqp://lms_test:lms_test_password@127.0.0.1:5672
+  NOTIFICATION_SMTP_HOST: 127.0.0.1
+  NOTIFICATION_SMTP_PORT: 1025
+  MAILPIT_API_PORT: 8025
+  MINIO_ENDPOINT: 127.0.0.1
+  MINIO_PORT: 9000
+
 jobs:
-  quality:
-    name: Clean install, quality gates and telemetry assertion
+  static:
+    name: Format, lint và build
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: lms
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v6
+
+      - name: Set up toolchain
+        uses: ./.github/actions/setup-lms
+
+      - name: Format
+        run: pnpm run format:check
+
+      - name: Lint
+        run: pnpm run lint
+
+      - name: Build
+        run: pnpm run build
+
+  unit:
+    name: Unit test, kiến trúc và telemetry
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: lms
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v6
+
+      - name: Set up toolchain
+        uses: ./.github/actions/setup-lms
+
+      # Test của common cần dist của observability và contracts, nên build trước.
+      - name: Build
+        run: pnpm run build
+
+      # Gồm test:architecture, test:testbed:reset, test:seed-data, jest từng service và test:telemetry.
+      - name: Unit test
+        run: pnpm run test
+
+  e2e:
+    name: e2e ${{ matrix.service }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        service: [auth, student, course, media, notification, ai, scheduler]
     defaults:
       run:
         working-directory: lms
@@ -23,20 +98,20 @@ jobs:
         image: postgres:17.6-alpine
         env:
           POSTGRES_DB: auth_db
-          POSTGRES_USER: w1_test
-          POSTGRES_PASSWORD: w1_test_password
+          POSTGRES_USER: lms_test
+          POSTGRES_PASSWORD: lms_test_password
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -U w1_test -d auth_db"
+          --health-cmd "pg_isready -U lms_test -d auth_db"
           --health-interval 5s
           --health-timeout 5s
           --health-retries 12
       rabbitmq:
         image: rabbitmq:4.1.4-management-alpine
         env:
-          RABBITMQ_DEFAULT_USER: w1_test
-          RABBITMQ_DEFAULT_PASS: w1_test_password
+          RABBITMQ_DEFAULT_USER: lms_test
+          RABBITMQ_DEFAULT_PASS: lms_test_password
         ports:
           - 5672:5672
         options: >-
@@ -69,64 +144,92 @@ jobs:
           --health-interval 5s
           --health-timeout 3s
           --health-retries 12
-    env:
-      W1_AUTH_DATABASE_URL: postgresql://w1_test:w1_test_password@127.0.0.1:5432/auth_db
-      NOTIFICATION_RABBITMQ_URL: amqp://w1_test:w1_test_password@127.0.0.1:5672
-      NOTIFICATION_SMTP_HOST: 127.0.0.1
-      NOTIFICATION_SMTP_PORT: 1025
-      MAILPIT_API_PORT: 8025
-      MEDIA_RABBITMQ_URL: amqp://w1_test:w1_test_password@127.0.0.1:5672
-      AI_RABBITMQ_URL: amqp://w1_test:w1_test_password@127.0.0.1:5672
-      MINIO_ENDPOINT: 127.0.0.1
-      MINIO_PORT: 9000
     steps:
       - name: Checkout source
         uses: actions/checkout@v6
 
-      - name: Set up pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 11.19.0
-          run_install: false
+      - name: Set up toolchain
+        uses: ./.github/actions/setup-lms
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v7
-        with:
-          node-version: 22.13.1
+      - name: Create service database
+        if: matrix.service != 'auth'
+        run: psql -h 127.0.0.1 -d auth_db -c "CREATE DATABASE ${{ matrix.service }}_db"
 
-      - name: Verify pinned toolchain
+      - name: Build
+        run: pnpm run build
+
+      - name: Migrate
+        working-directory: lms/services/${{ matrix.service }}
+        run: pnpm exec prisma migrate deploy
+
+      - name: e2e
+        run: pnpm run test:${{ matrix.service }}:e2e
+
+  integration-db:
+    name: Integration trên PostgreSQL và RabbitMQ thật
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: lms
+    services:
+      postgres:
+        image: postgres:17.6-alpine
+        env:
+          POSTGRES_DB: auth_db
+          POSTGRES_USER: lms_test
+          POSTGRES_PASSWORD: lms_test_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U lms_test -d auth_db"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+      rabbitmq:
+        image: rabbitmq:4.1.4-management-alpine
+        env:
+          RABBITMQ_DEFAULT_USER: lms_test
+          RABBITMQ_DEFAULT_PASS: lms_test_password
+        ports:
+          - 5672:5672
+        options: >-
+          --health-cmd "rabbitmq-diagnostics -q ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 12
+          --health-start-period 20s
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v6
+
+      - name: Set up toolchain
+        uses: ./.github/actions/setup-lms
+
+      - name: Create databases
         run: |
-          node --version
-          pnpm --version
-
-      - name: Clean install
-        run: pnpm install --frozen-lockfile
-
-      - name: Create service databases
-        run: |
-          for database in student_db course_db media_db notification_db ai_db scheduler_db; do
-            PGPASSWORD=w1_test_password psql -h 127.0.0.1 -U w1_test -d auth_db -c "CREATE DATABASE $database"
+          for database in student_db course_db media_db notification_db ai_db scheduler_db common_integration_db; do
+            psql -h 127.0.0.1 -d auth_db -c "CREATE DATABASE $database"
           done
 
-      - name: Run quality gates
+      - name: Build
+        run: pnpm run build
+
+      - name: Migrate all services
         run: |
-          base="${W1_AUTH_DATABASE_URL%/auth_db}"
-          export AUTH_DATABASE_URL="$W1_AUTH_DATABASE_URL"
-          export STUDENT_DATABASE_URL="$base/student_db"
-          export COURSE_DATABASE_URL="$base/course_db"
-          export MEDIA_DATABASE_URL="$base/media_db"
-          export NOTIFICATION_DATABASE_URL="$base/notification_db"
-          export AI_DATABASE_URL="$base/ai_db"
-          export SCHEDULER_DATABASE_URL="$base/scheduler_db"
-          pnpm run build
-          (cd services/auth && pnpm exec prisma migrate deploy)
-          (cd services/student && pnpm exec prisma migrate deploy)
-          (cd services/course && pnpm exec prisma migrate deploy)
-          (cd services/media && pnpm exec prisma migrate deploy)
-          (cd services/notification && pnpm exec prisma migrate deploy)
-          (cd services/ai && pnpm exec prisma migrate deploy)
-          (cd services/scheduler && pnpm exec prisma migrate deploy)
-          pnpm run test:auth:e2e && pnpm run test:student:e2e && pnpm run test:course:e2e && pnpm run test:media:e2e && pnpm run test:notification:e2e && pnpm run test:ai:e2e && pnpm run test:scheduler:e2e && pnpm run ci:verify
+          for service in auth student course media notification ai scheduler; do
+            (cd "services/$service" && pnpm exec prisma migrate deploy)
+          done
+
+      # Outbox, inbox và consumer qua RabbitMQ thật; dùng database riêng vì test tự tạo và xóa bảng.
+      - name: common integration
+        run: pnpm --filter @aiops-lms/common run test:integration
+        env:
+          DATABASE_URL: postgresql://lms_test:lms_test_password@127.0.0.1:5432/common_integration_db
+          RABBITMQ_URL: amqp://lms_test:lms_test_password@127.0.0.1:5672
+
+      - name: Seeder trên PostgreSQL thật
+        run: pnpm run test:seed-data:db --host 127.0.0.1 --port 5432 --user lms_test --password lms_test_password
 
   compose-config:
     name: Validate Compose without local configuration
@@ -147,22 +250,24 @@ jobs:
       - name: Validate full stack Compose (LMS + aiops-platform)
         run: docker compose --env-file docker-compose/.env.example -f docker-compose/compose.full.yaml config --quiet
 
-  testbed-reset:
+  compose-reset:
     name: Reset/seed Testbed twice with stable fingerprint
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
       - name: Checkout source
         uses: actions/checkout@v6
-      - name: Set up pnpm
-        uses: pnpm/action-setup@v4
+
+      - name: Set up toolchain
+        uses: ./.github/actions/setup-lms
         with:
-          version: 11.19.0
-          run_install: false
+          install: 'false'
+
+      - name: Free disk space
+        run: sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/lib/android
+
       - name: Run reset guard tests
         run: pnpm --dir lms run test:testbed:reset
+
       - name: Reset twice and compare fingerprint
         run: pnpm --dir lms run test:testbed:reset:compose
-
-  # `mvp-regression` và `w7-compose` gắn với luồng v1 (enrollment/submission/grading) đã bị gỡ ở R-05;
-  # bản viết lại cho topology v2 nằm ở R-11 (regression, Postman) và R-12 (smoke telemetry).

@@ -1,0 +1,35 @@
+name: Cài toolchain LMS
+description: Cài pnpm 11.19.0 và Node.js 22.13.1 đã ghim, rồi cài dependency từ lockfile trong lms/.
+
+inputs:
+  install:
+    description: Chạy `pnpm install --frozen-lockfile` trong lms/ (đặt false cho job chỉ cần Node và pnpm).
+    default: 'true'
+
+runs:
+  using: composite
+  steps:
+    - name: Set up pnpm
+      uses: pnpm/action-setup@v4
+      with:
+        version: 11.19.0
+        run_install: false
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v7
+      with:
+        node-version: 22.13.1
+        cache: pnpm
+        cache-dependency-path: lms/pnpm-lock.yaml
+
+    - name: Verify pinned toolchain
+      shell: bash
+      run: |
+        node --version
+        pnpm --version
+
+    - name: Clean install
+      if: inputs.install == 'true'
+      shell: bash
+      working-directory: lms
+      run: pnpm install --frozen-lockfile

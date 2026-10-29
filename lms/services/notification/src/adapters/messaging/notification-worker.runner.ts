@@ -77,7 +77,7 @@ export class NotificationWorkerRunner implements OnApplicationBootstrap, OnAppli
   }
 
   async onApplicationShutdown(): Promise<void> {
-    for (const consumer of this.consumers) consumer.stop();
+    await Promise.all(this.consumers.map((consumer) => consumer.stop()));
     await this.session.close();
   }
 

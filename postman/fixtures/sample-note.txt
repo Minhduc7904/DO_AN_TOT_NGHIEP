@@ -1,0 +1,2 @@
+Nội dung mẫu cho Postman LMS v2.
+Tệp này dùng để thử upload trực tiếp lên MinIO.

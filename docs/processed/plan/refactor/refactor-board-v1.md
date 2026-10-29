@@ -23,8 +23,8 @@
 | R-07  | `notification` + worker: single, batch, email thật, inbox REST                                                                                                                                                      | 6–9  | R-03, R-04  | Hoàn thành (28/10/2026; PR #63, bỏ qua CI theo chỉ thị của Đức; xem bên dưới) |
 | R-08  | `ai` gateway + luồng AI trong `course`                                                                                                                                                                              | 7–10 | R-05, R-06  | Hoàn thành (28/10/2026; PR #65, bỏ qua CI theo chỉ thị của Đức; xem bên dưới) |
 | R-09  | `scheduler`: job `MEDIA_UNUSED_CLEANUP`                                                                                                                                                                             | 8–9  | R-06        | Hoàn thành (28/10/2026; PR #64, bỏ qua CI theo chỉ thị của Đức; xem bên dưới) |
-| R-10  | Data seeder quy mô lớn cho PostgreSQL                                                                                                                                                                               | 9–10 | R-04, R-05  | Hoàn thành cục bộ (29/10/2026; chưa commit/PR; xem bên dưới) |
-| R-11  | Test, CI, Postman v2; viết lại regression và job CI `mvp-regression`/`w7-compose` (gỡ ở R-05); đổi tên test `w1/w2/w3/w5` theo nghiệp vụ                                                                            | 8–10 | R-04…R-09   | Chưa bắt đầu                                                                                                                      |
+| R-10  | Data seeder quy mô lớn cho PostgreSQL                                                                                                                                                                               | 9–10 | R-04, R-05  | Hoàn thành (29/10/2026; PR #66, bỏ qua CI theo chỉ thị của Đức; xem bên dưới) |
+| R-11  | Test, CI, Postman v2; viết lại regression và job CI `mvp-regression`/`w7-compose` (gỡ ở R-05); đổi tên test `w1/w2/w3/w5` theo nghiệp vụ                                                                            | 8–10 | R-04…R-09   | Hoàn thành (29/10/2026; PR #67, CI GitHub xanh trừ GitGuardian báo nhầm; xem bên dưới) |
 | R-12  | Viết lại docs, viết lại smoke tracing/metrics/logs/acceptance (đang gắn luồng v1), kiểm chứng telemetry xuyên service, danh mục case phức tạp v0; ghi nhận schema kết quả RCA và nơi lưu (cho MCP thứ yếu, ADR-002) | 9–10 | tất cả      | Chưa bắt đầu                                                                                                                      |
 
 ## Mốc kiểm tra
@@ -249,3 +249,35 @@ Seeder `lms/scripts/seed-data.mjs` (mô-đun ở `lms/scripts/seed-data/`, READM
 - Đưa `test:seed-data:db` vào CI cần Postgres đã migrate đủ 7 service (dùng stack compose sau reset) → R-11.
 - Media seed không có tệp trong MinIO: `GET /media/{id}/content` và thumbnail của dòng seed sẽ lỗi → ghi nhận ở README seeder; tạo tệp thật nếu cần tải nội dung thì làm ở R-12.
 - Chưa kiểm chứng `compose-reset-smoke` sau khi thêm seeder (seeder không đổi reset, fingerprint reset đã ghi ở R-09) → chạy lại ở R-11 cùng regression.
+
+### R-11 (chạy cục bộ ngày 29/10/2026, Node 22.13.1, pnpm 11.19.0)
+
+Phạm vi đã làm: sửa hai lỗi e2e tồn đọng, viết lại `lms/test/regression/` theo 7 luồng nghiệp vụ (chạy qua Gateway bằng `node:test`), Postman v2, gỡ contract `grade.completed` của v1, và viết lại CI (`.github/workflows/ci.yml`, `.github/workflows/regression.yml`, action `.github/actions/setup-lms`). CI chạy thật trên GitHub ở PR #67 (kết quả trong dòng "CI" bên dưới).
+
+| Hạng mục | Kết quả |
+| --- | --- |
+| `test:auth:e2e` | 11/11 (trước đó 9/11): e2e gọi `BootstrapRunner.startAccountSeeding` và `ensureAccountsSeeded` sau `app.init()` nên admin được seed |
+| Lỗi `Channel closed` của consumer | `RabbitMqCommandConsumer.stop()` chờ lệnh đang xử lý (tối đa 5s), ack/nack/phát lại qua `settle` (ghi cảnh báo thay vì ném), `fail()` bỏ qua khi đang tắt; ba worker `media`, `notification`, `ai` chờ `stop()` trước khi đóng session. 3 unit test mới trong `messaging.spec.ts` |
+| Lỗi chạy relay sau khi Jest teardown | Gốc thứ hai của `test:media:e2e` thoát mã 1 (`require` sau khi môi trường Jest đã hủy, từ `OutboxRelayLoop.tick`): `OutboxRelayLoop.stop()` thành bất đồng bộ, chờ lượt relay đang chạy (tối đa 5s); 4 service `ai`, `course`, `media`, `notification` `await` khi tắt. 1 unit test mới |
+| Độ ổn định `test:media:e2e` | Trước sửa: 2/10 lần thoát mã 1 dù 19 test pass. Sau sửa: 20/20 lần thoát mã 0 (19 test pass mỗi lần), cùng điều kiện chạy tuần tự trên Postgres/RabbitMQ/MinIO tạm |
+| e2e toàn bộ | auth 11, student 7, course 15, media 19, notification 8, ai 30, scheduler 10, đều đạt mã 0 |
+| Cổng chất lượng | `build`, `lint --max-warnings=0`, `format:check`, `test` (`common` 42 test, các package còn lại đạt), `test:architecture` đạt |
+| Regression LMS | `pnpm run test:regression` (stack compose 22 thành phần, tên project `aiops-lms-test-regression`, provider AI giả trong container riêng): 46/46 test đạt trên stack mới, đạt lại trên stack dùng lại. 7 luồng: đăng ký/đăng nhập, soạn khóa học, ghi danh và học, upload media, soạn bài bằng AI, batch email (Mailpit), dọn media qua scheduler → media (kiểm tra xuyên service scheduler → media → MinIO) |
+| Postman v2 | `pnpm run test:postman` (newman 6.2.2 ghim chính xác, stack `aiops-lms-test-postman`): 90 request, 223 assertion, 0 lỗi; collection `postman/lms-v2.postman_collection.json` và environment `postman/lms-v2.postman_environment.json`, README tiếng Việt |
+| `compose-reset-smoke` | Đạt hai lần reset liên tiếp, fingerprint `611d90c41b551efc2ad0c507525d13e3675a619ed6282fd3e4c5d16574152b9c`; smoke observability trong script reset đạt. Chạy với `LOKI_PORT=13100` vì cổng 3100 đang do container của dự án khác trên máy giữ |
+| `test:seed-data:db` | Đạt trên Postgres thật (đã chạy cục bộ; chưa đưa vào CI, xem bên dưới) |
+| CI (viết lại; run trên PR #67) | `ci.yml` gồm 6 job: `static` (format, lint, build), `unit` (`pnpm run test`), `e2e` matrix 7 service (mỗi job: database riêng, build, migrate, e2e; `fail-fast: false`), `integration-db` (`common` `test:integration` và `test:seed-data:db`), `compose-config`, `compose-reset` (thêm `setup-node` đã ghim và giải phóng ổ đĩa). `regression.yml` gồm `regression` và `postman`, chạy khi PR gắn label `run-regression`, push vào `main`, nightly 18:00 UTC và `workflow_dispatch`. Hủy lượt cũ của cùng PR (`concurrency`). `actionlint` 1.7.7 không báo lỗi. Mô phỏng cục bộ từng bước trên Postgres/RabbitMQ/MinIO/Mailpit mới: build, migrate và e2e 7 service đạt (auth 11, student 7, course 15, media 19, notification 8, ai 30, scheduler 10), `common` `test:integration` đạt, `test:seed-data:db` đạt, `pnpm run test` đạt khi không có hạ tầng và không có biến môi trường CI. `regression`, `postman`, `compose-reset` chạy cùng lệnh đã đạt ở các dòng trên. **Trên GitHub (PR #67, run `40848961820` và `40848972612`)**: `static`, `unit`, 7 job `e2e`, `integration-db`, `compose-config` đạt; `compose-reset` 11 phút 29 giây, `regression` 9 phút 18 giây, `postman` 10 phút 12 giây đều đạt. Lượt đầu `unit` đỏ vì `common` cần `dist` của `observability` mà job chưa build; đã thêm bước build rồi chạy lại đạt. Check ngoài `GitGuardian Security Checks` báo `Generic Password` ở một chuỗi mật khẩu sai cố ý trong regression (báo nhầm, đã đổi sang giá trị suy ra từ biến nhưng cảnh báo còn gắn với commit cũ; check này cũng đỏ ở PR #65, #66) |
+| Đổi tên test `w1/w2/w3/w5` | Không còn tệp test hay script nào trong `lms/`, `docker-compose/`, `postman/` mang tên `w*` hoặc `mvp-regression`; `w1_test` và `W1_AUTH_DATABASE_URL` trong `ci.yml` đã đổi thành `lms_test` và biến URL theo từng service |
+
+**Khác với kế hoạch / phát hiện:**
+
+- Runner regression bật `MEDIA_CLEANUP_MIN_RETENTION_HOURS=0` (biến mới có mặc định 1, thêm vào `docker-compose/compose.yaml` và `.env.example`) để kiểm tra dọn media trong thời gian test; stack thường không đổi hành vi.
+- `test:student:e2e` giả định DB không chứa dữ liệu ngoài test (liệt kê `page_size` 100): chạy trên Postgres vừa nạp seeder sẽ fail. Dọn dữ liệu seed trước khi chạy e2e. Không phải lỗi mã, ghi nhận để không nhầm khi chạy e2e trên DB dùng chung.
+- Lần dựng stack Postman đầu tiên gặp lỗi tạm thời `No such image: bitnamilegacy/minio-client`, chạy lại đạt; chưa rõ nguyên nhân (nghi tranh chấp khi nhiều project compose dựng cùng lúc).
+- Ổ đĩa đầy khi build lặp nhiều stack (cache build ~200GB); chỉ xóa image và volume của hai project test do R-11 tạo, không prune cache chung.
+
+**Hoãn có chủ đích (đã chuyển chủ):**
+
+- Theo dõi vài tuần chạy thật của `regression.yml` (nightly, push `main`) trước khi nâng `compose-reset`, `regression`, `postman` thành required check; `main` hiện chưa bật branch protection → Đức quyết định.
+- Cảnh báo GitGuardian báo nhầm trên commit cũ của PR #67: đánh dấu false positive trên dashboard GitGuardian → Đức.
+- Script smoke observability (`test/observability/*`) vẫn dùng fixture `grade.completed` của v1; compose observability và cấu hình OTel còn queue `notification.grade-completed.v1`; tài liệu v1 và sơ đồ `w1/w4/w5` còn tham chiếu → R-12.

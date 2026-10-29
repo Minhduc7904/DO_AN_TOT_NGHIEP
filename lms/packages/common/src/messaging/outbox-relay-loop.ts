@@ -16,6 +16,7 @@ export interface OutboxRelayLoopOptions extends OutboxRelayOptions {
  */
 export class OutboxRelayLoop {
   private timer: NodeJS.Timeout | undefined;
+  private inFlight: Promise<void> | undefined;
   private stopped = true;
 
   constructor(
@@ -30,14 +31,31 @@ export class OutboxRelayLoop {
     this.schedule(0);
   }
 
-  stop(): void {
+  /** Dừng vòng lặp và chờ lượt đang chạy (nếu có) xong, tối đa `drainTimeoutMs`, để đóng DB an toàn. */
+  async stop(drainTimeoutMs = 5_000): Promise<void> {
     this.stopped = true;
     if (this.timer) clearTimeout(this.timer);
+    const running = this.inFlight;
+    if (!running) return;
+    let timeout: NodeJS.Timeout | undefined;
+    await Promise.race([
+      running,
+      new Promise<void>((resolve) => {
+        timeout = setTimeout(resolve, drainTimeoutMs);
+        timeout.unref();
+      }),
+    ]);
+    if (timeout) clearTimeout(timeout);
   }
 
   private schedule(delayMs: number): void {
     if (this.stopped) return;
-    this.timer = setTimeout(() => void this.tick(), delayMs);
+    this.timer = setTimeout(() => {
+      const run = this.tick().finally(() => {
+        if (this.inFlight === run) this.inFlight = undefined;
+      });
+      this.inFlight = run;
+    }, delayMs);
     this.timer.unref();
   }
 

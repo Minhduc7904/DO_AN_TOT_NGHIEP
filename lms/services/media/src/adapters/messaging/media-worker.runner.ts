@@ -85,7 +85,7 @@ export class MediaWorkerRunner implements OnApplicationBootstrap, OnApplicationS
   }
 
   async onApplicationShutdown(): Promise<void> {
-    for (const consumer of this.consumers) consumer.stop();
+    await Promise.all(this.consumers.map((consumer) => consumer.stop()));
     await this.session.close();
   }
 
