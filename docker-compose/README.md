@@ -156,22 +156,32 @@ Quy trình chỉ tác động project đã xác nhận: `down --volumes --remove
 
 Nếu một bước lỗi, lệnh dừng với exit code khác `0` và không in thông báo thành công. Xem log bằng đúng project đã xác nhận, sửa nguyên nhân rồi chạy lại toàn bộ lệnh; không bỏ `--confirm` và không đổi sang project dùng chung khác.
 
-## Regression Testbed MVP
+## Regression LMS
 
-Regression chạy từ dữ liệu sạch và kiểm chứng hai workflow xuyên service, topology, lỗi dependency và telemetry. Chạy từ thư mục `lms/` sau khi đã dừng các project Compose đang dùng cùng host port:
+Regression dựng stack LMS từ dữ liệu sạch (chỉ `docker-compose/compose.yaml`, không observability) rồi chạy bảy workflow qua Gateway, mỗi workflow một file trong `lms/test/regression/`:
+
+| Workflow | File | Nội dung chính |
+| --- | --- | --- |
+| Đăng ký, đăng nhập | `auth-register-login.regression.mjs` | Ba cửa đăng nhập, refresh xoay vòng, phân quyền, từ chối danh tính tự khai |
+| Soạn khóa học | `course-authoring.regression.mjs` | Khóa học, bài học (thứ tự), quiz, xuất bản, tìm kiếm, export CSV |
+| Ghi danh và học | `enroll-and-learn.regression.mjs` | Ghi danh, tiến độ, làm quiz và chấm điểm |
+| Upload media | `media-upload.regression.mjs` | Upload trực tiếp MinIO, thumbnail, Range, usage và đồng bộ markdown |
+| Thông báo hàng loạt | `notification-batch-email.regression.mjs` | Thông báo đơn, đợt gửi, email trong Mailpit, inbox |
+| AI soạn bài | `ai-lesson.regression.mjs` | Cấu hình provider (provider AI giả trong container), trích xuất, soạn bài, sinh quiz |
+| Dọn media | `media-cleanup-scheduler.regression.mjs` | Scheduler gọi media dọn media không dùng, chạy lặp cùng khóa không trùng |
+
+Chạy từ thư mục `lms/` sau khi đã dừng các project Compose đang dùng cùng host port:
 
 ```bash
 cd lms
-pnpm run test:regression -- --compose-env-file ../docker-compose/.env
+pnpm run test:regression
 ```
 
-Lệnh lần lượt build workspace, reset/seed project cô lập `aiops-lms-test-regression` (in `TESTBED_FINGERPRINT_SHA256`), chạy năm test E2E (`login → course → enroll → submit`, `submit → grade → grade.completed → notification`, topology, timeout HTTP và dependency unavailable) rồi chạy messaging failure/recovery ba vòng. Thành công khi exit code là `0` và log kết thúc bằng `[regression] Testbed MVP regression hoàn tất.`; khi lỗi, thông báo nêu workflow, bước và service gây lỗi.
+Lệnh build `contracts` (schema dùng kiểm mọi response), `down --volumes` rồi `up --build -d --wait` project `aiops-lms-test-regression` với `docker-compose/.env.example` (đổi bằng `--compose-env-file`), dựng container provider AI giả cùng network, chạy bảy workflow tuần tự (`node --test`) và dọn stack. Thêm `--keep` để giữ stack sau khi chạy. Thành công khi exit code là `0` và log kết thúc bằng `[regression] Regression LMS hoàn tất.`; khi lỗi, thông báo của test nêu bước và response gây lỗi. Regression chỉ kiểm chức năng; telemetry xuyên service do smoke observability đảm nhận.
 
-Stack regression vẫn chạy sau khi lệnh kết thúc. Dọn project từ repository root:
+Có thể chạy riêng từng workflow trên một stack đã có: đặt `REGRESSION_GATEWAY_URL` và `REGRESSION_MAILPIT_URL` (mặc định `http://127.0.0.1:3000` và `http://127.0.0.1:8025`) rồi `node --test lms/test/regression/<workflow>.regression.mjs`. Workflow AI chỉ chạy khi có `REGRESSION_AI_PROVIDER_URL` (URL provider mà container `ai` gọi tới được).
 
-```bash
-docker compose --project-name aiops-lms-test-regression --env-file docker-compose/.env -f docker-compose/compose.full.yaml down --volumes --remove-orphans
-```
+Bộ request tương đương cho Postman và newman nằm ở [postman/README.md](../postman/README.md).
 
 ## Observability baseline W10
 
@@ -218,7 +228,7 @@ cd lms
 pnpm run test:testbed:reset:compose
 ```
 
-Test reset hai lần trên `aiops-lms-test-reset-seed`, so fingerprint, xác nhận 18 thành phần healthy, chạy smoke sau mỗi reset và xác nhận trace cũ trả 404 sau reset. Test tự dọn đúng project test cùng volume trong `finally`. Khi RAM/build cache hạn chế, đặt `COMPOSE_PARALLEL_LIMIT=1` trước các lệnh Compose/reset/regression để tránh build đồng thời.
+Test reset hai lần trên `aiops-lms-test-reset-seed`, so fingerprint, xác nhận 22 thành phần healthy, chạy smoke sau mỗi reset và xác nhận trace cũ trả 404 sau reset. Test tự dọn đúng project test cùng volume trong `finally`. Khi RAM/build cache hạn chế, đặt `COMPOSE_PARALLEL_LIMIT=1` trước các lệnh Compose/reset/regression để tránh build đồng thời.
 
 ## Metrics runtime và broker W10
 

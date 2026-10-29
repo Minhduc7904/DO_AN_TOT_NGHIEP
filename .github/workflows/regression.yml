@@ -1,0 +1,59 @@
+name: Regression
+
+# Dựng cả stack compose 22 thành phần nên chậm (10–25 phút mỗi job). Chạy khi: gắn label
+# `run-regression` lên PR, merge vào main, hằng đêm, hoặc chạy tay.
+on:
+  pull_request:
+    branches:
+      - main
+    types: [labeled, synchronize, reopened]
+  push:
+    branches:
+      - main
+  schedule:
+    - cron: '0 18 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: regression-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  regression:
+    name: Regression LMS qua Gateway
+    if: github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'run-regression')
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v6
+
+      - name: Set up toolchain
+        uses: ./.github/actions/setup-lms
+
+      - name: Free disk space
+        run: sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/lib/android
+
+      - name: Regression
+        run: pnpm --dir lms run test:regression
+
+  postman:
+    name: Postman v2 (newman)
+    if: github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'run-regression')
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v6
+
+      - name: Set up toolchain
+        uses: ./.github/actions/setup-lms
+
+      - name: Free disk space
+        run: sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/lib/android
+
+      - name: Postman
+        run: pnpm --dir lms run test:postman

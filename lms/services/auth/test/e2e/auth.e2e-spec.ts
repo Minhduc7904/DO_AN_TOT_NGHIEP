@@ -108,6 +108,11 @@ describe('auth service (PostgreSQL thật, student giả)', () => {
     app.use(correlationIdMiddleware);
     app.useGlobalFilters(new AppExceptionFilter());
     await app.init();
+    // Seed tài khoản chạy sau `listen` ở bootstrap thật; e2e không qua `listen` nên gọi tường minh.
+    const { BootstrapRunner } = await import('../../src/adapters/bootstrap/bootstrap.runner.js');
+    const bootstrap = app.get(BootstrapRunner);
+    await bootstrap.startAccountSeeding();
+    await bootstrap.ensureAccountsSeeded();
 
     const token = await request(app.getHttpServer())
       .post('/internal/v1/auth/service-token')

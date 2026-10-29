@@ -1,0 +1,4369 @@
+{
+  "info": {
+    "name": "LMS v2 - Regression qua Gateway",
+    "description": "Bộ request chạy theo thứ tự (Collection Runner hoặc `pnpm run test:postman`) cho stack LMS v2. Mọi request đi qua Gateway; dữ liệu do chính collection tạo, không phụ thuộc dữ liệu seed. Xem postman/README.md.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "if (!pm.collectionVariables.get('run_id')) {",
+          "pm.collectionVariables.set('run_id', Date.now().toString(36) + Math.random().toString(36).slice(2, 6));",
+          "}"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "const type = pm.response.headers.get('content-type') || '';",
+          "if (type.includes('application/json') && pm.response.code !== 204 && !pm.request.url.toString().includes('/api/v1/search')) {",
+          "pm.test('envelope có đủ success/data/error/meta', () => {",
+          "  const body = pm.response.json();",
+          "  pm.expect(body).to.have.all.keys('success', 'data', 'error', 'meta');",
+          "  pm.expect(body.meta.trace_id).to.be.a('string');",
+          "  pm.expect(body.success).to.eql(pm.response.code < 400);",
+          "});",
+          "}"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "00 Đăng nhập tài khoản khởi tạo",
+      "description": "Chạy đầu tiên: lấy token admin và instructor từ tài khoản bootstrap của `auth`.",
+      "item": [
+        {
+          "name": "Đăng nhập admin",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{gateway_url}}/api/v1/auth/admin/login",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "admin",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{admin_email}}\",\n  \"password\": \"{{admin_password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('run_id', Date.now().toString(36) + Math.random().toString(36).slice(2, 6));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set('admin_token', body.data.access_token);",
+                  "pm.collectionVariables.set('admin_id', body.data.principal.id);",
+                  "pm.test('role admin', () => pm.expect(body.data.principal.role).to.eql('admin'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Đăng nhập instructor",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{gateway_url}}/api/v1/auth/instructor/login",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "instructor",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{instructor_email}}\",\n  \"password\": \"{{instructor_password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set('instructor_token', body.data.access_token);",
+                  "pm.collectionVariables.set('instructor_id', body.data.principal.id);",
+                  "pm.test('role instructor', () => pm.expect(body.data.principal.role).to.eql('instructor'));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "01 auth-register-login",
+      "description": "Đăng ký, đăng nhập ba cửa, refresh xoay vòng, phân quyền theo role.",
+      "item": [
+        {
+          "name": "Đăng ký student",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{gateway_url}}/api/v1/auth/register",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "register"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"postman-{{run_id}}@example.test\",\n  \"password\": \"student-password-1\",\n  \"full_name\": \"Postman học viên {{run_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set('student_email', body.data.email);",
+                  "pm.test('ACTIVE, không lộ băm mật khẩu', () => { pm.expect(body.data.status).to.eql('ACTIVE'); pm.expect(body.data).to.not.have.property('password_hash'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Đăng ký trùng email → 409",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{gateway_url}}/api/v1/auth/register",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "register"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"postman-{{run_id}}@example.test\",\n  \"password\": \"student-password-1\",\n  \"full_name\": \"Trùng\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 409', () => pm.response.to.have.status(409));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Đăng nhập student",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{gateway_url}}/api/v1/auth/student/login",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "student",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{student_email}}\",\n  \"password\": \"student-password-1\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set('student_token', body.data.access_token);",
+                  "pm.collectionVariables.set('student_id', body.data.principal.id);",
+                  "pm.collectionVariables.set('student_refresh_token', body.data.refresh_token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Sai cửa (student đăng nhập cửa instructor) → 401",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{gateway_url}}/api/v1/auth/instructor/login",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "instructor",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{student_email}}\",\n  \"password\": \"student-password-1\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Thông tin tài khoản /auth/me",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway_url}}/api/v1/auth/me",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "me"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{student_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('đúng tài khoản', () => pm.expect(body.data.email).to.eql(pm.collectionVariables.get('student_email')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Hồ sơ student /students/me cùng id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway_url}}/api/v1/students/me",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "students",
+                "me"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{student_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('cùng id với tài khoản', () => pm.expect(body.data.id).to.eql(pm.collectionVariables.get('student_id')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Refresh token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{gateway_url}}/api/v1/auth/refresh",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "refresh"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refresh_token\": \"{{student_refresh_token}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('refresh token xoay vòng', () => pm.expect(body.data.refresh_token).to.not.eql(pm.collectionVariables.get('student_refresh_token')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Dùng lại refresh token cũ → 401",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{gateway_url}}/api/v1/auth/refresh",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "refresh"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refresh_token\": \"{{student_refresh_token}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Không token → 401",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway_url}}/api/v1/auth/accounts",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "accounts"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Tự khai x-principal-* không token → 401",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-principal-id",
+                "value": "{{student_id}}"
+              },
+              {
+                "key": "x-principal-role",
+                "value": "admin"
+              }
+            ],
+            "url": {
+              "raw": "{{gateway_url}}/api/v1/auth/accounts",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "accounts"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Student liệt kê tài khoản → 403",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway_url}}/api/v1/auth/accounts",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "accounts"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{student_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 403', () => pm.response.to.have.status(403));",
+                  "const body = pm.response.json();",
+                  "pm.test('mã lỗi FORBIDDEN', () => pm.expect(body.error.code).to.eql('FORBIDDEN'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin tạo instructor",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{gateway_url}}/api/v1/auth/accounts",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "accounts"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"gv-{{run_id}}@example.test\",\n  \"password\": \"instructor-password-1\",\n  \"full_name\": \"Postman giảng viên {{run_id}}\",\n  \"role\": \"instructor\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set('new_instructor_id', body.data.id);",
+                  "pm.test('role instructor', () => pm.expect(body.data.role).to.eql('instructor'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin liệt kê instructor (phân trang)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway_url}}/api/v1/auth/accounts?role=instructor&page_size=100",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "accounts"
+              ],
+              "query": [
+                {
+                  "key": "role",
+                  "value": "instructor"
+                },
+                {
+                  "key": "page_size",
+                  "value": "100"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('có tài khoản vừa tạo và meta.pagination', () => { pm.expect(body.data.map((a) => a.id)).to.include(pm.collectionVariables.get('new_instructor_id')); pm.expect(body.meta.pagination.page_size).to.eql(100); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "02 course-authoring",
+      "description": "Giảng viên dựng khóa học, bài học, quiz và xuất bản.",
+      "item": [
+        {
+          "name": "Student tạo khóa học → 403",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{gateway_url}}/api/v1/courses",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "courses"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Postman khóa học {{run_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{student_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Tạo khóa học (DRAFT)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{gateway_url}}/api/v1/courses",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "courses"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Postman khóa học {{run_id}}\",\n  \"description_markdown\": \"Mô tả khóa học\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{instructor_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set('course_id', body.data.id);",
+                  "pm.test('DRAFT, đúng giảng viên', () => { pm.expect(body.data.status).to.eql('DRAFT'); pm.expect(body.data.instructor_id).to.eql(pm.collectionVariables.get('instructor_id')); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Tạo bài học 1",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{gateway_url}}/api/v1/courses/{{course_id}}/lessons",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "courses",
+                "{{course_id}}",
+                "lessons"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Bài 1\",\n  \"content_markdown\": \"Nội dung bài 1\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{instructor_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set('lesson_id_1', body.data.id);",
+                  "pm.test('thứ tự 1', () => pm.expect(body.data.display_order).to.eql(1));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Tạo bài học 2",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{gateway_url}}/api/v1/courses/{{course_id}}/lessons",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "courses",
+                "{{course_id}}",
+                "lessons"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Bài 2\",\n  \"content_markdown\": \"Nội dung bài 2\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{instructor_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set('lesson_id_2', body.data.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Trùng thứ tự bài học → 409",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{gateway_url}}/api/v1/courses/{{course_id}}/lessons",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "courses",
+                "{{course_id}}",
+                "lessons"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Trùng\",\n  \"display_order\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{instructor_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 409', () => pm.response.to.have.status(409));",
+                  "const body = pm.response.json();",
+                  "pm.test('mã lỗi LESSON_ORDER_CONFLICT', () => pm.expect(body.error.code).to.eql('LESSON_ORDER_CONFLICT'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Sắp xếp lại bài học",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{gateway_url}}/api/v1/courses/{{course_id}}/lessons/reorder",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "courses",
+                "{{course_id}}",
+                "lessons",
+                "reorder"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"lesson_ids\": [\"{{lesson_id_2}}\", \"{{lesson_id_1}}\"] }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{instructor_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Chi tiết khóa học (dàn bài theo thứ tự mới)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway_url}}/api/v1/courses/{{course_id}}",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "courses",
+                "{{course_id}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{instructor_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('dàn bài đảo thứ tự, không kèm nội dung', () => { pm.expect(body.data.lessons[0].id).to.eql(pm.collectionVariables.get('lesson_id_2')); pm.expect(body.data.lessons[0]).to.not.have.property('content_markdown'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Tạo quiz (DRAFT) cho bài học 1",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{gateway_url}}/api/v1/courses/{{course_id}}/lessons/{{lesson_id_1}}/quizzes",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "courses",
+                "{{course_id}}",
+                "lessons",
+                "{{lesson_id_1}}",
+                "quizzes"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Quiz cộng\",\n  \"questions\": [\n    {\n      \"question_markdown\": \"2 + 2 = ?\",\n      \"question_type\": \"SINGLE_CHOICE\",\n      \"points\": 1.5,\n      \"options\": [\n        {\n          \"option_markdown\": \"3\",\n          \"is_correct\": false\n        },\n        {\n          \"option_markdown\": \"4\",\n          \"is_correct\": true\n        }\n      ]\n    },\n    {\n      \"question_markdown\": \"Số nguyên tố?\",\n      \"question_type\": \"MULTIPLE_CHOICE\",\n      \"points\": 2,\n      \"options\": [\n        {\n          \"option_markdown\": \"2\",\n          \"is_correct\": true\n        },\n        {\n          \"option_markdown\": \"3\",\n          \"is_correct\": true\n        },\n        {\n          \"option_markdown\": \"4\",\n          \"is_correct\": false\n        }\n      ]\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{instructor_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set('quiz_id', body.data.id);",
+                  "pm.test('DRAFT, 2 câu', () => { pm.expect(body.data.status).to.eql('DRAFT'); pm.expect(body.data.question_count).to.eql(2); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Tạo quiz chưa có câu hỏi (bài học 2)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{gateway_url}}/api/v1/courses/{{course_id}}/lessons/{{lesson_id_2}}/quizzes",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "courses",
+                "{{course_id}}",
+                "lessons",
+                "{{lesson_id_2}}",
+                "quizzes"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Quiz rỗng\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{instructor_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set('empty_quiz_id', body.data.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Quiz chưa có câu hỏi không xuất bản được → 400",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{gateway_url}}/api/v1/courses/{{course_id}}/lessons/{{lesson_id_2}}/quizzes/{{empty_quiz_id}}",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "courses",
+                "{{course_id}}",
+                "lessons",
+                "{{lesson_id_2}}",
+                "quizzes",
+                "{{empty_quiz_id}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"PUBLISHED\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{instructor_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400', () => pm.response.to.have.status(400));",
+                  "const body = pm.response.json();",
+                  "pm.test('mã lỗi VALIDATION_ERROR', () => pm.expect(body.error.code).to.eql('VALIDATION_ERROR'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Xuất bản khóa học",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{gateway_url}}/api/v1/courses/{{course_id}}",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "courses",
+                "{{course_id}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"PUBLISHED\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{instructor_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('PUBLISHED', () => pm.expect(body.data.status).to.eql('PUBLISHED'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Tìm khóa học theo tên (phân trang)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway_url}}/api/v1/courses?search={{run_id}}&page=1&page_size=5",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "courses"
+              ],
+              "query": [
+                {
+                  "key": "search",
+                  "value": "{{run_id}}"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "page_size",
+                  "value": "5"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{instructor_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('có khóa vừa tạo, meta.pagination', () => { pm.expect(body.data.map((c) => c.id)).to.include(pm.collectionVariables.get('course_id')); pm.expect(body.meta.pagination.page_size).to.eql(5); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Tổng hợp khóa học",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway_url}}/api/v1/courses/summary",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "courses",
+                "summary"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{instructor_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('total = draft + published + archived', () => pm.expect(body.data.total).to.eql(body.data.draft + body.data.published + body.data.archived));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Export CSV",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway_url}}/api/v1/courses/export",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "courses",
+                "export"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{instructor_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('text/csv và có khóa vừa tạo', () => { pm.expect(pm.response.headers.get('content-type')).to.include('text/csv'); pm.expect(pm.response.text()).to.include(pm.variables.replaceIn('{{run_id}}')); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "03 enroll-and-learn",
+      "description": "Ghi danh, học, tiến độ và làm quiz. Cần chạy sau thư mục 01 và 02.",
+      "item": [
+        {
+          "name": "Chưa ghi danh: đọc nội dung → 403",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway_url}}/api/v1/student/courses/{{course_id}}",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "student",
+                "courses",
+                "{{course_id}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{student_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 403', () => pm.response.to.have.status(403));",
+                  "const body = pm.response.json();",
+                  "pm.test('mã lỗi STUDENT_NOT_ENROLLED', () => pm.expect(body.error.code).to.eql('STUDENT_NOT_ENROLLED'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Ghi danh",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{gateway_url}}/api/v1/student/courses/{{course_id}}/enrollments",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "student",
+                "courses",
+                "{{course_id}}",
+                "enrollments"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{student_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "pm.test('đúng khóa và student', () => { pm.expect(body.data.course_id).to.eql(pm.collectionVariables.get('course_id')); pm.expect(body.data.student_id).to.eql(pm.collectionVariables.get('student_id')); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Ghi danh lại → 409",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{gateway_url}}/api/v1/student/courses/{{course_id}}/enrollments",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "student",
+                "courses",
+                "{{course_id}}",
+                "enrollments"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{student_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 409', () => pm.response.to.have.status(409));",
+                  "const body = pm.response.json();",
+                  "pm.test('mã lỗi ENROLLMENT_ALREADY_EXISTS', () => pm.expect(body.error.code).to.eql('ENROLLMENT_ALREADY_EXISTS'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Danh sách khóa đã ghi danh",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway_url}}/api/v1/student/enrollments",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "student",
+                "enrollments"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{student_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('có khóa vừa ghi danh', () => pm.expect(body.data.map((e) => e.course_id)).to.include(pm.collectionVariables.get('course_id')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Đọc nội dung khóa đã ghi danh",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway_url}}/api/v1/student/courses/{{course_id}}",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "student",
+                "courses",
+                "{{course_id}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{student_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('đủ 2 bài kèm nội dung', () => { pm.expect(body.data.lessons).to.have.length(2); pm.expect(body.data.lessons[0].content_markdown).to.be.a('string'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Tiến độ 50%",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{gateway_url}}/api/v1/student/lessons/{{lesson_id_1}}/progress",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "student",
+                "lessons",
+                "{{lesson_id_1}}",
+                "progress"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"progress_percent\": 50\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{student_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('chưa hoàn thành', () => pm.expect(body.data.completed_at).to.eql(null));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Tiến độ 100%",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{gateway_url}}/api/v1/student/lessons/{{lesson_id_1}}/progress",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "student",
+                "lessons",
+                "{{lesson_id_1}}",
+                "progress"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"progress_percent\": 100\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{student_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('hoàn thành', () => pm.expect(body.data.completed_at).to.be.a('string'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Tiến độ không giảm (gửi 10% vẫn 100%)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{gateway_url}}/api/v1/student/lessons/{{lesson_id_1}}/progress",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "student",
+                "lessons",
+                "{{lesson_id_1}}",
+                "progress"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"progress_percent\": 10\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{student_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('vẫn 100', () => pm.expect(body.data.progress_percent).to.eql(100));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Tiến độ khóa học 1/2 bài",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway_url}}/api/v1/student/courses/{{course_id}}/progress",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "student",
+                "courses",
+                "{{course_id}}",
+                "progress"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{student_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('1/2 bài, 50%', () => pm.expect([body.data.total_lessons, body.data.completed_lessons, body.data.percent]).to.eql([2, 1, 50]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Quiz chưa xuất bản: học viên không thấy → 404",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway_url}}/api/v1/student/quizzes/{{quiz_id}}",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "student",
+                "quizzes",
+                "{{quiz_id}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{student_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 404', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Giảng viên xuất bản quiz",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{gateway_url}}/api/v1/courses/{{course_id}}/lessons/{{lesson_id_1}}/quizzes/{{quiz_id}}",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "courses",
+                "{{course_id}}",
+                "lessons",
+                "{{lesson_id_1}}",
+                "quizzes",
+                "{{quiz_id}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"PUBLISHED\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{instructor_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Học viên xem quiz (ẩn đáp án đúng)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway_url}}/api/v1/student/quizzes/{{quiz_id}}",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "student",
+                "quizzes",
+                "{{quiz_id}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{student_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('không lộ is_correct', () => pm.expect(JSON.stringify(body.data)).to.not.include('is_correct'));",
+                  "const [single, multiple] = body.data.questions;",
+                  "pm.collectionVariables.set('q1_id', single.id);",
+                  "pm.collectionVariables.set('q1_wrong', single.options[0].id);",
+                  "pm.collectionVariables.set('q1_right', single.options[1].id);",
+                  "pm.collectionVariables.set('q2_id', multiple.id);",
+                  "pm.collectionVariables.set('q2_first', multiple.options[0].id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Bắt đầu làm bài (201)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{gateway_url}}/api/v1/student/quizzes/{{quiz_id}}/attempts",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "student",
+                "quizzes",
+                "{{quiz_id}}",
+                "attempts"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{student_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set('attempt_id', body.data.id);",
+                  "pm.test('IN_PROGRESS', () => pm.expect(body.data.status).to.eql('IN_PROGRESS'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Làm tiếp cùng lượt (200)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{gateway_url}}/api/v1/student/quizzes/{{quiz_id}}/attempts",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "student",
+                "quizzes",
+                "{{quiz_id}}",
+                "attempts"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{student_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('cùng lượt', () => pm.expect(body.data.id).to.eql(pm.collectionVariables.get('attempt_id')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Lưu đáp án: câu đơn chọn 2 đáp án → 400",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{gateway_url}}/api/v1/student/attempts/{{attempt_id}}/answers",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "student",
+                "attempts",
+                "{{attempt_id}}",
+                "answers"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"answers\": [{ \"question_id\": \"{{q1_id}}\", \"option_ids\": [\"{{q1_wrong}}\", \"{{q1_right}}\"] }] }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{student_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400', () => pm.response.to.have.status(400));",
+                  "const body = pm.response.json();",
+                  "pm.test('mã lỗi VALIDATION_ERROR', () => pm.expect(body.error.code).to.eql('VALIDATION_ERROR'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Lưu đáp án (câu 1 đúng, câu 2 thiếu một đáp án đúng)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{gateway_url}}/api/v1/student/attempts/{{attempt_id}}/answers",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "student",
+                "attempts",
+                "{{attempt_id}}",
+                "answers"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"answers\": [{ \"question_id\": \"{{q1_id}}\", \"option_ids\": [\"{{q1_right}}\"] }, { \"question_id\": \"{{q2_id}}\", \"option_ids\": [\"{{q2_first}}\"] }] }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{student_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('còn IN_PROGRESS, chưa có điểm', () => { pm.expect(body.data.status).to.eql('IN_PROGRESS'); pm.expect(body.data.score).to.eql(null); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Nộp bài: 1.5/3.5 điểm",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{gateway_url}}/api/v1/student/attempts/{{attempt_id}}/submit",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "student",
+                "attempts",
+                "{{attempt_id}}",
+                "submit"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{student_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('SUBMITTED 1.5/3.5', () => pm.expect([body.data.status, body.data.score, body.data.max_score]).to.eql(['SUBMITTED', 1.5, 3.5]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Nộp lại → 409",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{gateway_url}}/api/v1/student/attempts/{{attempt_id}}/submit",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "student",
+                "attempts",
+                "{{attempt_id}}",
+                "submit"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{student_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 409', () => pm.response.to.have.status(409));",
+                  "const body = pm.response.json();",
+                  "pm.test('mã lỗi QUIZ_ATTEMPT_ALREADY_SUBMITTED', () => pm.expect(body.error.code).to.eql('QUIZ_ATTEMPT_ALREADY_SUBMITTED'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Quiz đã có lượt làm: sửa câu hỏi → 409",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{gateway_url}}/api/v1/courses/{{course_id}}/lessons/{{lesson_id_1}}/quizzes/{{quiz_id}}",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "courses",
+                "{{course_id}}",
+                "lessons",
+                "{{lesson_id_1}}",
+                "quizzes",
+                "{{quiz_id}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"questions\": [\n    {\n      \"question_markdown\": \"2 + 2 = ?\",\n      \"question_type\": \"SINGLE_CHOICE\",\n      \"points\": 1.5,\n      \"options\": [\n        {\n          \"option_markdown\": \"3\",\n          \"is_correct\": false\n        },\n        {\n          \"option_markdown\": \"4\",\n          \"is_correct\": true\n        }\n      ]\n    },\n    {\n      \"question_markdown\": \"Số nguyên tố?\",\n      \"question_type\": \"MULTIPLE_CHOICE\",\n      \"points\": 2,\n      \"options\": [\n        {\n          \"option_markdown\": \"2\",\n          \"is_correct\": true\n        },\n        {\n          \"option_markdown\": \"3\",\n          \"is_correct\": true\n        },\n        {\n          \"option_markdown\": \"4\",\n          \"is_correct\": false\n        }\n      ]\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{instructor_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 409', () => pm.response.to.have.status(409));",
+                  "const body = pm.response.json();",
+                  "pm.test('mã lỗi QUIZ_HAS_ATTEMPTS', () => pm.expect(body.error.code).to.eql('QUIZ_HAS_ATTEMPTS'));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "04 media-upload",
+      "description": "Upload trực tiếp lên MinIO bằng presigned POST, đọc nội dung công khai, usage. Chạy bằng `newman --working-dir postman` để `fixtures/sample-note.txt` được tìm thấy.",
+      "item": [
+        {
+          "name": "Tạo upload-intent",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{gateway_url}}/api/v1/media/upload-intents",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "media",
+                "upload-intents"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"file_name\": \"sample-note.txt\",\n  \"mime_type\": \"text/plain\",\n  \"size_bytes\": 99,\n  \"checksum_sha256\": \"0548894339958358d562909b5812fba1fb19e8f4267ac8758587e21b8c6799bf\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{instructor_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set('media_id', body.data.media_id);",
+                  "pm.collectionVariables.set('upload_url', body.data.upload.url);",
+                  "Object.entries(body.data.upload.fields).forEach(([name, value]) => pm.collectionVariables.set('upload_' + name, value));",
+                  "pm.test('không lộ bucket/object key cuối', () => pm.expect(body.data.upload.url).to.be.a('string'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST thẳng lên MinIO (không qua Gateway)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{upload_url}}",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "bucket",
+                  "value": "{{upload_bucket}}",
+                  "type": "text"
+                },
+                {
+                  "key": "key",
+                  "value": "{{upload_key}}",
+                  "type": "text"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "{{upload_Content-Type}}",
+                  "type": "text"
+                },
+                {
+                  "key": "x-amz-date",
+                  "value": "{{upload_x-amz-date}}",
+                  "type": "text"
+                },
+                {
+                  "key": "x-amz-algorithm",
+                  "value": "{{upload_x-amz-algorithm}}",
+                  "type": "text"
+                },
+                {
+                  "key": "x-amz-credential",
+                  "value": "{{upload_x-amz-credential}}",
+                  "type": "text"
+                },
+                {
+                  "key": "policy",
+                  "value": "{{upload_policy}}",
+                  "type": "text"
+                },
+                {
+                  "key": "x-amz-signature",
+                  "value": "{{upload_x-amz-signature}}",
+                  "type": "text"
+                },
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "fixtures/sample-note.txt"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('MinIO nhận tệp (2xx)', () => pm.expect(pm.response.code).to.be.within(200, 299));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "upload-complete → READY",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{gateway_url}}/api/v1/media/{{media_id}}/upload-complete",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "media",
+                "{{media_id}}",
+                "upload-complete"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{instructor_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('READY, TXT là DOCUMENT, không lộ object key', () => { pm.expect(body.data.status).to.eql('READY'); pm.expect(body.data.type).to.eql('DOCUMENT'); pm.expect(JSON.stringify(body.data)).to.not.include('tmp/'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Nội dung công khai qua Gateway (không token)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway_url}}/api/v1/media/{{media_id}}/content",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "media",
+                "{{media_id}}",
+                "content"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('đúng nội dung', () => pm.expect(pm.response.text()).to.include('Nội dung mẫu cho Postman LMS v2.'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Range bytes=0-7 → 206",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Range",
+                "value": "bytes=0-7"
+              }
+            ],
+            "url": {
+              "raw": "{{gateway_url}}/api/v1/media/{{media_id}}/content",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "media",
+                "{{media_id}}",
+                "content"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 206', () => pm.response.to.have.status(206));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Thư viện media của giảng viên",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway_url}}/api/v1/media/library?page_size=100",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "media",
+                "library"
+              ],
+              "query": [
+                {
+                  "key": "page_size",
+                  "value": "100"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{instructor_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('có media vừa upload', () => pm.expect(body.data.map((m) => m.id)).to.include(pm.collectionVariables.get('media_id')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Gắn media làm tài liệu đính kèm bài học",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{gateway_url}}/api/v1/media/usages",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "media",
+                "usages"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"media_id\": \"{{media_id}}\",\n  \"owner_kind\": \"COURSE\",\n  \"owner_id\": \"{{lesson_id_1}}\",\n  \"usage_type\": \"LESSON_ATTACHMENT\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{instructor_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set('usage_id', body.data.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Đọc url của usage (công khai)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway_url}}/api/v1/media/usages/urls?usage_ids={{usage_id}}",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "media",
+                "usages",
+                "urls"
+              ],
+              "query": [
+                {
+                  "key": "usage_ids",
+                  "value": "{{usage_id}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('đúng media', () => pm.expect(body.data[0].media_id).to.eql(pm.collectionVariables.get('media_id')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Xóa usage",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{gateway_url}}/api/v1/media/usages/{{usage_id}}",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "media",
+                "usages",
+                "{{usage_id}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{instructor_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('xóa thành công', () => pm.expect(pm.response.code).to.be.oneOf([200, 204]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Tổng hợp media (admin)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway_url}}/api/v1/media/summary",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "media",
+                "summary"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('có thống kê', () => pm.expect(body.data.total).to.be.at.least(1));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Student xem tổng hợp media → 403",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway_url}}/api/v1/media/summary",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "media",
+                "summary"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{student_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "05 notification-batch-email",
+      "description": "Thông báo đơn, đợt gửi hàng loạt, email trong Mailpit và inbox.",
+      "item": [
+        {
+          "name": "Admin tạo thông báo đơn",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{gateway_url}}/api/v1/notifications",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "notifications"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"student_id\": \"{{student_id}}\",\n  \"title\": \"Postman thông báo đơn {{run_id}}\",\n  \"content_markdown\": \"Nội dung **quan trọng**\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set('notification_id', body.data.id);",
+                  "pm.test('SINGLE', () => pm.expect(body.data.source_type).to.eql('SINGLE'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Student tạo thông báo → 403",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{gateway_url}}/api/v1/notifications",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "notifications"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"student_id\": \"{{student_id}}\",\n  \"title\": \"x\",\n  \"content_markdown\": \"y\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{student_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Inbox student có thông báo UNREAD",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway_url}}/api/v1/notifications/me?status=UNREAD",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "notifications",
+                "me"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "UNREAD"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{student_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const attempts = Number(pm.collectionVariables.get('poll_attempts') || 0);",
+                  "if (attempts > 0) setTimeout(() => {}, 1000);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "const attempts = Number(pm.collectionVariables.get('poll_attempts') || 0);",
+                  "const done = (body.data && body.data.some((n) => n.id === pm.collectionVariables.get('notification_id')));",
+                  "if (done) {",
+                  "pm.collectionVariables.unset('poll_attempts');",
+                  "pm.test('Inbox student có thông báo UNREAD: điều kiện chờ đã đạt', () => pm.expect(done).to.be.ok);",
+                  "",
+                  "} else if (attempts < 60) {",
+                  "pm.collectionVariables.set('poll_attempts', attempts + 1);",
+                  "pm.execution.setNextRequest(pm.info.requestName);",
+                  "} else {",
+                  "pm.collectionVariables.unset('poll_attempts');",
+                  "pm.test('Inbox student có thông báo UNREAD: hết thời gian chờ', () => { throw new Error('quá 60 lần thử: ' + JSON.stringify(body).slice(0, 300)); });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Email thông báo đơn có trong Mailpit",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{mailpit_url}}/api/v1/search?query=to:{{student_email}}",
+              "host": [
+                "{{mailpit_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "search"
+              ],
+              "query": [
+                {
+                  "key": "query",
+                  "value": "to:{{student_email}}"
+                }
+              ]
+            },
+            "description": "Gọi trực tiếp Mailpit (`mailpit_url`), không qua Gateway."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const attempts = Number(pm.collectionVariables.get('poll_attempts') || 0);",
+                  "if (attempts > 0) setTimeout(() => {}, 1000);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "const attempts = Number(pm.collectionVariables.get('poll_attempts') || 0);",
+                  "const done = (body.messages && body.messages.some((m) => m.Subject.includes('thông báo đơn')));",
+                  "if (done) {",
+                  "pm.collectionVariables.unset('poll_attempts');",
+                  "pm.test('Email thông báo đơn có trong Mailpit: điều kiện chờ đã đạt', () => pm.expect(done).to.be.ok);",
+                  "",
+                  "} else if (attempts < 30) {",
+                  "pm.collectionVariables.set('poll_attempts', attempts + 1);",
+                  "pm.execution.setNextRequest(pm.info.requestName);",
+                  "} else {",
+                  "pm.collectionVariables.unset('poll_attempts');",
+                  "pm.test('Email thông báo đơn có trong Mailpit: hết thời gian chờ', () => { throw new Error('quá 30 lần thử: ' + JSON.stringify(body).slice(0, 300)); });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Đánh dấu đã đọc",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{gateway_url}}/api/v1/notifications/{{notification_id}}/read",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "notifications",
+                "{{notification_id}}",
+                "read"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{student_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('READ', () => pm.expect(body.data.status).to.eql('READ'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin tạo đợt gửi tới mọi student",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{gateway_url}}/api/v1/notification-batches",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "notification-batches"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Postman đợt gửi {{run_id}}\",\n  \"content_markdown\": \"Thông báo cho mọi học viên\",\n  \"batch_size\": 50\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set('batch_id', body.data.id);",
+                  "pm.test('ALL_STUDENTS', () => pm.expect(body.data.target_scope).to.eql('ALL_STUDENTS'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Đợt gửi COMPLETED",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway_url}}/api/v1/notification-batches/{{batch_id}}",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "notification-batches",
+                "{{batch_id}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const attempts = Number(pm.collectionVariables.get('poll_attempts') || 0);",
+                  "if (attempts > 0) setTimeout(() => {}, 1000);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "const attempts = Number(pm.collectionVariables.get('poll_attempts') || 0);",
+                  "const done = (['COMPLETED', 'PARTIAL_FAILED', 'FAILED'].includes(body.data.status));",
+                  "if (done) {",
+                  "pm.collectionVariables.unset('poll_attempts');",
+                  "pm.test('Đợt gửi COMPLETED: điều kiện chờ đã đạt', () => pm.expect(done).to.be.ok);",
+                  "pm.test('COMPLETED', () => pm.expect(body.data.status).to.eql('COMPLETED'));",
+                  "} else if (attempts < 120) {",
+                  "pm.collectionVariables.set('poll_attempts', attempts + 1);",
+                  "pm.execution.setNextRequest(pm.info.requestName);",
+                  "} else {",
+                  "pm.collectionVariables.unset('poll_attempts');",
+                  "pm.test('Đợt gửi COMPLETED: hết thời gian chờ', () => { throw new Error('quá 120 lần thử: ' + JSON.stringify(body).slice(0, 300)); });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Kết quả gửi của đợt",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway_url}}/api/v1/notification-batches/{{batch_id}}/delivery-status",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "notification-batches",
+                "{{batch_id}}",
+                "delivery-status"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Không có item lỗi",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway_url}}/api/v1/notification-batches/{{batch_id}}/failed-items",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "notification-batches",
+                "{{batch_id}}",
+                "failed-items"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('0 item lỗi', () => pm.expect(body.meta.pagination.total).to.eql(0));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Retry khi không có lỗi → 409",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{gateway_url}}/api/v1/notification-batches/{{batch_id}}/retry-failed",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "notification-batches",
+                "{{batch_id}}",
+                "retry-failed"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 409', () => pm.response.to.have.status(409));",
+                  "const body = pm.response.json();",
+                  "pm.test('mã lỗi NOTIFICATION_BATCH_NOT_RETRYABLE', () => pm.expect(body.error.code).to.eql('NOTIFICATION_BATCH_NOT_RETRYABLE'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Student đánh dấu đọc tất cả",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{gateway_url}}/api/v1/notifications/read-all",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "notifications",
+                "read-all"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{student_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('có thông báo được cập nhật', () => pm.expect(body.data.updated_count).to.be.at.least(1));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "06 media-cleanup-scheduler",
+      "description": "Admin tạo job MEDIA_UNUSED_CLEANUP, kích hoạt run, chạy lặp cùng khóa không trùng.",
+      "item": [
+        {
+          "name": "Instructor tạo job → 403",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{gateway_url}}/api/v1/scheduler/jobs",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "scheduler",
+                "jobs"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Postman job {{run_id}}\",\n  \"type\": \"MEDIA_UNUSED_CLEANUP\",\n  \"schedule_type\": \"MANUAL\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{instructor_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin tạo job dọn media (MANUAL)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{gateway_url}}/api/v1/scheduler/jobs",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "scheduler",
+                "jobs"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Postman dọn media {{run_id}}\",\n  \"type\": \"MEDIA_UNUSED_CLEANUP\",\n  \"schedule_type\": \"MANUAL\",\n  \"payload\": {\n    \"retention_hours\": 0,\n    \"limit\": 1000\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set('job_id', body.data.id);",
+                  "pm.test('ACTIVE', () => pm.expect(body.data.status).to.eql('ACTIVE'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Kích hoạt run (201)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{gateway_url}}/api/v1/scheduler/jobs/{{job_id}}/runs",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "scheduler",
+                "jobs",
+                "{{job_id}}",
+                "runs"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"idempotency_key\": \"postman-{{run_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('run_key', 'postman-' + pm.collectionVariables.get('run_id'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set('job_run_id', body.data.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Run kết thúc SUCCEEDED",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway_url}}/api/v1/scheduler/jobs/{{job_id}}/runs",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "scheduler",
+                "jobs",
+                "{{job_id}}",
+                "runs"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const attempts = Number(pm.collectionVariables.get('poll_attempts') || 0);",
+                  "if (attempts > 0) setTimeout(() => {}, 1000);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "const attempts = Number(pm.collectionVariables.get('poll_attempts') || 0);",
+                  "const done = ((body.data.find((r) => r.id === pm.collectionVariables.get('job_run_id')) || {}).status && ['SUCCEEDED', 'FAILED'].includes(body.data.find((r) => r.id === pm.collectionVariables.get('job_run_id')).status));",
+                  "if (done) {",
+                  "pm.collectionVariables.unset('poll_attempts');",
+                  "pm.test('Run kết thúc SUCCEEDED: điều kiện chờ đã đạt', () => pm.expect(done).to.be.ok);",
+                  "const finished = body.data.find((r) => r.id === pm.collectionVariables.get('job_run_id')); pm.test('SUCCEEDED, tóm tắt an toàn', () => { pm.expect(finished.status).to.eql('SUCCEEDED'); pm.expect(finished.output.failed).to.eql(0); pm.expect(JSON.stringify(finished.output)).to.not.match(/token|secret|object_key|bucket/i); });",
+                  "} else if (attempts < 90) {",
+                  "pm.collectionVariables.set('poll_attempts', attempts + 1);",
+                  "pm.execution.setNextRequest(pm.info.requestName);",
+                  "} else {",
+                  "pm.collectionVariables.unset('poll_attempts');",
+                  "pm.test('Run kết thúc SUCCEEDED: hết thời gian chờ', () => { throw new Error('quá 90 lần thử: ' + JSON.stringify(body).slice(0, 300)); });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Kích hoạt lại cùng khóa → 200, cùng run",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{gateway_url}}/api/v1/scheduler/jobs/{{job_id}}/runs",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "scheduler",
+                "jobs",
+                "{{job_id}}",
+                "runs"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"idempotency_key\": \"postman-{{run_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('cùng run', () => pm.expect(body.data.id).to.eql(pm.collectionVariables.get('job_run_id')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Lịch sử chỉ có một run",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway_url}}/api/v1/scheduler/jobs/{{job_id}}/runs",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "scheduler",
+                "jobs",
+                "{{job_id}}",
+                "runs"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('1 run', () => pm.expect(body.data).to.have.length(1));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Tạm dừng job",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{gateway_url}}/api/v1/scheduler/jobs/{{job_id}}",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "scheduler",
+                "jobs",
+                "{{job_id}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"PAUSED\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Job PAUSED không nhận run mới → 409",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{gateway_url}}/api/v1/scheduler/jobs/{{job_id}}/runs",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "scheduler",
+                "jobs",
+                "{{job_id}}",
+                "runs"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"idempotency_key\": \"postman-moi-{{run_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 409', () => pm.response.to.have.status(409));",
+                  "const body = pm.response.json();",
+                  "pm.test('mã lỗi SCHEDULER_JOB_NOT_ACTIVE', () => pm.expect(body.error.code).to.eql('SCHEDULER_JOB_NOT_ACTIVE'));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "07 ai-config",
+      "description": "Quản lý provider và model AI (không gọi model thật, không đụng gán task của stack). Luồng trích xuất và soạn bài end-to-end chạy trong regression với provider giả.",
+      "item": [
+        {
+          "name": "Instructor tạo provider → 403",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{gateway_url}}/api/v1/ai/providers",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "ai",
+                "providers"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Postman p {{run_id}}\",\n  \"provider_type\": \"CUSTOM\",\n  \"base_url\": \"{{ai_provider_url}}\",\n  \"api_key\": \"sk-postman-khong-that-1234\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{instructor_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin tạo provider",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{gateway_url}}/api/v1/ai/providers",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "ai",
+                "providers"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Postman provider {{run_id}}\",\n  \"provider_type\": \"CUSTOM\",\n  \"base_url\": \"{{ai_provider_url}}\",\n  \"api_key\": \"sk-postman-khong-that-1234\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set('provider_id', body.data.id);",
+                  "pm.test('API key không bao giờ lộ, chỉ có hint', () => { pm.expect(pm.response.text()).to.not.include('sk-postman-khong-that-1234'); pm.expect(body.data.api_key_hint).to.be.a('string'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Tạo model",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{gateway_url}}/api/v1/ai/models",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "ai",
+                "models"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"provider_id\": \"{{provider_id}}\",\n  \"model_name\": \"postman-{{run_id}}\",\n  \"display_name\": \"Model Postman\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set('model_id', body.data.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Danh sách provider (phân trang)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway_url}}/api/v1/ai/providers?page=1&page_size=5",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "ai",
+                "providers"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "page_size",
+                  "value": "5"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('có meta.pagination', () => pm.expect(body.meta.pagination.page_size).to.eql(5));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Health-check provider (không có máy chủ thật)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{gateway_url}}/api/v1/ai/providers/{{provider_id}}/health-check",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "ai",
+                "providers",
+                "{{provider_id}}",
+                "health-check"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('có health_status', () => pm.expect(body.data.health_status).to.be.oneOf(['ONLINE', 'AUTH_FAILED', 'UNREACHABLE', 'ERROR', 'DISABLED']));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Xóa model",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{gateway_url}}/api/v1/ai/models/{{model_id}}",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "ai",
+                "models",
+                "{{model_id}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('đã xóa', () => pm.expect(pm.response.code).to.be.oneOf([200, 204]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Xóa provider",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{gateway_url}}/api/v1/ai/providers/{{provider_id}}",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "ai",
+                "providers",
+                "{{provider_id}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('đã xóa', () => pm.expect(pm.response.code).to.be.oneOf([200, 204]));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "08 health",
+      "description": "Sức khỏe Gateway.",
+      "item": [
+        {
+          "name": "Gateway /ready",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway_url}}/ready",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "ready"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

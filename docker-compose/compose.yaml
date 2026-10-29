@@ -184,6 +184,8 @@ services:
       MINIO_PUBLIC_URL: "${MINIO_PUBLIC_URL:-http://localhost:9000}"
       MEDIA_UPLOAD_EXPIRES_SECONDS: "${MEDIA_UPLOAD_EXPIRES_SECONDS:-900}"
       MEDIA_MULTIPART_MAX_BYTES: "${MEDIA_MULTIPART_MAX_BYTES:-26214400}"
+      # Tuổi tối thiểu (giờ) của media không dùng trước khi dọn; regression đặt 0 để dọn được ngay.
+      MEDIA_CLEANUP_MIN_RETENTION_HOURS: "${MEDIA_CLEANUP_MIN_RETENTION_HOURS:-1}"
       MEDIA_STUDENT_BASE_URL: http://student:3002
       MEDIA_STUDENT_TIMEOUT_MS: "${MEDIA_STUDENT_TIMEOUT_MS:-3000}"
       AUTH_BASE_URL: http://auth:3001

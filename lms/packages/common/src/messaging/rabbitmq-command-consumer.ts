@@ -41,6 +41,7 @@ export interface CommandConsumerOptions {
  */
 export class RabbitMqCommandConsumer {
   private stopped = false;
+  private readonly inFlight = new Set<Promise<void>>();
 
   constructor(
     private readonly session: RabbitMqSession,
@@ -53,9 +54,19 @@ export class RabbitMqCommandConsumer {
     await this.attach();
   }
 
-  /** Ngừng đăng ký lại sau lần đóng channel kế tiếp (session do bên gọi đóng). */
-  stop(): void {
+  /**
+   * Ngừng đăng ký lại sau lần đóng channel kế tiếp (session do bên gọi đóng) và chờ các command đang
+   * xử lý xong tối đa `drainTimeoutMs`, để session không bị đóng giữa lúc handler còn ack/phát lại.
+   */
+  async stop(drainTimeoutMs = 5_000): Promise<void> {
     this.stopped = true;
+    if (this.inFlight.size === 0) return;
+    let timer: NodeJS.Timeout | undefined;
+    const expired = new Promise<void>((resolve) => {
+      timer = setTimeout(resolve, drainTimeoutMs);
+    });
+    await Promise.race([Promise.allSettled([...this.inFlight]), expired]);
+    clearTimeout(timer);
   }
 
   private async attach(): Promise<void> {
@@ -67,7 +78,7 @@ export class RabbitMqCommandConsumer {
     await channel.bindQueue(queue, COMMAND_EXCHANGE, queue);
     await channel.prefetch(prefetch);
     await channel.consume(queue, (message) => {
-      if (message) void this.handle(channel, message);
+      if (message) this.track(this.handle(channel, message));
     });
     channel.once('close', () => {
       if (this.stopped) return;
@@ -84,6 +95,11 @@ export class RabbitMqCommandConsumer {
     timer.unref();
   }
 
+  private track(work: Promise<void>): void {
+    this.inFlight.add(work);
+    void work.finally(() => this.inFlight.delete(work));
+  }
+
   private async handle(
     channel: Awaited<ReturnType<RabbitMqSession['channel']>>,
     message: ConsumeMessage,
@@ -91,8 +107,10 @@ export class RabbitMqCommandConsumer {
     const parsed = commandEnvelopeSchema.safeParse(safeJson(message.content));
     if (!parsed.success) {
       // Message không đúng envelope không thể xử lý lại: chuyển thẳng vào queue lỗi.
-      channel.sendToQueue(`${this.options.queue}.error`, message.content, { persistent: true });
-      channel.ack(message);
+      this.settle(() => {
+        channel.sendToQueue(`${this.options.queue}.error`, message.content, { persistent: true });
+        channel.ack(message);
+      });
       return;
     }
     const envelope = parsed.data as CommandEnvelope;
@@ -114,15 +132,19 @@ export class RabbitMqCommandConsumer {
       parent,
     );
     try {
-      await context.with(trace.setSpan(parent, span), () =>
-        runWithCorrelationId(envelope.correlation.correlation_id ?? envelope.message_id, () =>
-          this.options.handler(envelope),
-        ),
-      );
-      channel.ack(message);
-    } catch (error) {
-      span.setStatus({ code: SpanStatusCode.ERROR });
-      await this.fail(channel, message, envelope, attempt, error);
+      try {
+        await context.with(trace.setSpan(parent, span), () =>
+          runWithCorrelationId(envelope.correlation.correlation_id ?? envelope.message_id, () =>
+            this.options.handler(envelope),
+          ),
+        );
+      } catch (error) {
+        span.setStatus({ code: SpanStatusCode.ERROR });
+        await this.fail(channel, message, envelope, attempt, error);
+        return;
+      }
+      // Ack nằm ngoài try của handler: lỗi ack (channel đóng) không phải lỗi nghiệp vụ nên không retry.
+      this.settle(() => channel.ack(message));
     } finally {
       span.end();
     }
@@ -135,6 +157,8 @@ export class RabbitMqCommandConsumer {
     attempt: number,
     error: unknown,
   ): Promise<void> {
+    // Đang tắt: để broker giao lại message chưa ack, không chờ retry trên channel sắp đóng.
+    if (this.stopped) return;
     try {
       if (attempt < this.options.maxAttempts) {
         await sleep(this.options.retryDelayMs);
@@ -143,11 +167,25 @@ export class RabbitMqCommandConsumer {
         channel.sendToQueue(`${this.options.queue}.error`, message.content, { persistent: true });
         await this.options.onFault?.(envelope, error);
       }
-      channel.ack(message);
+      this.settle(() => channel.ack(message));
     } catch {
       // Không phát lại/ghi lỗi được: trả message về queue để giao lại, không mất command.
       this.options.onWarning?.('Không chuyển được command lỗi; trả về queue');
-      channel.nack(message, false, true);
+      this.settle(() => channel.nack(message, false, true));
+    }
+  }
+
+  /**
+   * Ack/nack trên channel đã đóng ném `IllegalOperationError`. Message chưa ack sẽ được broker giao
+   * lại khi channel đóng nên bỏ qua lỗi này; ném ra ngoài sẽ thành unhandled rejection.
+   */
+  private settle(operation: () => void): void {
+    try {
+      operation();
+    } catch (error) {
+      this.options.onWarning?.(
+        `Không ack/nack được (channel đã đóng?): ${error instanceof Error ? error.message : 'lỗi không rõ'}`,
+      );
     }
   }
 }

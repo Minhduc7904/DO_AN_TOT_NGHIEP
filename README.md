@@ -77,8 +77,8 @@ Notification), Storage Mock, PostgreSQL, Redis và RabbitMQ. Thứ tự dựng t
 1. Cài toolchain và dependency theo [lms/README.md](lms/README.md#cài-đặt-và-kiểm-tra): Node.js `22.13.1`,
    pnpm `11.19.0` qua Corepack, rồi `pnpm install --frozen-lockfile` trong `lms/`.
 2. Validate, khởi động, kiểm tra, xem log và reset stack theo [docker-compose/README.md](docker-compose/README.md).
-3. Chạy reset/seed có kiểm soát và regression Testbed MVP theo
-   [docker-compose/README.md](docker-compose/README.md#regression-testbed-mvp).
+3. Chạy reset/seed có kiểm soát và regression LMS theo
+   [docker-compose/README.md](docker-compose/README.md#regression-lms).
 
 ## Tài liệu canonical
 
