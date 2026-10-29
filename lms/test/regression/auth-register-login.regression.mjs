@@ -68,7 +68,7 @@ test('auth-register-login: đăng ký, đăng nhập ba cửa, refresh xoay vòn
     'sai cửa và sai mật khẩu cùng một lỗi 401, không lộ tài khoản tồn tại hay không',
     async () => {
       const wrongPassword = await call('POST', '/api/v1/auth/student/login', {
-        body: { email, password: 'sai-mat-khau-1' },
+        body: { email, password: `${password}-sai` },
       });
       const wrongDoor = await call('POST', '/api/v1/auth/instructor/login', {
         body: { email, password },

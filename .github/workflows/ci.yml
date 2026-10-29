@@ -74,6 +74,10 @@ jobs:
       - name: Set up toolchain
         uses: ./.github/actions/setup-lms
 
+      # Test của common cần dist của observability và contracts, nên build trước.
+      - name: Build
+        run: pnpm run build
+
       # Gồm test:architecture, test:testbed:reset, test:seed-data, jest từng service và test:telemetry.
       - name: Unit test
         run: pnpm run test
