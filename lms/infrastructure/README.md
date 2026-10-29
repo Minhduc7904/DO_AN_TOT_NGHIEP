@@ -2,7 +2,7 @@
 
 ## Trách nhiệm
 
-Chứa cấu hình runtime riêng cho PostgreSQL, Redis, RabbitMQ và storage mock. Observability backend đã chuyển sang [`../../aiops-platform/observability/`](../../aiops-platform/observability/). Manifest orchestration root đặt tại `docker-compose/` cùng cấp với `lms/`.
+Dành cho cấu hình runtime riêng của hạ tầng LMS (PostgreSQL, RabbitMQ, MinIO, Mailpit) khi Compose cần tham chiếu; hiện chưa có cấu hình nào, vì khởi tạo PostgreSQL nằm ở `docker-compose/postgres-init/`. Observability backend đã chuyển sang [`../../aiops-platform/observability/`](../../aiops-platform/observability/). Manifest orchestration root đặt tại `docker-compose/` cùng cấp với `lms/`.
 
 ## Quy tắc dependency
 
