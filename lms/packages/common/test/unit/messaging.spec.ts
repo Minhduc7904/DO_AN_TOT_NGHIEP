@@ -1,4 +1,7 @@
 import { jest } from '@jest/globals';
+import { startTelemetry } from '@aiops-lms/observability';
+import { InMemorySpanExporter, SimpleSpanProcessor } from '@aiops-lms/observability/testing';
+import { context, propagation, trace } from '@opentelemetry/api';
 import type { ConsumeMessage } from 'amqplib';
 
 import {
@@ -9,7 +12,7 @@ import {
 import { runOnce } from '../../src/messaging/inbox.js';
 import { OutboxRelayLoop } from '../../src/messaging/outbox-relay-loop.js';
 import { RabbitMqCommandConsumer } from '../../src/messaging/rabbitmq-command-consumer.js';
-import type { RabbitMqCommandPublisher } from '../../src/messaging/rabbitmq-command-publisher.js';
+import { RabbitMqCommandPublisher } from '../../src/messaging/rabbitmq-command-publisher.js';
 import type { RabbitMqSession } from '../../src/messaging/rabbitmq-session.js';
 import { PostgresOutbox, relayOutboxOnce } from '../../src/messaging/outbox.js';
 import type { SqlClient, TransactionalSqlClient } from '../../src/prisma/sql-client.js';
@@ -181,7 +184,10 @@ describe('RabbitMqCommandConsumer', () => {
     const warnings: string[] = [];
     const consumer = new RabbitMqCommandConsumer(
       { channel: () => Promise.resolve(channel) } as unknown as RabbitMqSession,
-      { publish } as unknown as RabbitMqCommandPublisher,
+      {
+        publish,
+        dependencyIdentity: 'test-rabbitmq',
+      } as unknown as RabbitMqCommandPublisher,
       {
         queue: 'q',
         prefetch: 1,
@@ -290,5 +296,82 @@ describe('OutboxRelayLoop', () => {
     await stopping;
     await new Promise((resolve) => setTimeout(resolve, 20));
     expect(queries).toBe(1);
+  });
+});
+
+describe('RabbitMqCommandPublisher: trace context', () => {
+  const traceId = '4bf92f3577b34da6a3ce929d0e0e4736';
+  const parentSpanId = '00f067aa0ba902b7';
+  const exporter = new InMemorySpanExporter();
+  let telemetry: ReturnType<typeof startTelemetry>;
+
+  beforeAll(() => {
+    telemetry = startTelemetry(
+      {
+        enabled: true,
+        otlpTracesEndpoint: 'http://127.0.0.1:1/v1/traces',
+        serviceName: 'course',
+        serviceVersion: '0.1.0',
+        serviceInstanceId: 'publisher-test',
+      },
+      { spanProcessor: new SimpleSpanProcessor(exporter) },
+    );
+  });
+  afterAll(async () => {
+    await telemetry.shutdown();
+    context.disable();
+    propagation.disable();
+    trace.disable();
+  });
+  beforeEach(() => exporter.reset());
+
+  async function publishWith(
+    traceparent: string | undefined,
+  ): Promise<{ headers: Record<string, string> }> {
+    const published: { headers: Record<string, string> } = { headers: {} };
+    const channel = {
+      assertExchange: () => Promise.resolve(),
+      publish: (
+        _exchange: string,
+        _key: string,
+        _content: Buffer,
+        options: { headers: Record<string, string> },
+        callback: (error: Error | null) => void,
+      ): boolean => {
+        published.headers = options.headers;
+        callback(null);
+        return true;
+      },
+    };
+    const publisher = new RabbitMqCommandPublisher(
+      { channel: () => Promise.resolve(channel) } as unknown as RabbitMqSession,
+      { confirmTimeoutMs: 1000, dependencyIdentity: 'course-rabbitmq' },
+    );
+    await publisher.publish(
+      'media-worker--x-v1',
+      buildCommandEnvelope({
+        commandName: 'media.x',
+        schemaVersion: 1,
+        payload: {},
+        producer: { serviceName: 'course', serviceVersion: '0.1.0' },
+        ...(traceparent ? { traceparent } : {}),
+      }),
+    );
+    return published;
+  }
+
+  it('relay ngoài request: span publish là con của span request đã ghi trong envelope', async () => {
+    const { headers } = await publishWith(`00-${traceId}-${parentSpanId}-01`);
+    const [span] = exporter.getFinishedSpans();
+    expect(span?.spanContext().traceId).toBe(traceId);
+    expect(span?.parentSpanContext?.spanId).toBe(parentSpanId);
+    expect(span?.attributes['dependency_identity']).toBe('course-rabbitmq');
+    expect(headers['traceparent']).toBe(`00-${traceId}-${span?.spanContext().spanId}-01`);
+  });
+
+  it('envelope không có traceparent: span publish mở trace mới', async () => {
+    await publishWith(undefined);
+    const [span] = exporter.getFinishedSpans();
+    expect(span?.parentSpanContext).toBeUndefined();
   });
 });

@@ -120,7 +120,7 @@ it('implements the NestJS logger contract with context, stack and default level 
   logger.log('Mapped route', 'RoutesResolver');
   logger.error('Boom', 'Error: Boom\n    at handler (file.ts:1:1)', 'ExceptionsHandler');
   logger.warn(new Error('kết nối lỗi'));
-  logger.log({ message: 'Structured', dependency_identity: 'course-redis', principal: 'x' });
+  logger.log({ message: 'Structured', dependency_identity: 'course-postgres', principal: 'x' });
 
   expect(lines.map((line) => line.level)).toEqual(['INFO', 'ERROR', 'WARN', 'INFO']);
   expect(lines[0]).toMatchObject({ logger: 'RoutesResolver', message: 'Mapped route' });
@@ -130,7 +130,7 @@ it('implements the NestJS logger contract with context, stack and default level 
   });
   expect(lines[2]).toMatchObject({ logger: 'Fallback', message: 'Error: kết nối lỗi' });
   expect(lines[2]).toHaveProperty(['exception.stacktrace']);
-  expect(lines[3]).toMatchObject({ dependency_identity: 'course-redis', message: 'Structured' });
+  expect(lines[3]).toMatchObject({ dependency_identity: 'course-postgres', message: 'Structured' });
   expect(lines[3]).not.toHaveProperty('principal');
 
   logger.setLogLevels(['debug']);

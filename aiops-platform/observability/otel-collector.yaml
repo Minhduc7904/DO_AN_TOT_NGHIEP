@@ -5,26 +5,31 @@ receivers:
         endpoint: 0.0.0.0:4317
       http:
         endpoint: 0.0.0.0:4318
+  # Metric hàng đợi của broker dùng chung. Queue canonical `<worker>--<command>-v<n>` (và `.error`) thuộc
+  # worker tiêu thụ: `service.name` và `dependency_identity` suy ra từ tiền tố trước `--`.
   prometheus/rabbitmq:
     config:
       scrape_configs:
-        - job_name: rabbitmq-notification
+        - job_name: rabbitmq-queues
           scrape_interval: 5s
           metrics_path: /metrics/detailed
           params:
-            family: [queue_coarse_metrics]
+            family: [queue_coarse_metrics, queue_consumer_count]
             vhost: ["/"]
-            queue: ["${env:NOTIFICATION_GRADE_COMPLETED_QUEUE}"]
           static_configs:
             - targets: [rabbitmq:15692]
           metric_relabel_configs:
             - source_labels: [__name__]
-              regex: rabbitmq_detailed_queue_messages(_ready|_unacked)?
+              regex: rabbitmq_detailed_queue_(messages(_ready|_unacked)?|consumers)
               action: keep
             - source_labels: [queue]
-              regex: "notification[.]grade-completed[.]v1"
+              regex: "((?:media|notification|ai)-worker)--.+"
               action: keep
-            - regex: queue|vhost
+            - source_labels: [queue]
+              regex: "((?:media|notification|ai)-worker)--.+"
+              target_label: lms_queue_owner
+              replacement: "$1"
+            - regex: vhost
               action: labeldrop
 
 processors:
@@ -36,28 +41,30 @@ processors:
     timeout: 1s
     send_batch_size: 512
     send_batch_max_size: 1024
-  # Prometheus receiver tự sinh up/scrape_* cho target broker; bỏ để chúng không mang service.name=notification
-  # như tín hiệu sức khỏe của runtime Notification. Thiếu gauge queue vẫn được hiểu là unavailable.
+  # Prometheus receiver tự sinh up/scrape_* cho target broker; bỏ để chúng không mang service.name của
+  # runtime nào như tín hiệu sức khỏe. Thiếu gauge queue vẫn được hiểu là unavailable.
   filter/rabbitmq:
     error_mode: ignore
     metrics:
       metric:
-        - 'not IsMatch(name, "^rabbitmq_detailed_queue_messages(_ready|_unacked)?$")'
-  resource/rabbitmq:
-    attributes:
-      - key: service.name
-        value: notification
-        action: upsert
-      # Broker exporter không có version/instance của runtime Notification; để trống thay vì gán giá trị giả.
-      - key: service.version
-        action: delete
-      - key: service.instance.id
-        action: delete
+        - 'not IsMatch(name, "^rabbitmq_detailed_queue_(messages(_ready|_unacked)?|consumers)$")'
   transform/rabbitmq:
     metric_statements:
       - context: datapoint
         statements:
-          - set(attributes["dependency_identity"], "notification-rabbitmq")
+          - set(attributes["service.name"], attributes["lms_queue_owner"])
+          - set(attributes["dependency_identity"], Concat([attributes["lms_queue_owner"], "rabbitmq"], "-"))
+          - delete_key(attributes, "lms_queue_owner")
+  # Tách datapoint thành một resource cho mỗi worker để Prometheus nhận `service_name` đúng.
+  groupbyattrs/rabbitmq:
+    keys: [service.name]
+  resource/rabbitmq:
+    attributes:
+      # Broker exporter không có version/instance của runtime LMS; để trống thay vì gán giá trị giả.
+      - key: service.version
+        action: delete
+      - key: service.instance.id
+        action: delete
 
 exporters:
   otlp_http/tempo:
@@ -103,7 +110,7 @@ service:
       exporters: [prometheus]
     metrics/rabbitmq:
       receivers: [prometheus/rabbitmq]
-      processors: [memory_limiter, filter/rabbitmq, resource/rabbitmq, transform/rabbitmq, batch]
+      processors: [memory_limiter, filter/rabbitmq, transform/rabbitmq, groupbyattrs/rabbitmq, resource/rabbitmq, batch]
       exporters: [prometheus]
     logs:
       receivers: [otlp]

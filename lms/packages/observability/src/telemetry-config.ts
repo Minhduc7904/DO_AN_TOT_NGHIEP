@@ -9,20 +9,15 @@ export interface TelemetryConfig {
   serviceVersion: string;
 }
 
+/** `service.name` canonical của topology v2: 8 service và 4 worker. */
 const RUNTIME_SERVICE_NAMES = new Set([
   'gateway',
   'auth',
-  'course',
-  'enrollment',
-  'submission',
-  'grading',
-  'notification',
-  'submission-storage',
-  // Topology v2 (R-01): 9 service + 3 worker. Tên v1 ở trên được gỡ khi service cũ bị xóa.
   'student',
-  'admin',
+  'course',
   'media',
   'media-worker',
+  'notification',
   'notification-worker',
   'scheduler',
   'scheduler-worker',

@@ -5,6 +5,8 @@ export interface RabbitMqSettings {
   url: string;
   connectTimeoutMs: number;
   confirmTimeoutMs: number;
+  /** Định danh dependency canonical của process, ví dụ `media-worker-rabbitmq`. */
+  dependencyIdentity: string;
 }
 
 export function createRabbitMq(
@@ -21,6 +23,7 @@ export function createRabbitMq(
     session,
     publisher: new RabbitMqCommandPublisher(session, {
       confirmTimeoutMs: settings.confirmTimeoutMs,
+      dependencyIdentity: settings.dependencyIdentity,
     }),
   };
 }

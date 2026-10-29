@@ -1,5 +1,7 @@
 # Blueprint triển khai Backend Microservice Testbed
 
+> **Đã được thay thế** bởi [backend-microservice-testbed-blueprint-v2.md](backend-microservice-testbed-blueprint-v2.md) (R-12, theo topology v2). File này giữ làm lịch sử, mô tả topology v1; không dùng cho dataset và triển khai mới.
+
 > **Trạng thái:** Canonical source of truth cho định hướng và implementation architecture của backend testbed
 >
 > **Baseline:** Architecture baseline v1, frozen để bắt đầu implementation; thay đổi quyết định đáng kể phải đi qua ADR.

@@ -48,7 +48,10 @@ const suffix = Date.now();
 const okQueue = `test-worker--ok-v1-${suffix}`;
 const badQueue = `test-worker--bad-v1-${suffix}`;
 const session = new RabbitMqSession({ url: process.env.RABBITMQ_URL, connectTimeoutMs: 5000 });
-const publisher = new RabbitMqCommandPublisher(session, { confirmTimeoutMs: 5000 });
+const publisher = new RabbitMqCommandPublisher(session, {
+  confirmTimeoutMs: 5000,
+  dependencyIdentity: 'test-rabbitmq',
+});
 const outbox = new PostgresOutbox(sql, { serviceName: 'test', serviceVersion: '0.0.1' });
 
 const handled = [];

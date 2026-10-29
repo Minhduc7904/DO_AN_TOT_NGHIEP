@@ -24,10 +24,10 @@
         },
         "query": {
           "qryType": 1,
-          "query": "label_values(http_server_request_count_total{service_name!=\"submission-storage\"}, service_name)",
+          "query": "label_values(http_server_request_count_total, service_name)",
           "refId": "service"
         },
-        "definition": "label_values(http_server_request_count_total{service_name!=\"submission-storage\"}, service_name)",
+        "definition": "label_values(http_server_request_count_total, service_name)",
         "refresh": 2,
         "includeAll": true,
         "multi": true,
@@ -510,7 +510,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "sum by (service_name, dependency_identity, status) (rate({__name__=~\"[a-z]+_(dependency_request|messaging_publish|rabbitmq_consume)_count_total\",service_name=~\"$service\",status!=\"ok\"}[$__rate_interval]))",
+          "expr": "sum by (service_name, dependency_identity, status) (rate(lms_dependency_request_count_total{service_name=~\"$service\",status!~\"ok|expected_failure\"}[$__rate_interval]))",
           "legendFormat": "{{service_name}} → {{dependency_identity}} {{status}}",
           "range": true
         }
@@ -567,7 +567,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "histogram_quantile(0.95, sum by (service_name, dependency_identity, le) (rate({__name__=~\"[a-z]+_(dependency|messaging_publish)_duration_seconds_bucket\",service_name=~\"$service\"}[$__rate_interval])))",
+          "expr": "histogram_quantile(0.95, sum by (service_name, dependency_identity, le) (rate(lms_dependency_duration_seconds_bucket{service_name=~\"$service\"}[$__rate_interval])))",
           "legendFormat": "{{service_name}} → {{dependency_identity}}",
           "range": true
         }
@@ -577,7 +577,7 @@
       "id": 11,
       "type": "timeseries",
       "title": "Broker backlog",
-      "description": "Message chờ trong RabbitMQ của Notification và event Grading chưa publish (outbox).",
+      "description": "Message chờ và đang xử lý trong queue command của worker (media, notification, ai); queue .error là command đã hết retry.",
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
@@ -624,8 +624,8 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "sum(rabbitmq_detailed_queue_messages_ready{dependency_identity=\"notification-rabbitmq\"})",
-          "legendFormat": "ready",
+          "expr": "sum by (queue) (rabbitmq_detailed_queue_messages_ready{service_name=~\"$service\",queue!~\".*[.]error\"})",
+          "legendFormat": "ready {{queue}}",
           "range": true
         },
         {
@@ -634,8 +634,8 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "sum(rabbitmq_detailed_queue_messages_unacked{dependency_identity=\"notification-rabbitmq\"})",
-          "legendFormat": "unacked",
+          "expr": "sum by (queue) (rabbitmq_detailed_queue_messages_unacked{service_name=~\"$service\",queue!~\".*[.]error\"})",
+          "legendFormat": "unacked {{queue}}",
           "range": true
         },
         {
@@ -644,8 +644,8 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "sum(grading_messaging_pending_count)",
-          "legendFormat": "grading pending",
+          "expr": "sum by (queue) (rabbitmq_detailed_queue_messages_ready{service_name=~\"$service\",queue=~\".*[.]error\"})",
+          "legendFormat": "error {{queue}}",
           "range": true
         }
       ]

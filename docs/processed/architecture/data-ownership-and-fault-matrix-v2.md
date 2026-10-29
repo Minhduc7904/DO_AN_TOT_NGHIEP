@@ -2,7 +2,7 @@
 
 > **Task:** R-01 — [bảng task refactor](../plan/refactor/refactor-board-v1.md)
 >
-> **Trạng thái:** Đề xuất — chờ Đức tự xác nhận; ma trận fault và case phức tạp là **v0**, chốt chi tiết ở R-12.
+> **Trạng thái:** Đề xuất — chờ Đức tự xác nhận. Ownership (mục 1–4) chốt ở R-01; ma trận fault và case phức tạp (mục 5–6) đã được R-12 đối chiếu với telemetry thật, chi tiết từng case nằm ở [complex-case-catalogue-and-rca-result-v0](complex-case-catalogue-and-rca-result-v0.md).
 >
 > **Thay thế:** [data-ownership-and-fault-matrix-v1](data-ownership-and-fault-matrix-v1.md) (lịch sử).
 >
@@ -147,26 +147,28 @@ Mất đồng bộ giữa các ID này (ví dụ student bị xóa nhưng còn e
 
 ---
 
-# 5. Ma trận fault v0
+# 5. Ma trận fault
 
-Mục tiêu v2: các fault phải tạo triệu chứng **không nằm ở nơi nguyên nhân gốc**, thông qua dependency dùng chung (RabbitMQ, PostgreSQL pool, MinIO) và chuỗi async. Cơ chế inject chi tiết (hook bằng biến môi trường/endpoint nội bộ, hay proxy chèn trễ cho MinIO/PostgreSQL/SMTP/LLM stub) do R-12 chốt; yêu cầu bắt buộc là bật/tắt được, tái lập được, có ground truth, và không đổi code nghiệp vụ.
+Mục tiêu v2: các fault phải tạo triệu chứng **không nằm ở nơi nguyên nhân gốc**, thông qua dependency dùng chung (RabbitMQ, PostgreSQL pool, MinIO) và chuỗi async. Yêu cầu bắt buộc với cơ chế inject: bật/tắt được, tái lập được, có ground truth, và không đổi code nghiệp vụ. R-12 chỉ mô tả cơ chế cho từng fault và chạy thật các fault làm được bằng `docker pause`/`stop` (FG, backlog queue của FB); fault injector còn lại thuộc mảng AI (`aiops-platform/`), xem mục chuyển chủ ở catalogue. Cột "Cách tạo" là cơ chế dự kiến, không phải công cụ đã có.
 
 | Fault  | Loại                  | Root-cause service       | Component               | Cách tạo (đề xuất)                                        | Tín hiệu quan sát                           | Triệu chứng dự kiến                                      |
 | ------ | --------------------- | ------------------------ | ----------------------- | --------------------------------------------------------- | ------------------------------------------- | -------------------------------------------------------- |
 | **FA** | Độ trễ phụ thuộc      | `media` / `media-worker` | `media-minio`           | Chèn trễ/ngắt kết nối MinIO                               | Span MinIO chậm, thumbnail `PROCESSING` kẹt | upload-complete timeout ở gateway, usage sync trễ        |
-| **FB** | Backlog hàng đợi      | `notification-worker`    | `notification-rabbitmq` | Chạy batch lớn kèm làm chậm dispatch                      | Độ sâu queue, tuổi message cũ nhất          | thumbnail của `media-worker` chậm, command `course` trễ  |
+| **FB** | Backlog hàng đợi      | `notification-worker`    | `notification-worker-rabbitmq` | Chạy batch lớn kèm làm chậm dispatch                      | Độ sâu queue, tuổi message cũ nhất          | thumbnail của `media-worker` chậm, command `course` trễ  |
 | **FC** | Giữ kết nối DB        | `course`                 | `course-postgres`       | Export CSV streaming khối lượng lớn đồng thời với tải học | Pool utilization, độ trễ truy vấn           | enroll/quiz submit chậm, không có span lỗi               |
 | **FD** | Độ trễ nhà cung cấp   | `ai`                     | `ai-llm-provider`       | Stub LLM chậm hoặc trả lỗi ngắt quãng                     | Span provider của `ai-worker`, lease hết hạn, job/tài liệu `FAILED` | job AI `WORKER_INTERRUPTED`, tài liệu kẹt `PROCESSING`, `course` hiện lỗi/`EXTRACTING` kéo dài |
 | **FE** | Độ trễ dependency nhỏ | `student`                | `student-postgres`      | Chèn trễ truy vấn                                         | Span student chậm ở snapshot                | batch `PARTIAL_FAILED`, số liệu lệch, log không có error |
 | **FF** | Quá tải tài nguyên    | bất kỳ service           | instance                | Giới hạn CPU/bộ nhớ container                             | CPU/RSS, độ trễ, tỉ lệ lỗi                  | latency/error lan theo dependency                        |
-| **FG** | Độ trễ/ngắt xác thực  | `auth`                   | `auth` / `auth-postgres` | Chèn trễ hoặc dừng `auth` (ADR-004)                       | Span `*-auth-token`/`*-auth-jwks` chậm hoặc lỗi, breaker mở | Chưa thấy gì trong ≤10 phút (stale-while-error), rồi mọi service lỗi 503 hàng loạt |
+| **FG** | Độ trễ/ngắt xác thực  | `auth`                   | `auth` / `auth-postgres` | Chèn trễ hoặc dừng `auth` (ADR-004)                       | Span `*-auth-token`/`*-auth-jwks` chậm hoặc lỗi, breaker mở | Chưa thấy gì trong ≤10 phút (stale-while-error), rồi mọi request qua gateway lỗi 5xx hàng loạt (đo được 504) |
 | **FH** | Lệch khóa ký          | `auth`                   | JWKS / khóa ký          | Đổi `AUTH_SIGNING_KEY_PEM` mà không giữ khóa cũ           | `SERVICE_TOKEN_INVALID` tăng sau khi cache JWKS hết hạn | 401 đồng thời ở nhiều service, hạ tầng đều khỏe          |
 
-Mỗi lần chạy phải ghi ground truth theo [telemetry-and-ground-truth-schema](telemetry-and-ground-truth-schema-v0.md) (sẽ cập nhật ở R-12): `root_cause_service`, `component`, `fault_type`, thời điểm bắt đầu/kết thúc, `run_id`, cường độ. Ground truth không đưa vào payload nghiệp vụ.
+Mỗi lần chạy phải ghi ground truth theo [telemetry-and-ground-truth-schema](telemetry-and-ground-truth-schema-v1.md): `root_cause_service`, `component`, `fault_type`, thời điểm bắt đầu/kết thúc, `run_id`, cường độ. Ground truth không đưa vào payload nghiệp vụ.
 
 ---
 
-# 6. Danh mục case phức tạp v0 (cho demo AI vs thủ công)
+# 6. Danh mục case phức tạp (cho demo AI vs thủ công)
+
+Bảng dưới là tóm tắt; kịch bản, ground truth, tín hiệu xác nhận và trạng thái đã đo của từng case nằm ở [complex-case-catalogue-and-rca-result-v0](complex-case-catalogue-and-rca-result-v0.md).
 
 Tiêu chí: một người đọc dashboard/trace thông thường theo đường request của triệu chứng sẽ không thấy nguyên nhân; chuỗi nhân quả đi qua dependency dùng chung hoặc tầng async.
 
@@ -177,7 +179,8 @@ Tiêu chí: một người đọc dashboard/trace thông thường theo đườn
 | **C3** | Job AI soạn bài mãi `RUNNING` rồi `WORKER_INTERRUPTED`, tài liệu mãi `EXTRACTING` | FD: provider AI chậm                       | `ai-worker` giữ lease lâu → job/tài liệu hết lease → `course` thấy lỗi muộn ở `ai-worker → course`                                             | Hai triệu chứng ở hai service, chung nguyên nhân gián tiếp                         |
 | **C4** | Khóa học `READY` nhưng thumbnail mất, job cleanup xóa media | FA: MinIO promote chậm                     | Media `PENDING` kẹt → usage chưa gắn → `scheduler-worker` coi là không dùng và xóa                            | Lỗi lộ ở scheduler muộn, cách nguyên nhân gốc nhiều bước và nhiều phút             |
 | **C5** | Batch notification `PARTIAL_FAILED`, số item lệch           | FE: `student` chậm khi snapshot            | Snapshot timeout từng trang → thiếu recipient                                                                 | Log không có lỗi, chỉ lệch số liệu so với kỳ vọng                                  |
-| **C6** | Nhiều service cùng trả 503 sau một khoảng yên lặng          | FG: `auth` chậm/chết                       | Token đã cache còn hạn → không lỗi → hết hạn mà không làm mới được → gateway/auth không gọi được ai          | Triệu chứng ở mọi service cùng lúc nhưng chỉ sau ≤10 phút; lỗi ở cạnh `*-auth-token` chứ không ở service lỗi |
+| **C6** | Request qua gateway lỗi 5xx (đo được 504) hàng loạt sau một khoảng yên lặng          | FG: `auth` chậm/chết                       | Token đã cache còn hạn → không lỗi → hết hạn mà không làm mới được → gateway/auth không gọi được ai          | Triệu chứng ở mọi service cùng lúc nhưng chỉ sau ≤10 phút; lỗi ở cạnh `*-auth-token` chứ không ở service lỗi |
+| **C7** | 401 đồng loạt ở nhiều service, hạ tầng đều khỏe             | FH: đổi khóa ký `auth` mà không giữ khóa cũ | JWKS mới → cache JWKS hết hạn → verify token thất bại ở mọi service                                           | Không service nào hỏng; nguyên nhân là cấu hình ở `auth`, lỗi lộ ở từng service dưới dạng 401 |
 
 Mỗi case dùng workload chạy song song (k6) để tạo nhiễu. Đối chứng thủ công: baseline tự động (ngưỡng + trace lỗi/chậm nhất) và thử nghiệm người nhỏ theo [ADR-002](../adr/adr-002-ai-primary-root-cause-analysis-v1.md).
 
@@ -191,15 +194,15 @@ Mỗi case dùng workload chạy song song (k6) để tạo nhiễu. Đối ch�
 | Outbox         | Cột publish trong `grades`                        | Bảng `outbox_messages`/`inbox_states` mỗi service |
 | Cache          | Redis của Course                                  | Bỏ                                                |
 | Object storage | Storage Mock in-memory                            | MinIO thuộc `media`                               |
-| Fault          | F1–F5 (Redis, Storage Mock, error, consumer, CPU) | FA–FF + case C1–C5                                |
-| Ground truth   | theo F1–F5                                        | theo FA–FF, cập nhật schema ở R-12                |
+| Fault          | F1–F5 (Redis, Storage Mock, error, consumer, CPU) | FA–FH + case C1–C7                                |
+| Ground truth   | theo F1–F5                                        | theo FA–FH, schema ở telemetry-and-ground-truth-schema-v1 |
 
 ---
 
 # 8. Xác nhận cần có
 
 - [ ] Đức xác nhận ownership và danh sách bảng mục 2–4.
-- [ ] Đức xem lại ma trận fault v0 (mục 5) và case C1–C5 (mục 6) trước R-12.
+- [ ] Đức xem lại ma trận fault (mục 5) và case C1–C7 (mục 6) cùng catalogue R-12.
 
 | Trường         | Giá trị                                                                           |
 | -------------- | --------------------------------------------------------------------------------- |

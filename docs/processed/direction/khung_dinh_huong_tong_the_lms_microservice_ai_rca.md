@@ -1,5 +1,7 @@
 # Khung định hướng tổng thể đồ án tốt nghiệp
 
+> **Đã được thay thế** bởi [khung-dinh-huong-tong-the-lms-microservice-ai-rca-v1.md](khung-dinh-huong-tong-the-lms-microservice-ai-rca-v1.md) (R-12, theo topology v2). File này giữ làm lịch sử, mô tả topology v1; không dùng cho dataset và triển khai mới.
+
 ## Xây dựng hệ thống phát hiện bất thường và hỗ trợ phân tích nguyên nhân sự cố trong kiến trúc microservice
 
 > **Vai trò canonical:** Source of truth cho WHY, WHAT, vấn đề nghiên cứu, research questions, research scope, high-level architecture, hướng anomaly detection/RCA và triết lý đánh giá.

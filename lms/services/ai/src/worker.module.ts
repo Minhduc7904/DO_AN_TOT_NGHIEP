@@ -184,6 +184,7 @@ const PROVIDERS: Provider[] = [
           url: config.getOrThrow('AI_RABBITMQ_URL'),
           connectTimeoutMs: config.getOrThrow('AI_RABBITMQ_CONNECT_TIMEOUT_MS'),
           confirmTimeoutMs: config.getOrThrow('AI_RABBITMQ_CONFIRM_TIMEOUT_MS'),
+          dependencyIdentity: 'ai-worker-rabbitmq',
         },
         AiWorkerRunner.name,
       );

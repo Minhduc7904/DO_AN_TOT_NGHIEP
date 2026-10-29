@@ -1,5 +1,7 @@
 # Research questions và metrics v1
 
+> **Đã được thay thế** bởi [research-questions-and-metrics-v2.md](research-questions-and-metrics-v2.md) (R-12, theo topology v2). File này giữ làm lịch sử, mô tả topology v1; không dùng cho dataset và triển khai mới.
+
 > **Vai trò:** Operationalize RQ1–RQ5 và metric đánh giá cho MVP. Tài liệu này không thay thế source of truth về định hướng, backend hay Analysis/RCA.
 >
 > **Định hướng canonical:** [`khung_dinh_huong_tong_the_lms_microservice_ai_rca.md`](khung_dinh_huong_tong_the_lms_microservice_ai_rca.md)
