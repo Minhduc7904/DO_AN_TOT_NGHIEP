@@ -77,7 +77,13 @@ curl --fail -H "Authorization: Bearer $token" -H 'content-type: application/json
 curl --fail -H "Authorization: Bearer $token" http://localhost:3000/api/v1/courses
 ```
 
-Stack mới không seed khóa học; dữ liệu quy mô lớn do seeder ở R-10 tạo.
+Stack mới không seed khóa học. Dữ liệu quy mô lớn do seeder tạo, chạy sau khi stack đã lên và các service đã migrate (từ thư mục `lms/`):
+
+```bash
+pnpm run seed:data -- --environment local --compose-env-file ../docker-compose/.env
+```
+
+Seeder hiện giao diện terminal để chọn database, nhập số dòng từng bảng và xem tiến độ; chạy lại sẽ dọn dữ liệu seed cũ (id bắt đầu bằng `5eed`) rồi nạp lại. Hướng dẫn từng bước: [`docs/processed/guides/seed-data-guide.md`](../docs/processed/guides/seed-data-guide.md); thiết kế: `lms/scripts/seed-data/README.md`.
 
 Hoặc từ PowerShell:
 
