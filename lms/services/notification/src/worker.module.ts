@@ -140,6 +140,7 @@ const PROVIDERS: Provider[] = [
           url: config.getOrThrow('NOTIFICATION_RABBITMQ_URL'),
           connectTimeoutMs: config.getOrThrow('NOTIFICATION_RABBITMQ_CONNECT_TIMEOUT_MS'),
           confirmTimeoutMs: config.getOrThrow('NOTIFICATION_RABBITMQ_CONFIRM_TIMEOUT_MS'),
+          dependencyIdentity: 'notification-worker-rabbitmq',
         },
         NotificationWorkerRunner.name,
       );

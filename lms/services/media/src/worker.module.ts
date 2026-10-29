@@ -117,6 +117,7 @@ const PROVIDERS: Provider[] = [
           url: config.getOrThrow('MEDIA_RABBITMQ_URL'),
           connectTimeoutMs: config.getOrThrow('MEDIA_RABBITMQ_CONNECT_TIMEOUT_MS'),
           confirmTimeoutMs: config.getOrThrow('MEDIA_RABBITMQ_CONFIRM_TIMEOUT_MS'),
+          dependencyIdentity: 'media-worker-rabbitmq',
         },
         MediaWorkerRunner.name,
       );

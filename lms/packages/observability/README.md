@@ -18,52 +18,41 @@ HTTP instrumentation không capture request/response header tùy ý. Với respo
 
 Khi telemetry bị tắt, handle trả về là no-op. Khi bật nhưng OTLP backend chưa sẵn sàng, SDK vẫn khởi tạo và request application vẫn được phục vụ; lỗi export nằm ở diagnostic/export path và không được ném vào request path. Trace chưa export được có thể bị mất khi hết retry/buffer của SDK.
 
-## Tracing baseline W10
+## Tracing
 
-Baseline dùng `AlwaysOnSampler` (100%), kể cả caller gửi sampled flag `00`, và W3C Trace Context. Caller cần truyền cùng synthetic parent nếu muốn liên kết nhiều HTTP action độc lập; ứng dụng không tự ghép các lần click/request không có chung context. Resource chỉ lấy ba field identity từ config, tắt auto-detection để không capture command-line/environment tùy ý. Tám runtime là Gateway, Auth, Course, Enrollment, Submission, Grading, Notification và Storage Mock có `service.name=submission-storage`; storage không trở thành RCA service candidate.
+Baseline dùng `AlwaysOnSampler` (100%), kể cả caller gửi sampled flag `00`, và W3C Trace Context. Caller cần truyền cùng synthetic parent nếu muốn liên kết nhiều HTTP action độc lập; ứng dụng không tự ghép các lần click/request không có chung context. Resource chỉ lấy ba field identity từ config, tắt auto-detection để không capture command-line/environment tùy ý. 12 runtime là `gateway`, `auth`, `student`, `course`, `media`, `media-worker`, `notification`, `notification-worker`, `scheduler`, `scheduler-worker`, `ai` và `ai-worker`; hạ tầng (PostgreSQL, RabbitMQ, MinIO, SMTP, provider LLM) không có `service.name` riêng và không là RCA service candidate.
 
 HTTP server span dùng route template hoặc `unmatched`, không raw path/query/header/payload. `finish` kết thúc với HTTP status thật; `close`/request `aborted` trước finish đặt `ERROR`, `error.type=client_aborted` và không giả status 200. Synchronous exception được rethrow nguyên trạng cho caller nhưng span chỉ giữ exception event đã làm sạch. Một span được kết thúc tối đa một lần và listener được tháo; metric status class cho request chưa hoàn tất là `client_aborted`/`exception`, không giả 5xx.
 
-HTTP client manual span giữ `dependency_identity`, operation, method, HTTP response status khi đã nhận được và `peer.service` theo mapping topology cố định. Gateway client name là `<dependency_identity> <method>`; các wrapper còn lại dùng dependency/operation. Không ghi raw URL chứa object/course/user ID. PostgreSQL/Redis span có system/operation và dependency identity; không SQL statement/parameters. Auth PostgreSQL phân biệt timeout (`57014`/`ETIMEDOUT`) với unavailable ở span, không đổi lỗi trả business caller.
+Lời gọi dependency (HTTP nội bộ, PostgreSQL, MinIO, SMTP, provider LLM) đi qua `observeDependency` của `@aiops-lms/common`: span CLIENT tên `<dependency_identity> <operation>` mang `dependency_identity`, `operation_name`, `error.type` khi lỗi, và ba metric `lms.dependency.*`. Với HTTP, `peer.service` lấy từ bảng cạnh cố định `<service.name bên gọi>-<service.name bên nhận>` trong `http-client-span-attributes.ts` (topology v2). Không ghi raw URL chứa object/course/user ID, SQL statement hay payload.
 
-Timeout/unavailable có span `ERROR` và bounded `error.type`; HTTP 4xx nghiệp vụ không tự thành lỗi dependency. RabbitMQ giữ publish producer → receive consumer → process internal cùng trace, với message/event identity theo schema và không payload. Error exception event không chứa raw message/stack. Background retry không có context gốc tạo root publish trace mới, cùng event ID để fallback correlation; không bịa parent hay khẳng định nó vẫn nối trace request cũ.
+Timeout/unavailable có span `ERROR` và bounded `error.type`; HTTP 4xx nghiệp vụ không tự thành lỗi dependency. Command bất đồng bộ giữ một trace với request gây ra nó: lúc enqueue outbox ghi `traceparent` vào envelope; span PRODUCER `lms.commands publish <command>` dùng `traceparent` đó làm parent khi relay chạy ngoài request (không có span hoạt động) và tiêm context vào header AMQP; span CONSUMER `<queue> process` lấy parent từ header. Span PRODUCER mang `dependency_identity=<service.name của process phát>-rabbitmq` nên có thể thuộc process khác với service ghi command (relay claim chung bảng outbox). Error exception event không chứa raw message/stack. Đây là hành vi đã kiểm bằng `tracing-smoke` (luồng thông báo hàng loạt, job AI, thumbnail).
 
 `TelemetryStartOptions.traceExporter` là hook tùy chọn cho test/exporter; nếu không truyền `spanProcessor`, bootstrap bọc exporter bằng default `BatchSpanProcessor` và `forceFlush()` chờ processor thật hoàn tất. `spanProcessor` truyền tường minh giữ ưu tiên cũ. `shutdown()` chỉ chạy một lần. Đã có test pending batch chưa export, gọi flush rồi thấy span ở exporter trước shutdown; test lifecycle gồm socket HTTP thật bị ngắt.
 
-Nghiệm thu trên **application container thật** đã build/healthy bằng Compose, không thay bằng nhiều app trong một test process:
-
-```bash
-cd lms
-pnpm run test:observability:tracing -- --environment test --project aiops-lms-test-regression --confirm aiops-lms-test-regression --compose-env-file ../docker-compose/.env.example
-```
-
-Script xác nhận đúng project test/host ports, tạo khóa học và dữ liệu test riêng, chạy login/course/enroll/submit/grade, query Tempo theo trace ID và từng service, kiểm tra parent chain tám runtime cùng DB/Redis/storage/RabbitMQ. Nó chạy hai lỗi storage timeout/unavailable và khôi phục fault state trong `finally`; không chạy đồng thời workload/fault test khác trên cùng project. Không reset volume hoặc tự restart service. Mỗi request tối đa 15 giây, mỗi poll backend tối đa 90 giây. CI chạy bước này sau regression khi stack project test vẫn sẵn sàng. Output chỉ chứa trace IDs, service names và số span, không token/password/payload.
+Nghiệm thu trên **application container thật** bằng `pnpm run test:observability` (xem [docker-compose/README.md](../../../docker-compose/README.md#smoke-observability)): `tracing-smoke` kiểm mỗi luồng v2 có một trace chứa đủ service, đúng span gốc, không đứt parent, cùng kịch bản lỗi nhiều bước khi `auth` ngừng phản hồi.
 
 Khi không bật metrics hoặc không truyền metric reader, bootstrap truyền `metricReaders: []` tường minh để NodeSDK không tự tạo OTLP reader từ môi trường. Regression test ghi counter và quan sát HTTP exporter endpoint mock, chứng minh shutdown không phát metrics ngoài opt-in; tránh shutdown chờ mạng trong process chỉ dùng tracing.
 
-## Metrics baseline W10
+## Metrics
 
-Tám runtime bật metrics và gửi OTLP HTTP qua Collector mỗi 5 giây. `otlpMetricsEndpoint`/`OTEL_EXPORTER_OTLP_METRICS_ENDPOINT` là override tùy chọn; khi bỏ trống, đổi hậu tố `/v1/traces` sang `/v1/metrics` và giữ proxy path prefix. `metricExportIntervalMillis`/`OTEL_METRIC_EXPORT_INTERVAL` nhận 1000–60000 ms, mặc định 5000; SDK export timeout tối đa 3000 ms. Khi metrics disabled, danh sách reader rỗng tường minh, không export ngầm. Request path không await exporter/network; outage có thể mất dữ liệu nhưng không làm business request fail.
+12 runtime bật metrics và gửi OTLP HTTP qua Collector mỗi 5 giây. `otlpMetricsEndpoint`/`OTEL_EXPORTER_OTLP_METRICS_ENDPOINT` là override tùy chọn; khi bỏ trống, đổi hậu tố `/v1/traces` sang `/v1/metrics` và giữ proxy path prefix. `metricExportIntervalMillis`/`OTEL_METRIC_EXPORT_INTERVAL` nhận 1000–60000 ms, mặc định 5000; SDK export timeout tối đa 3000 ms. Khi metrics disabled, danh sách reader rỗng tường minh, không export ngầm. Request path không await exporter/network; outage có thể mất dữ liệu nhưng không làm business request fail.
 
-| Metric SDK                                                                                                    | Prometheus                                                                  | Ý nghĩa và label chính                                                           |
-| ------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
-| `http.server.request.count`                                                                                   | `http_server_request_count_total`                                           | RED throughput; `http_method`, `http_route_template`, `http_status_class`        |
-| `http.server.request.error.count`                                                                             | `http_server_request_error_count_total`                                     | HTTP 5xx hoặc request interrupted/exception                                      |
-| `http.server.request.duration`                                                                                | `http_server_request_duration_seconds_bucket/_sum/_count`                   | Latency seconds, route template và method/status                                 |
-| `<service>.dependency.request/error.count`, `<service>.dependency.duration`                                   | Tên chuẩn hóa dấu chấm → gạch dưới, counter `_total`, duration `_seconds_*` | `dependency_identity`, `operation_name`, bounded `status`                        |
-| `grading.messaging.publish.count/error.count/duration`                                                        | `grading_messaging_publish_*`                                               | Broker publish/confirm latency/error theo exchange/routing key cấu hình ổn định  |
-| `grading.messaging.retry.count`                                                                               | `grading_messaging_retry_count_total`                                       | Số lần worker thử publish pending; không gồm lần publish request đầu             |
-| `grading.messaging.pending.count`                                                                             | `grading_messaging_pending_count`                                           | Outbox pending được worker quan sát, không phải broker queue depth               |
-| `notification.rabbitmq.consume.count/error.count/duration`, `notification.process.count/error.count/duration` | `notification_rabbitmq_consume_*`, `notification_process_*`                 | Consumer/process accepted/duplicate/rejected/unavailable                         |
-| Broker detailed queue messages/ready/unacked                                                                  | `rabbitmq_detailed_queue_messages`, `_ready`, `_unacked`                    | Backlog thật của queue Notification, `dependency_identity=notification-rabbitmq` |
-| `process.cpu.time`                                                                                            | `process_cpu_time_seconds_total`                                            | CPU user+system cumulative seconds của từng application process                  |
-| `process.memory.usage`                                                                                        | `process_memory_usage_bytes`                                                | RSS bytes của từng application process                                           |
+| Metric SDK                                                                                 | Prometheus                                                                                                    | Ý nghĩa và label chính                                                                                                                                                                                                                                  |
+| ------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `http.server.request.count`                                                                | `http_server_request_count_total`                                                                             | RED throughput; `http_method`, `http_route_template`, `http_status_class`                                                                                                                                                                               |
+| `http.server.request.error.count`                                                          | `http_server_request_error_count_total`                                                                       | HTTP 5xx hoặc request interrupted/exception                                                                                                                                                                                                             |
+| `http.server.request.duration`                                                             | `http_server_request_duration_seconds_bucket/_sum/_count`                                                     | Latency seconds, route template và method/status                                                                                                                                                                                                        |
+| `lms.dependency.request.count`, `lms.dependency.error.count`, `lms.dependency.duration`    | `lms_dependency_request_count_total`, `lms_dependency_error_count_total`, `lms_dependency_duration_seconds_*` | Lời gọi dependency; `dependency_identity`, `operation_name`, bounded `status` (`ok`, `timeout`, `unavailable`, `expected_failure`)                                                                                                                      |
+| Broker detailed queue messages/ready/unacked, consumers (từ Collector, không phải runtime) | `rabbitmq_detailed_queue_messages`, `_ready`, `_unacked`, `rabbitmq_detailed_queue_consumers`                 | Backlog và consumer của mọi queue canonical v2; `service_name` là worker tiêu thụ, `dependency_identity=<worker>-rabbitmq`, nhãn `queue`; chi tiết ở [observability README](../../../aiops-platform/observability/README.md#metric-hàng-đợi-của-broker) |
+| `process.cpu.time`                                                                         | `process_cpu_time_seconds_total`                                                                              | CPU user+system cumulative seconds của từng application process                                                                                                                                                                                         |
+| `process.memory.usage`                                                                     | `process_memory_usage_bytes`                                                                                  | RSS bytes của từng application process                                                                                                                                                                                                                  |
 
 SDK views áp allowlist attribute cho mọi loại instrument: HTTP method/template/status class, dependency/operation/status, exchange/routing key. Mỗi instrument giới hạn 512 combination; overflow không chứa ID gốc. Correlation/user/event/run/fault/truth/raw URL bị loại trước export; không chỉ kiểm source code. HTTP method không chuẩn → `_OTHER`, matched route dùng template, 404 không match → `unmatched`. Resource export chỉ ba identity thành `service_name`, `service_version`, `service_instance_id`; Prometheus thêm `job`, `instance`, `otel_scope_*` và histogram `le` bounded. Không dùng experiment/run ID làm label.
 
 Mọi duration histogram hiện có unit seconds dùng 11 biên `[0.005,0.01,0.025,0.05,0.1,0.25,0.5,1,2.5,5,10]` và `+Inf`. Biên phủ request nhanh đến dependency timeout 3 giây/Gateway 5 giây; bucket 10 giây giữ tail, đơn vị không đổi. Một view duy nhất cho mỗi instrument type tránh stream/histogram trùng. Process CPU là nguồn canonical ứng dụng; không cộng thêm container CPU tránh double count. CPU rate: `sum by(service_name)(rate(process_cpu_time_seconds_total[1m]))`; RSS: `process_memory_usage_bytes`.
 
-Image RabbitMQ 4.1.4 management đã bật `rabbitmq_prometheus`; Collector scrape nội bộ port 15692 `/metrics/detailed?family=queue_coarse_metrics&vhost=/&queue=notification.grade-completed.v1`. Chỉ giữ ba gauge depth, exact queue/vhost canonical rồi bỏ label `queue`/`vhost`; map ownership về service Notification (`service_name=notification`), dependency `notification-rabbitmq`. Broker exporter không có version/instance của runtime Notification nên series broker **không** có `service_version`/`service_instance_id` (kể cả `service.instance.id` mà prometheus receiver tự gán) theo telemetry schema §5.1: hai field này nullable, không tạo dữ liệu giả. Phân biệt series broker với process ứng dụng bằng tên metric `rabbitmq_*` cùng `dependency_identity=notification-rabbitmq`. Pipeline broker lọc bỏ các series `up`/`scrape_*` mà prometheus receiver tự sinh, để `service_name="notification"` không mang tín hiệu sức khỏe scrape broker như của runtime Notification. Metrics smoke kiểm mọi series có `service_name` của business service: series ứng dụng phải khớp version/instance trong catalogue Compose, series broker phải để trống hai field này. Không thêm public port. Nếu đổi queue khỏi canonical, mapping này phải cập nhật trước nghiệm thu; thiếu series là unavailable, không mặc định queue 0. Consumer lag theo thời gian, broker retry count, network/disk I/O và connection pool usage chưa instrument; pending + retry attempt + processing duration + backlog là signal thực hiện có.
+Image RabbitMQ 4.1.4 management đã bật `rabbitmq_prometheus`; Collector scrape metric hàng đợi, cấu hình và quy tắc nhãn ở [aiops-platform/observability/README.md](../../../aiops-platform/observability/README.md#metric-hàng-đợi-của-broker). Runtime LMS chưa có metric publish/consume RabbitMQ hay độ trễ outbox: chỉ có span PRODUCER/CONSUMER và metric broker.
 
 Query mẫu (không thêm `or vector(0)` để che missing):
 
@@ -71,29 +60,19 @@ Query mẫu (không thêm `or vector(0)` để che missing):
 sum by(service_name)(rate(http_server_request_count_total{http_status_class="2xx"}[1m]))
 sum by(service_name)(increase(http_server_request_error_count_total{http_status_class="5xx"}[1m]))
 histogram_quantile(0.95,sum by(service_name,le)(rate(http_server_request_duration_seconds_bucket[1m])))
-sum by(service_name,dependency_identity,status)(increase(submission_dependency_error_count_total{status=~"timeout|unavailable"}[1m]))
-rabbitmq_detailed_queue_messages{dependency_identity="notification-rabbitmq"}
-grading_messaging_pending_count
+sum by(service_name,dependency_identity,status)(increase(lms_dependency_request_count_total{status=~"timeout|unavailable"}[1m]))
+rabbitmq_detailed_queue_messages_ready{service_name="notification-worker"}
 ```
 
-Tên outbox đúng để query là `grading_messaging_pending_count` (khác broker backlog). Healthy không có error series cho tới lỗi đầu là absence/no error, không tự khẳng định exporter khỏe; dùng request series/CPU/target freshness để đánh giá coverage.
+Healthy không có error series cho tới lỗi đầu là absence/no error, không tự khẳng định exporter khỏe; dùng request series/CPU/target freshness để đánh giá coverage.
 
-Nghiệm thu dữ liệu thật sau build/healthy trong project test cô lập:
-
-```bash
-cd lms
-pnpm run test:observability:metrics -- --environment test --project aiops-lms-test-regression --confirm aiops-lms-test-regression --compose-env-file ../docker-compose/.env.example
-```
-
-Script xác minh project/port ownership, chạy một tracing workflow warmup, đợi đủ chu kỳ export 5s + batch 1s + scrape 5s và kiểm timestamp sample mới, rồi ghi baseline counters trước tracing workflow thật để đo delta và đợi delta healthy/5xx/timeout/unavailable mới, kiểm metrics 8 service/resource/CPU/RSS/buckets/p95 và label privacy. Nó warmup 404 template rồi gọi 10 ID khác và so tập series không tăng. Sau đó stop Notification, publish 4 fixture event hợp lệ vào broker, chứng minh queue >= 4 rồi start consumer và đợi queue hiện tại = 0. Cuối cùng stop Collector, gửi business request thành công và start Collector/export recover; sau đó kiểm resource identity của mọi series business service (ứng dụng khớp catalogue, broker không có version/instance). Mọi stop có restore trong `finally`; test không chạy chung fault workload khác. Poll 90 giây mỗi điều kiện, request 15 giây; baseline queue phải có series thật và rỗng trước test. Script không log credential/token/payload.
+Nghiệm thu: `metrics-smoke` (trong `pnpm run test:observability`) kiểm RED, CPU, RSS của 12 runtime, 42 cạnh dependency đúng danh mục identity, 24 queue broker đúng chủ sở hữu và consumer, cùng kịch bản dừng một worker (backlog tăng, command lỗi vào `.error`, drain), và label không chứa ID.
 
 HTTP exporter traces/metrics dùng DNS c-ares riêng (A/AAAA, timeout 750 ms, một lần thử), tránh `dns.lookup` chiếm libuv thread pool khiến PostgreSQL không mở được kết nối khi Collector ngừng chạy. Mỗi exporter giới hạn một request/socket, timeout 1 giây; batch traces timeout 2 giây. Agent vẫn giữ TLS/SNI mặc định của endpoint HTTPS. Literal IPv4/IPv6 và localhost hoạt động trực tiếp; hostname khác phải có DNS record (bao gồm Docker DNS), alias chỉ khai báo trong hosts file không được hỗ trợ cho endpoint telemetry. Cách phân giải DNS của business dependency giữ nguyên.
 
-Outage acceptance xóa đúng cache key `course:v1:item:course-001`, chờ 12 giây để kết nối PG idle 10 giây đóng, rồi ngừng Collector và yêu cầu GET course trả 200. Điều này kiểm cả kết nối DB mới, tránh cache/pool đã nóng che lỗi DNS exporter. Khi HTTP thất bại, diagnostic chỉ ghi status, elapsed và error code, không ghi token, body hay URL thô.
+## Structured logs
 
-## Structured logs W10
-
-Tám runtime ghi log qua `StructuredLogger`, logger tương thích `LoggerService` của NestJS được truyền vào `NestFactory.create`. Mọi log của Nest, kể cả `new Logger(context)`, và log chủ động của package đều đi qua `emitStructuredLog`. Mỗi lần gọi ghi một dòng JSON ra stdout và một OTel log record gửi qua Collector tới Loki.
+12 runtime ghi log qua `StructuredLogger`, logger tương thích `LoggerService` của NestJS được truyền vào `NestFactory.create`. Mọi log của Nest, kể cả `new Logger(context)`, và log chủ động của package đều đi qua `emitStructuredLog`. Mỗi lần gọi ghi một dòng JSON ra stdout và một OTel log record gửi qua Collector tới Loki.
 
 | Field stdout                                             | Ý nghĩa                                                                                                                                                          |
 | -------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -118,9 +97,9 @@ Log chẩn đoán được ghi ở các điểm dùng chung, không rải theo t
 - `createHttpTelemetryMiddleware` ghi đúng một log cho mỗi request, trong context của server span, kèm `http_method`, `http_route` (template hoặc `unmatched`), `http_status_code` và `duration_ms`:
   - `ERROR` `event=http.server.error` cho HTTP 5xx, `client_aborted` và exception, thêm `error_type`.
   - Access log `event=http.server.request` cho request còn lại: `INFO` với 1xx–3xx, `WARN` với 4xx. HTTP 4xx nghiệp vụ không bị coi là lỗi.
-  - Access log bỏ qua route `/health` để probe của Docker (5 giây/lần) không làm nhiễu log; lỗi 5xx của `/health` vẫn được ghi. Option `accessLog: { enabled, ignoreRoutes }` đổi hành vi này; tám runtime đọc `HTTP_ACCESS_LOG_ENABLED` (mặc định `true`) để tắt access log khi cần giảm volume mà không mất log lỗi.
-- `logDependencyFailure(span, ...)` ghi `ERROR` `event=dependency.failure` với `dependency_identity`, `operation_name`, `error_type` (`timeout`/`unavailable`) trong context của client span lỗi. Hàm này được gọi từ `dependency-telemetry.ts` của Course/Enrollment/Submission/Grading, publish RabbitMQ của Grading, Gateway proxy và repository PostgreSQL của Auth. Conflict nghiệp vụ không ghi lỗi.
-- Notification ghi kết quả xử lý `grade.completed` (`outcome`, `event_id`) và lỗi consume/connect qua cùng logger.
+  - Access log bỏ qua route `/health` để probe của Docker (5 giây/lần) không làm nhiễu log; lỗi 5xx của `/health` vẫn được ghi. Option `accessLog: { enabled, ignoreRoutes }` đổi hành vi này; các runtime HTTP đọc `HTTP_ACCESS_LOG_ENABLED` (mặc định `true`) để tắt access log khi cần giảm volume mà không mất log lỗi.
+- `logDependencyFailure(span, ...)` ghi `ERROR` `event=dependency.failure` với `dependency_identity`, `operation_name`, `error_type` (`timeout`/`unavailable`) trong context của client span lỗi. Hàm này được gọi từ `observeDependency` (mọi dependency v2) và Gateway proxy. Conflict nghiệp vụ không ghi log này.
+- Worker xử lý command chưa có log riêng (chỉ access log `/ready`); lỗi xử lý thấy ở span CONSUMER và `dependency.failure`.
 
 `startTelemetry(config, { logsEnabled: true })` dựng `BatchLogRecordProcessor` với OTLP HTTP exporter dùng chung transport (DNS c-ares, timeout 1 giây, một socket), export timeout 2 giây, và đưa processor vào `forceFlush()`/`shutdown()`. Endpoint là `otlpLogsEndpoint`/`OTEL_EXPORTER_OTLP_LOGS_ENDPOINT`; khi bỏ trống thì đổi hậu tố `/v1/traces` sang `/v1/logs`, giữ proxy prefix. Khi không bật logs, bootstrap truyền `logRecordProcessors: []` để NodeSDK không tự dựng OTLP log exporter tới `localhost:4318`. Export chạy nền, queue tối đa 2048 record rồi bỏ; Collector ngừng chạy có thể làm mất log nhưng không làm hỏng request. Shutdown đóng app trước rồi mới flush telemetry.
 
@@ -128,23 +107,9 @@ Loki chỉ index `service_name`; `service_version`, `service_instance_id`, `trac
 
 ```logql
 {service_name="gateway"} | trace_id="<trace-id>"
-{service_name=~"gateway|submission"} | event="dependency.failure" | error_type="timeout"
-{service_name="notification"} | event="grade.completed" | outcome!="accepted"
+{service_name=~"gateway|course|media"} | event="dependency.failure" | error_type="timeout"
 {service_name="gateway"} | event="http.server.request" | duration_ms > 500
 sum by (service_name) (count_over_time({service_name=~".+"} | severity_text="ERROR" [1m]))
 ```
 
-Nghiệm thu dữ liệu thật sau khi Compose healthy trong project test cô lập:
-
-```bash
-cd lms
-pnpm run test:observability:logs -- --environment test --project aiops-lms-test-regression --confirm aiops-lms-test-regression --compose-env-file ../docker-compose/.env.example
-```
-
-Script chạy tracing smoke để có một workflow healthy và hai lỗi storage timeout/unavailable. Với mỗi trace lỗi, script query `{service_name="gateway"}` và `{service_name="submission"}` rồi lọc `trace_id`, yêu cầu có `dependency.failure` (`gateway-submission`/`submission-storage`, đúng `error_type`) và `http.server.error` (504/503). Với trace healthy, script yêu cầu Notification có `grade.completed` `outcome=accepted` và mọi runtime HTTP còn lại có access log `INFO`. Mọi log trả về phải có `trace_id` khớp và `span_id` thuộc chính trace đó trong Tempo. Script cũng kiểm:
-
-- Loki chỉ có label `service_name`.
-- Access log có `duration_ms`, status 1xx–4xx và không có `/health`.
-- Toàn bộ log trong cửa sổ test và stdout không chứa token, password hoặc email test.
-- Mọi dòng stdout của Gateway, Submission và Notification là JSON hợp lệ, có timestamp UTC và identity khớp Compose.
-- Log startup ngoài trace context không có `trace_id`.
+Nghiệm thu: `logs-smoke` (trong `pnpm run test:observability`) kiểm Loki chỉ có label `service_name`, 12 runtime có log, `trace_id`/`span_id` khớp span thật trong Tempo, log `dependency.failure` khớp span lỗi cùng service, không lộ secret trong log và đo độ trễ request → log.

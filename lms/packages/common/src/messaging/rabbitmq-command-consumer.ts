@@ -124,7 +124,7 @@ export class RabbitMqCommandConsumer {
           'messaging.system': 'rabbitmq',
           'messaging.destination.name': this.options.queue,
           'messaging.operation.type': 'process',
-          dependency_identity: 'rabbitmq',
+          dependency_identity: this.publisher.dependencyIdentity,
           operation_name: 'consume',
           'messaging.message.id': envelope.message_id,
         },

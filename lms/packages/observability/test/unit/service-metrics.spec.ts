@@ -44,7 +44,7 @@ it('exports bounded attributes, exact second buckets and real CPU/RSS while dyna
     );
     response.emit('finish');
     metrics.getMeter('metric-privacy-test').createCounter('test.bounded.count').add(1, {
-      dependency_identity: 'submission-storage',
+      dependency_identity: 'media-minio',
       operation_name: 'get',
       trace_id: 'secret-trace',
       span_id: 'secret-span',

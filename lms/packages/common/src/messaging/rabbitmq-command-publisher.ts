@@ -1,4 +1,12 @@
-import { context, propagation, SpanKind, SpanStatusCode, trace } from '@opentelemetry/api';
+import {
+  context,
+  propagation,
+  ROOT_CONTEXT,
+  SpanKind,
+  SpanStatusCode,
+  trace,
+  type Context,
+} from '@opentelemetry/api';
 
 import { AppError } from '../errors/index.js';
 import { COMMAND_EXCHANGE, type CommandEnvelope } from './command-envelope.js';
@@ -8,6 +16,8 @@ const tracer = trace.getTracer('@aiops-lms/common');
 
 export interface CommandPublisherOptions {
   confirmTimeoutMs: number;
+  /** Định danh dependency canonical `<service.name>-rabbitmq` của process phát/nhận command. */
+  dependencyIdentity: string;
 }
 
 /** Phát command ra exchange `lms.commands`; trace context đi trong header của message. */
@@ -19,20 +29,44 @@ export class RabbitMqCommandPublisher {
     private readonly options: CommandPublisherOptions,
   ) {}
 
-  async publish(routingKey: string, envelope: CommandEnvelope, attempt = 0): Promise<void> {
-    const span = tracer.startSpan(`${COMMAND_EXCHANGE} publish ${envelope.command_name}`, {
-      kind: SpanKind.PRODUCER,
-      attributes: {
-        'messaging.system': 'rabbitmq',
-        'messaging.destination.name': COMMAND_EXCHANGE,
-        'messaging.rabbitmq.destination.routing_key': routingKey,
-        'messaging.operation.type': 'publish',
-        dependency_identity: 'rabbitmq',
-        operation_name: 'publish',
-      },
+  /** Consumer dùng chung định danh này cho span xử lý command của cùng process. */
+  get dependencyIdentity(): string {
+    return this.options.dependencyIdentity;
+  }
+
+  /**
+   * Relay outbox chạy ngoài request nên không có span đang hoạt động: khi đó span publish nối vào trace
+   * của request đã ghi command (`correlation.traceparent`), nếu không mọi chuỗi bất đồng bộ sẽ là trace
+   * riêng. Đang trong một span (ví dụ publish lại từ consumer) thì giữ nguyên context hiện tại.
+   */
+  private parentContext(envelope: CommandEnvelope): Context {
+    const { traceparent, tracestate } = envelope.correlation;
+    if (!traceparent || trace.getSpan(context.active())) return context.active();
+    return propagation.extract(ROOT_CONTEXT, {
+      traceparent,
+      ...(tracestate ? { tracestate } : {}),
     });
+  }
+
+  async publish(routingKey: string, envelope: CommandEnvelope, attempt = 0): Promise<void> {
+    const parent = this.parentContext(envelope);
+    const span = tracer.startSpan(
+      `${COMMAND_EXCHANGE} publish ${envelope.command_name}`,
+      {
+        kind: SpanKind.PRODUCER,
+        attributes: {
+          'messaging.system': 'rabbitmq',
+          'messaging.destination.name': COMMAND_EXCHANGE,
+          'messaging.rabbitmq.destination.routing_key': routingKey,
+          'messaging.operation.type': 'publish',
+          dependency_identity: this.options.dependencyIdentity,
+          operation_name: 'publish',
+        },
+      },
+      parent,
+    );
     try {
-      await context.with(trace.setSpan(context.active(), span), async () => {
+      await context.with(trace.setSpan(parent, span), async () => {
         const headers: Record<string, string | number> = { 'x-attempt': attempt };
         const carrier: Record<string, string> = {};
         propagation.inject(context.active(), carrier);

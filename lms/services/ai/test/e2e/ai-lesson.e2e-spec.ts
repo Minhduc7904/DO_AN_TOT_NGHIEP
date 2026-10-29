@@ -256,7 +256,10 @@ describe('ai: tài liệu và job AI qua ai-worker (PostgreSQL + RabbitMQ thật
     await worker.init();
 
     session = new RabbitMqSession({ url: rabbitUrl, connectTimeoutMs: 5_000 });
-    publisher = new RabbitMqCommandPublisher(session, { confirmTimeoutMs: 5_000 });
+    publisher = new RabbitMqCommandPublisher(session, {
+      confirmTimeoutMs: 5_000,
+      dependencyIdentity: 'ai-rabbitmq',
+    });
 
     // Provider + model + binding cho cả ba tác vụ.
     const created = await request(api.getHttpServer())

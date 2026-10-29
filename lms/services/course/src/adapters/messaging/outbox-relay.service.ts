@@ -31,6 +31,7 @@ export class OutboxRelayService implements OnApplicationBootstrap, OnApplication
         url: config.getOrThrow<string>('COURSE_RABBITMQ_URL'),
         connectTimeoutMs: config.getOrThrow<number>('COURSE_RABBITMQ_CONNECT_TIMEOUT_MS'),
         confirmTimeoutMs: config.getOrThrow<number>('COURSE_RABBITMQ_CONFIRM_TIMEOUT_MS'),
+        dependencyIdentity: 'course-rabbitmq',
       },
       OutboxRelayService.name,
     );

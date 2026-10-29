@@ -143,7 +143,10 @@ describe('media + media-worker (PostgreSQL, MinIO, RabbitMQ thật)', () => {
       url: process.env['MEDIA_RABBITMQ_URL'] as string,
       connectTimeoutMs: 5_000,
     });
-    publisher = new RabbitMqCommandPublisher(session, { confirmTimeoutMs: 3_000 });
+    publisher = new RabbitMqCommandPublisher(session, {
+      confirmTimeoutMs: 3_000,
+      dependencyIdentity: 'media-rabbitmq',
+    });
   });
 
   afterAll(async () => {

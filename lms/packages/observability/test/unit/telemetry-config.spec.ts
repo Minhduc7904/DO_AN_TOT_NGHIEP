@@ -61,7 +61,7 @@ describe('defineTelemetryConfig', () => {
       'metricExportIntervalMillis',
     );
   });
-  it.each(['submission-storage-mock', 'gateway-container', 'not-a-service'])(
+  it.each(['submission-storage-mock', 'enrollment', 'admin', 'gateway-container', 'not-a-service'])(
     'rejects a container name or unknown resource identity: %s',
     (serviceName) => {
       expect(() => defineTelemetryConfig({ ...validConfig, serviceName })).toThrow(
