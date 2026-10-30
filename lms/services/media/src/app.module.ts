@@ -102,10 +102,10 @@ const INFRASTRUCTURE: Provider[] = [
     provide: SERVICE_AUTH,
     useFactory: (config: Config) =>
       createHttpServiceAuth(MEDIA_SERVICE_NAME, {
-        baseUrl: config.getOrThrow('AUTH_BASE_URL'),
-        timeoutMs: config.getOrThrow('AUTH_JWKS_TIMEOUT_MS'),
-        cacheTtlMs: config.getOrThrow('AUTH_JWKS_CACHE_TTL_MS'),
-        minRefetchIntervalMs: config.getOrThrow('AUTH_JWKS_MIN_REFETCH_MS'),
+        baseUrl: config.getOrThrow('IDENTITY_BASE_URL'),
+        timeoutMs: config.getOrThrow('IDENTITY_JWKS_TIMEOUT_MS'),
+        cacheTtlMs: config.getOrThrow('IDENTITY_JWKS_CACHE_TTL_MS'),
+        minRefetchIntervalMs: config.getOrThrow('IDENTITY_JWKS_MIN_REFETCH_MS'),
       }),
     inject: [ConfigService],
   },
@@ -114,14 +114,14 @@ const INFRASTRUCTURE: Provider[] = [
     useFactory: (config: Config): TokenProvider =>
       new ServiceTokenProvider(
         new HttpServiceTokenSource({
-          dependency: 'media-auth-token',
-          baseUrl: config.getOrThrow('AUTH_BASE_URL'),
+          dependency: 'media-identity-token',
+          baseUrl: config.getOrThrow('IDENTITY_BASE_URL'),
           clientId: config.getOrThrow('SERVICE_CLIENT_ID'),
           clientSecret: config.getOrThrow('SERVICE_CLIENT_SECRET'),
-          timeoutMs: config.getOrThrow('AUTH_TOKEN_TIMEOUT_MS'),
+          timeoutMs: config.getOrThrow('IDENTITY_TOKEN_TIMEOUT_MS'),
           breaker: {
-            failureThreshold: config.getOrThrow('AUTH_TOKEN_BREAKER_THRESHOLD'),
-            cooldownMs: config.getOrThrow('AUTH_TOKEN_BREAKER_COOLDOWN_MS'),
+            failureThreshold: config.getOrThrow('IDENTITY_TOKEN_BREAKER_THRESHOLD'),
+            cooldownMs: config.getOrThrow('IDENTITY_TOKEN_BREAKER_COOLDOWN_MS'),
           },
         }),
       ),

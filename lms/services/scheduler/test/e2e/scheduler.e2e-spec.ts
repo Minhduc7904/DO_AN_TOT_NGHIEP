@@ -147,7 +147,7 @@ describe('scheduler + scheduler-worker (PostgreSQL thật, media giả bằng HT
     Object.assign(process.env, {
       OTEL_SDK_DISABLED: 'true',
       HTTP_ACCESS_LOG_ENABLED: 'false',
-      AUTH_BASE_URL: stubUrl,
+      IDENTITY_BASE_URL: stubUrl,
       SCHEDULER_MEDIA_BASE_URL: stubUrl,
       SCHEDULER_MEDIA_TIMEOUT_MS: '3000',
       SCHEDULER_MEDIA_BREAKER_THRESHOLD: '100',

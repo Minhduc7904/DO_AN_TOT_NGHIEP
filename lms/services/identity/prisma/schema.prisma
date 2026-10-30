@@ -1,0 +1,91 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/adapters/persistence/generated"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum AccountRole {
+  STUDENT    @map("student")
+  INSTRUCTOR @map("instructor")
+  ADMIN      @map("admin")
+
+  @@map("identity_role")
+}
+
+enum AccountStatus {
+  ACTIVE
+  DISABLED
+
+  @@map("identity_account_status")
+}
+
+enum StudentStatus {
+  ACTIVE
+  INACTIVE
+  BLOCKED
+
+  @@map("identity_student_status")
+}
+
+/// Tài khoản đăng nhập của cả ba role. `id` là `sub` của JWT; email và họ tên chỉ lưu ở đây.
+model User {
+  id           String        @id @db.Uuid
+  email        String        @unique
+  passwordHash String        @map("password_hash")
+  fullName     String        @map("full_name")
+  role         AccountRole
+  status       AccountStatus @default(ACTIVE)
+  createdAt    DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  refreshTokens  RefreshToken[]
+  studentProfile StudentProfile?
+
+  @@index([role, createdAt])
+  @@map("identity_users")
+}
+
+/// Thông tin riêng của student, gắn 1-1 với tài khoản role `student` (khóa chính cũng là khóa ngoại).
+model StudentProfile {
+  userId    String        @id @map("user_id") @db.Uuid
+  status    StudentStatus @default(ACTIVE)
+  createdAt DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([status, createdAt])
+  @@map("identity_student_profiles")
+}
+
+/// Refresh token chỉ lưu dạng băm; mỗi lần refresh xóa token cũ và cấp token mới.
+model RefreshToken {
+  id        String   @id @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  tokenHash String   @unique @map("token_hash")
+  expiresAt DateTime @map("expires_at") @db.Timestamptz(6)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("identity_refresh_tokens")
+}
+
+/// Client xác thực dịch vụ (client-credentials, ADR-004). Secret chỉ lưu dạng băm scrypt;
+/// `allowed_audiences` là các service được xin token, `allowed_scopes` là quyền tối đa.
+model ServiceClient {
+  clientId         String   @id @map("client_id")
+  secretHash       String   @map("secret_hash")
+  allowedAudiences String[] @map("allowed_audiences")
+  allowedScopes    String[] @map("allowed_scopes")
+  active           Boolean  @default(true)
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@map("identity_service_clients")
+}

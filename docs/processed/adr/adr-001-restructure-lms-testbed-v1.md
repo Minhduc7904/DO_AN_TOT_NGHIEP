@@ -8,6 +8,8 @@
 | Thay thế | Phần topology 8 runtime trong [service-catalogue-and-topology-v1](../architecture/service-catalogue-and-topology-v1.md) |
 | Nguồn tham chiếu | Repo mẫu .NET `intern_be/ducnm3` (chỉ dùng làm đặc tả nghiệp vụ) |
 
+_Cập nhật 30/10/2026 ([ADR-005](adr-005-merge-auth-student-into-identity-v1.md)): `auth` và `student` gộp thành service `identity`; quyết định 1 và 5 và phương án "Gộp `auth` vào `student`" dưới đây phản ánh thời điểm viết, topology hiện hành là 7 service + 4 worker._
+
 ## Bối cảnh
 
 Testbed MVP (W5–W10) có 8 runtime, SQL viết tay bằng `pg`, schema tạo bằng `CREATE TABLE IF NOT EXISTS`, mỗi service dồn toàn bộ logic vào một lớp service, notification chỉ ghi log và storage là mock trong bộ nhớ. Quan sát đó chưa đủ phức tạp để tạo các case lỗi mà truy vết thủ công khó tìm ra nguyên nhân gốc (xem [ADR-002](adr-002-ai-primary-root-cause-analysis-v1.md)).

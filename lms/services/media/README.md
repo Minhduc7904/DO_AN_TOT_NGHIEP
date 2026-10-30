@@ -10,7 +10,7 @@ Route và mã lỗi: [`http-and-event-contracts-v2.md` §4.4](../../../docs/proc
 
 ```text
 src/domain/                      loại media, object key, Range, trích id media từ markdown, tiến độ job, lỗi
-src/application/ports/           repository, MediaUnitOfWork, ObjectStorage, StudentClient, ThumbnailRenderer
+src/application/ports/           repository, MediaUnitOfWork, ObjectStorage, StudentClient (HTTP sang `identity`), ThumbnailRenderer
 src/application/use-cases/       media/ usages/ jobs/ worker/ — mỗi use case một class
 src/adapters/http/{public,internal,shared}
 src/adapters/{persistence,storage,thumbnail,clients,messaging}

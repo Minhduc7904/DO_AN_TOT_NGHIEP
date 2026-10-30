@@ -63,4 +63,4 @@ node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config services
 pnpm run test:ai:e2e   # cần AI_DATABASE_URL (đã migrate, DB tạm vì e2e TRUNCATE các bảng ai_*) và RabbitMQ (AI_RABBITMQ_URL, mặc định 127.0.0.1:55672)
 ```
 
-E2E dựng HTTP stub cho provider, `auth`, `course` và `media`, chạy cả API lẫn `ai-worker` với PostgreSQL và RabbitMQ thật (hai spec chạy tuần tự vì dùng chung DB và queue).
+E2E dựng HTTP stub cho provider, `course` và `media`, chạy cả API lẫn `ai-worker` với PostgreSQL và RabbitMQ thật (hai spec chạy tuần tự vì dùng chung DB và queue).

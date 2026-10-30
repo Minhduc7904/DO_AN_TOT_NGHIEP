@@ -225,7 +225,7 @@ describe('ai: tài liệu và job AI qua ai-worker (PostgreSQL + RabbitMQ thật
 
     Object.assign(process.env, {
       OTEL_SDK_DISABLED: 'true',
-      AUTH_BASE_URL: peersUrl,
+      IDENTITY_BASE_URL: peersUrl,
       AI_ENCRYPTION_KEY: randomBytes(32).toString('base64'),
       AI_COMPLETION_TIMEOUT_MS: '5000',
       AI_RABBITMQ_URL: rabbitUrl,

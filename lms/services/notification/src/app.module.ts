@@ -57,10 +57,10 @@ const INFRASTRUCTURE: Provider[] = [
     provide: SERVICE_AUTH,
     useFactory: (config: Config) =>
       createHttpServiceAuth(NOTIFICATION_SERVICE_NAME, {
-        baseUrl: config.getOrThrow('AUTH_BASE_URL'),
-        timeoutMs: config.getOrThrow('AUTH_JWKS_TIMEOUT_MS'),
-        cacheTtlMs: config.getOrThrow('AUTH_JWKS_CACHE_TTL_MS'),
-        minRefetchIntervalMs: config.getOrThrow('AUTH_JWKS_MIN_REFETCH_MS'),
+        baseUrl: config.getOrThrow('IDENTITY_BASE_URL'),
+        timeoutMs: config.getOrThrow('IDENTITY_JWKS_TIMEOUT_MS'),
+        cacheTtlMs: config.getOrThrow('IDENTITY_JWKS_CACHE_TTL_MS'),
+        minRefetchIntervalMs: config.getOrThrow('IDENTITY_JWKS_MIN_REFETCH_MS'),
       }),
     inject: [ConfigService],
   },

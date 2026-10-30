@@ -36,7 +36,7 @@ export function toJwk(publicKey: KeyObject): Jwk {
 export function signingKeyFromPem(pem: string): SigningKey {
   const privateKey = createPrivateKey(pem);
   if (privateKey.asymmetricKeyType !== 'ed25519') {
-    throw new Error('AUTH_SIGNING_KEY_PEM phải là khóa Ed25519 (PKCS8)');
+    throw new Error('IDENTITY_SIGNING_KEY_PEM phải là khóa Ed25519 (PKCS8)');
   }
   const publicKey = createPublicKey(privateKey);
   return { kid: computeKid(publicKey), privateKey, publicKey };

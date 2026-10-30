@@ -3,7 +3,7 @@ import { randomBytes } from 'node:crypto';
 
 import { attachStack, poll } from './support/telemetry.mjs';
 
-// Log xuyên service (topology v2): log của 12 runtime vào Loki với `service_name` là index label duy nhất,
+// Log xuyên service (topology v2): log của 11 runtime vào Loki với `service_name` là index label duy nhất,
 // `trace_id`/`span_id` khớp span thật trong Tempo, log lỗi dependency khớp span lỗi, không lộ secret.
 const TAG = 'logs';
 const WINDOW_SECONDS = Number(process.env.OBSERVABILITY_WINDOW_SECONDS ?? 1800);
@@ -11,8 +11,7 @@ const stack = await attachStack(process.argv.slice(2), TAG);
 const startNs = BigInt(Math.floor(Date.now() / 1_000) - WINDOW_SECONDS) * 1_000_000_000n;
 const RUNTIMES = [
   'gateway',
-  'auth',
-  'student',
+  'identity',
   'course',
   'media',
   'media-worker',
@@ -26,7 +25,7 @@ const RUNTIMES = [
 const query = (expression, limit) => stack.loki.query(expression, { startNs, limit });
 const results = {};
 
-// 1. Chỉ `service_name` là index label; đủ 12 runtime.
+// 1. Chỉ `service_name` là index label; đủ 11 runtime.
 const labels = await fetch(`${stack.urls.loki}/loki/api/v1/labels`).then((response) =>
   response.json(),
 );
@@ -78,7 +77,7 @@ for (const { service, log } of sampled) {
   );
 }
 
-// 4. Log lỗi dependency khớp span CLIENT lỗi cùng service (kịch bản auth treo của tracing-smoke).
+// 4. Log lỗi dependency khớp span CLIENT lỗi cùng service (kịch bản identity treo của tracing-smoke).
 const failures = await query('{service_name=~".+"} | event="dependency.failure"', 20);
 assert.ok(
   failures.length > 0,

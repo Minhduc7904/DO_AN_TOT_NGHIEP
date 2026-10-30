@@ -39,7 +39,7 @@ Import collection và environment, chọn environment `LMS v2 - Local`, trỏ `W
 
 | Thư mục | Nội dung |
 | --- | --- |
-| `00` Đăng nhập tài khoản khởi tạo | Token admin và instructor từ tài khoản bootstrap của `auth` |
+| `00` Đăng nhập tài khoản khởi tạo | Token admin và instructor từ tài khoản bootstrap của `identity` |
 | `01 auth-register-login` | Đăng ký, ba cửa đăng nhập, refresh xoay vòng, phân quyền, từ chối `x-principal-*` tự khai |
 | `02 course-authoring` | Khóa học, bài học (thứ tự), quiz, xuất bản, tìm kiếm, tổng hợp, export CSV |
 | `03 enroll-and-learn` | Ghi danh, tiến độ, làm quiz và chấm điểm (1.5/3.5) |

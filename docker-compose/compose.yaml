@@ -5,8 +5,7 @@ services:
       dockerfile: services/gateway/Dockerfile
     environment:
       NODE_ENV: production
-      GATEWAY_AUTH_BASE_URL: http://auth:3001
-      GATEWAY_STUDENT_BASE_URL: http://student:3002
+      GATEWAY_IDENTITY_BASE_URL: http://identity:3001
       GATEWAY_COURSE_BASE_URL: http://course:3003
       GATEWAY_MEDIA_BASE_URL: http://media:3004
       GATEWAY_NOTIFICATION_BASE_URL: http://notification:3006
@@ -27,9 +26,7 @@ services:
     ports:
       - "${GATEWAY_PORT:-3000}:3000"
     depends_on:
-      auth:
-        condition: service_healthy
-      student:
+      identity:
         condition: service_healthy
       course:
         condition: service_healthy
@@ -58,49 +55,43 @@ services:
       - lms-network
       - aiops-net
 
-  auth:
+  identity:
     build:
       context: ../lms
-      dockerfile: services/auth/Dockerfile
+      dockerfile: services/identity/Dockerfile
     environment:
       NODE_ENV: production
-      AUTH_DATABASE_URL: "postgresql://${AUTH_POSTGRES_USER:?AUTH_POSTGRES_USER is required}:${AUTH_POSTGRES_PASSWORD:?AUTH_POSTGRES_PASSWORD is required}@postgres:5432/auth_db"
+      IDENTITY_DATABASE_URL: "postgresql://${IDENTITY_POSTGRES_USER:?IDENTITY_POSTGRES_USER is required}:${IDENTITY_POSTGRES_PASSWORD:?IDENTITY_POSTGRES_PASSWORD is required}@postgres:5432/identity_db"
       # Khóa ký Ed25519 (PKCS8 PEM, xuống dòng viết `\n`). Để trống: khóa tạm, đổi mỗi lần khởi động.
-      AUTH_SIGNING_KEY_PEM: "${AUTH_SIGNING_KEY_PEM:-}"
-      AUTH_ALLOW_EPHEMERAL_SIGNING_KEY: "${AUTH_ALLOW_EPHEMERAL_SIGNING_KEY:-true}"
-      AUTH_SERVICE_TOKEN_TTL_SECONDS: "${AUTH_SERVICE_TOKEN_TTL_SECONDS:-600}"
-      SERVICE_CLIENT_ID: auth
-      SERVICE_CLIENT_SECRET: "${AUTH_CLIENT_SECRET:-auth-client-local-only}"
-      # Registry client dịch vụ (ADR-004): gateway được gọi mọi route public; auth gọi student.
-      SERVICE_CLIENTS_BOOTSTRAP: '[{"client_id":"gateway","client_secret":"${GATEWAY_CLIENT_SECRET:-gateway-client-local-only}","audiences":["auth","student","course","media","notification","scheduler","ai"],"scopes":["gateway:proxy"]},{"client_id":"auth","client_secret":"${AUTH_CLIENT_SECRET:-auth-client-local-only}","audiences":["student"],"scopes":["student:profile:read","student:profile:write"]},{"client_id":"media","client_secret":"${MEDIA_CLIENT_SECRET:-media-client-local-only}","audiences":["student"],"scopes":["student:profile:read"]},{"client_id":"notification-worker","client_secret":"${NOTIFICATION_WORKER_CLIENT_SECRET:-notification-worker-client-local-only}","audiences":["student"],"scopes":["student:profile:read"]},{"client_id":"course","client_secret":"${COURSE_CLIENT_SECRET:-course-client-local-only}","audiences":["media","ai"],"scopes":["media:usage:read","ai:document:read","ai:document:write","ai:job:read","ai:job:write"]},{"client_id":"ai-worker","client_secret":"${AI_WORKER_CLIENT_SECRET:-ai-worker-client-local-only}","audiences":["course","media"],"scopes":["course:lesson-ai:read","course:lesson-ai:write","media:content:read"]},{"client_id":"scheduler-worker","client_secret":"${SCHEDULER_WORKER_CLIENT_SECRET:-scheduler-worker-client-local-only}","audiences":["media"],"scopes":["media:cleanup"]}]'
-      AUTH_STUDENT_BASE_URL: http://student:3002
-      AUTH_STUDENT_TIMEOUT_MS: "${AUTH_STUDENT_TIMEOUT_MS:-3000}"
-      AUTH_BOOTSTRAP_ADMIN_ID: "${AUTH_BOOTSTRAP_ADMIN_ID:-00000000-0000-4000-8000-000000000001}"
-      AUTH_BOOTSTRAP_ADMIN_EMAIL: "${AUTH_BOOTSTRAP_ADMIN_EMAIL:-admin@example.test}"
-      AUTH_BOOTSTRAP_ADMIN_PASSWORD: "${AUTH_BOOTSTRAP_ADMIN_PASSWORD:-example-password}"
-      AUTH_BOOTSTRAP_INSTRUCTOR_ID: "${AUTH_BOOTSTRAP_INSTRUCTOR_ID:-22222222-2222-4222-8222-222222222222}"
-      AUTH_BOOTSTRAP_INSTRUCTOR_EMAIL: "${AUTH_BOOTSTRAP_INSTRUCTOR_EMAIL:-instructor@example.test}"
-      AUTH_BOOTSTRAP_INSTRUCTOR_PASSWORD: "${AUTH_BOOTSTRAP_INSTRUCTOR_PASSWORD:-example-password}"
-      AUTH_BOOTSTRAP_STUDENT_ID: "${AUTH_BOOTSTRAP_STUDENT_ID:-11111111-1111-4111-8111-111111111111}"
-      AUTH_BOOTSTRAP_STUDENT_EMAIL: "${AUTH_BOOTSTRAP_STUDENT_EMAIL:-student@example.test}"
-      AUTH_BOOTSTRAP_STUDENT_PASSWORD: "${AUTH_BOOTSTRAP_STUDENT_PASSWORD:-example-password}"
-      AUTH_JWT_TTL_SECONDS: "${AUTH_JWT_TTL_SECONDS:-3600}"
-      AUTH_REFRESH_TTL_SECONDS: "${AUTH_REFRESH_TTL_SECONDS:-86400}"
+      IDENTITY_SIGNING_KEY_PEM: "${IDENTITY_SIGNING_KEY_PEM:-}"
+      IDENTITY_ALLOW_EPHEMERAL_SIGNING_KEY: "${IDENTITY_ALLOW_EPHEMERAL_SIGNING_KEY:-true}"
+      IDENTITY_SERVICE_TOKEN_TTL_SECONDS: "${IDENTITY_SERVICE_TOKEN_TTL_SECONDS:-600}"
+      # Registry client dịch vụ (ADR-004): gateway được gọi mọi route public; media và notification-worker đọc hồ sơ student.
+      SERVICE_CLIENTS_BOOTSTRAP: '[{"client_id":"gateway","client_secret":"${GATEWAY_CLIENT_SECRET:-gateway-client-local-only}","audiences":["identity","course","media","notification","scheduler","ai"],"scopes":["gateway:proxy"]},{"client_id":"media","client_secret":"${MEDIA_CLIENT_SECRET:-media-client-local-only}","audiences":["identity"],"scopes":["student:profile:read"]},{"client_id":"notification-worker","client_secret":"${NOTIFICATION_WORKER_CLIENT_SECRET:-notification-worker-client-local-only}","audiences":["identity"],"scopes":["student:profile:read"]},{"client_id":"course","client_secret":"${COURSE_CLIENT_SECRET:-course-client-local-only}","audiences":["media","ai"],"scopes":["media:usage:read","ai:document:read","ai:document:write","ai:job:read","ai:job:write"]},{"client_id":"ai-worker","client_secret":"${AI_WORKER_CLIENT_SECRET:-ai-worker-client-local-only}","audiences":["course","media"],"scopes":["course:lesson-ai:read","course:lesson-ai:write","media:content:read"]},{"client_id":"scheduler-worker","client_secret":"${SCHEDULER_WORKER_CLIENT_SECRET:-scheduler-worker-client-local-only}","audiences":["media"],"scopes":["media:cleanup"]}]'
+      IDENTITY_BOOTSTRAP_ADMIN_ID: "${IDENTITY_BOOTSTRAP_ADMIN_ID:-00000000-0000-4000-8000-000000000001}"
+      IDENTITY_BOOTSTRAP_ADMIN_EMAIL: "${IDENTITY_BOOTSTRAP_ADMIN_EMAIL:-admin@example.test}"
+      IDENTITY_BOOTSTRAP_ADMIN_PASSWORD: "${IDENTITY_BOOTSTRAP_ADMIN_PASSWORD:-example-password}"
+      IDENTITY_BOOTSTRAP_INSTRUCTOR_ID: "${IDENTITY_BOOTSTRAP_INSTRUCTOR_ID:-22222222-2222-4222-8222-222222222222}"
+      IDENTITY_BOOTSTRAP_INSTRUCTOR_EMAIL: "${IDENTITY_BOOTSTRAP_INSTRUCTOR_EMAIL:-instructor@example.test}"
+      IDENTITY_BOOTSTRAP_INSTRUCTOR_PASSWORD: "${IDENTITY_BOOTSTRAP_INSTRUCTOR_PASSWORD:-example-password}"
+      IDENTITY_BOOTSTRAP_STUDENT_ID: "${IDENTITY_BOOTSTRAP_STUDENT_ID:-11111111-1111-4111-8111-111111111111}"
+      IDENTITY_BOOTSTRAP_STUDENT_EMAIL: "${IDENTITY_BOOTSTRAP_STUDENT_EMAIL:-student@example.test}"
+      IDENTITY_BOOTSTRAP_STUDENT_PASSWORD: "${IDENTITY_BOOTSTRAP_STUDENT_PASSWORD:-example-password}"
+      IDENTITY_JWT_TTL_SECONDS: "${IDENTITY_JWT_TTL_SECONDS:-3600}"
+      IDENTITY_REFRESH_TTL_SECONDS: "${IDENTITY_REFRESH_TTL_SECONDS:-86400}"
       OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: "${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT:-http://otel-collector:4318/v1/traces}"
       OTEL_EXPORTER_OTLP_METRICS_ENDPOINT: "${OTEL_EXPORTER_OTLP_METRICS_ENDPOINT:-http://otel-collector:4318/v1/metrics}"
       OTEL_EXPORTER_OTLP_LOGS_ENDPOINT: "${OTEL_EXPORTER_OTLP_LOGS_ENDPOINT:-http://otel-collector:4318/v1/logs}"
       OTEL_METRIC_EXPORT_INTERVAL: "${OTEL_METRIC_EXPORT_INTERVAL:-5000}"
       HTTP_ACCESS_LOG_ENABLED: "${HTTP_ACCESS_LOG_ENABLED:-true}"
       OTEL_SDK_DISABLED: "${OTEL_SDK_DISABLED:-false}"
-      OTEL_SERVICE_INSTANCE_ID: "${AUTH_SERVICE_INSTANCE_ID:-auth-compose-1}"
-      OTEL_SERVICE_VERSION: "${AUTH_SERVICE_VERSION:-0.1.0}"
+      OTEL_SERVICE_INSTANCE_ID: "${IDENTITY_SERVICE_INSTANCE_ID:-identity-compose-1}"
+      OTEL_SERVICE_VERSION: "${IDENTITY_SERVICE_VERSION:-0.1.0}"
       PORT: 3001
     ports:
-      - "${AUTH_PORT:-3001}:3001"
+      - "${IDENTITY_PORT:-3001}:3001"
     depends_on:
       postgres:
-        condition: service_healthy
-      student:
         condition: service_healthy
     healthcheck:
       test:
@@ -131,7 +122,7 @@ services:
       COURSE_MEDIA_TIMEOUT_MS: "${COURSE_MEDIA_TIMEOUT_MS:-3000}"
       COURSE_AI_BASE_URL: http://ai:3009
       COURSE_AI_TIMEOUT_MS: "${COURSE_AI_TIMEOUT_MS:-5000}"
-      AUTH_BASE_URL: http://auth:3001
+      IDENTITY_BASE_URL: http://identity:3001
       SERVICE_CLIENT_ID: course
       SERVICE_CLIENT_SECRET: "${COURSE_CLIENT_SECRET:-course-client-local-only}"
       OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: "${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT:-http://otel-collector:4318/v1/traces}"
@@ -186,9 +177,9 @@ services:
       MEDIA_MULTIPART_MAX_BYTES: "${MEDIA_MULTIPART_MAX_BYTES:-26214400}"
       # Tuổi tối thiểu (giờ) của media không dùng trước khi dọn; regression đặt 0 để dọn được ngay.
       MEDIA_CLEANUP_MIN_RETENTION_HOURS: "${MEDIA_CLEANUP_MIN_RETENTION_HOURS:-1}"
-      MEDIA_STUDENT_BASE_URL: http://student:3002
-      MEDIA_STUDENT_TIMEOUT_MS: "${MEDIA_STUDENT_TIMEOUT_MS:-3000}"
-      AUTH_BASE_URL: http://auth:3001
+      MEDIA_IDENTITY_BASE_URL: http://identity:3001
+      MEDIA_IDENTITY_TIMEOUT_MS: "${MEDIA_IDENTITY_TIMEOUT_MS:-3000}"
+      IDENTITY_BASE_URL: http://identity:3001
       SERVICE_CLIENT_ID: media
       SERVICE_CLIENT_SECRET: "${MEDIA_CLIENT_SECRET:-media-client-local-only}"
       OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: "${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT:-http://otel-collector:4318/v1/traces}"
@@ -284,7 +275,7 @@ services:
       NODE_ENV: production
       NOTIFICATION_DATABASE_URL: "postgresql://${NOTIFICATION_POSTGRES_USER:-notification_user}:${NOTIFICATION_POSTGRES_PASSWORD:-notification-local-only}@postgres:5432/notification_db"
       NOTIFICATION_RABBITMQ_URL: "amqp://${RABBITMQ_DEFAULT_USER:-lms}:${RABBITMQ_DEFAULT_PASS:-lms-local-only}@rabbitmq:5672"
-      AUTH_BASE_URL: http://auth:3001
+      IDENTITY_BASE_URL: http://identity:3001
       OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: "${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT:-http://otel-collector:4318/v1/traces}"
       OTEL_EXPORTER_OTLP_METRICS_ENDPOINT: "${OTEL_EXPORTER_OTLP_METRICS_ENDPOINT:-http://otel-collector:4318/v1/metrics}"
       OTEL_EXPORTER_OTLP_LOGS_ENDPOINT: "${OTEL_EXPORTER_OTLP_LOGS_ENDPOINT:-http://otel-collector:4318/v1/logs}"
@@ -328,8 +319,8 @@ services:
       NODE_ENV: production
       NOTIFICATION_DATABASE_URL: "postgresql://${NOTIFICATION_POSTGRES_USER:-notification_user}:${NOTIFICATION_POSTGRES_PASSWORD:-notification-local-only}@postgres:5432/notification_db"
       NOTIFICATION_RABBITMQ_URL: "amqp://${RABBITMQ_DEFAULT_USER:-lms}:${RABBITMQ_DEFAULT_PASS:-lms-local-only}@rabbitmq:5672"
-      NOTIFICATION_STUDENT_BASE_URL: http://student:3002
-      NOTIFICATION_STUDENT_TIMEOUT_MS: "${NOTIFICATION_STUDENT_TIMEOUT_MS:-3000}"
+      NOTIFICATION_IDENTITY_BASE_URL: http://identity:3001
+      NOTIFICATION_IDENTITY_TIMEOUT_MS: "${NOTIFICATION_IDENTITY_TIMEOUT_MS:-3000}"
       NOTIFICATION_SMTP_HOST: mailpit
       NOTIFICATION_SMTP_PORT: 1025
       NOTIFICATION_SMTP_FROM: "${NOTIFICATION_SMTP_FROM:-LMS <no-reply@lms.local>}"
@@ -337,7 +328,7 @@ services:
       NOTIFICATION_WORKER_MAX_ATTEMPTS: "${NOTIFICATION_WORKER_MAX_ATTEMPTS:-5}"
       NOTIFICATION_WORKER_RETRY_DELAY_MS: "${NOTIFICATION_WORKER_RETRY_DELAY_MS:-1000}"
       NOTIFICATION_DISPATCH_CONCURRENCY: "${NOTIFICATION_DISPATCH_CONCURRENCY:-5}"
-      AUTH_BASE_URL: http://auth:3001
+      IDENTITY_BASE_URL: http://identity:3001
       SERVICE_CLIENT_ID: notification-worker
       SERVICE_CLIENT_SECRET: "${NOTIFICATION_WORKER_CLIENT_SECRET:-notification-worker-client-local-only}"
       OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: "${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT:-http://otel-collector:4318/v1/traces}"
@@ -386,7 +377,7 @@ services:
       AI_COMPLETION_TIMEOUT_MS: "${AI_COMPLETION_TIMEOUT_MS:-240000}"
       AI_HEALTH_CHECK_TIMEOUT_MS: "${AI_HEALTH_CHECK_TIMEOUT_MS:-6000}"
       AI_RABBITMQ_URL: "amqp://${RABBITMQ_DEFAULT_USER:-lms}:${RABBITMQ_DEFAULT_PASS:-lms-local-only}@rabbitmq:5672"
-      AUTH_BASE_URL: http://auth:3001
+      IDENTITY_BASE_URL: http://identity:3001
       OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: "${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT:-http://otel-collector:4318/v1/traces}"
       OTEL_EXPORTER_OTLP_METRICS_ENDPOINT: "${OTEL_EXPORTER_OTLP_METRICS_ENDPOINT:-http://otel-collector:4318/v1/metrics}"
       OTEL_EXPORTER_OTLP_LOGS_ENDPOINT: "${OTEL_EXPORTER_OTLP_LOGS_ENDPOINT:-http://otel-collector:4318/v1/logs}"
@@ -440,7 +431,7 @@ services:
       AI_WORKER_RETRY_DELAY_MS: "${AI_WORKER_RETRY_DELAY_MS:-1000}"
       # Phải lớn hơn AI_COMPLETION_TIMEOUT_MS.
       AI_WORKER_LEASE_MS: "${AI_WORKER_LEASE_MS:-600000}"
-      AUTH_BASE_URL: http://auth:3001
+      IDENTITY_BASE_URL: http://identity:3001
       SERVICE_CLIENT_ID: ai-worker
       SERVICE_CLIENT_SECRET: "${AI_WORKER_CLIENT_SECRET:-ai-worker-client-local-only}"
       OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: "${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT:-http://otel-collector:4318/v1/traces}"
@@ -482,7 +473,7 @@ services:
     environment:
       NODE_ENV: production
       SCHEDULER_DATABASE_URL: "postgresql://${SCHEDULER_POSTGRES_USER:-scheduler_user}:${SCHEDULER_POSTGRES_PASSWORD:-scheduler-local-only}@postgres:5432/scheduler_db"
-      AUTH_BASE_URL: http://auth:3001
+      IDENTITY_BASE_URL: http://identity:3001
       OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: "${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT:-http://otel-collector:4318/v1/traces}"
       OTEL_EXPORTER_OTLP_METRICS_ENDPOINT: "${OTEL_EXPORTER_OTLP_METRICS_ENDPOINT:-http://otel-collector:4318/v1/metrics}"
       OTEL_EXPORTER_OTLP_LOGS_ENDPOINT: "${OTEL_EXPORTER_OTLP_LOGS_ENDPOINT:-http://otel-collector:4318/v1/logs}"
@@ -528,7 +519,7 @@ services:
       SCHEDULER_MEDIA_TIMEOUT_MS: "${SCHEDULER_MEDIA_TIMEOUT_MS:-60000}"
       SCHEDULER_WORKER_POLL_MS: "${SCHEDULER_WORKER_POLL_MS:-1000}"
       SCHEDULER_CRON_TICK_MS: "${SCHEDULER_CRON_TICK_MS:-5000}"
-      AUTH_BASE_URL: http://auth:3001
+      IDENTITY_BASE_URL: http://identity:3001
       SERVICE_CLIENT_ID: scheduler-worker
       SERVICE_CLIENT_SECRET: "${SCHEDULER_WORKER_CLIENT_SECRET:-scheduler-worker-client-local-only}"
       OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: "${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT:-http://otel-collector:4318/v1/traces}"
@@ -565,55 +556,14 @@ services:
       - lms-network
       - aiops-net
 
-  student:
-    build:
-      context: ../lms
-      dockerfile: services/student/Dockerfile
-    environment:
-      NODE_ENV: production
-      STUDENT_DATABASE_URL: "postgresql://${STUDENT_POSTGRES_USER:-student_user}:${STUDENT_POSTGRES_PASSWORD:-student-local-only}@postgres:5432/student_db"
-      AUTH_BASE_URL: http://auth:3001
-      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: "${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT:-http://otel-collector:4318/v1/traces}"
-      OTEL_EXPORTER_OTLP_METRICS_ENDPOINT: "${OTEL_EXPORTER_OTLP_METRICS_ENDPOINT:-http://otel-collector:4318/v1/metrics}"
-      OTEL_EXPORTER_OTLP_LOGS_ENDPOINT: "${OTEL_EXPORTER_OTLP_LOGS_ENDPOINT:-http://otel-collector:4318/v1/logs}"
-      OTEL_METRIC_EXPORT_INTERVAL: "${OTEL_METRIC_EXPORT_INTERVAL:-5000}"
-      HTTP_ACCESS_LOG_ENABLED: "${HTTP_ACCESS_LOG_ENABLED:-true}"
-      OTEL_SDK_DISABLED: "${OTEL_SDK_DISABLED:-false}"
-      OTEL_SERVICE_INSTANCE_ID: "${STUDENT_SERVICE_INSTANCE_ID:-student-compose-1}"
-      OTEL_SERVICE_VERSION: "${STUDENT_SERVICE_VERSION:-0.1.0}"
-      PORT: 3002
-    ports:
-      - "${STUDENT_PORT:-3012}:3002"
-    depends_on:
-      postgres:
-        condition: service_healthy
-    healthcheck:
-      test:
-        - CMD
-        - node
-        - -e
-        - >-
-          fetch('http://127.0.0.1:3002/ready')
-          .then((response) => { if (!response.ok) process.exit(1); })
-          .catch(() => process.exit(1));
-      interval: 5s
-      timeout: 3s
-      retries: 12
-      start_period: 10s
-    networks:
-      - lms-network
-      - aiops-net
-
   postgres:
     image: postgres:17.6-alpine
     environment:
       POSTGRES_DB: "${POSTGRES_DB:-postgres}"
       POSTGRES_USER: "${POSTGRES_USER:-lms}"
       POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:-lms-local-only}"
-      AUTH_POSTGRES_USER: "${AUTH_POSTGRES_USER:?AUTH_POSTGRES_USER is required}"
-      AUTH_POSTGRES_PASSWORD: "${AUTH_POSTGRES_PASSWORD:?AUTH_POSTGRES_PASSWORD is required}"
-      STUDENT_POSTGRES_USER: "${STUDENT_POSTGRES_USER:-student_user}"
-      STUDENT_POSTGRES_PASSWORD: "${STUDENT_POSTGRES_PASSWORD:-student-local-only}"
+      IDENTITY_POSTGRES_USER: "${IDENTITY_POSTGRES_USER:?IDENTITY_POSTGRES_USER is required}"
+      IDENTITY_POSTGRES_PASSWORD: "${IDENTITY_POSTGRES_PASSWORD:?IDENTITY_POSTGRES_PASSWORD is required}"
       COURSE_POSTGRES_USER: "${COURSE_POSTGRES_USER:-course_user}"
       COURSE_POSTGRES_PASSWORD: "${COURSE_POSTGRES_PASSWORD:-course-local-only}"
       MEDIA_POSTGRES_USER: "${MEDIA_POSTGRES_USER:-media_user}"

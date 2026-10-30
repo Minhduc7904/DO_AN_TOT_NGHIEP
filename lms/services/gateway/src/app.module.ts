@@ -24,8 +24,7 @@ import { validateEnvironment, type Environment } from './config/env.schema.js';
 import { UPSTREAMS, type UpstreamName } from './domain/route-table.js';
 
 const BASE_URL_KEYS = {
-  auth: 'GATEWAY_AUTH_BASE_URL',
-  student: 'GATEWAY_STUDENT_BASE_URL',
+  identity: 'GATEWAY_IDENTITY_BASE_URL',
   course: 'GATEWAY_COURSE_BASE_URL',
   media: 'GATEWAY_MEDIA_BASE_URL',
   notification: 'GATEWAY_NOTIFICATION_BASE_URL',
@@ -55,14 +54,14 @@ function upstreamBaseUrls(
       useFactory: (config: ConfigService<Environment, true>): TokenProvider =>
         new ServiceTokenProvider(
           new HttpServiceTokenSource({
-            dependency: 'gateway-auth-token',
-            baseUrl: config.getOrThrow<string>('GATEWAY_AUTH_BASE_URL'),
+            dependency: 'gateway-identity-token',
+            baseUrl: config.getOrThrow<string>('GATEWAY_IDENTITY_BASE_URL'),
             clientId: config.getOrThrow<string>('SERVICE_CLIENT_ID'),
             clientSecret: config.getOrThrow<string>('SERVICE_CLIENT_SECRET'),
-            timeoutMs: config.getOrThrow<number>('AUTH_TOKEN_TIMEOUT_MS'),
+            timeoutMs: config.getOrThrow<number>('IDENTITY_TOKEN_TIMEOUT_MS'),
             breaker: {
-              failureThreshold: config.getOrThrow<number>('AUTH_TOKEN_BREAKER_THRESHOLD'),
-              cooldownMs: config.getOrThrow<number>('AUTH_TOKEN_BREAKER_COOLDOWN_MS'),
+              failureThreshold: config.getOrThrow<number>('IDENTITY_TOKEN_BREAKER_THRESHOLD'),
+              cooldownMs: config.getOrThrow<number>('IDENTITY_TOKEN_BREAKER_COOLDOWN_MS'),
             },
           }),
         ),
@@ -74,14 +73,14 @@ function upstreamBaseUrls(
         new JwksUserTokenVerifier(
           new TokenVerifier(
             new HttpJwksKeyProvider({
-              dependency: 'gateway-auth-jwks',
+              dependency: 'gateway-identity-jwks',
               url: new URL(
                 `/${JWKS_PATH}`,
-                config.getOrThrow<string>('GATEWAY_AUTH_BASE_URL'),
+                config.getOrThrow<string>('GATEWAY_IDENTITY_BASE_URL'),
               ).toString(),
-              timeoutMs: config.getOrThrow<number>('AUTH_JWKS_TIMEOUT_MS'),
-              cacheTtlMs: config.getOrThrow<number>('AUTH_JWKS_CACHE_TTL_MS'),
-              minRefetchIntervalMs: config.getOrThrow<number>('AUTH_JWKS_MIN_REFETCH_MS'),
+              timeoutMs: config.getOrThrow<number>('IDENTITY_JWKS_TIMEOUT_MS'),
+              cacheTtlMs: config.getOrThrow<number>('IDENTITY_JWKS_CACHE_TTL_MS'),
+              minRefetchIntervalMs: config.getOrThrow<number>('IDENTITY_JWKS_MIN_REFETCH_MS'),
             }),
           ),
         ),

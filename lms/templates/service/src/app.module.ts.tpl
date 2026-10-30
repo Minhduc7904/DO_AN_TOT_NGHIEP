@@ -27,10 +27,10 @@ import { validateEnvironment } from './config/env.schema.js';
       provide: SERVICE_AUTH,
       useFactory: (config: ConfigService) =>
         createHttpServiceAuth(__CONST___SERVICE_NAME, {
-          baseUrl: config.getOrThrow<string>('AUTH_BASE_URL'),
-          timeoutMs: config.getOrThrow<number>('AUTH_JWKS_TIMEOUT_MS'),
-          cacheTtlMs: config.getOrThrow<number>('AUTH_JWKS_CACHE_TTL_MS'),
-          minRefetchIntervalMs: config.getOrThrow<number>('AUTH_JWKS_MIN_REFETCH_MS'),
+          baseUrl: config.getOrThrow<string>('IDENTITY_BASE_URL'),
+          timeoutMs: config.getOrThrow<number>('IDENTITY_JWKS_TIMEOUT_MS'),
+          cacheTtlMs: config.getOrThrow<number>('IDENTITY_JWKS_CACHE_TTL_MS'),
+          minRefetchIntervalMs: config.getOrThrow<number>('IDENTITY_JWKS_MIN_REFETCH_MS'),
         }),
       inject: [ConfigService],
     },

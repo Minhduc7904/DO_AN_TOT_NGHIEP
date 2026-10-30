@@ -41,8 +41,8 @@ test('cho phép import shared technical package', async () => {
   assert.deepEqual(messages, []);
 });
 
-const domainFilePath = 'services/student/src/domain/boundary-check.ts';
-const applicationFilePath = 'services/student/src/application/use-cases/boundary-check.ts';
+const domainFilePath = 'services/identity/src/domain/boundary-check.ts';
+const applicationFilePath = 'services/identity/src/application/use-cases/boundary-check.ts';
 
 async function lintRestricted(source, filePath) {
   const [result] = await eslint.lintText(`import '${source}';`, { filePath });
@@ -89,8 +89,8 @@ test('application cấm import adapters', async () => {
   assert.equal((await lintRestricted('../../adapters/x.js', applicationFilePath)).length, 1);
 });
 
-const publicControllerPath = 'services/student/src/adapters/http/public/boundary-check.ts';
-const internalControllerPath = 'services/student/src/adapters/http/internal/boundary-check.ts';
+const publicControllerPath = 'services/identity/src/adapters/http/public/boundary-check.ts';
+const internalControllerPath = 'services/identity/src/adapters/http/internal/boundary-check.ts';
 
 test('controller public cấm import controller internal và ngược lại', async () => {
   assert.equal(

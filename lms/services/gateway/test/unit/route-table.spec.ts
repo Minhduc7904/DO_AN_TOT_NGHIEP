@@ -1,8 +1,7 @@
 import { normalizeTarget, resolveRoute, type UpstreamName } from '../../src/domain/route-table.js';
 
 const V2: ReadonlySet<UpstreamName> = new Set([
-  'auth',
-  'student',
+  'identity',
   'course',
   'media',
   'notification',
@@ -12,7 +11,7 @@ const V2: ReadonlySet<UpstreamName> = new Set([
 
 describe('resolveRoute', () => {
   it('chọn upstream theo tiền tố đúng đoạn path, student khác students', () => {
-    expect(resolveRoute('GET', '/api/v1/students/me', V2)?.upstream).toBe('student');
+    expect(resolveRoute('GET', '/api/v1/students/me', V2)?.upstream).toBe('identity');
     expect(resolveRoute('GET', '/api/v1/student/courses', V2)?.upstream).toBe('course');
     expect(resolveRoute('GET', '/api/v1/courses', V2)?.upstream).toBe('course');
     expect(resolveRoute('GET', '/api/v1/studentsx', V2)).toBeNull();

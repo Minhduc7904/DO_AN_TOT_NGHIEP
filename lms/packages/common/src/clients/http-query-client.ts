@@ -10,7 +10,7 @@ import { observeDependency } from '../telemetry/observe-dependency.js';
 import { CircuitBreaker } from './circuit-breaker.js';
 
 export interface HttpQueryClientOptions {
-  /** Định danh dependency canonical, ví dụ `course-student-http`. */
+  /** Định danh dependency canonical, ví dụ `media-identity`. */
   dependency: string;
   baseUrl: string;
   timeoutMs: number;
@@ -58,7 +58,7 @@ export class HttpQueryClient {
 
   async request<T = unknown>(request: HttpRequest): Promise<HttpResponse<T>> {
     const method = request.method ?? 'GET';
-    // Lấy token trước khi mở span dependency: lỗi lấy token thuộc về dependency `*-auth-token`.
+    // Lấy token trước khi mở span dependency: lỗi lấy token thuộc về dependency `*-identity-token`.
     const token = await this.options.auth?.tokens.getToken(this.options.auth.audience);
     return observeDependency(this.options.dependency, `${method} ${request.path}`, async () => {
       if (!this.breaker.allowRequest()) {

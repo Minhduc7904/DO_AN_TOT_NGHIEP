@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import * as contracts from '../../contracts/dist/index.js';
 import { attachStack, fetchJson, poll } from './support/telemetry.mjs';
 
-// Metric xuyên service (topology v2): 12 runtime báo RED + dependency + CPU/RSS, broker báo độ sâu và
+// Metric xuyên service (topology v2): 11 runtime báo RED + dependency + CPU/RSS, broker báo độ sâu và
 // consumer của mọi queue canonical; backlog tăng khi dừng worker, command lỗi vào `.error` và drain.
 const TAG = 'metrics';
 const stack = await attachStack(process.argv.slice(2), TAG);
@@ -11,8 +11,7 @@ const { prometheus } = stack;
 
 const RUNTIMES = [
   'gateway',
-  'auth',
-  'student',
+  'identity',
   'course',
   'media',
   'media-worker',
@@ -26,18 +25,16 @@ const RUNTIMES = [
 /** Cạnh phụ thuộc phải có sau traffic regression (service → identity), theo catalogue v2. */
 const EXPECTED_DEPENDENCIES = {
   gateway: [
-    'gateway-auth',
+    'gateway-identity',
     'gateway-course',
     'gateway-media',
-    'gateway-student',
     'gateway-notification',
     'gateway-scheduler',
     'gateway-ai',
-    'gateway-auth-token',
-    'gateway-auth-jwks',
+    'gateway-identity-token',
+    'gateway-identity-jwks',
   ],
-  auth: ['auth-postgres', 'auth-student'],
-  student: ['student-postgres'],
+  identity: ['identity-postgres'],
   course: ['course-postgres', 'course-media', 'course-ai'],
   media: ['media-postgres', 'media-minio'],
   'media-worker': ['media-postgres', 'media-minio'],
@@ -45,7 +42,7 @@ const EXPECTED_DEPENDENCIES = {
   'notification-worker': [
     'notification-postgres',
     'notification-smtp',
-    'notification-worker-student',
+    'notification-worker-identity',
   ],
   scheduler: ['scheduler-postgres'],
   'scheduler-worker': ['scheduler-postgres', 'scheduler-worker-media'],
@@ -53,7 +50,7 @@ const EXPECTED_DEPENDENCIES = {
   'ai-worker': ['ai-postgres', 'ai-llm-provider', 'ai-worker-course', 'ai-worker-media'],
 };
 const CANONICAL_IDENTITY =
-  /^(?:(?:auth|student|course|media|notification|scheduler|ai)-postgres|media(?:-worker)?-minio|notification-smtp|ai-llm-provider|(?:gateway|auth|student|course|media|notification|scheduler|ai|media-worker|notification-worker|scheduler-worker|ai-worker)-(?:auth|student|course|media|notification|scheduler|ai|ai-worker)|(?:gateway|auth|student|course|media|notification|scheduler|ai|media-worker|notification-worker|scheduler-worker|ai-worker)-auth-(?:token|jwks)|(?:course|media|media-worker|notification|notification-worker|ai|ai-worker)-rabbitmq)$/u;
+  /^(?:(?:identity|course|media|notification|scheduler|ai)-postgres|media(?:-worker)?-minio|notification-smtp|ai-llm-provider|(?:gateway|course|media|notification|scheduler|ai|media-worker|notification-worker|scheduler-worker|ai-worker)-(?:identity|course|media|notification|scheduler|ai|ai-worker)|(?:gateway|course|media|notification|scheduler|ai|media-worker|notification-worker|scheduler-worker|ai-worker)-identity-(?:token|jwks)|(?:course|media|media-worker|notification|notification-worker|ai|ai-worker)-rabbitmq)$/u;
 const FORBIDDEN_LABELS =
   /^(trace_id|span_id|request_id|user_id|principal_id|event_id|run_id|fault_type|fault_id|root_cause_service|url_path|url|path)$/u;
 
@@ -62,9 +59,9 @@ const queues = Object.entries(contracts)
   .flatMap(([, commands]) => Object.values(commands).map((command) => command.queue));
 const results = {};
 
-// 1. RED: đủ 12 runtime, nhãn bounded.
+// 1. RED: đủ 11 runtime, nhãn bounded.
 await poll(
-  'RED của 12 runtime',
+  'RED của 11 runtime',
   async () => {
     const rows = await prometheus.query('sum by (service_name)(http_server_request_count_total)');
     const seen = new Set(rows.map((row) => row.metric.service_name));

@@ -7,9 +7,9 @@ import { attachStack, attributeValue, poll, traceServices } from './support/tele
 
 // Tracing xuyên service (topology v2). Đọc traffic đã có trên stack (regression hoặc `test:observability`):
 // (1) mỗi luồng trong ma trận phải có một trace chứa đủ service, span gốc đúng chủ, không đứt parent;
-// (2) kịch bản lỗi nhiều bước: `auth` ngừng phản hồi → login lỗi tại cạnh gateway-auth, token dịch vụ
-//     hết hạn không làm mới được → request qua gateway lỗi ngay tại cạnh `gateway-auth-token`, không
-//     bao giờ tới course dù course và media vẫn khỏe (triệu chứng ở gateway, nguyên nhân ở auth).
+// (2) kịch bản lỗi nhiều bước: `identity` ngừng phản hồi → login lỗi tại cạnh gateway-identity, token dịch vụ
+//     hết hạn không làm mới được → request qua gateway lỗi ngay tại cạnh `gateway-identity-token`, không
+//     bao giờ tới course dù course và media vẫn khỏe (triệu chứng ở gateway, nguyên nhân ở identity).
 const TAG = 'tracing';
 const WINDOW_SECONDS = Number(process.env.OBSERVABILITY_WINDOW_SECONDS ?? 1800);
 const MAX_CANDIDATES = 8;
@@ -68,18 +68,24 @@ for (const flow of FLOWS) {
 }
 
 // --- (2) Kịch bản lỗi nhiều bước ---
-// Đọc TTL từ container `auth` đang chạy (không phải từ `compose config`, vốn phụ thuộc env của tiến trình này).
+// Đọc TTL từ container `identity` đang chạy (không phải từ `compose config`, vốn phụ thuộc env của tiến trình này).
 // TTL thực của container đang chạy (compose config không thấy biến đặt lúc dựng stack).
-const authTokenTtl = Number(
+const identityTokenTtl = Number(
   (
-    await stack.compose(['exec', '-T', 'auth', 'printenv', 'AUTH_SERVICE_TOKEN_TTL_SECONDS'])
+    await stack.compose([
+      'exec',
+      '-T',
+      'identity',
+      'printenv',
+      'IDENTITY_SERVICE_TOKEN_TTL_SECONDS',
+    ])
   ).trim(),
 );
 let fault = {
-  skipped: `AUTH_SERVICE_TOKEN_TTL_SECONDS=${authTokenTtl} > 120: đặt 60 để chạy kịch bản này`,
+  skipped: `IDENTITY_SERVICE_TOKEN_TTL_SECONDS=${identityTokenTtl} > 120: đặt 60 để chạy kịch bản này`,
 };
 
-if (authTokenTtl <= 120) {
+if (identityTokenTtl <= 120) {
   process.env.REGRESSION_GATEWAY_URL = stack.urls.gateway;
   const { call, config, createPublishedCourse, login } =
     await import('../regression/support/api.mjs');
@@ -87,7 +93,7 @@ if (authTokenTtl <= 120) {
     traceparent: `00-${traceId}-${randomBytes(8).toString('hex')}-01`,
   });
   const instructor = await login('instructor', config.instructor);
-  // Làm ấm token dịch vụ (gateway → upstream) khi auth còn khỏe, để kiểm đúng cơ chế hết hạn chứ
+  // Làm ấm token dịch vụ (gateway → upstream) khi identity còn khỏe, để kiểm đúng cơ chế hết hạn chứ
   // không phải "chưa từng có token"; xóa khóa học còn làm ấm luôn cạnh course → media.
   const warm = await createPublishedCourse(instructor.token);
   const warmed = await call('DELETE', `/api/v1/courses/${warm.courseId}`, {
@@ -95,7 +101,7 @@ if (authTokenTtl <= 120) {
   });
   assert.ok(
     warmed.status < 300,
-    `xóa khóa học khi auth khỏe phải thành công, nhận ${warmed.status}`,
+    `xóa khóa học khi identity khỏe phải thành công, nhận ${warmed.status}`,
   );
   const { courseId } = await createPublishedCourse(instructor.token);
   const loginTrace = randomBytes(16).toString('hex');
@@ -103,26 +109,26 @@ if (authTokenTtl <= 120) {
   const recoverTrace = randomBytes(16).toString('hex');
   const outcome = {};
   const pausedAt = Date.now();
-  await stack.compose(['pause', 'auth']);
+  await stack.compose(['pause', 'identity']);
   try {
-    // (a) auth không phản hồi: login lỗi ngay tại cạnh gateway-auth, trace không có span của auth.
+    // (a) identity không phản hồi: login lỗi ngay tại cạnh gateway-identity, trace không có span của identity.
     const loginResponse = await call('POST', '/api/v1/auth/student/login', {
       body: { email: config.student.email, password: config.student.password },
       headers: traced(loginTrace),
     });
     assert.ok(
       loginResponse.status >= 500,
-      `login khi auth treo phải 5xx, nhận ${loginResponse.status}`,
+      `login khi identity treo phải 5xx, nhận ${loginResponse.status}`,
     );
     const { result: loginSpans } = await poll(
-      'trace login lỗi tại gateway-auth',
+      'trace login lỗi tại gateway-identity',
       async () => {
         const spans = await stack.tempo.trace(loginTrace);
-        const failed = errorSpans(spans).find((span) => /^gateway-auth /.test(span.name));
-        assert.ok(failed, 'chưa có span lỗi gateway-auth');
+        const failed = errorSpans(spans).find((span) => /^gateway-identity /.test(span.name));
+        assert.ok(failed, 'chưa có span lỗi gateway-identity');
         assert.ok(
-          !spans.some((span) => span.service === 'auth'),
-          'auth treo nhưng vẫn có span auth',
+          !spans.some((span) => span.service === 'identity'),
+          'identity treo nhưng vẫn có span identity',
         );
         return spans;
       },
@@ -136,11 +142,11 @@ if (authTokenTtl <= 120) {
 
     // (b) stale-while-error: token người dùng còn hạn và khóa JWKS đã cache nên request có token vẫn qua.
     const stillWorks = await call('GET', '/api/v1/courses', { token: instructor.token });
-    assert.equal(stillWorks.status, 200, 'token còn hạn phải dùng được khi auth treo');
+    assert.equal(stillWorks.status, 200, 'token còn hạn phải dùng được khi identity treo');
     outcome.stale_while_error_ok = true;
 
     // (c) token dịch vụ của gateway hết hạn mà không làm mới được: mọi request qua gateway lỗi.
-    const waitMs = authTokenTtl * 1_000 + 5_000 - (Date.now() - pausedAt);
+    const waitMs = identityTokenTtl * 1_000 + 5_000 - (Date.now() - pausedAt);
     if (waitMs > 0) await delay(waitMs);
     const deleted = await call('DELETE', `/api/v1/courses/${courseId}`, {
       token: instructor.token,
@@ -151,11 +157,11 @@ if (authTokenTtl <= 120) {
       `xóa khóa học khi token dịch vụ hết hạn phải 5xx, nhận ${deleted.status}`,
     );
     const { result: deleteSpans } = await poll(
-      'trace lỗi tại gateway-auth-token, request không tới course',
+      'trace lỗi tại gateway-identity-token, request không tới course',
       async () => {
         const spans = await stack.tempo.trace(deleteTrace);
-        const failed = errorSpans(spans).find((span) => /^gateway-auth-token /.test(span.name));
-        assert.ok(failed, 'chưa có span lỗi gateway-auth-token');
+        const failed = errorSpans(spans).find((span) => /^gateway-identity-token /.test(span.name));
+        assert.ok(failed, 'chưa có span lỗi gateway-identity-token');
         assert.ok(!spans.some((span) => span.service === 'course'), 'request vẫn tới course');
         return spans;
       },
@@ -169,19 +175,21 @@ if (authTokenTtl <= 120) {
       http_status: deleted.status,
     };
   } finally {
-    await stack.compose(['unpause', 'auth']);
+    await stack.compose(['unpause', 'identity']);
   }
   await poll(
-    'auth healthy trở lại',
+    'identity healthy trở lại',
     async () => {
-      const health = JSON.parse((await stack.compose(['ps', 'auth', '--format', 'json'])).trim());
+      const health = JSON.parse(
+        (await stack.compose(['ps', 'identity', '--format', 'json'])).trim(),
+      );
       assert.equal(health.Health, 'healthy');
     },
     { tag: TAG, timeoutMs: 60_000, intervalMs: 2_000 },
   );
-  // (d) phục hồi: auth trở lại thì cạnh gateway-auth-token hết lỗi.
+  // (d) phục hồi: identity trở lại thì cạnh gateway-identity-token hết lỗi.
   await poll(
-    'phục hồi sau khi auth trở lại',
+    'phục hồi sau khi identity trở lại',
     async () => {
       const retry = await call('DELETE', `/api/v1/courses/${courseId}`, {
         token: instructor.token,

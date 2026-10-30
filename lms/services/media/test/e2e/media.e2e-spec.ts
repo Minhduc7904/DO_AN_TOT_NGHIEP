@@ -69,7 +69,7 @@ describe('media + media-worker (PostgreSQL, MinIO, RabbitMQ thật)', () => {
       if (req.method === 'POST' && req.url === '/internal/v1/auth/service-token') {
         const token = mintServiceToken(signingKey, {
           subject: 'media',
-          audience: 'student',
+          audience: 'identity',
           scopes: ['student:profile:read'],
         });
         return send(200, {
@@ -113,8 +113,8 @@ describe('media + media-worker (PostgreSQL, MinIO, RabbitMQ thật)', () => {
 
     Object.assign(process.env, {
       OTEL_SDK_DISABLED: 'true',
-      AUTH_BASE_URL: stubUrl,
-      MEDIA_STUDENT_BASE_URL: stubUrl,
+      IDENTITY_BASE_URL: stubUrl,
+      MEDIA_IDENTITY_BASE_URL: stubUrl,
       SERVICE_CLIENT_ID: 'media',
       SERVICE_CLIENT_SECRET: 'media-client-secret-local-only',
       MEDIA_RABBITMQ_URL:
@@ -1177,7 +1177,7 @@ describe('media + media-worker (PostgreSQL, MinIO, RabbitMQ thật)', () => {
       // Sai audience → token không hợp lệ cho media.
       const wrongAudience = mintServiceToken(signingKey, {
         subject: 'scheduler-worker',
-        audience: 'student',
+        audience: 'identity',
         scopes: ['media:cleanup'],
       });
       const audience = await http()

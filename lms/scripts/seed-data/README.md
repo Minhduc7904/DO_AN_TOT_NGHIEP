@@ -19,25 +19,24 @@ pnpm run seed:data -- --environment local --non-interactive --yes --profile medi
 
 Giao diện gồm bốn bước: (1) kiểm tra kết nối và chọn các database (database chưa migrate hoặc không kết nối được bị khóa kèm lý do); (2) nhập số dòng cho từng bảng, theo thứ tự cha trước con, mỗi bảng hiện khoảng cho phép; (3) màn hình tóm tắt và xác nhận; (4) tiến độ từng bảng, bảng nào xong có dòng `✔ ... thành công`, bảng lỗi hiện `✖` kèm thông điệp. Cuối cùng là báo cáo số dòng, thời gian và fingerprint. Không có TTY thì tự chuyển sang chế độ không tương tác và in từng dòng.
 
-Chạy `pnpm run seed:data -- --help` để xem toàn bộ tùy chọn. Kết nối mặc định là `localhost:5432`, user `lms` (khớp `docker-compose/.env.example`); `--compose-env-file` đọc `POSTGRES_PORT`, `POSTGRES_USER`, `POSTGRES_PASSWORD`. Biến `<DB>_DATABASE_URL` trong môi trường (ví dụ `AUTH_DATABASE_URL`) ghi đè kết nối của từng database.
+Chạy `pnpm run seed:data -- --help` để xem toàn bộ tùy chọn. Kết nối mặc định là `localhost:5432`, user `lms` (khớp `docker-compose/.env.example`); `--compose-env-file` đọc `POSTGRES_PORT`, `POSTGRES_USER`, `POSTGRES_PASSWORD`. Biến `<DB>_DATABASE_URL` trong môi trường (ví dụ `IDENTITY_DATABASE_URL`) ghi đè kết nối của từng database.
 
 ## Bảng được seed
 
 | Database          | Bảng                                                                                                                                           | Ghi chú                                                                                                           |
 | ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| `auth_db`         | `auth_users` (học viên, giảng viên)                                                                                                            | Dùng chung một hash scrypt cho mọi tài khoản                                                                      |
-| `student_db`      | `students`                                                                                                                                     | Cùng `id` và email với học viên ở `auth_users`                                                                    |
+| `identity_db`     | `identity_users` (học viên, giảng viên), `identity_student_profiles`                                                                           | Dùng chung một hash scrypt cho mọi tài khoản; mỗi học viên có đúng một hồ sơ `ACTIVE` cùng `id` (số dòng tự tính) |
 | `course_db`       | `courses`, `lessons`, `quizzes`, `quiz_questions`, `quiz_options`, `enrollments`, `lesson_progresses`, `quiz_attempts`, `quiz_attempt_answers` | Khóa học `PUBLISHED`, chỉ có lượt làm bài `SUBMITTED`; điểm khớp đáp án; đáp án quiz tự tính theo số lượt làm bài |
 | `media_db`        | `media_objects` (tệp gốc và thumbnail), `media_usages`                                                                                         | Mọi tệp gốc có ít nhất một usage; thumbnail tự tính                                                               |
 | `notification_db` | `notifications` (đơn lẻ và từ đợt gửi), `notification_batches`, `notification_batch_items`                                                     | Đợt gửi `COMPLETED`, mục `SUCCESS`; notification từ đợt gửi tự tính                                               |
 | `ai_db`           | `ai_invocations`, `ai_documents`, `ai_jobs`                                                                                                    | Tài liệu `EXTRACTED`, job `COMPLETED`/`FAILED`; không seed provider, model, binding                               |
 | `scheduler_db`    | `background_jobs`, `background_job_runs`                                                                                                       | Job `MANUAL` ở trạng thái `PAUSED`, run đã kết thúc                                                               |
 
-Không seed `outbox_messages`, `inbox_states`, `auth_service_clients`, `auth_refresh_tokens` và mọi dòng đang xử lý dở (`PENDING`, `RUNNING`, `PROCESSING`, `RETRY`, `SNAPSHOT_*`): relay và worker sẽ nhặt và phát lệnh thật (email Mailpit, gọi AI, dọn media).
+Không seed `outbox_messages`, `inbox_states`, `identity_service_clients`, `identity_refresh_tokens` và mọi dòng đang xử lý dở (`PENDING`, `RUNNING`, `PROCESSING`, `RETRY`, `SNAPSHOT_*`): relay và worker sẽ nhặt và phát lệnh thật (email Mailpit, gọi AI, dọn media).
 
 ## Quy tắc dữ liệu
 
-- **Nhận diện dòng seed**: `id` bắt đầu bằng `5eed<mã loại>` (xem `ids.mjs`), email học viên là `seed-student-<i>@seed.test`. Ba tài khoản bootstrap của `auth` (`admin@example.test`, `instructor@example.test`, `student@example.test`) không bị đụng.
+- **Nhận diện dòng seed**: `id` bắt đầu bằng `5eed<mã loại>` (xem `ids.mjs`), email học viên là `seed-student-<i>@seed.test`. Ba tài khoản bootstrap của `identity` (`admin@example.test`, `instructor@example.test`, `student@example.test`) không bị đụng.
 - **Tham chiếu chéo database**: id sinh theo chỉ số nên các database khớp nhau mà không cần truy vấn chéo. Database cha không được chọn lần này thì seeder đếm số dòng seed đang có ở đó; bằng 0 thì từ chối và nêu rõ cần seed gì trước.
 - **Mật khẩu**: mọi tài khoản seed dùng chung mật khẩu `seed-password`. Chỉ dùng cho testbed local.
 - **Chạy lại**: seeder dọn toàn bộ dữ liệu seed cũ của database được chọn rồi nạp lại, trong một transaction cho mỗi database. Lỗi ở database nào thì database đó rollback; các database đã nạp xong trước đó giữ nguyên (không atomic giữa các database). Cùng `--seed` và cùng số lượng cho đúng cùng dữ liệu.

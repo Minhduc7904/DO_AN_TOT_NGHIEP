@@ -97,6 +97,7 @@ kèm stack observability của `aiops-platform` khi dùng `compose.full.yaml`. T
 | [Định hướng tổng thể](docs/processed/direction/khung-dinh-huong-tong-the-lms-microservice-ai-rca-v1.md) | WHY/WHAT, research questions, anomaly/RCA direction và evaluation philosophy. |
 | [Backend blueprint v2](docs/processed/architecture/backend-microservice-testbed-blueprint-v2.md) | **Canonical backend:** định hướng, scope, topology, workload/fault/observability requirements và implementation architecture. |
 | [Analysis/AI/RCA blueprint v1](docs/processed/architecture/analysis-anomaly-rca-blueprint-v1.md) | **Canonical Analysis/AI/RCA:** định hướng, telemetry/data model, feature pipeline, detector, incident, graph, RCA, evidence, evaluation và implementation architecture. |
+| [Tài liệu nghiệp vụ](docs/processed/business/README.md) | Luồng và quy tắc nghiệp vụ theo domain; hiện mới có khung và file giữ chỗ. |
 | [Plan v0.2 — 24 tuần](docs/processed/plan/plan-v0.2-24-weeks.md) | **Canonical project plan:** WHEN, WHO, milestone, dependency, deliverable và weekly DoD. |
 | [Mô tả đề tài](docs/processed/description/Mo_ta_de_tai_DATN_260811_125322_day_du.md) | Mô tả đề tài đã chuyển đổi từ tài liệu nguồn. |
 | [Quy ước workspace](agent-resources/skills/graduation-workspace/references/workspace-standard.md) | Cách tổ chức task, input/output và tài liệu của nhóm. |

@@ -77,15 +77,15 @@ const SEED = "id::text LIKE '5eed%'";
 
 const directory = mkdtempSync(join(tmpdir(), 'seed-data-smoke-'));
 const small = ['--profile', 'small'];
-const auth = await connect('auth_db');
+const identity = await connect('identity_db');
 const course = await connect('course_db');
 const media = await connect('media_db');
 const notification = await connect('notification_db');
 
 try {
   // Dòng không thuộc seed phải còn nguyên sau khi seeder dọn và nạp lại.
-  await auth.query(
-    `INSERT INTO auth_users (id, email, password_hash, full_name, role, updated_at)
+  await identity.query(
+    `INSERT INTO identity_users (id, email, password_hash, full_name, role, updated_at)
      VALUES ('00000000-0000-4000-8000-0000000000aa', 'smoke-keep@example.test', 'x', 'Giữ nguyên', 'student', now())
      ON CONFLICT (id) DO NOTHING`,
   );
@@ -109,8 +109,8 @@ try {
 
   assert.equal(
     await scalar(
-      auth,
-      "SELECT count(*) AS value FROM auth_users WHERE email = 'smoke-keep@example.test'",
+      identity,
+      "SELECT count(*) AS value FROM identity_users WHERE email = 'smoke-keep@example.test'",
     ),
     1,
   );
@@ -123,8 +123,15 @@ try {
     ),
   );
   assert.equal(
-    await scalar(auth, `SELECT count(*) AS value FROM auth_users WHERE ${SEED}`),
-    reported.get('auth.students') + reported.get('auth.instructors'),
+    await scalar(identity, `SELECT count(*) AS value FROM identity_users WHERE ${SEED}`),
+    reported.get('identity.students') + reported.get('identity.instructors'),
+  );
+  assert.equal(
+    await scalar(
+      identity,
+      "SELECT count(*) AS value FROM identity_student_profiles WHERE user_id::text LIKE '5eed%'",
+    ),
+    reported.get('identity.student_profiles'),
   );
   assert.equal(
     await scalar(course, `SELECT count(*) AS value FROM enrollments WHERE ${SEED}`),
@@ -228,6 +235,8 @@ try {
   console.log('✔ số lượng vượt trần bị từ chối');
   console.log('\nseed-data-db-smoke: tất cả kiểm tra đạt');
 } finally {
-  await auth.query("DELETE FROM auth_users WHERE id = '00000000-0000-4000-8000-0000000000aa'");
-  await Promise.all([auth.end(), course.end(), media.end(), notification.end()]);
+  await identity.query(
+    "DELETE FROM identity_users WHERE id = '00000000-0000-4000-8000-0000000000aa'",
+  );
+  await Promise.all([identity.end(), course.end(), media.end(), notification.end()]);
 }

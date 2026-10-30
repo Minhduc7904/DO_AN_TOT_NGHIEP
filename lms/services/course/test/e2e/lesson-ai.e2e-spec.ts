@@ -237,7 +237,7 @@ describe('course service: facade AI và bề mặt nội bộ cho ai-worker (Pos
     await new Promise<void>((resolve) => stub.listen(0, '127.0.0.1', resolve));
     const stubUrl = `http://127.0.0.1:${(stub.address() as AddressInfo).port}`;
     Object.assign(process.env, {
-      AUTH_BASE_URL: stubUrl,
+      IDENTITY_BASE_URL: stubUrl,
       COURSE_MEDIA_BASE_URL: stubUrl,
       COURSE_AI_BASE_URL: stubUrl,
       COURSE_AI_BREAKER_COOLDOWN_MS: '50',

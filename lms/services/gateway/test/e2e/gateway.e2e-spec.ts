@@ -83,15 +83,14 @@ const json = { 'content-type': 'application/json; charset=utf-8' };
 describe('gateway (upstream HTTP giả)', () => {
   let app: INestApplication;
   const stubs: Stub[] = [];
-  let auth: Stub;
-  let student: Stub;
+  let identity: Stub;
   let media: Stub;
   let ai: Stub;
   let scheduler: Stub;
 
   beforeAll(async () => {
-    // Auth giả: JWKS, cấp service token (đếm số lần gọi để kiểm cache) và cửa đăng nhập.
-    auth = await startStub((seen, res) => {
+    // Identity giả: JWKS, cấp service token (đếm số lần gọi để kiểm cache), cửa đăng nhập và student.
+    identity = await startStub((seen, res) => {
       if (seen.url === '/.well-known/jwks.json') {
         res.writeHead(200, json).end(JSON.stringify({ keys: [toJwk(key.publicKey)] }));
         return;
@@ -120,10 +119,11 @@ describe('gateway (upstream HTTP giả)', () => {
         );
         return;
       }
+      if (seen.url.startsWith('/api/v1/students')) {
+        res.writeHead(200, json).end(envelope({ id: USER_ID }));
+        return;
+      }
       res.writeHead(200, json).end(envelope({ access_token: 'stub' }));
-    });
-    student = await startStub((_seen, res) => {
-      res.writeHead(200, json).end(envelope({ id: USER_ID }));
     });
     media = await startStub((seen, res) => {
       if (seen.url.endsWith('/content')) {
@@ -173,15 +173,14 @@ describe('gateway (upstream HTTP giả)', () => {
         }),
       );
     });
-    stubs.push(auth, student, media, ai, scheduler);
+    stubs.push(identity, media, ai, scheduler);
 
     Object.assign(process.env, {
       OTEL_SDK_DISABLED: 'true',
       SERVICE_CLIENT_ID: 'gateway',
       SERVICE_CLIENT_SECRET: GATEWAY_SECRET,
       GATEWAY_UPSTREAM_TIMEOUT_MS: '300',
-      GATEWAY_AUTH_BASE_URL: auth.url,
-      GATEWAY_STUDENT_BASE_URL: student.url,
+      GATEWAY_IDENTITY_BASE_URL: identity.url,
       GATEWAY_MEDIA_BASE_URL: media.url,
       GATEWAY_AI_BASE_URL: ai.url,
       GATEWAY_SCHEDULER_BASE_URL: scheduler.url,
@@ -217,7 +216,7 @@ describe('gateway (upstream HTTP giả)', () => {
     expect(
       apiResponseSchema(z.object({ access_token: z.string() })).parse(response.body).data,
     ).toEqual({ access_token: 'stub' });
-    const seen = auth.seen.at(-1);
+    const seen = identity.seen.at(-1);
     expect(seen?.url).toBe('/api/v1/auth/student/login');
     expect(JSON.parse(seen?.body.toString('utf8') ?? '{}')).toEqual({
       email: 'student@example.test',
@@ -237,7 +236,7 @@ describe('gateway (upstream HTTP giả)', () => {
       })
       .expect(200);
 
-    const seen = student.seen.at(-1);
+    const seen = identity.seen.at(-1);
     expect(seen?.url).toBe('/api/v1/students?page=2&page_size=5');
     expect(seen?.headers).toMatchObject({
       'x-principal-id': USER_ID,
@@ -249,7 +248,7 @@ describe('gateway (upstream HTTP giả)', () => {
     await expect(
       new TokenVerifier(new StaticKeyProvider([key])).verify(upstreamToken, {
         type: 'service',
-        audience: 'student',
+        audience: 'identity',
       }),
     ).resolves.toMatchObject({ subject: 'gateway', scopes: ['gateway:proxy'] });
     expect(seen?.headers.authorization).not.toBe(bearer('student').authorization);
@@ -257,7 +256,7 @@ describe('gateway (upstream HTTP giả)', () => {
 
   it('service token được cache: nhiều request cùng upstream chỉ xin token một lần', async () => {
     const tokenRequests = (): number =>
-      auth.seen.filter((entry) => entry.url === '/internal/v1/auth/service-token').length;
+      identity.seen.filter((entry) => entry.url === '/internal/v1/auth/service-token').length;
     await request(app.getHttpServer()).get('/api/v1/students').set(bearer('admin')).expect(200);
     const before = tokenRequests();
     await Promise.all(

@@ -119,7 +119,7 @@ describe('ai service (PostgreSQL thật, provider giả qua HTTP)', () => {
 
     Object.assign(process.env, {
       OTEL_SDK_DISABLED: 'true',
-      AUTH_BASE_URL: jwksUrl,
+      IDENTITY_BASE_URL: jwksUrl,
       AI_ENCRYPTION_KEY: encryptionKey,
       AI_COMPLETION_TIMEOUT_MS: '700',
       AI_HEALTH_CHECK_TIMEOUT_MS: '700',

@@ -26,6 +26,7 @@
 | R-10  | Data seeder quy mô lớn cho PostgreSQL                                                                                                                                                                               | 9–10 | R-04, R-05  | Hoàn thành (29/10/2026; PR #66, bỏ qua CI theo chỉ thị của Đức; xem bên dưới) |
 | R-11  | Test, CI, Postman v2; viết lại regression và job CI `mvp-regression`/`w7-compose` (gỡ ở R-05); đổi tên test `w1/w2/w3/w5` theo nghiệp vụ                                                                            | 8–10 | R-04…R-09   | Hoàn thành (29/10/2026; PR #67, CI GitHub xanh trừ GitGuardian báo nhầm; xem bên dưới) |
 | R-12  | Viết lại docs, viết lại smoke tracing/metrics/logs/acceptance (đang gắn luồng v1), kiểm chứng telemetry xuyên service, danh mục case phức tạp v0; ghi nhận schema kết quả RCA và nơi lưu (cho MCP thứ yếu, ADR-002) | 9–10 | tất cả      | Hoàn thành (29/10/2026; PR #68, CI GitHub xanh; xem "R-12" bên dưới) |
+| R-13  | Gộp `auth` + `student` thành service `identity` (code, DB `identity_db`, env, telemetry, compose, CI, docs; [ADR-005](../../adr/adr-005-merge-auth-student-into-identity-v1.md)) | 11–12 | R-04, R-12 | Hoàn thành (30/10/2026; PR #69, CI GitHub đạt 12 job; xem "R-13" bên dưới) |
 
 ## Mốc kiểm tra
 
@@ -52,6 +53,7 @@ Mỗi task chỉ chuyển `Hoàn thành` khi output ghi lệnh đã chạy và k
 | R-10 | Seed lặp cho cùng fingerprint; ghi thời gian và số dòng                                               |
 | R-11 | CI xanh; regression pass; Postman v2 chạy được                                                        |
 | R-12 | Trace đủ span xuyên service; docs đối chiếu code; danh mục case phức tạp v0 có ground truth           |
+| R-13 | Đăng ký student là một transaction trong `identity_db`; e2e `identity` đạt trên PostgreSQL thật; không còn tham chiếu service `auth`/`student` ngoài các ngoại lệ đã ghi; stack compose 21 thành phần healthy; regression và smoke observability đạt với topology mới; số đo (runtime, cặp dependency, cạnh HTTP) đo lại thật |
 
 ## Bằng chứng đã chạy
 
@@ -328,3 +330,27 @@ Phạm vi đã làm: khôi phục metric RabbitMQ, viết lại 5 smoke observab
 - Các mục R-05b/R-08/R-09 từng ghi "→ R-12" mà R-12 không làm: giới hạn tốc độ `POST /internal/v1/auth/service-token`; retention cho `ai_documents`/`ai_jobs` mồ côi; ràng buộc `AI_WORKER_LEASE_MS > AI_COMPLETION_TIMEOUT_MS` bằng schema; header `Location` cho `POST …/ai-jobs`; tệp thật cho media seed; chạy thử với provider LLM thật → Đức phân công lại (không thuộc DoD của R-12).
 - Cảnh báo GitGuardian báo nhầm ở PR #67 vẫn chờ Đức đánh dấu false positive (từ R-11).
 - Thư mục `docs/processed/description/` (mô tả đề tài) chưa rà soát → Đức.
+
+
+### R-13 (chạy cục bộ ngày 30/10/2026, Node 22.13.1, pnpm 11.19.0)
+
+**CI trên GitHub (PR #69, head `c6ebc37`):** `Format, lint và build`, `Unit test, kiến trúc và telemetry`, `Integration trên PostgreSQL và RabbitMQ thật`, 6 job `e2e` (ai, course, identity, media, notification, scheduler), `Validate Compose`, `Reset/seed Testbed twice` (10 phút 3 giây) và GitGuardian đều đạt. `Regression LMS qua Gateway` và `Postman v2` bị bỏ qua (PR không gắn label chạy regression); regression đã chạy cục bộ 46/46 trong runner observability, Postman chưa chạy.
+
+Quyết định: [ADR-005](../../adr/adr-005-merge-auth-student-into-identity-v1.md). Bỏ hướng saga `PENDING`/`activate` của nhánh task-14 (còn trong `git stash@{0}`, không nhập vào).
+
+**Đã chạy:**
+
+- `identity.e2e-spec.ts` (PostgreSQL 17 tạm, cổng 55432): 17 test đạt (đăng ký/đăng nhập/refresh, đua refresh, seed, ba cửa đăng nhập, phân trang, hồ sơ chặn/`INACTIVE`/thiếu → 403, route student public và internal, không có `POST /internal/v1/students`, health/ready, service-token/JWKS, tách bề mặt).
+- Test seed-data (`test:seed-data`) đạt với một DB `identity` và dataset dẫn xuất `identity.student_profiles`.
+- `pnpm format:check`, `pnpm lint`, `pnpm build` đạt; `pnpm test` (architecture, testbed-reset, seed-data, queue-scrape, observability, common, unit mọi service, telemetry) exit 0.
+- `test:observability` (project `aiops-lms-test-observability`, stack `compose.full.yaml` sạch, 22 container lên được):
+  - Lần 1: regression 44/46; `media-upload` bước usage hết 60 giây chờ `usage COURSE_DESCRIPTION xuất hiện` (đường `course` → outbox → RabbitMQ → `media-worker`, không qua `identity`; log không có lỗi). Lần chạy lại: regression 46/46, nên coi là flaky chưa rõ nguyên nhân.
+  - Lần 2: regression 46/46, `stack`, `tracing` (9/9 luồng, kịch bản lỗi `identity`), `logs` (11/11 runtime) đạt; `acceptance` đỏ vì Tempo search cắt số 0 đầu của trace ID (`169455846…` so với `0169455846…` trong log) nên truy vấn Loki không khớp, cứ khoảng 1/16 trace là dính. Đã sửa bằng `padStart(32, '0')` ở `support/telemetry.mjs` và `acceptance-smoke.mjs`.
+  - Sau đó chạy lẻ trên stack giữ lại: `acceptance` và `metrics` đạt. Một lần `acceptance` đỏ thêm vì Grafana tự cài lại plugin Tempo ở nền (13.2.4 → 13.4.1) làm mất datasource; restart container Grafana rồi chạy lại thì đạt. 
+  - Lần 3 (sau khi sửa trace ID, stack sạch, không `--keep`): `pnpm test:observability` **exit 0**: regression 46/46, `stack`, `tracing`, `logs`, `acceptance`, `metrics` đạt liền một lượt (metrics: 38 cặp, 24 queue; C6 trễ 74 giây), stack được dọn, không còn container `aiops-lms-test-*`.
+
+**Chưa chạy cục bộ:** `test:testbed:reset:compose` và `test:seed-data:db` (CI job reset/seed đạt trên PR), `test:postman` (chưa chạy ở đâu), `test:regression` riêng lẻ (đã chạy 46/46 trong runner observability), e2e từng service (CI đạt).
+
+**Số đo thật (30/10/2026, stack một node, thay cho các số suy luận trước đó):** 11/11 runtime có telemetry; **38** cặp (service, identity) (trước đó 42); 24 queue; 9/9 luồng tracing; log 11/11 runtime; độ trễ log/trace/metric khoảng 1,6 / 4,1 / 5,1 giây; C6: lỗi `gateway-identity-token` xuất hiện **70–74 giây** sau khi dừng `identity` (TTL 60 giây, HTTP 504). 16 identity hạ tầng đếm từ danh sách ở telemetry schema mục 3.2.1; 13 cạnh HTTP đếm từ `HTTP_DEPENDENCY_PEERS`.
+
+**Hệ quả cần Đức quyết định:** C5, C6, C7 cùng có `root_cause_service=identity`; ranking hằng tốt nhất Top-3 ≈ 71% (5/7) và Top-1 ≈ 43% (3/7). Đã ghi ở ADR-005 và evaluation-protocol; chưa quyết thêm case hay báo cáo theo component.

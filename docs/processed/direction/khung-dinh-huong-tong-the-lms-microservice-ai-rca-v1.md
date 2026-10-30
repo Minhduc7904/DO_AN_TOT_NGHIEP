@@ -4,6 +4,8 @@
 
 > **Task:** R-12 — [bảng task refactor](../plan/refactor/refactor-board-v1.md)
 >
+> **Cập nhật R-13:** `auth` và `student` đã gộp thành service `identity` ([ADR-005](../adr/adr-005-merge-auth-student-into-identity-v1.md)); tài liệu được sửa tại chỗ theo topology 7 service + 4 worker (11 runtime). Các số đo chưa đo lại sau khi gộp được ghi rõ ở chỗ dùng.
+>
 > **Trạng thái:** Đề xuất — chờ Đức tự xác nhận (refactor do một mình Đức làm, không cần Bách review).
 >
 > **Thay thế:** [khung_dinh_huong_tong_the_lms_microservice_ai_rca](khung_dinh_huong_tong_the_lms_microservice_ai_rca.md) (giữ làm lịch sử, không dùng cho phạm vi mới). Tên file đổi sang `kebab-case` và có hậu tố version theo quy ước đặt tên; nội dung gắn với topology 6 business service + Gateway và vai trò "AI hỗ trợ" ở bản cũ không còn áp dụng.
@@ -48,7 +50,7 @@ Metrics, distributed traces và logs giúp quan sát từng phần nhưng không
 
 ### 2.1. LMS là testbed, không phải sản phẩm chính
 
-LMS thu gọn là System Under Test (SUT) giúp tạo workflow dễ hiểu và dependency đủ đa dạng. Đồ án không nhằm xây LMS đầy đủ và không lấy số lượng CRUD làm đóng góp. Topology v2 (8 service + 4 worker) lớn hơn bản cũ có chủ đích (ADR-001): cần đủ chuỗi nhân quả để tồn tại case mà truy vết thủ công khó thấy.
+LMS thu gọn là System Under Test (SUT) giúp tạo workflow dễ hiểu và dependency đủ đa dạng. Đồ án không nhằm xây LMS đầy đủ và không lấy số lượng CRUD làm đóng góp. Topology v2 (7 service + 4 worker) lớn hơn bản cũ có chủ đích (ADR-001): cần đủ chuỗi nhân quả để tồn tại case mà truy vết thủ công khó thấy.
 
 Service `ai` của LMS (cổng LLM soạn bài và sinh quiz, kèm `ai-worker`) chỉ là một thành phần của SUT và là nguồn dependency/fault (nhà cung cấp LLM), không phải hệ thống AI của đề tài. Không đưa AI tutor, recommendation hoặc chấm điểm tự động vào core.
 
@@ -139,8 +141,8 @@ Các fault category (độ trễ dependency, backlog hàng đợi, giữ kết n
 
 ### 5.1. Trong phạm vi MVP
 
-- LMS testbed 8 service + 4 worker (12 `service.name`): `gateway`, `auth`, `student`, `course`, `media`, `notification`, `scheduler`, `ai` và `media-worker`, `notification-worker`, `scheduler-worker`, `ai-worker`;
-- PostgreSQL 17 (7 logical DB), RabbitMQ (command, outbox/inbox), MinIO, SMTP (Mailpit khi dev/CI), nhà cung cấp LLM (HTTP stub khi test);
+- LMS testbed 7 service + 4 worker (11 `service.name`): `gateway`, `identity`, `course`, `media`, `notification`, `scheduler`, `ai` và `media-worker`, `notification-worker`, `scheduler-worker`, `ai-worker`;
+- PostgreSQL 17 (6 logical DB), RabbitMQ (command, outbox/inbox), MinIO, SMTP (Mailpit khi dev/CI), nhà cung cấp LLM (HTTP stub khi test);
 - Docker Compose;
 - OpenTelemetry, Prometheus, Tempo, Loki và Grafana (trong `aiops-platform/observability/`);
 - automated workload bằng k6 (chưa triển khai);
@@ -196,18 +198,18 @@ Kubernetes không thuộc critical path. Không thêm service mesh.
 +---------------------------------------------------------------------+
 | LMS MICROSERVICE TESTBED v2                                         |
 |                                                                     |
-| gateway -> auth -> student                                          |
+| gateway -> identity                                                 |
 |         -> course -> media, ai (facade)                             |
-|         -> media -> student                                         |
-|         -> notification, scheduler, ai, student                     |
+|         -> media -> identity                                        |
+|         -> notification, scheduler, ai                              |
 |                                                                     |
 | worker: media-worker, notification-worker, scheduler-worker,        |
 |         ai-worker (consume command qua RabbitMQ)                    |
-|   notification-worker -> student; scheduler-worker -> media;        |
+|   notification-worker -> identity; scheduler-worker -> media;       |
 |   ai-worker -> course, media, nhà cung cấp LLM                      |
 |                                                                     |
-| PostgreSQL (7 logical DB) + RabbitMQ + MinIO + SMTP + LLM provider  |
-| mọi cạnh xác thực bằng service token do auth cấp (JWKS)             |
+| PostgreSQL (6 logical DB) + RabbitMQ + MinIO + SMTP + LLM provider  |
+| mọi cạnh xác thực bằng service token do identity cấp (JWKS)         |
 +------------------------------+--------------------------------------+
                                |
                         OpenTelemetry (OTLP/HTTP)
@@ -226,7 +228,7 @@ Kubernetes không thuộc critical path. Không thêm service mesh.
 +---------------------------------------------------------------------+
 ```
 
-Sơ đồ rút gọn; dependency graph đầy đủ (edge `e01–e29`, 17 dependency identity cộng cạnh `*-auth-token`/`*-auth-jwks`) và catalogue ở [service-catalogue-and-topology-v2](../architecture/service-catalogue-and-topology-v2.md). Chi tiết topology và source code thuộc các tài liệu canonical tương ứng.
+Sơ đồ rút gọn; dependency graph đầy đủ (edge `e01–e29`, 16 dependency identity cộng cạnh `*-identity-token`/`*-identity-jwks`) và catalogue ở [service-catalogue-and-topology-v2](../architecture/service-catalogue-and-topology-v2.md). Chi tiết topology và source code thuộc các tài liệu canonical tương ứng.
 
 ## 7. Hướng observability và dữ liệu
 
@@ -240,7 +242,7 @@ service.version
 service.instance.id
 ```
 
-`service.name` là một trong 12 giá trị canonical; container/pod/process name không dùng thay `service.name`. Dependency dùng `dependency_identity` dạng `<service.name bên dùng>-<hạ tầng>` (ví dụ `media-minio`, `ai-llm-provider`, `gateway-auth-token`). Timestamp dùng UTC, ISO-8601. `trace_id` và `span_id` dùng cho correlation, không dùng làm Prometheus label.
+`service.name` là một trong 11 giá trị canonical; container/pod/process name không dùng thay `service.name`. Dependency dùng `dependency_identity` dạng `<service.name bên dùng>-<hạ tầng>` (ví dụ `media-minio`, `ai-llm-provider`, `gateway-identity-token`). Timestamp dùng UTC, ISO-8601. `trace_id` và `span_id` dùng cho correlation, không dùng làm Prometheus label.
 
 ### 7.2. Metrics
 
@@ -313,7 +315,7 @@ root_cause_service = course
 root_cause_component = course-postgres
 ```
 
-Trong MVP, `course-postgres` là component evidence; candidate chính để tính Top-K/MRR là `course`. Candidate set mặc định gồm 11 service/worker (mọi `service.name` trừ `gateway`); `gateway` là symptom mặc định. Không trộn service-level và component-level trong cùng metric chính. Khi owner khác process (ví dụ `ai` và `ai-worker`), primary metric vẫn chấm theo `root_cause_service` của ground truth; owner-level Top-K chỉ là diagnostic phụ (evaluation-protocol-v1 mục 4.2, đề xuất chờ Đức xác nhận).
+Trong MVP, `course-postgres` là component evidence; candidate chính để tính Top-K/MRR là `course`. Candidate set mặc định gồm 10 service/worker (mọi `service.name` trừ `gateway`); `gateway` là symptom mặc định. Không trộn service-level và component-level trong cùng metric chính. Khi owner khác process (ví dụ `ai` và `ai-worker`), primary metric vẫn chấm theo `root_cause_service` của ground truth; owner-level Top-K chỉ là diagnostic phụ (evaluation-protocol-v1 mục 4.2, đề xuất chờ Đức xác nhận).
 
 ### 9.2. Candidate ranking
 
@@ -375,10 +377,10 @@ MVP có tám fault canonical và bảy case phức tạp (chi tiết ở data-ow
 | FB | C1 | Batch thông báo lớn làm chậm `notification-worker`; upload-complete timeout | `notification-worker` |
 | FC | C2 | Export CSV giữ kết nối DB; enroll/quiz submit chậm không có span lỗi | `course` |
 | FD | C3 | Provider LLM chậm; job AI kẹt rồi `WORKER_INTERRUPTED` | `ai` (process `ai-worker`) |
-| FE | C5 | `student-postgres` chậm; batch thông báo `PARTIAL_FAILED`, log không lỗi | `student` |
+| FE | C5 | `identity-postgres` chậm; batch thông báo `PARTIAL_FAILED`, log không lỗi | `identity` |
 | FF | không có case riêng | Quá tải CPU/bộ nhớ một service; bằng chứng phụ | bất kỳ service |
-| FG | C6 | `auth` chậm/chết; 5xx hàng loạt sau khoảng yên lặng (≤ 10 phút) | `auth` |
-| FH | C7 | Lệch khóa ký; 401 đồng loạt khi cache JWKS hết hạn | `auth` |
+| FG | C6 | `identity` chậm/chết; 5xx hàng loạt sau khoảng yên lặng (≤ 10 phút) | `identity` |
+| FH | C7 | Lệch khóa ký; 401 đồng loạt khi cache JWKS hết hạn | `identity` |
 
 Trạng thái kiểm chứng (29/10/2026): chỉ C6 đã chạy thật; các case còn lại mới đo tín hiệu, và chuỗi nhân quả của C1 sang `media-worker` là giả thuyết. Case chỉ vào tập đánh giá khi chuỗi nhân quả đã chạy thật và có ground truth; fault injector và workload k6 thuộc mảng AI, chưa triển khai.
 
@@ -494,8 +496,8 @@ Phương châm:
 ## 16. Decision summary
 
 - LMS thu gọn là testbed; RCA engine (ML + dependency graph) là bên truy vết chính, developer/SRE là người dùng kết quả (ADR-002).
-- MVP topology là 8 service + 4 worker (12 `service.name`); hạ tầng PostgreSQL 17, RabbitMQ, MinIO, SMTP, nhà cung cấp LLM; Redis và Storage Mock đã bỏ (ADR-001, ADR-003).
-- Xác thực bằng token EdDSA + JWKS và service access token; `auth` là điểm lỗi chung có chủ đích (ADR-004).
+- MVP topology là 7 service + 4 worker (11 `service.name`); hạ tầng PostgreSQL 17, RabbitMQ, MinIO, SMTP, nhà cung cấp LLM; Redis và Storage Mock đã bỏ (ADR-001, ADR-003).
+- Xác thực bằng token EdDSA + JWKS và service access token; `identity` là điểm lỗi chung có chủ đích (ADR-004).
 - OpenTelemetry là chuẩn telemetry; Docker Compose là runtime chính.
 - Analysis là Python/CLI; backend testbed dùng TypeScript + NestJS.
 - Controlled fault injection (FA–FH, case C1–C7) là nguồn ground truth chính; chỉ case đã chạy thật vào đánh giá.
@@ -519,7 +521,7 @@ Implementation backend phải tham chiếu service-catalogue v2 và các contrac
 | Tiêu đề | Hệ thống phát hiện bất thường và hỗ trợ phân tích nguyên nhân | Hệ thống AI truy vết nguyên nhân sự cố |
 | Vai trò AI | AI phục vụ developer/SRE trong pipeline phân tích; kết quả là danh sách candidate cho người | RCA engine (ML + dependency graph) là bên truy vết chính, kết luận không cần người can thiệp; MCP/agent thứ yếu (ADR-002) |
 | Bài toán | Symptom lan ngược lên service gọi | Thêm symptom ở nơi không nằm trên đường request (dependency dùng chung, async, xác thực) và so sánh với truy vết thủ công |
-| Topology | 6 business service + Gateway; Redis, storage mock | 8 service + 4 worker (12 `service.name`); PostgreSQL 17, RabbitMQ, MinIO, SMTP, nhà cung cấp LLM (ADR-001/003/004) |
+| Topology | 6 business service + Gateway; Redis, storage mock | 7 service + 4 worker (11 `service.name`); PostgreSQL 17, RabbitMQ, MinIO, SMTP, nhà cung cấp LLM (ADR-001/003/004) |
 | RQ | RQ1–RQ5 chính; RQ6 tùy chọn (fault category) | RQ1–RQ6 chính (RQ6 mới: AI so với thủ công); fault category thành RQ7 tùy chọn |
 | Fault | 5 scenario F1–F5 | 8 fault FA–FH, bảy case phức tạp C1–C7 |
 | Quy mô | 5 × 3 = 15 run | Đề xuất chờ Đức xác nhận: `K × R` với `R = 3` (21 run nếu đủ bảy case) |

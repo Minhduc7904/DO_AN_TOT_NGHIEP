@@ -19,7 +19,7 @@ const WORKFLOWS = [
   'ai-lesson',
   'media-cleanup-scheduler',
 ];
-// Thứ tự có ý nghĩa: tracing tạo lỗi (auth treo) cho logs/acceptance dùng, metrics dừng một worker nên
+// Thứ tự có ý nghĩa: tracing tạo lỗi (identity treo) cho logs/acceptance dùng, metrics dừng một worker nên
 // chạy cuối.
 const SMOKES = ['stack', 'tracing', 'logs', 'acceptance', 'metrics'];
 
@@ -82,7 +82,7 @@ withComposeStack(process.argv.slice(2), {
   cleanup: removeFakeAiProvider,
   stack: 'full',
   telemetry: true,
-  extraEnv: { AUTH_SERVICE_TOKEN_TTL_SECONDS: '60' },
+  extraEnv: { IDENTITY_SERVICE_TOKEN_TTL_SECONDS: '60' },
 }).catch((error) => {
   console.error(
     `[observability] THẤT BẠI: ${error instanceof Error ? error.message : String(error)}`,

@@ -7,7 +7,7 @@ export const TOKEN_TYPES = ['user', 'service'] as const;
 export const tokenTypeSchema = z.enum(TOKEN_TYPES);
 export type TokenType = z.infer<typeof tokenTypeSchema>;
 
-export const TOKEN_ISSUER = 'aiops-lms-auth';
+export const TOKEN_ISSUER = 'aiops-lms-identity';
 export const USER_TOKEN_AUDIENCE = 'aiops-lms';
 
 /** Scope của Gateway: được gọi mọi route public của service đích và chuyển danh tính user. */

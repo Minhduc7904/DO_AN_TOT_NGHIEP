@@ -9,7 +9,7 @@ import { AppError } from '../errors/index.js';
 import type { ServiceTokenGrant, ServiceTokenSource } from './service-token.provider.js';
 
 export interface HttpServiceTokenSourceOptions {
-  /** Định danh dependency canonical, ví dụ `course-auth-token`. */
+  /** Định danh dependency canonical, ví dụ `course-identity-token`. */
   dependency: string;
   baseUrl: string;
   clientId: string;

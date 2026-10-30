@@ -43,8 +43,8 @@ pnpm run seed:data -- --environment local --compose-env-file ../docker-compose/.
 
 | Bảng | small | medium | large |
 | --- | ---: | ---: | ---: |
-| `auth_users` (học viên) và `students` | 1.000 | 20.000 | 100.000 |
-| `auth_users` (giảng viên) | 10 | 50 | 200 |
+| `identity_users` (học viên) và `identity_student_profiles` (tự tính, mỗi học viên một hồ sơ) | 1.000 | 20.000 | 100.000 |
+| `identity_users` (giảng viên) | 10 | 50 | 200 |
 | `courses` | 20 | 100 | 300 |
 | `lessons` | 100 | 800 | 3.000 |
 | `quizzes` | 60 | 500 | 2.000 |
@@ -108,12 +108,12 @@ Seeder dọn toàn bộ dữ liệu seed cũ của các database được chọn
 ```bash
 pnpm run seed:data -- --environment local --compose-env-file ../docker-compose/.env \
   --non-interactive --yes --profile medium --seed 42 \
-  --databases auth,student,course \
+  --databases identity,course \
   --count course.enrollments=100000 \
   --report /tmp/seed-report.json
 ```
 
-- `--databases` giới hạn các database (`auth`, `student`, `course`, `media`, `notification`, `ai`, `scheduler`); bỏ qua thì dùng mọi database sẵn sàng.
+- `--databases` giới hạn các database (`identity`, `course`, `media`, `notification`, `ai`, `scheduler`); bỏ qua thì dùng mọi database sẵn sàng.
 - `--count <db.bảng>=<số>` ghi đè số lượng một bảng, lặp lại được. Khóa bảng có dạng `course.enrollments`, `media.objects`, `notification.items`; xem danh sách đầy đủ ở `catalogue.mjs`.
 - `--report` ghi báo cáo JSON gồm số dòng, thời gian và fingerprint.
 - Không có TTY thì seeder tự chạy chế độ này và bắt buộc có `--yes`.
