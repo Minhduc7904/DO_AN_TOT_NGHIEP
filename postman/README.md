@@ -6,7 +6,7 @@ chính các request, không phụ thuộc dữ liệu seed hay khóa học có s
 
 | File | Vai trò |
 | --- | --- |
-| `lms-v2.postman_collection.json` | Collection 90 request, 224 assertion, chia thư mục theo workflow |
+| `lms-v2.postman_collection.json` | Collection 90 request, 226 assertion, chia thư mục theo workflow |
 | `lms-v2.postman_environment.json` | Biến môi trường: `gateway_url`, `mailpit_url`, tài khoản bootstrap, `ai_provider_url` |
 | `fixtures/sample-note.txt` | Tệp mẫu cho request upload trực tiếp lên MinIO (kích thước và SHA-256 khớp collection) |
 

@@ -130,17 +130,25 @@ export const lessonDtoSchema = lessonOutlineDtoSchema.extend({
 });
 export type LessonDto = z.infer<typeof lessonDtoSchema>;
 
-/** Chi tiết khóa học: thông tin khóa + dàn bài (không kèm nội dung bài học). */
+export const enrollmentStatusSchema = z.enum(['ENROLLED', 'NOT_ENROLLED']);
+export type EnrollmentStatus = z.infer<typeof enrollmentStatusSchema>;
+
+/** Trạng thái ghi danh của chính người gọi với một khóa học. */
+export const courseEnrollmentDtoSchema = z.object({
+  status: enrollmentStatusSchema,
+  /** `null` khi chưa ghi danh. */
+  enrolled_at: dateTime.nullable(),
+});
+export type CourseEnrollmentDto = z.infer<typeof courseEnrollmentDtoSchema>;
+
+/**
+ * Chi tiết khóa học: chỉ thông tin khóa, không kèm bài học (lấy qua `GET /courses/{id}/lessons`).
+ * `enrollment` là trạng thái ghi danh của học viên đang gọi; `null` với admin và giảng viên.
+ */
 export const courseDetailDtoSchema = courseDtoSchema.extend({
-  lessons: z.array(lessonOutlineDtoSchema),
+  enrollment: courseEnrollmentDtoSchema.nullable(),
 });
 export type CourseDetailDto = z.infer<typeof courseDetailDtoSchema>;
-
-/** Khóa học đã ghi danh: học viên đọc được nội dung bài học. */
-export const enrolledCourseDtoSchema = courseDtoSchema.extend({
-  lessons: z.array(lessonDtoSchema),
-});
-export type EnrolledCourseDto = z.infer<typeof enrolledCourseDtoSchema>;
 
 export const courseSummaryDtoSchema = z.object({
   total: z.number().int(),

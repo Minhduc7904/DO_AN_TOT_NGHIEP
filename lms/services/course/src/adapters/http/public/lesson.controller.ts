@@ -24,6 +24,7 @@ import {
 import { CreateLessonUseCase } from '../../../application/use-cases/lessons/create-lesson.use-case.js';
 import { DeleteLessonUseCase } from '../../../application/use-cases/lessons/delete-lesson.use-case.js';
 import { GetLessonUseCase } from '../../../application/use-cases/lessons/get-lesson.use-case.js';
+import { ListCourseLessonsUseCase } from '../../../application/use-cases/lessons/list-course-lessons.use-case.js';
 import { ReorderLessonsUseCase } from '../../../application/use-cases/lessons/reorder-lessons.use-case.js';
 import { UpdateLessonUseCase } from '../../../application/use-cases/lessons/update-lesson.use-case.js';
 import { presentLesson } from '../shared/course.presenter.js';
@@ -36,8 +37,20 @@ export class LessonController {
     @Inject(UpdateLessonUseCase) private readonly updateLesson: UpdateLessonUseCase,
     @Inject(DeleteLessonUseCase) private readonly deleteLesson: DeleteLessonUseCase,
     @Inject(GetLessonUseCase) private readonly getLesson: GetLessonUseCase,
+    @Inject(ListCourseLessonsUseCase) private readonly listLessons: ListCourseLessonsUseCase,
     @Inject(ReorderLessonsUseCase) private readonly reorderLessons: ReorderLessonsUseCase,
   ) {}
+
+  /** Học viên chỉ đọc được khi đã ghi danh; admin và giảng viên khi được quản lý khóa học. */
+  @Roles('admin', 'instructor', 'student')
+  @Get()
+  async list(
+    @CurrentPrincipal() principal: Principal,
+    @Param('course_id') courseId: string,
+  ): Promise<LessonDto[]> {
+    const lessons = await this.listLessons.execute(principal, parseInput(idSchema, courseId));
+    return lessons.map(presentLesson);
+  }
 
   @Post()
   async create(

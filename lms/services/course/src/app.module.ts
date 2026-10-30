@@ -68,13 +68,13 @@ import { GetCourseUseCase } from './application/use-cases/courses/get-course.use
 import { ListCoursesUseCase } from './application/use-cases/courses/list-courses.use-case.js';
 import { UpdateCourseUseCase } from './application/use-cases/courses/update-course.use-case.js';
 import { EnrollCourseUseCase } from './application/use-cases/learning/enroll-course.use-case.js';
-import { GetEnrolledCourseUseCase } from './application/use-cases/learning/get-enrolled-course.use-case.js';
 import { GetMyCourseProgressUseCase } from './application/use-cases/learning/get-my-course-progress.use-case.js';
 import { ListMyEnrollmentsUseCase } from './application/use-cases/learning/list-my-enrollments.use-case.js';
 import { UpdateLessonProgressUseCase } from './application/use-cases/learning/update-lesson-progress.use-case.js';
 import { CreateLessonUseCase } from './application/use-cases/lessons/create-lesson.use-case.js';
 import { DeleteLessonUseCase } from './application/use-cases/lessons/delete-lesson.use-case.js';
 import { GetLessonUseCase } from './application/use-cases/lessons/get-lesson.use-case.js';
+import { ListCourseLessonsUseCase } from './application/use-cases/lessons/list-course-lessons.use-case.js';
 import { ReorderLessonsUseCase } from './application/use-cases/lessons/reorder-lessons.use-case.js';
 import { UpdateLessonUseCase } from './application/use-cases/lessons/update-lesson.use-case.js';
 import { CreateQuizUseCase } from './application/use-cases/quizzes/create-quiz.use-case.js';
@@ -161,9 +161,9 @@ const USE_CASES: Provider[] = [
   })),
   {
     provide: GetCourseUseCase,
-    useFactory: (courses: CourseRepository, lessons: LessonRepository) =>
-      new GetCourseUseCase(courses, lessons),
-    inject: [COURSE_REPOSITORY, LESSON_REPOSITORY],
+    useFactory: (courses: CourseRepository, enrollments: EnrollmentRepository) =>
+      new GetCourseUseCase(courses, enrollments),
+    inject: [COURSE_REPOSITORY, ENROLLMENT_REPOSITORY],
   },
   // lessons
   {
@@ -191,6 +191,15 @@ const USE_CASES: Provider[] = [
       media: MediaUsageEffects,
     ) => new DeleteLessonUseCase(courses, lessons, quizzes, media),
     inject: [COURSE_REPOSITORY, LESSON_REPOSITORY, QUIZ_REPOSITORY, MEDIA_EFFECTS],
+  },
+  {
+    provide: ListCourseLessonsUseCase,
+    useFactory: (
+      courses: CourseRepository,
+      lessons: LessonRepository,
+      enrollments: EnrollmentRepository,
+    ) => new ListCourseLessonsUseCase(courses, lessons, enrollments),
+    inject: [COURSE_REPOSITORY, LESSON_REPOSITORY, ENROLLMENT_REPOSITORY],
   },
   ...[GetLessonUseCase, ReorderLessonsUseCase].map((useCase) => ({
     provide: useCase,
@@ -271,15 +280,6 @@ const USE_CASES: Provider[] = [
     provide: ListMyEnrollmentsUseCase,
     useFactory: (enrollments: EnrollmentRepository) => new ListMyEnrollmentsUseCase(enrollments),
     inject: [ENROLLMENT_REPOSITORY],
-  },
-  {
-    provide: GetEnrolledCourseUseCase,
-    useFactory: (
-      courses: CourseRepository,
-      lessons: LessonRepository,
-      enrollments: EnrollmentRepository,
-    ) => new GetEnrolledCourseUseCase(courses, lessons, enrollments),
-    inject: [COURSE_REPOSITORY, LESSON_REPOSITORY, ENROLLMENT_REPOSITORY],
   },
   {
     provide: UpdateLessonProgressUseCase,

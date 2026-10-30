@@ -11,7 +11,7 @@ import { GetCourseUseCase } from '../../src/application/use-cases/courses/get-co
 import { ListCoursesUseCase } from '../../src/application/use-cases/courses/list-courses.use-case.js';
 import { UpdateCourseUseCase } from '../../src/application/use-cases/courses/update-course.use-case.js';
 import { createWorld, principals } from '../support/in-memory.js';
-import { seedCourse, seedLesson } from '../support/seed.js';
+import { enroll, seedCourse } from '../support/seed.js';
 
 async function collect(chunks: AsyncGenerator<string, void, undefined>): Promise<string[]> {
   const out: string[] = [];
@@ -93,16 +93,39 @@ describe('course use cases', () => {
     expect((await list.execute(principals.admin, { search: 'KHÓA HỌC 2' }, 1, 10)).total).toBe(1);
   });
 
-  it('GetCourse: kèm dàn bài; học viên không thấy khóa chưa xuất bản; giảng viên khác bị 403', async () => {
+  it('GetCourse: học viên kèm trạng thái ghi danh, không thấy khóa chưa xuất bản; giảng viên khác bị 403', async () => {
     const world = createWorld();
-    const get = new GetCourseUseCase(world.courses, world.lessons);
+    const get = new GetCourseUseCase(world.courses, world.enrollments);
     const published = seedCourse(world, 'PUBLISHED');
     const draft = seedCourse(world, 'DRAFT');
-    await seedLesson(world, published.id);
 
-    expect((await get.execute(principals.student, published.id)).lessons).toHaveLength(1);
+    expect(await get.execute(principals.student, published.id)).toMatchObject({
+      enrollment: { status: 'NOT_ENROLLED', enrolledAt: null },
+    });
+    await enroll(world, published.id, principals.student.id);
+    expect(await get.execute(principals.student, published.id)).toMatchObject({
+      enrollment: { status: 'ENROLLED', enrolledAt: expect.any(Date) as Date },
+    });
+    // Ghi danh của học viên khác không ảnh hưởng.
+    expect(await get.execute(principals.otherStudent, published.id)).toMatchObject({
+      enrollment: { status: 'NOT_ENROLLED' },
+    });
     await expect(get.execute(principals.student, draft.id)).rejects.toMatchObject({ status: 404 });
-    expect((await get.execute(principals.owner, draft.id)).course.id).toBe(draft.id);
+    // Đã ghi danh thì vẫn thấy khóa dù sau đó bị lưu trữ.
+    const archived = seedCourse(world, 'ARCHIVED');
+    await enroll(world, archived.id, principals.student.id);
+    expect(await get.execute(principals.student, archived.id)).toMatchObject({
+      course: { id: archived.id },
+      enrollment: { status: 'ENROLLED' },
+    });
+    await expect(get.execute(principals.otherStudent, archived.id)).rejects.toMatchObject({
+      status: 404,
+    });
+    // Admin và giảng viên không có trạng thái ghi danh.
+    expect(await get.execute(principals.owner, draft.id)).toMatchObject({
+      course: { id: draft.id },
+      enrollment: null,
+    });
     await expect(get.execute(principals.otherInstructor, draft.id)).rejects.toMatchObject({
       status: 403,
     });
