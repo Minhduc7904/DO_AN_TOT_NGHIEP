@@ -1,4 +1,4 @@
-import type { AccountDto } from '@aiops-lms/contracts';
+import { type AccountDto, userAvatarUrl } from '@aiops-lms/contracts';
 
 import type { Account } from '../../../domain/account.js';
 
@@ -10,6 +10,7 @@ export function presentAccount(account: Account): AccountDto {
     full_name: account.fullName,
     role: account.role,
     status: account.status,
+    avatar_url: userAvatarUrl(account.id),
     created_at: account.createdAt.toISOString(),
   };
 }

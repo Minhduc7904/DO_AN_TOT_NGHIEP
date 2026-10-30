@@ -73,7 +73,7 @@ function setup(options: Partial<CleanupMediaOptions> = {}): {
     uow.usages.rows.set(id, {
       id,
       mediaId,
-      ownerKind: usageType === 'STUDENT_AVATAR' ? 'STUDENT' : 'COURSE',
+      ownerKind: usageType === 'USER_AVATAR' ? 'USER' : 'COURSE',
       ownerId: uuid(),
       usageType,
       position: 0,
@@ -94,7 +94,7 @@ describe('CleanupMediaUseCase', () => {
     const used = await seed({});
     attach(used.id);
     const avatar = await seed({});
-    attach(avatar.id, 'STUDENT_AVATAR');
+    attach(avatar.id, 'USER_AVATAR');
     const thumbnailOfCourse = await seed({});
     attach(thumbnailOfCourse.id, 'COURSE_THUMBNAIL');
     const recent = await seed({ createdAt: hoursAgo(2), updatedAt: hoursAgo(2) });

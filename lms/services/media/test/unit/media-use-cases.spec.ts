@@ -19,6 +19,12 @@ function sequentialIds(): IdGenerator {
 
 const owner: Principal = { id: '11111111-1111-4111-8111-111111111111', role: 'instructor' };
 const other: Principal = { id: '22222222-2222-4222-8222-222222222222', role: 'instructor' };
+const PNG = Buffer.concat([
+  Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+  Buffer.from('png-bytes'),
+]);
+const JPEG = Buffer.concat([Buffer.from([0xff, 0xd8, 0xff, 0xe0]), Buffer.from('jpeg-bytes')]);
+const PDF = Buffer.from('%PDF-1.4 noi dung');
 const sha = (content: Buffer): string => createHash('sha256').update(content).digest('hex');
 
 function setup(): {
@@ -45,12 +51,11 @@ function setup(): {
 describe('UploadMediaUseCase', () => {
   it('ghi object vào bucket/key theo ngày UTC, READY và phát command thumbnail cho ảnh', async () => {
     const { uow, storage, upload } = setup();
-    const content = Buffer.from('png-bytes');
+    const content = PNG;
 
     const media = await upload.execute(owner, {
       content,
       originalName: 'Ảnh.PNG',
-      mimeType: 'image/png',
     });
 
     expect(media).toMatchObject({
@@ -73,12 +78,26 @@ describe('UploadMediaUseCase', () => {
   it('tài liệu không phát command thumbnail', async () => {
     const { uow, upload } = setup();
     const media = await upload.execute(owner, {
-      content: Buffer.from('%PDF'),
+      content: PDF,
       originalName: 'a.pdf',
-      mimeType: 'application/pdf',
     });
     expect(media).toMatchObject({ type: 'DOCUMENT', thumbnailStatus: 'NOT_APPLICABLE' });
     expect(uow.commands).toEqual([]);
+  });
+
+  it('MIME do server suy ra từ nội dung, không theo tên tệp hay phần khai báo của client', async () => {
+    const { upload } = setup();
+    const disguised = await upload.execute(owner, { content: PDF, originalName: 'anh.png' });
+    expect(disguised).toMatchObject({
+      type: 'DOCUMENT',
+      mimeType: 'application/pdf',
+      bucket: 'documents',
+    });
+    const unknown = await upload.execute(owner, {
+      content: Buffer.from([0x00, 0x01, 0x02, 0xfe]),
+      originalName: 'anh.png',
+    });
+    expect(unknown).toMatchObject({ type: 'OTHER', mimeType: 'application/octet-stream' });
   });
 
   it('từ chối file rỗng và file vượt giới hạn của loại', async () => {
@@ -87,14 +106,12 @@ describe('UploadMediaUseCase', () => {
       upload.execute(owner, {
         content: Buffer.alloc(0),
         originalName: 'a.png',
-        mimeType: 'image/png',
       }),
     ).rejects.toMatchObject({ status: 400 });
     await expect(
       upload.execute(owner, {
-        content: Buffer.alloc(10 * 1024 * 1024 + 1),
+        content: Buffer.concat([PNG, Buffer.alloc(10 * 1024 * 1024)]),
         originalName: 'a.png',
-        mimeType: 'image/png',
       }),
     ).rejects.toMatchObject({ code: 'MEDIA_TOO_LARGE', status: 413 });
   });
@@ -104,9 +121,8 @@ describe('UploadMediaUseCase', () => {
     uow.run = () => Promise.reject(new Error('db down'));
     await expect(
       upload.execute(owner, {
-        content: Buffer.from('x'),
+        content: PNG,
         originalName: 'a.png',
-        mimeType: 'image/png',
       }),
     ).rejects.toThrow('db down');
     expect(storage.objects.size).toBe(0);
@@ -114,16 +130,17 @@ describe('UploadMediaUseCase', () => {
 });
 
 describe('upload trực tiếp (intent → complete)', () => {
-  const content = Buffer.from('direct-upload-bytes');
+  const content = Buffer.concat([PNG, Buffer.from('direct-upload-bytes')]);
 
   async function intentFor(
     ctx: ReturnType<typeof setup>,
     checksum = sha(content),
+    sizeBytes = content.length,
   ): Promise<{ id: string; tmpKey: string; finalKey: string }> {
     const result = await ctx.intent.execute(owner, {
       fileName: 'bai.png',
       mimeType: 'image/png',
-      sizeBytes: content.length,
+      sizeBytes,
       checksumSha256: checksum,
     });
     const media = (await ctx.uow.media.findById(result.mediaId))!;
@@ -176,6 +193,33 @@ describe('upload trực tiếp (intent → complete)', () => {
     expect(ctx.uow.commands).toEqual([]);
   });
 
+  it('nội dung thuộc loại khác loại đã khai báo: xóa object tạm, FAILED, MEDIA_MIME_MISMATCH', async () => {
+    const ctx = setup();
+    const { id, tmpKey } = await intentFor(ctx, sha(PDF), PDF.length);
+    await ctx.storage.put('images', tmpKey, PDF, 'image/png');
+
+    await expect(ctx.complete.execute(owner, id)).rejects.toMatchObject({
+      code: 'MEDIA_MIME_MISMATCH',
+      status: 415,
+    });
+    expect(ctx.storage.objects.size).toBe(0);
+    expect(await ctx.uow.media.findById(id)).toMatchObject({
+      status: 'FAILED',
+      failureReason: 'MIME_MISMATCH',
+    });
+    expect(ctx.uow.commands).toEqual([]);
+  });
+
+  it('cùng loại nhưng khác định dạng: lưu MIME thật của nội dung', async () => {
+    const ctx = setup();
+    const { id, tmpKey } = await intentFor(ctx, sha(JPEG), JPEG.length);
+    await ctx.storage.put('images', tmpKey, JPEG, 'image/png');
+
+    const media = await ctx.complete.execute(owner, id);
+
+    expect(media).toMatchObject({ status: 'READY', type: 'IMAGE', mimeType: 'image/jpeg' });
+  });
+
   it('sai dung lượng cũng bị coi là không khớp', async () => {
     const ctx = setup();
     const { id, tmpKey } = await intentFor(ctx);
@@ -224,9 +268,8 @@ describe('RetryMediaThumbnailUseCase', () => {
   it('đặt lại job FAILED về QUEUED và phát command mới', async () => {
     const ctx = setup();
     const media = await ctx.upload.execute(owner, {
-      content: Buffer.from('x'),
+      content: PNG,
       originalName: 'a.png',
-      mimeType: 'image/png',
     });
     await ctx.uow.media.update(media.id, { thumbnailStatus: 'FAILED' });
     const job = (await ctx.uow.jobs.findByKey(`thumbnail:${media.id}`))!;
@@ -245,9 +288,8 @@ describe('RetryMediaThumbnailUseCase', () => {
   it('đã READY thì không làm gì; tài liệu và người lạ bị từ chối', async () => {
     const ctx = setup();
     const media = await ctx.upload.execute(owner, {
-      content: Buffer.from('x'),
+      content: PNG,
       originalName: 'a.png',
-      mimeType: 'image/png',
     });
     await ctx.uow.media.update(media.id, { thumbnailStatus: 'READY' });
     await ctx.retry.execute(owner, media.id);
@@ -257,7 +299,6 @@ describe('RetryMediaThumbnailUseCase', () => {
     const doc = await ctx.upload.execute(owner, {
       content: Buffer.from('x'),
       originalName: 'a.txt',
-      mimeType: 'text/plain',
     });
     await expect(ctx.retry.execute(owner, doc.id)).rejects.toMatchObject({ status: 400 });
   });

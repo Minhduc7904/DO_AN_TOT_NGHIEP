@@ -3,6 +3,7 @@ import { AppError } from '@aiops-lms/common/errors';
 /** Mã lỗi nghiệp vụ của `media` (khai báo trong http-and-event-contracts-v2 §4.4). */
 export const MEDIA_ERROR_CODES = {
   checksumMismatch: 'MEDIA_CHECKSUM_MISMATCH',
+  mimeMismatch: 'MEDIA_MIME_MISMATCH',
   notReady: 'MEDIA_NOT_READY',
   tooLarge: 'MEDIA_TOO_LARGE',
   uploadNotCompleted: 'MEDIA_UPLOAD_NOT_COMPLETED',
@@ -20,6 +21,13 @@ export const mediaErrors = {
       MEDIA_ERROR_CODES.checksumMismatch,
       400,
       'Checksum hoặc dung lượng file đã upload không khớp khai báo',
+    ),
+  mimeMismatch: (details: unknown): AppError =>
+    new AppError(
+      MEDIA_ERROR_CODES.mimeMismatch,
+      415,
+      'Nội dung file không thuộc loại đã khai báo khi tạo phiên upload',
+      details,
     ),
   notReady: (details: unknown = null): AppError =>
     new AppError(MEDIA_ERROR_CODES.notReady, 409, 'Media chưa sẵn sàng cho thao tác này', details),

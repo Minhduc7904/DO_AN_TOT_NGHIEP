@@ -73,6 +73,7 @@ describe('notification + notification-worker (PostgreSQL, RabbitMQ, Mailpit th�
       const dto = (student: (typeof students)[0]): unknown => ({
         ...student,
         full_name: 'Học viên',
+        avatar_url: `/api/v1/media/avatars/${student.id}`,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       });

@@ -38,7 +38,9 @@ describe('media + media-worker (PostgreSQL, MinIO, RabbitMQ thật)', () => {
   const instructor = asRole('instructor', instructorId);
   const otherInstructor = asRole('instructor', otherInstructorId);
   const student = asRole('student', studentId);
-  const admin = asRole('admin', randomUUID());
+  const adminId = randomUUID();
+  const admin = asRole('admin', adminId);
+  const inactiveStudent = asRole('student', inactiveStudentId);
   // Route anonymous (content, thumbnail, url) chỉ cần service token của Gateway.
   const gatewayOnly = { authorization: `Bearer ${gatewayToken}` };
   const courseToken = mintServiceToken(signingKey, {
@@ -93,6 +95,7 @@ describe('media + media-worker (PostgreSQL, MinIO, RabbitMQ thật)', () => {
             id: match[1],
             email: 's@example.com',
             full_name: 'Học viên',
+            avatar_url: `/api/v1/media/avatars/${match[1]}`,
             status: match[1] === studentId ? 'ACTIVE' : 'INACTIVE',
             created_at: now,
             updated_at: now,
@@ -278,6 +281,41 @@ describe('media + media-worker (PostgreSQL, MinIO, RabbitMQ thật)', () => {
     expect((library.body.data as unknown[]).length).toBe(
       (library.body.meta.pagination as { total: number }).total,
     );
+  });
+
+  it('MIME do server suy ra từ nội dung: multipart bỏ qua Content-Type và đuôi tệp của client', async () => {
+    const pdf = Buffer.from('%PDF-1.4 giả làm ảnh');
+    const res = await http()
+      .post('/api/v1/media')
+      .set(instructor)
+      .attach('file', pdf, { filename: 'anh.png', contentType: 'image/png' })
+      .expect(201);
+    expect(res.body.data).toMatchObject({
+      type: 'DOCUMENT',
+      mime_type: 'application/pdf',
+      thumbnail_status: 'NOT_APPLICABLE',
+    });
+    await http().get(`/api/v1/media/${res.body.data.id}/content`).set(gatewayOnly).expect(200);
+  });
+
+  it('upload trực tiếp: nội dung khác loại khai báo → 415 MEDIA_MIME_MISMATCH, FAILED; cùng loại thì lưu MIME thật', async () => {
+    const pdf = Buffer.from('%PDF-1.4 giả làm ảnh');
+    const fake = await uploadDirect(instructor, pdf, 'anh.png', 'image/png');
+    expect(fake.complete.status).toBe(415);
+    expect(fake.complete.body.error.code).toBe('MEDIA_MIME_MISMATCH');
+    expect(await getMedia(instructor, fake.mediaId)).toMatchObject({
+      status: 'FAILED',
+      content_url: null,
+    });
+
+    const jpeg = await sharp({
+      create: { width: 8, height: 8, channels: 3, background: '#336699' },
+    })
+      .jpeg()
+      .toBuffer();
+    const real = await uploadDirect(instructor, jpeg, 'khai-bao-sai.png', 'image/png');
+    expect(real.complete.status).toBe(200);
+    expect(real.complete.body.data).toMatchObject({ type: 'IMAGE', mime_type: 'image/jpeg' });
   });
 
   it('checksum sai → MEDIA_CHECKSUM_MISMATCH, media FAILED, không còn object tạm', async () => {
@@ -532,15 +570,21 @@ describe('media + media-worker (PostgreSQL, MinIO, RabbitMQ thật)', () => {
       await intent(base('phim.mp4', 'video/mp4')).expect(201);
 
       // Multipart: giá trị không phải 'true'/'false' và video có cờ đều bị từ chối.
-      const upload = (extra: string, name = 'x.pdf', type = 'application/pdf'): request.Test =>
+      const mp4 = Buffer.concat([Buffer.from([0, 0, 0, 0x18]), Buffer.from('ftypisom')]);
+      const upload = (
+        extra: string,
+        name = 'x.pdf',
+        type = 'application/pdf',
+        content = Buffer.from('%PDF-1.4'),
+      ): request.Test =>
         http()
           .post('/api/v1/media')
           .set(instructor)
           .field('extract_text', extra)
-          .attach('file', Buffer.from('%PDF-1.4'), { filename: name, contentType: type });
+          .attach('file', content, { filename: name, contentType: type });
       await upload('maybe').expect(400);
       await upload('1').expect(400);
-      await upload('true', 'phim.mp4', 'video/mp4').expect(400);
+      await upload('true', 'phim.mp4', 'video/mp4', mp4).expect(400);
     });
   });
 
@@ -572,7 +616,7 @@ describe('media + media-worker (PostgreSQL, MinIO, RabbitMQ thật)', () => {
       .set(instructor)
       .send({
         media_id: image,
-        owner_kind: 'STUDENT',
+        owner_kind: 'USER',
         owner_id: courseId,
         usage_type: 'COURSE_THUMBNAIL',
       })
@@ -707,21 +751,72 @@ describe('media + media-worker (PostgreSQL, MinIO, RabbitMQ thật)', () => {
       .expect(404);
   });
 
-  it('avatar student: chỉ chủ hồ sơ ACTIVE, qua cạnh media → student', async () => {
-    const { mediaId } = await uploadDirect(student, await png(), 'avatar.png', 'image/png');
-    const attach = (headers: Record<string, string>, ownerId: string): request.Test =>
+  it('avatar: mỗi role tự đặt avatar của mình; student cần hồ sơ ACTIVE (cạnh media → identity)', async () => {
+    const attach = (
+      headers: Record<string, string>,
+      mediaId: string,
+      ownerId: string,
+    ): request.Test =>
       http().post('/api/v1/media/usages').set(headers).send({
         media_id: mediaId,
-        owner_kind: 'STUDENT',
+        owner_kind: 'USER',
         owner_id: ownerId,
-        usage_type: 'STUDENT_AVATAR',
+        usage_type: 'USER_AVATAR',
       });
-    const ok = await attach(student, studentId);
-    expect(ok.status).toBe(201);
-    expect((await attach(student, randomUUID())).status).toBe(403);
-    // Hồ sơ không còn ACTIVE (do admin gắn thay) bị từ chối; hồ sơ không tồn tại → 404.
-    expect((await attach(admin, inactiveStudentId)).status).toBe(403);
-    expect((await attach(admin, randomUUID())).status).toBe(404);
+    const mine = async (headers: Record<string, string>): Promise<string> =>
+      (await uploadDirect(headers, await png(), 'avatar.png', 'image/png')).mediaId;
+
+    const studentAvatar = await mine(student);
+    expect((await attach(student, studentAvatar, studentId)).status).toBe(201);
+    expect((await attach(student, studentAvatar, randomUUID())).status).toBe(403);
+    // Instructor và admin có avatar riêng, không phụ thuộc hồ sơ student.
+    expect((await attach(instructor, await mine(instructor), instructorId)).status).toBe(201);
+    expect((await attach(admin, await mine(admin), adminId)).status).toBe(201);
+    // Không ai đặt hộ người khác, kể cả admin.
+    expect((await attach(admin, await mine(admin), studentId)).status).toBe(403);
+    // Student có hồ sơ không còn ACTIVE bị từ chối.
+    expect(
+      (await attach(inactiveStudent, await mine(inactiveStudent), inactiveStudentId)).status,
+    ).toBe(403);
+  });
+
+  it('avatar_url: GET /avatars/{user_id} stream ảnh hiện tại, 404 khi chưa đặt hoặc đã gỡ, đổi avatar thì đổi ảnh', async () => {
+    // Tài khoản riêng của test này: các test khác đã đặt avatar cho `adminId`.
+    const userId = randomUUID();
+    const owner = asRole('admin', userId);
+    const avatarUrl = `/api/v1/media/avatars/${userId}`;
+    await http().get(avatarUrl).set(gatewayOnly).expect(404);
+
+    const attach = async (mediaId: string): Promise<string> =>
+      (
+        await http()
+          .post('/api/v1/media/usages')
+          .set(owner)
+          .send({
+            media_id: mediaId,
+            owner_kind: 'USER',
+            owner_id: userId,
+            usage_type: 'USER_AVATAR',
+          })
+          .expect(201)
+      ).body.data.id as string;
+    const first = await png(10, 10);
+    const second = await png(20, 20);
+    const firstId = (await uploadDirect(owner, first, 'a1.png', 'image/png')).mediaId;
+    const secondId = (await uploadDirect(owner, second, 'a2.png', 'image/png')).mediaId;
+
+    await attach(firstId);
+    const one = await http().get(avatarUrl).set(gatewayOnly).expect(200);
+    expect(one.headers['content-type']).toContain('image/png');
+    expect(Buffer.from(one.body as Buffer).equals(first)).toBe(true);
+
+    const usageId = await attach(secondId); // singleton: thay avatar cũ
+    const two = await http().get(avatarUrl).set(gatewayOnly).expect(200);
+    expect(Buffer.from(two.body as Buffer).equals(second)).toBe(true);
+
+    await http().delete(`/api/v1/media/usages/${usageId}`).set(owner).expect(204);
+    await http().get(avatarUrl).set(gatewayOnly).expect(404);
+    await http().get('/api/v1/media/avatars/khong-phai-uuid').set(gatewayOnly).expect(400);
   });
 
   it('retry thumbnail: chỉ khi chưa READY; loại không có thumbnail bị từ chối', async () => {
@@ -988,9 +1083,9 @@ describe('media + media-worker (PostgreSQL, MinIO, RabbitMQ thật)', () => {
         .set(student)
         .send({
           media_id: avatar,
-          owner_kind: 'STUDENT',
+          owner_kind: 'USER',
           owner_id: studentId,
-          usage_type: 'STUDENT_AVATAR',
+          usage_type: 'USER_AVATAR',
         })
         .expect(201);
       await backdate([unused, used, replaced, avatar], 3);

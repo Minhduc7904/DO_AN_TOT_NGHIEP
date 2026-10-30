@@ -516,7 +516,7 @@ const mediaDatasets = [
       // Thứ tự ảnh gốc (1-based) trong dãy media: 5 ảnh trên mỗi 10 tệp.
       const imageOrdinal = `((((${x.m} - 1) / 10) * 5) + ((${x.m} - 1) % 10) + 1)`;
       const isImage = `((${x.m} - 1) % 10) < 5`;
-      const usageType = `CASE WHEN NOT (${isImage}) THEN 'LESSON_ATTACHMENT' WHEN ${x.round} = 0 AND ${imageOrdinal} <= ${courses} THEN 'COURSE_THUMBNAIL' WHEN ${x.round} = 0 AND ${imageOrdinal} <= ${courses + students} THEN 'STUDENT_AVATAR' ELSE 'COURSE_GALLERY' END`;
+      const usageType = `CASE WHEN NOT (${isImage}) THEN 'LESSON_ATTACHMENT' WHEN ${x.round} = 0 AND ${imageOrdinal} <= ${courses} THEN 'COURSE_THUMBNAIL' WHEN ${x.round} = 0 AND ${imageOrdinal} <= ${courses + students} THEN 'USER_AVATAR' ELSE 'COURSE_GALLERY' END`;
       const galleryOwner = `(((${x.m} - 1 + ${x.round}) % ${courses}) + 1)`;
       return [
         {
@@ -524,8 +524,8 @@ const mediaDatasets = [
           columns: {
             id: idSql('mediaUsage', 'g.i'),
             media_id: idSql('media', x.m),
-            owner_kind: `(CASE ${usageType} WHEN 'STUDENT_AVATAR' THEN 'STUDENT' ELSE 'COURSE' END)::media_usage_owner_kind`,
-            owner_id: `CASE ${usageType} WHEN 'LESSON_ATTACHMENT' THEN ${idSql('lesson', `((${x.m} - 1 + ${x.round}) % ${lessons}) + 1`)} WHEN 'COURSE_THUMBNAIL' THEN ${idSql('course', imageOrdinal)} WHEN 'STUDENT_AVATAR' THEN ${idSql('user', `${imageOrdinal} - ${courses}`)} ELSE ${idSql('course', galleryOwner)} END`,
+            owner_kind: `(CASE ${usageType} WHEN 'USER_AVATAR' THEN 'USER' ELSE 'COURSE' END)::media_usage_owner_kind`,
+            owner_id: `CASE ${usageType} WHEN 'LESSON_ATTACHMENT' THEN ${idSql('lesson', `((${x.m} - 1 + ${x.round}) % ${lessons}) + 1`)} WHEN 'COURSE_THUMBNAIL' THEN ${idSql('course', imageOrdinal)} WHEN 'USER_AVATAR' THEN ${idSql('user', `${imageOrdinal} - ${courses}`)} ELSE ${idSql('course', galleryOwner)} END`,
             usage_type: `(${usageType})::media_usage_type`,
             position: x.round,
             created_by: idSql('instructor', `((${x.m} - 1) % ${instructors}) + 1`),

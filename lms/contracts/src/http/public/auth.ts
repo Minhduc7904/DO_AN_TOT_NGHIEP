@@ -43,6 +43,8 @@ export const accountDtoSchema = z.object({
   full_name: z.string(),
   role: roleSchema,
   status: accountStatusSchema,
+  /** URL avatar công khai, luôn có; `404` khi chưa đặt avatar (xem `userAvatarUrl`). */
+  avatar_url: z.string(),
   created_at: z.iso.datetime(),
 });
 export type AccountDto = z.infer<typeof accountDtoSchema>;

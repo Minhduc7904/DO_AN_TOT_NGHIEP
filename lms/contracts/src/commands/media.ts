@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 const id = z.uuid();
-const ownerKind = z.enum(['COURSE', 'NOTIFICATION', 'STUDENT', 'MEDIA']);
+const ownerKind = z.enum(['COURSE', 'NOTIFICATION', 'USER', 'MEDIA']);
 const usageType = z.enum([
   'COURSE_THUMBNAIL',
   'COURSE_GALLERY',
@@ -10,7 +10,7 @@ const usageType = z.enum([
   'LESSON_ATTACHMENT',
   'QUIZ_CONTENT',
   'NOTIFICATION_BODY',
-  'STUDENT_AVATAR',
+  'USER_AVATAR',
   'MEDIA_THUMBNAIL',
 ]);
 

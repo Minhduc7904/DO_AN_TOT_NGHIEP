@@ -29,12 +29,15 @@ export class UsageRules {
     private readonly ids: IdGenerator,
   ) {}
 
-  /** Role nào được thao tác trên owner nào; `MEDIA` chỉ do hệ thống (worker) tạo. */
+  /**
+   * Role nào được thao tác trên owner nào; `MEDIA` chỉ do hệ thống (worker) tạo. Avatar (`USER`): mọi role
+   * tự quản avatar của chính mình; admin chỉ được gỡ hoặc sắp xếp usage của người khác (xem `attach`).
+   */
   assertCanManageOwner(principal: Principal, kind: UsageOwnerKind, ownerId: string): void {
     if (kind === 'MEDIA') throw AppError.forbidden('Usage MEDIA_THUMBNAIL do hệ thống quản lý');
     if (principal.role === 'admin') return;
     if (kind === 'COURSE' && principal.role === 'instructor') return;
-    if (kind === 'STUDENT' && principal.role === 'student' && principal.id === ownerId) return;
+    if (kind === 'USER' && principal.id === ownerId) return;
     throw AppError.forbidden();
   }
 
@@ -50,6 +53,10 @@ export class UsageRules {
       });
     }
     this.assertCanManageOwner(principal, input.ownerKind, input.ownerId);
+    // Không tra được tài khoản của người khác (media không đọc `identity_db`), nên chỉ chủ tài khoản đặt avatar.
+    if (input.ownerKind === 'USER' && principal.id !== input.ownerId) {
+      throw AppError.forbidden('Chỉ chủ tài khoản được đặt avatar');
+    }
 
     const media = await stores.media.findById(input.mediaId);
     if (!media) throw AppError.notFound('Không tìm thấy media');
@@ -61,7 +68,8 @@ export class UsageRules {
     ) {
       throw mediaErrors.usageConflict('Loại usage này chỉ nhận ảnh gốc');
     }
-    if (input.ownerKind === 'STUDENT') {
+    // Token chứng minh tài khoản tồn tại; riêng student còn phải có hồ sơ `ACTIVE` (như điều kiện đăng nhập).
+    if (input.ownerKind === 'USER' && principal.role === 'student') {
       const status = await this.students.findStatus(input.ownerId);
       if (status === null) throw AppError.notFound('Không tìm thấy hồ sơ student');
       if (status !== 'ACTIVE') throw AppError.forbidden('Hồ sơ student không còn hoạt động');

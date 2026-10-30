@@ -25,6 +25,8 @@ export interface UploadIntent {
 
 /**
  * Tạo media `PENDING` và presigned POST để client upload thẳng lên MinIO (key tạm, ghim size/type).
+ * `mimeType` chỉ là gợi ý để chọn bucket và mức dung lượng tối đa; MIME thật do server quyết định từ nội dung
+ * khi `upload-complete` (xem CompleteDirectUpload).
  * `extractText` được lưu lại; lệnh trích văn bản chỉ phát khi tệp READY (xem CompleteDirectUpload).
  */
 export class CreateUploadIntentUseCase {

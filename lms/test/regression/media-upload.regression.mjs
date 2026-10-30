@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto';
 import { test } from 'node:test';
 
 import {
+  accountDtoSchema,
   mediaDtoSchema,
   mediaSummaryDtoSchema,
   mediaUsageDtoSchema,
@@ -16,6 +17,7 @@ import {
   expectList,
   loginAdmin,
   loginInstructor,
+  registerStudent,
   uploadMedia,
   waitUntil,
 } from './support/api.mjs';
@@ -158,4 +160,61 @@ test('media-upload: upload trực tiếp lên MinIO, thumbnail, tải nội dung
       );
     },
   );
+});
+
+test('avatar: mỗi role tự đặt avatar, /auth/me trả avatar_url, URL đọc được công khai qua Gateway', async (t) => {
+  const student = await registerStudent('avatar');
+  const instructor = await loginInstructor();
+  const admin = await loginAdmin();
+  const avatarUrl = (user) => `/api/v1/media/avatars/${user.id}`;
+
+  for (const [role, user] of [
+    ['student', student],
+    ['instructor', instructor],
+    ['admin', admin],
+  ]) {
+    await t.test(`${role}: chưa đặt avatar thì avatar_url có sẵn nhưng GET trả 404`, async () => {
+      const me = await call('GET', '/api/v1/auth/me', { token: user.token });
+      assert.equal(expectData(me, 200, accountDtoSchema).avatar_url, avatarUrl(user));
+      const missing = await call('GET', avatarUrl(user), { raw: true });
+      assert.equal(missing.status, 404);
+    });
+  }
+
+  await t.test('đặt avatar rồi đọc đúng byte qua avatar_url, không cần token', async () => {
+    for (const user of [student, instructor, admin]) {
+      const { mediaId } = await uploadMedia(user.token, PNG_1X1, 'avatar.png', 'image/png');
+      const attached = await call('POST', '/api/v1/media/usages', {
+        token: user.token,
+        body: {
+          media_id: mediaId,
+          owner_kind: 'USER',
+          owner_id: user.id,
+          usage_type: 'USER_AVATAR',
+        },
+      });
+      expectData(attached, 201, mediaUsageDtoSchema, 'đặt avatar');
+      const me = await call('GET', '/api/v1/auth/me', { token: user.token });
+      const image = await call('GET', expectData(me, 200, accountDtoSchema).avatar_url, {
+        raw: true,
+      });
+      assert.equal(image.status, 200);
+      assert.match(image.headers.get('content-type') ?? '', /image\/png/u);
+      assert.deepEqual(image.bytes, PNG_1X1);
+    }
+  });
+
+  await t.test('không đặt hộ người khác, kể cả admin', async () => {
+    const { mediaId } = await uploadMedia(admin.token, PNG_1X1, 'hoo.png', 'image/png');
+    const attempt = await call('POST', '/api/v1/media/usages', {
+      token: admin.token,
+      body: {
+        media_id: mediaId,
+        owner_kind: 'USER',
+        owner_id: student.id,
+        usage_type: 'USER_AVATAR',
+      },
+    });
+    expectError(attempt, 403, 'FORBIDDEN');
+  });
 });

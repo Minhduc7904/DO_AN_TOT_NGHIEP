@@ -16,6 +16,8 @@ export const studentDtoSchema = z.object({
   email: z.string(),
   full_name: z.string(),
   status: studentStatusSchema,
+  /** URL avatar công khai, luôn có; `404` khi chưa đặt avatar (xem `userAvatarUrl`). */
+  avatar_url: z.string(),
   created_at: z.iso.datetime(),
   updated_at: z.iso.datetime(),
 });

@@ -1,7 +1,7 @@
 export type MediaType = 'IMAGE' | 'VIDEO' | 'DOCUMENT' | 'AUDIO' | 'OTHER';
 export type MediaStatus = 'PENDING' | 'READY' | 'FAILED';
 export type ThumbnailStatus = 'NOT_APPLICABLE' | 'PENDING' | 'PROCESSING' | 'READY' | 'FAILED';
-export type UsageOwnerKind = 'COURSE' | 'NOTIFICATION' | 'STUDENT' | 'MEDIA';
+export type UsageOwnerKind = 'COURSE' | 'NOTIFICATION' | 'USER' | 'MEDIA';
 export type UsageType =
   | 'COURSE_THUMBNAIL'
   | 'COURSE_GALLERY'
@@ -10,7 +10,7 @@ export type UsageType =
   | 'LESSON_ATTACHMENT'
   | 'QUIZ_CONTENT'
   | 'NOTIFICATION_BODY'
-  | 'STUDENT_AVATAR'
+  | 'USER_AVATAR'
   | 'MEDIA_THUMBNAIL';
 export type JobType =
   'THUMBNAIL_DERIVATION' | 'MARKDOWN_USAGE_SYNC' | 'MEDIA_USAGE_DELETE' | 'NOTIFICATION_USAGE';
@@ -76,7 +76,7 @@ export const USAGE_TYPES_BY_OWNER: Record<UsageOwnerKind, readonly UsageType[]> 
     'QUIZ_CONTENT',
   ],
   NOTIFICATION: ['NOTIFICATION_BODY'],
-  STUDENT: ['STUDENT_AVATAR'],
+  USER: ['USER_AVATAR'],
   MEDIA: ['MEDIA_THUMBNAIL'],
 };
 
@@ -84,8 +84,8 @@ export const USAGE_TYPES_BY_OWNER: Record<UsageOwnerKind, readonly UsageType[]> 
 export const IMAGE_ONLY_USAGE_TYPES: readonly UsageType[] = [
   'COURSE_THUMBNAIL',
   'COURSE_GALLERY',
-  'STUDENT_AVATAR',
+  'USER_AVATAR',
 ];
 
 /** Usage type có đúng một bản ghi cho mỗi owner (thay thế bản cũ khi đặt lại). */
-export const SINGLETON_USAGE_TYPES: readonly UsageType[] = ['COURSE_THUMBNAIL', 'STUDENT_AVATAR'];
+export const SINGLETON_USAGE_TYPES: readonly UsageType[] = ['COURSE_THUMBNAIL', 'USER_AVATAR'];
