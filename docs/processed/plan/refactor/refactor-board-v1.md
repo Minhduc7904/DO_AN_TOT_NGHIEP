@@ -26,7 +26,7 @@
 | R-10  | Data seeder quy mô lớn cho PostgreSQL                                                                                                                                                                               | 9–10 | R-04, R-05  | Hoàn thành (29/10/2026; PR #66, bỏ qua CI theo chỉ thị của Đức; xem bên dưới) |
 | R-11  | Test, CI, Postman v2; viết lại regression và job CI `mvp-regression`/`w7-compose` (gỡ ở R-05); đổi tên test `w1/w2/w3/w5` theo nghiệp vụ                                                                            | 8–10 | R-04…R-09   | Hoàn thành (29/10/2026; PR #67, CI GitHub xanh trừ GitGuardian báo nhầm; xem bên dưới) |
 | R-12  | Viết lại docs, viết lại smoke tracing/metrics/logs/acceptance (đang gắn luồng v1), kiểm chứng telemetry xuyên service, danh mục case phức tạp v0; ghi nhận schema kết quả RCA và nơi lưu (cho MCP thứ yếu, ADR-002) | 9–10 | tất cả      | Hoàn thành (29/10/2026; PR #68, CI GitHub xanh; xem "R-12" bên dưới) |
-| R-13  | Gộp `auth` + `student` thành service `identity` (code, DB `identity_db`, env, telemetry, compose, CI, docs; [ADR-005](../../adr/adr-005-merge-auth-student-into-identity-v1.md)) | 11–12 | R-04, R-12 | Đang thực hiện (nhánh `refactor/week-13/task-15-merge-identity-service`, PR #69; xem "R-13" bên dưới) |
+| R-13  | Gộp `auth` + `student` thành service `identity` (code, DB `identity_db`, env, telemetry, compose, CI, docs; [ADR-005](../../adr/adr-005-merge-auth-student-into-identity-v1.md)) | 11–12 | R-04, R-12 | Hoàn thành (30/10/2026; PR #69, CI GitHub đạt 12 job; xem "R-13" bên dưới) |
 
 ## Mốc kiểm tra
 
@@ -332,9 +332,9 @@ Phạm vi đã làm: khôi phục metric RabbitMQ, viết lại 5 smoke observab
 - Thư mục `docs/processed/description/` (mô tả đề tài) chưa rà soát → Đức.
 
 
-### R-13 (đang thực hiện, Node 22.13.1, pnpm 11.19.0)
+### R-13 (chạy cục bộ ngày 30/10/2026, Node 22.13.1, pnpm 11.19.0)
 
-**Trạng thái:** chưa hoàn thành. Mục dưới ghi những gì đã chạy; mục nào chưa có kết quả thì nằm ở "Chưa chạy" và task không được chuyển `Hoàn thành` khi chưa có đủ bằng chứng cho từng DoD ở bảng trên.
+**CI trên GitHub (PR #69, head `c6ebc37`):** `Format, lint và build`, `Unit test, kiến trúc và telemetry`, `Integration trên PostgreSQL và RabbitMQ thật`, 6 job `e2e` (ai, course, identity, media, notification, scheduler), `Validate Compose`, `Reset/seed Testbed twice` (10 phút 3 giây) và GitGuardian đều đạt. `Regression LMS qua Gateway` và `Postman v2` bị bỏ qua (PR không gắn label chạy regression); regression đã chạy cục bộ 46/46 trong runner observability, Postman chưa chạy.
 
 Quyết định: [ADR-005](../../adr/adr-005-merge-auth-student-into-identity-v1.md). Bỏ hướng saga `PENDING`/`activate` của nhánh task-14 (còn trong `git stash@{0}`, không nhập vào).
 
@@ -349,7 +349,7 @@ Quyết định: [ADR-005](../../adr/adr-005-merge-auth-student-into-identity-v1
   - Sau đó chạy lẻ trên stack giữ lại: `acceptance` và `metrics` đạt. Một lần `acceptance` đỏ thêm vì Grafana tự cài lại plugin Tempo ở nền (13.2.4 → 13.4.1) làm mất datasource; restart container Grafana rồi chạy lại thì đạt. 
   - Lần 3 (sau khi sửa trace ID, stack sạch, không `--keep`): `pnpm test:observability` **exit 0**: regression 46/46, `stack`, `tracing`, `logs`, `acceptance`, `metrics` đạt liền một lượt (metrics: 38 cặp, 24 queue; C6 trễ 74 giây), stack được dọn, không còn container `aiops-lms-test-*`.
 
-**Chưa chạy:** `test:testbed:reset:compose` và `test:seed-data:db` cục bộ (CI job reset/seed chạy đạt trên PR), `test:regression` và `test:postman` riêng lẻ (regression đã chạy 46/46 trong runner observability), e2e từng service cục bộ (CI đạt).
+**Chưa chạy cục bộ:** `test:testbed:reset:compose` và `test:seed-data:db` (CI job reset/seed đạt trên PR), `test:postman` (chưa chạy ở đâu), `test:regression` riêng lẻ (đã chạy 46/46 trong runner observability), e2e từng service (CI đạt).
 
 **Số đo thật (30/10/2026, stack một node, thay cho các số suy luận trước đó):** 11/11 runtime có telemetry; **38** cặp (service, identity) (trước đó 42); 24 queue; 9/9 luồng tracing; log 11/11 runtime; độ trễ log/trace/metric khoảng 1,6 / 4,1 / 5,1 giây; C6: lỗi `gateway-identity-token` xuất hiện **70–74 giây** sau khi dừng `identity` (TTL 60 giây, HTTP 504). 16 identity hạ tầng đếm từ danh sách ở telemetry schema mục 3.2.1; 13 cạnh HTTP đếm từ `HTTP_DEPENDENCY_PEERS`.
 
