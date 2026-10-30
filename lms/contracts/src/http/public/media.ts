@@ -11,7 +11,7 @@ export const thumbnailStatusSchema = z.enum([
   'READY',
   'FAILED',
 ]);
-export const usageOwnerKindSchema = z.enum(['COURSE', 'NOTIFICATION', 'STUDENT', 'MEDIA']);
+export const usageOwnerKindSchema = z.enum(['COURSE', 'NOTIFICATION', 'USER', 'MEDIA']);
 export const usageTypeSchema = z.enum([
   'COURSE_THUMBNAIL',
   'COURSE_GALLERY',
@@ -20,7 +20,7 @@ export const usageTypeSchema = z.enum([
   'LESSON_ATTACHMENT',
   'QUIZ_CONTENT',
   'NOTIFICATION_BODY',
-  'STUDENT_AVATAR',
+  'USER_AVATAR',
   'MEDIA_THUMBNAIL',
 ]);
 export const mediaJobTypeSchema = z.enum([
@@ -44,6 +44,7 @@ const dateTime = z.iso.datetime();
 
 export const createUploadIntentRequestSchema = z.object({
   file_name: z.string().trim().min(1).max(255),
+  /** Chỉ là gợi ý để chọn bucket và dung lượng tối đa; MIME thật do server suy ra từ nội dung khi `upload-complete`. */
   mime_type: z
     .string()
     .trim()

@@ -1,4 +1,4 @@
-import type { StudentDto } from '@aiops-lms/contracts';
+import { type StudentDto, userAvatarUrl } from '@aiops-lms/contracts';
 
 import type { Student } from '../../../domain/student.js';
 
@@ -9,6 +9,7 @@ export function presentStudent(student: Student): StudentDto {
     email: student.email,
     full_name: student.fullName,
     status: student.status,
+    avatar_url: userAvatarUrl(student.id),
     created_at: student.createdAt.toISOString(),
     updated_at: student.updatedAt.toISOString(),
   };

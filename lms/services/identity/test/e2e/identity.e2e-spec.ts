@@ -158,6 +158,8 @@ describe('identity service (PostgreSQL thật)', () => {
       .set('x-principal-role', 'student')
       .expect(200);
     expect(me.body.data.email).toBe(email);
+    // avatar_url dựng thuần từ id (không gọi media), luôn có giá trị.
+    expect(me.body.data.avatar_url).toBe(`/api/v1/media/avatars/${studentId}`);
 
     const refreshed = await agent
       .post('/api/v1/auth/refresh')
@@ -339,7 +341,7 @@ describe('identity service (PostgreSQL thật)', () => {
         .set({ 'x-principal-id': id, 'x-principal-role': 'student' })
         .expect(200);
       expect(apiResponseSchema(studentDtoSchema).parse(me.body)).toMatchObject({
-        data: { id, email, status: 'ACTIVE' },
+        data: { id, email, status: 'ACTIVE', avatar_url: `/api/v1/media/avatars/${id}` },
       });
 
       await agent.get('/api/v1/students/me').set(asAdmin).expect(403);

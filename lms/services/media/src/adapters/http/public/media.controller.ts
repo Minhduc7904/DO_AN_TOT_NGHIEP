@@ -40,6 +40,7 @@ import { CompleteDirectUploadUseCase } from '../../../application/use-cases/medi
 import { CreateUploadIntentUseCase } from '../../../application/use-cases/media/create-upload-intent.use-case.js';
 import { GetMediaContentUseCase } from '../../../application/use-cases/media/get-media-content.use-case.js';
 import { GetMediaLibraryUseCase } from '../../../application/use-cases/media/get-media-library.use-case.js';
+import { GetUserAvatarContentUseCase } from '../../../application/use-cases/media/get-user-avatar-content.use-case.js';
 import { GetMediaThumbnailUseCase } from '../../../application/use-cases/media/get-media-thumbnail.use-case.js';
 import { RetryMediaThumbnailUseCase } from '../../../application/use-cases/media/retry-media-thumbnail.use-case.js';
 import { UploadMediaUseCase } from '../../../application/use-cases/media/upload-media.use-case.js';
@@ -71,6 +72,7 @@ export class MediaController {
     @Inject(GetMediaLibraryUseCase) private readonly library: GetMediaLibraryUseCase,
     @Inject(GetMediaContentUseCase) private readonly content: GetMediaContentUseCase,
     @Inject(GetMediaThumbnailUseCase) private readonly thumbnail: GetMediaThumbnailUseCase,
+    @Inject(GetUserAvatarContentUseCase) private readonly avatar: GetUserAvatarContentUseCase,
     @Inject(RetryMediaThumbnailUseCase) private readonly retryThumbnail: RetryMediaThumbnailUseCase,
   ) {}
 
@@ -93,7 +95,6 @@ export class MediaController {
       await this.uploadMedia.execute(principal, {
         content: file.buffer,
         originalName: file.originalname,
-        mimeType: file.mimetype,
         extractText: fields.extract_text,
       }),
     );
@@ -155,6 +156,18 @@ export class MediaController {
     @Res({ passthrough: true }) response: Response,
   ): Promise<StreamableFile> {
     return streamMedia(await this.content.execute(parseInput(idSchema, mediaId), range), response);
+  }
+
+  /** Công khai: avatar hiện tại của tài khoản, URL ổn định (`userAvatarUrl`) nên `identity` ghép vào DTO mà không gọi `media`. */
+  @Anonymous()
+  @RawResponse()
+  @Get('avatars/:user_id')
+  async getAvatar(
+    @Param('user_id') userId: string,
+    @Headers('range') range: string | undefined,
+    @Res({ passthrough: true }) response: Response,
+  ): Promise<StreamableFile> {
+    return streamMedia(await this.avatar.execute(parseInput(idSchema, userId), range), response);
   }
 
   @Anonymous()

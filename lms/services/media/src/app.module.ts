@@ -35,6 +35,7 @@ import {
 import { CompleteDirectUploadUseCase } from './application/use-cases/media/complete-direct-upload.use-case.js';
 import { CreateUploadIntentUseCase } from './application/use-cases/media/create-upload-intent.use-case.js';
 import { GetMediaContentUseCase } from './application/use-cases/media/get-media-content.use-case.js';
+import { GetUserAvatarContentUseCase } from './application/use-cases/media/get-user-avatar-content.use-case.js';
 import { GetMediaLibraryUseCase } from './application/use-cases/media/get-media-library.use-case.js';
 import { GetMediaThumbnailUseCase } from './application/use-cases/media/get-media-thumbnail.use-case.js';
 import { RetryMediaThumbnailUseCase } from './application/use-cases/media/retry-media-thumbnail.use-case.js';
@@ -185,6 +186,12 @@ const USE_CASES: Provider[] = [
     useFactory: (uow: MediaUnitOfWork, storage: ObjectStorage) =>
       new GetMediaContentUseCase(uow, storage),
     inject: [MEDIA_UNIT_OF_WORK, OBJECT_STORAGE],
+  },
+  {
+    provide: GetUserAvatarContentUseCase,
+    useFactory: (uow: MediaUnitOfWork, content: GetMediaContentUseCase) =>
+      new GetUserAvatarContentUseCase(uow, content),
+    inject: [MEDIA_UNIT_OF_WORK, GetMediaContentUseCase],
   },
   {
     provide: GetMediaThumbnailUseCase,

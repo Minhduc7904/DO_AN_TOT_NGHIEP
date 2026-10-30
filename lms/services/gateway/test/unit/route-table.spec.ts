@@ -43,6 +43,9 @@ describe('resolveRoute', () => {
 
     expect(isPublic('GET', '/api/v1/media/abc/content')).toBe(true);
     expect(isPublic('GET', '/api/v1/media/abc/thumbnail')).toBe(true);
+    expect(isPublic('GET', '/api/v1/media/avatars/abc')).toBe(true);
+    expect(isPublic('POST', '/api/v1/media/avatars/abc')).toBe(false);
+    expect(isPublic('GET', '/api/v1/media/avatars')).toBe(false);
     expect(isPublic('GET', '/api/v1/media/usages/urls')).toBe(true);
     expect(isPublic('GET', '/api/v1/media/usages/abc/url')).toBe(true);
     expect(isPublic('GET', '/api/v1/media/usage-jobs/abc/status')).toBe(true);

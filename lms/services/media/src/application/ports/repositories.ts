@@ -31,6 +31,7 @@ export interface NewMedia {
 
 export interface MediaPatch {
   status?: MediaStatus;
+  mimeType?: string;
   thumbnailStatus?: ThumbnailStatus;
   tmpObjectKey?: string | null;
   uploadExpiresAt?: Date | null;

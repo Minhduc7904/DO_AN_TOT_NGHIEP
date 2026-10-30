@@ -42,6 +42,7 @@ export const PUBLIC_RULES: readonly PublicRule[] = [
   { method: 'POST', pattern: /^\/api\/v1\/auth\/(student|instructor|admin)\/login$/u },
   { method: 'POST', pattern: /^\/api\/v1\/auth\/refresh$/u },
   { method: 'GET', pattern: /^\/api\/v1\/media\/[^/]+\/(content|thumbnail)$/u },
+  { method: 'GET', pattern: /^\/api\/v1\/media\/avatars\/[^/]+$/u },
   { method: 'GET', pattern: /^\/api\/v1\/media\/usages\/urls$/u },
   { method: 'GET', pattern: /^\/api\/v1\/media\/usages\/[^/]+\/url$/u },
   { method: 'GET', pattern: /^\/api\/v1\/media\/usage-jobs\/[^/]+\/status$/u },

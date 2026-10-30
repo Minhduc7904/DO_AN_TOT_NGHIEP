@@ -38,7 +38,7 @@ enum ThumbnailStatus {
 enum UsageOwnerKind {
   COURSE
   NOTIFICATION
-  STUDENT
+  USER
   MEDIA
 
   @@map("media_usage_owner_kind")
@@ -52,7 +52,7 @@ enum UsageType {
   LESSON_ATTACHMENT
   QUIZ_CONTENT
   NOTIFICATION_BODY
-  STUDENT_AVATAR
+  USER_AVATAR
   MEDIA_THUMBNAIL
 
   @@map("media_usage_type")

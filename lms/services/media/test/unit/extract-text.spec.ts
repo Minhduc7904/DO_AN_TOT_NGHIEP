@@ -56,7 +56,6 @@ describe('extract_text khi upload multipart', () => {
     const media = await upload.execute(owner, {
       content: Buffer.from('xin chào'),
       originalName: 'bai.txt',
-      mimeType: 'text/plain',
       extractText: true,
     });
 
@@ -70,7 +69,6 @@ describe('extract_text khi upload multipart', () => {
     const media = await upload.execute(owner, {
       content: Buffer.from('xin chào'),
       originalName: 'bai.txt',
-      mimeType: 'text/plain',
     });
 
     expect(media.extractText).toBe(false);
@@ -82,17 +80,15 @@ describe('extract_text khi upload multipart', () => {
 
     await expect(
       upload.execute(owner, {
-        content: Buffer.from('mp4'),
+        content: Buffer.concat([Buffer.from([0, 0, 0, 0x18]), Buffer.from('ftypisom')]),
         originalName: 'phim.mp4',
-        mimeType: 'video/mp4',
         extractText: true,
       }),
     ).rejects.toMatchObject({ code: 'VALIDATION_ERROR', status: 400 });
     await expect(
       upload.execute(owner, {
-        content: Buffer.alloc(EXTRACT_TEXT_MAX_BYTES + 1),
+        content: Buffer.concat([Buffer.from('%PDF-1.4'), Buffer.alloc(EXTRACT_TEXT_MAX_BYTES)]),
         originalName: 'lon.pdf',
-        mimeType: 'application/pdf',
         extractText: true,
       }),
     ).rejects.toMatchObject({ code: 'VALIDATION_ERROR', status: 400 });

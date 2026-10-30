@@ -12,6 +12,7 @@ import {
   supportsThumbnail,
 } from '../../../domain/media-type.js';
 import { assertExtractTextAllowed } from '../../extract-text.js';
+import { detectMime, MIME_SNIFF_BYTES } from '../../../domain/mime-detection.js';
 import { buildObjectKey, safeExtension } from '../../../domain/object-key.js';
 import type { ObjectStorage } from '../../ports/object-storage.js';
 import type { MediaUnitOfWork } from '../../ports/unit-of-work.js';
@@ -19,14 +20,14 @@ import type { MediaUnitOfWork } from '../../ports/unit-of-work.js';
 export interface UploadMediaInput {
   content: Buffer;
   originalName: string;
-  mimeType: string;
   /** Mặc định `false`. */
   extractText?: boolean;
 }
 
 /**
  * Upload multipart qua `media`: ghi thẳng vào key cuối cùng rồi đánh dấu `READY`; có cờ `extractText` thì
- * ghi lệnh trích văn bản vào outbox cùng transaction.
+ * ghi lệnh trích văn bản vào outbox cùng transaction. MIME do server suy ra từ nội dung (`detectMime`),
+ * `Content-Type` của phần multipart bị bỏ qua.
  */
 export class UploadMediaUseCase {
   constructor(
@@ -38,17 +39,18 @@ export class UploadMediaUseCase {
 
   async execute(principal: Principal, input: UploadMediaInput): Promise<MediaObject> {
     if (input.content.length === 0) throw AppError.validation('File rỗng');
-    const type = classifyMedia(input.mimeType);
+    const mimeType = detectMime(input.content.subarray(0, MIME_SNIFF_BYTES), input.originalName);
+    const type = classifyMedia(mimeType);
     const limit = MEDIA_SIZE_LIMITS[type];
     if (input.content.length > limit) throw mediaErrors.tooLarge(limit);
     if (input.extractText) {
-      assertExtractTextAllowed(input.originalName, input.mimeType, input.content.length);
+      assertExtractTextAllowed(input.originalName, mimeType, input.content.length);
     }
 
     const id = this.ids.next();
     const bucket = BUCKET_BY_TYPE[type];
     const objectKey = buildObjectKey(this.clock.now(), id, safeExtension(input.originalName));
-    await this.storage.put(bucket, objectKey, input.content, input.mimeType);
+    await this.storage.put(bucket, objectKey, input.content, mimeType);
     try {
       return await this.uow.run(async (stores) => {
         const thumbnails = supportsThumbnail(type);
@@ -58,7 +60,7 @@ export class UploadMediaUseCase {
           status: 'READY',
           thumbnailStatus: thumbnails ? 'PENDING' : 'NOT_APPLICABLE',
           originalName: input.originalName,
-          mimeType: input.mimeType,
+          mimeType,
           sizeBytes: input.content.length,
           checksumSha256: createHash('sha256').update(input.content).digest('hex'),
           extractText: input.extractText === true,

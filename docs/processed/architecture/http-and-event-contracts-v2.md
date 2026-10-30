@@ -61,7 +61,7 @@ Luồng service-to-service: bên gọi lấy service token cho đúng `audience`
 
 Route `/internal/v1/*`, `/.well-known/*` **không được Gateway proxy**.
 
-Route đọc nội dung media công khai với người dùng (không cần JWT) vì trình duyệt nhúng ảnh/video không gửi được token: `GET /api/v1/media/{media_id}/content`, `.../thumbnail`, `/api/v1/media/usages/{usage_id}/url`. Gateway vẫn gắn service token của mình khi gọi `media`. Bảo vệ bằng UUID khó đoán, `Cache-Control: no-store`; đây là giới hạn được chấp nhận và ghi nhận ở R-12.
+Route đọc nội dung media công khai với người dùng (không cần JWT) vì trình duyệt nhúng ảnh/video không gửi được token: `GET /api/v1/media/{media_id}/content`, `.../thumbnail`, `/api/v1/media/usages/{usage_id}/url`, `/api/v1/media/avatars/{user_id}`. Gateway vẫn gắn service token của mình khi gọi `media`. Bảo vệ bằng UUID khó đoán, `Cache-Control: no-store`; đây là giới hạn được chấp nhận và ghi nhận ở R-12.
 
 ### Catalogue scope (đã dùng và dự kiến)
 
@@ -171,6 +171,7 @@ Mã nghiệp vụ bổ sung (giữ từ repo mẫu, cùng envelope):
 |  409 | `AI_MODEL_IN_USE`                | ai      | Xóa model còn được gán cho một task                        |
 |  409 | `LESSON_CONTENT_EXISTS`          | course  | `SYNTHESIZE_LESSON` trên bài học đã có nội dung mà `overwrite_content=false` |
 |  400 | `MEDIA_CHECKSUM_MISMATCH`        | media   | Checksum upload không khớp                                 |
+|  415 | `MEDIA_MIME_MISMATCH`            | media   | `upload-complete`: nội dung thuộc loại khác loại đã khai báo ở `upload-intents` |
 |  409 | `MEDIA_NOT_READY`                | media   | Media (hoặc thumbnail) chưa `READY` cho thao tác này       |
 |  413 | `MEDIA_TOO_LARGE`                | media   | Vượt giới hạn kích thước theo loại media                   |
 |  409 | `MEDIA_UPLOAD_NOT_COMPLETED`     | media   | `upload-complete` nhưng object chưa được tải lên           |
@@ -301,6 +302,7 @@ Quy tắc:
 | POST   | `/api/v1/media/{media_id}/upload-complete` |  *   | `complete-direct-upload` (kiểm tra metadata + checksum, promote object, `READY`)                     |
 | GET    | `/api/v1/media/library`                    |  *   | `get-media-library`                                                                                  |
 | GET    | `/api/v1/media/{media_id}/content`         |  –   | `get-media-content` (stream, Range)                                                                  |
+| GET    | `/api/v1/media/avatars/{user_id}`          |  –   | `get-user-avatar-content` (stream, Range; 404 khi chưa đặt avatar)                          |
 | GET    | `/api/v1/media/{media_id}/thumbnail`       |  –   | `get-media-thumbnail-status`                                                                         |
 | POST   | `/api/v1/media/{media_id}/thumbnail/retry` |  *   | `retry-media-thumbnail`                                                                              |
 | POST   | `/api/v1/media/usages`                     |  *   | `create-media-usage`                                                                                 |
@@ -325,6 +327,8 @@ Bucket MinIO: `images`, `videos`, `documents`, `audios`, `other` (chọn theo lo
 
 Presigned POST bắt buộc lộ key `tmp/…` cho trình duyệt; key cuối cùng chỉ `media` biết. Phần mở rộng lấy từ tên file, chỉ giữ ký tự an toàn `[a-z0-9]`, mặc định `bin`.
 
+**MIME do server quyết định (từ 30/10/2026)**: `media` suy MIME từ nội dung (chữ ký byte của 64 KiB đầu), không tin `Content-Type` hay đuôi tệp do client gửi. Multipart: phần `Content-Type` bị bỏ qua, loại, bucket và giới hạn kích thước theo MIME suy ra. `upload-intents`: `mime_type` chỉ là gợi ý để chọn bucket và mức dung lượng tối đa (server chưa thấy byte); `upload-complete` đọc đoạn đầu object tạm, nếu **loại** (ảnh/video/tài liệu/audio/khác) khác loại đã khai báo thì xóa object tạm, đặt `FAILED` (`failure_reason=MIME_MISMATCH`) và trả `415 MEDIA_MIME_MISMATCH`; cùng loại nhưng khác định dạng (khai `image/png`, thực là JPEG) thì chấp nhận và lưu MIME thật. Đuôi tệp chỉ phân biệt các định dạng cùng chữ ký (ZIP/OLE → docx, xlsx, pptx, odt, ods, odp, doc, xls, ppt; văn bản → `text/markdown`, `text/csv`). Văn bản UTF-8 hợp lệ luôn là `text/plain` (kể cả HTML/SVG, không bao giờ `text/html` hay `image/svg+xml`); nội dung không nhận ra là `application/octet-stream` (loại `other`). Chưa kiểm hết tệp: chỉ đọc đoạn đầu, nên tệp ZIP/OLE giả đuôi Office vẫn lọt.
+
 **Giới hạn kích thước** theo loại (cấu hình trong code): ảnh 10 MB, video 500 MB, tài liệu 50 MB, audio 100 MB, khác 25 MB; vượt giới hạn trả `MEDIA_TOO_LARGE` (413). Upload multipart qua `media` bị chặn thêm bởi `MEDIA_MULTIPART_MAX_BYTES` (mặc định 25 MB); file lớn hơn phải dùng `upload-intents`.
 
 **Cờ `extract_text` (R-08)**: `upload-intents` (JSON `extract_text: boolean`, mặc định `false`) và `POST /api/v1/media` (multipart field `extract_text` = `true|false`) nhận cờ yêu cầu trích văn bản bằng AI. Cờ chỉ hợp lệ cho loại tệp `ai` đọc được (TXT/MD, DOCX, PDF, ảnh) và kích thước ≤ 15 MB; vi phạm trả 400 `VALIDATION_ERROR`, giá trị không phải boolean cũng 400. Cờ lưu ở cột `media_objects.extract_text` và hiện trong DTO media. Khi media chuyển `READY` (upload multipart hoặc `upload-complete`), `media` ghi command `ai.document.extract` (§6.3) vào `outbox_messages` **trong cùng transaction**; media `FAILED` thì không có command. `ai` tạo bản ghi tài liệu theo `media_id` (idempotent), nên cùng tệp được dùng lại khi gắn vào bài học. `media` sao chép bảng phân loại định dạng của `ai` (`isExtractableDocument`) để từ chối sớm; `ai` vẫn là nơi quyết định `UNSUPPORTED`.
@@ -333,9 +337,10 @@ Presigned POST bắt buộc lộ key `tmp/…` cho trình duyệt; key cuối c�
 
 **Quy tắc usage**:
 
-- Ma trận loại: `owner_kind` quyết định `usage_type` hợp lệ (COURSE: thumbnail, gallery, description, lesson content, lesson attachment, quiz content; NOTIFICATION: body; STUDENT: avatar; MEDIA: thumbnail). `COURSE_THUMBNAIL`, `COURSE_GALLERY`, `STUDENT_AVATAR` chỉ nhận ảnh gốc `READY`.
-- Singleton (`COURSE_THUMBNAIL`, `STUDENT_AVATAR`): gắn media mới thay usage cũ trong cùng transaction; có partial unique index chống đua.
-- Avatar kiểm tra student tồn tại và `ACTIVE` qua `GET /internal/v1/students/{id}` (cạnh `media → student`).
+- Ma trận loại: `owner_kind` quyết định `usage_type` hợp lệ (COURSE: thumbnail, gallery, description, lesson content, lesson attachment, quiz content; NOTIFICATION: body; USER: avatar; MEDIA: thumbnail). `COURSE_THUMBNAIL`, `COURSE_GALLERY`, `USER_AVATAR` chỉ nhận ảnh gốc `READY`.
+- Singleton (`COURSE_THUMBNAIL`, `USER_AVATAR`): gắn media mới thay usage cũ trong cùng transaction; có partial unique index chống đua.
+- Avatar (`owner_kind=USER`, đổi từ `STUDENT` ngày 30/10/2026): mọi role (student, instructor, admin) chỉ tự đặt avatar của chính mình (`owner_id` = id trong token), kể cả admin không đặt hộ người khác; admin vẫn gỡ được avatar của người khác. Riêng student còn phải có hồ sơ `ACTIVE` qua `GET /internal/v1/students/{id}` (cạnh `media → identity`); instructor và admin không gọi `identity`, vì token đã chứng minh tài khoản tồn tại. Avatar của student cũ giữ nguyên (migration đổi tên giá trị enum, không mất dữ liệu).
+- Đọc avatar: `GET /api/v1/media/avatars/{user_id}` (công khai như `content`, stream ảnh gốc có `Range`; `404` khi chưa đặt). `identity` ghép `avatar_url` = URL này vào DTO tài khoản (`/auth/me`, danh sách tài khoản) và DTO student, dựng thuần từ id (`userAvatarUrl` trong `contracts`) nên không gọi `media`; trường luôn có giá trị và phải xử lý `404`. Ảnh có thể cũ tới 5 phút do `Cache-Control: public, max-age=300`.
 - Xóa và sắp xếp lại usage: chỉ người tạo usage hoặc admin; sai quyền trả 403.
 - `GET /usages/urls?usage_ids=a,b` tối đa 100 id (phân tách bằng dấu phẩy).
 
@@ -349,7 +354,7 @@ Presigned POST bắt buộc lộ key `tmp/…` cho trình duyệt; key cuối c�
 | `pending_grace_minutes` | Upload `PENDING` stale = quá `upload_expires_at` (hoặc `created_at` nếu không có hạn) cộng ngần này phút | 15 (`MEDIA_CLEANUP_PENDING_GRACE_MINUTES`) | 0–10080             |
 | `limit`                 | Số media tối đa mỗi pha trong một lần gọi                                                       | 200 (`MEDIA_CLEANUP_DEFAULT_LIMIT`)          | 1–`MEDIA_CLEANUP_MAX_LIMIT` (mặc định 1000) |
 
-Giá trị ngoài biên trả `400 VALIDATION_ERROR`. Idempotent, ba pha mỗi lần gọi: (1) upload `PENDING` stale → xóa object tạm/object cuối mồ côi (kiểm bằng `stat` MinIO) rồi chuyển `FAILED` với `failure_reason=UPLOAD_ABANDONED`; (2) media gốc `READY` không còn usage nào → xóa mềm (`deleted_at`) cùng thumbnail của nó (dòng `source_media_id` và usage `MEDIA_THUMBNAIL`) rồi xóa object; (3) thumbnail mồ côi (media gốc đã xóa mềm). Mỗi media một transaction: khóa dòng `FOR UPDATE SKIP LOCKED`, kiểm lại điều kiện và đếm usage sau khi giữ khóa; MinIO lỗi thì rollback, media đó được tính vào `failed` và thử lại ở lần sau. Media còn usage (kể cả singleton `COURSE_THUMBNAIL`, `STUDENT_AVATAR`) không bao giờ bị chọn; object đã mất sẵn không phải lỗi. Thời gian lưu giữ tính từ `created_at`/`updated_at` của media, không phải từ lúc usage cuối bị gỡ. Phản hồi 200 là bản tóm tắt an toàn, không lộ bucket, object key hay credential:
+Giá trị ngoài biên trả `400 VALIDATION_ERROR`. Idempotent, ba pha mỗi lần gọi: (1) upload `PENDING` stale → xóa object tạm/object cuối mồ côi (kiểm bằng `stat` MinIO) rồi chuyển `FAILED` với `failure_reason=UPLOAD_ABANDONED`; (2) media gốc `READY` không còn usage nào → xóa mềm (`deleted_at`) cùng thumbnail của nó (dòng `source_media_id` và usage `MEDIA_THUMBNAIL`) rồi xóa object; (3) thumbnail mồ côi (media gốc đã xóa mềm). Mỗi media một transaction: khóa dòng `FOR UPDATE SKIP LOCKED`, kiểm lại điều kiện và đếm usage sau khi giữ khóa; MinIO lỗi thì rollback, media đó được tính vào `failed` và thử lại ở lần sau. Media còn usage (kể cả singleton `COURSE_THUMBNAIL`, `USER_AVATAR`) không bao giờ bị chọn; object đã mất sẵn không phải lỗi. Thời gian lưu giữ tính từ `created_at`/`updated_at` của media, không phải từ lúc usage cuối bị gỡ. Phản hồi 200 là bản tóm tắt an toàn, không lộ bucket, object key hay credential:
 
 ```json
 {

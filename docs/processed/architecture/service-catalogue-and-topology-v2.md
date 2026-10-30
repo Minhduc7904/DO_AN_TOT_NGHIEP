@@ -207,7 +207,7 @@ course -> media                      # usage ids/urls, tệp đính kèm bài h�
 course -> ai                         # tài liệu và job AI (facade; documents/sync|query, jobs)
 ai-worker -> course                  # ai-context, ai-content, ai-quizzes (tạo vòng course -> ai -> course)
 ai-worker -> media                   # nội dung tệp cho trích văn bản
-media -> identity                    # kiểm tra actor (avatar)
+media -> identity                    # kiểm tra hồ sơ student ACTIVE khi student đặt avatar
 notification-worker -> identity      # snapshot recipient theo trang
 scheduler-worker -> media            # cleanup media không dùng
 ```

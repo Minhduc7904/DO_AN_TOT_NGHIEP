@@ -128,17 +128,17 @@ describe('UsageRules.attach', () => {
         mediaId: uuid(1),
         ownerKind: 'COURSE',
         ownerId: courseId,
-        usageType: 'STUDENT_AVATAR',
+        usageType: 'USER_AVATAR',
       }),
     ).rejects.toMatchObject({ status: 400 });
   });
 
-  it('avatar: đúng chủ hồ sơ, hồ sơ phải tồn tại và ACTIVE', async () => {
+  it('avatar: student đúng chủ, hồ sơ phải tồn tại và ACTIVE', async () => {
     const avatar = {
       mediaId: uuid(1),
-      ownerKind: 'STUDENT',
+      ownerKind: 'USER',
       ownerId: student.id,
-      usageType: 'STUDENT_AVATAR',
+      usageType: 'USER_AVATAR',
     } as const;
     for (const [status, expected] of [
       ['ACTIVE', undefined],
@@ -156,6 +156,47 @@ describe('UsageRules.attach', () => {
     await expect(
       rules.attach(uow.stores, student, { ...avatar, ownerId: courseId }),
     ).rejects.toMatchObject({ status: 403 });
+  });
+
+  it('avatar: instructor và admin tự đặt avatar của mình, không cần tra hồ sơ student', async () => {
+    for (const principal of [instructor, admin]) {
+      const { uow, rules } = setup(null); // `identity` không có hồ sơ student nào: không được gọi tới
+      await seedMedia(uow, { id: uuid(1), uploadedBy: principal.id });
+      await expect(
+        rules.attach(uow.stores, principal, {
+          mediaId: uuid(1),
+          ownerKind: 'USER',
+          ownerId: principal.id,
+          usageType: 'USER_AVATAR',
+        }),
+      ).resolves.toMatchObject({ ownerKind: 'USER', ownerId: principal.id });
+    }
+  });
+
+  it('avatar: không ai đặt hộ người khác (kể cả admin), admin vẫn gỡ được', async () => {
+    const { uow, rules } = setup();
+    await seedMedia(uow, { id: uuid(1), uploadedBy: student.id });
+    const own = await rules.attach(uow.stores, student, {
+      mediaId: uuid(1),
+      ownerKind: 'USER',
+      ownerId: student.id,
+      usageType: 'USER_AVATAR',
+    });
+    await seedMedia(uow, { id: uuid(2), uploadedBy: admin.id });
+    for (const principal of [admin, instructor]) {
+      await expect(
+        rules.attach(uow.stores, principal, {
+          mediaId: uuid(2),
+          ownerKind: 'USER',
+          ownerId: student.id,
+          usageType: 'USER_AVATAR',
+        }),
+      ).rejects.toMatchObject({ status: 403 });
+    }
+    const remove = new DeleteMediaUsageUseCase(uow, rules);
+    await expect(remove.execute(instructor, own.id)).rejects.toMatchObject({ status: 403 });
+    await remove.execute(admin, own.id);
+    expect(await uow.usages.findById(own.id)).toBeNull();
   });
 });
 
@@ -342,7 +383,7 @@ describe('worker: markdown usage sync', () => {
     const { uow } = setup();
     const sync = new SynchronizeMarkdownUsageUseCase(uow, ids);
     await expect(
-      sync.execute('x', 'q', { ...input('x'), usageType: 'STUDENT_AVATAR' }),
+      sync.execute('x', 'q', { ...input('x'), usageType: 'USER_AVATAR' }),
     ).rejects.toMatchObject({ status: 400 });
   });
 });
