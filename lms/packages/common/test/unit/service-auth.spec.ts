@@ -30,40 +30,40 @@ describe('TokenVerifier', () => {
 
   it('chấp nhận service token đúng aud và đọc scope', async () => {
     const token = mintServiceToken(key, {
-      subject: 'auth',
-      audience: 'student',
+      subject: 'media',
+      audience: 'identity',
       scopes: ['a', 'b'],
     });
     await expect(
-      verifier.verify(token, { type: 'service', audience: 'student' }),
+      verifier.verify(token, { type: 'service', audience: 'identity' }),
     ).resolves.toMatchObject({
       type: 'service',
-      subject: 'auth',
+      subject: 'media',
       scopes: ['a', 'b'],
     });
   });
 
   it('từ chối sai aud, hết hạn, sai khóa, kid lạ và token hỏng', async () => {
     const wrongAudience = mintServiceToken(key, {
-      subject: 'auth',
+      subject: 'media',
       audience: 'course',
       scopes: [],
     });
     const expired = mintServiceToken(key, {
-      subject: 'auth',
-      audience: 'student',
+      subject: 'media',
+      audience: 'identity',
       scopes: [],
       expiresInSeconds: 10,
       now: Date.now() - 60_000,
     });
     const foreign = mintServiceToken(otherKey, {
-      subject: 'auth',
-      audience: 'student',
+      subject: 'media',
+      audience: 'identity',
       scopes: [],
     });
     for (const token of [wrongAudience, expired, foreign, 'abc.def.ghi', 'x']) {
       await expect(
-        verifier.verify(token, { type: 'service', audience: 'student' }),
+        verifier.verify(token, { type: 'service', audience: 'identity' }),
       ).rejects.toMatchObject({
         code: 'SERVICE_TOKEN_INVALID',
         status: 401,
@@ -73,7 +73,7 @@ describe('TokenVerifier', () => {
 
   it('phân biệt loại token', async () => {
     const user = mintUserToken(key, { subject: PRINCIPAL_ID, role: 'admin' });
-    const service = mintServiceToken(key, { subject: 'auth', audience: 'aiops-lms', scopes: [] });
+    const service = mintServiceToken(key, { subject: 'media', audience: 'aiops-lms', scopes: [] });
     await expect(
       verifier.verify(user, { type: 'service', audience: 'aiops-lms' }),
     ).rejects.toMatchObject({
@@ -105,7 +105,7 @@ describe('ServiceAuthGuard', () => {
     @InternalApi({ scopes: ['student:profile:read'] })
     internal(): void {}
   }
-  const settings: ServiceAuthSettings = { serviceName: 'student', verifier: verifierFor(key) };
+  const settings: ServiceAuthSettings = { serviceName: 'identity', verifier: verifierFor(key) };
   const guard = new ServiceAuthGuard(new Reflector(), settings);
   const instance = new Controller();
 
@@ -122,7 +122,7 @@ describe('ServiceAuthGuard', () => {
     return { context, request };
   }
 
-  const gateway = { authorization: `Bearer ${mintGatewayToken(key, 'student')}` };
+  const gateway = { authorization: `Bearer ${mintGatewayToken(key, 'identity')}` };
   const principal = (role: string): Record<string, string> => ({
     ...gateway,
     'x-principal-id': PRINCIPAL_ID,
@@ -162,7 +162,7 @@ describe('ServiceAuthGuard', () => {
 
   it('route public chỉ nhận token của gateway', async () => {
     const notGateway = {
-      authorization: `Bearer ${mintServiceToken(key, { subject: 'auth', audience: 'student', scopes: ['student:profile:read'] })}`,
+      authorization: `Bearer ${mintServiceToken(key, { subject: 'media', audience: 'identity', scopes: ['student:profile:read'] })}`,
       'x-principal-id': PRINCIPAL_ID,
       'x-principal-role': 'admin',
     };
@@ -195,10 +195,10 @@ describe('ServiceAuthGuard', () => {
 
   it('route internal kiểm scope và không cần principal', async () => {
     const ok = {
-      authorization: `Bearer ${mintServiceToken(key, { subject: 'auth', audience: 'student', scopes: ['student:profile:read'] })}`,
+      authorization: `Bearer ${mintServiceToken(key, { subject: 'media', audience: 'identity', scopes: ['student:profile:read'] })}`,
     };
     const missing = {
-      authorization: `Bearer ${mintServiceToken(key, { subject: 'course', audience: 'student', scopes: [] })}`,
+      authorization: `Bearer ${mintServiceToken(key, { subject: 'course', audience: 'identity', scopes: [] })}`,
     };
     await expect(guard.canActivate(contextFor(instance.internal, ok).context)).resolves.toBe(true);
     await expect(
@@ -244,7 +244,7 @@ describe('ServiceTokenProvider', () => {
       provider.getToken('course'),
     ]);
     expect(tokens).toEqual(['t1', 't1', 't1']);
-    await provider.getToken('student');
+    await provider.getToken('identity');
     await provider.getToken('course');
     expect(calls()).toBe(2);
   });
@@ -268,7 +268,7 @@ describe('ServiceTokenProvider', () => {
     const { source, calls } = sourceWith((n) =>
       n === 1
         ? Promise.resolve({ accessToken: 't1', expiresInSeconds: 100 })
-        : Promise.reject(AppError.dependencyUnavailable('x-auth-token')),
+        : Promise.reject(AppError.dependencyUnavailable('x-identity-token')),
     );
     const provider = new ServiceTokenProvider(source, { now: () => now, retryDelayMs: 5_000 });
     await provider.getToken('x');
@@ -303,7 +303,7 @@ describe('HttpJwksKeyProvider', () => {
   }
 
   const options = {
-    dependency: 'test-auth-jwks',
+    dependency: 'test-identity-jwks',
     url: 'http://auth.test/.well-known/jwks.json',
     timeoutMs: 1_000,
     cacheTtlMs: 300_000,

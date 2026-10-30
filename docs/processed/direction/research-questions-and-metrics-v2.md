@@ -2,6 +2,8 @@
 
 > **Task:** R-12 — [bảng task refactor](../plan/refactor/refactor-board-v1.md)
 >
+> **Cập nhật R-13:** `auth` và `student` đã gộp thành service `identity` ([ADR-005](../adr/adr-005-merge-auth-student-into-identity-v1.md)); tài liệu được sửa tại chỗ theo topology 7 service + 4 worker (11 runtime). Các số đo chưa đo lại sau khi gộp được ghi rõ ở chỗ dùng.
+>
 > **Trạng thái:** Đề xuất — chờ Đức tự xác nhận (refactor do một mình Đức làm, không cần Bách review). Chỗ nào là lựa chọn chưa có nguồn xác nhận được ghi "đề xuất chờ Đức xác nhận".
 >
 > **Thay thế:** [research-questions-and-metrics-v1](research-questions-and-metrics-v1.md) (giữ làm lịch sử, không dùng cho đánh giá trên topology v2). Bản v1 gắn với năm fault F1–F5, topology 6 business service + Gateway và vai trò "AI hỗ trợ".
@@ -33,8 +35,8 @@ Thuật ngữ: **RCA engine** là hệ thống truy vết nguyên nhân của đ
 ### 2.1. Granularity và unit of evaluation
 
 - Primary RCA evaluation: **service-level**.
-- Candidate set mặc định: 11 `service.name` (`auth`, `student`, `course`, `media`, `media-worker`, `notification`, `notification-worker`, `scheduler`, `scheduler-worker`, `ai`, `ai-worker`); `gateway` là symptom mặc định và chỉ là candidate khi protocol có gateway fault (service-catalogue v2 mục 8). Candidate set phải được freeze trong evaluation protocol trước final campaign.
-- `root_cause_component` (ví dụ `media-minio`, `course-postgres`, `ai-llm-provider`, `auth-jwks`) chỉ là evidence bổ sung, không được trộn vào candidate list chính để tính Top-K/MRR. Hạ tầng không là candidate service-level.
+- Candidate set mặc định: 10 `service.name` (`identity`, `course`, `media`, `media-worker`, `notification`, `notification-worker`, `scheduler`, `scheduler-worker`, `ai`, `ai-worker`); `gateway` là symptom mặc định và chỉ là candidate khi protocol có gateway fault (service-catalogue v2 mục 8). Candidate set phải được freeze trong evaluation protocol trước final campaign.
+- `root_cause_component` (ví dụ `media-minio`, `course-postgres`, `ai-llm-provider`, `identity-jwks`) chỉ là evidence bổ sung, không được trộn vào candidate list chính để tính Top-K/MRR. Hạ tầng không là candidate service-level.
 - **Owner và process (đề xuất chờ Đức xác nhận).** Với FA và FD, service sở hữu nguyên nhân (`media`, `ai`) có thể khác process nơi triệu chứng xuất hiện (`media-worker`, `ai-worker`). Theo evaluation-protocol-v1 mục 4.2, primary metric chấm đúng `root_cause_service` của `RunGroundTruth`; owner-level Top-K (gộp `X` và `X-worker`) chỉ là diagnostic phụ để không phạt oan khi engine chỉ ra worker.
 - Unit đánh giá chính: **incident/fault-run level**; point/window-level chỉ dùng để chẩn đoán detector.
 
@@ -62,10 +64,10 @@ MVP dùng tám fault canonical FA–FH và bảy case phức tạp C1–C7 (chi 
 | FB | C1 | Backlog hàng đợi | `notification-worker` | queue của `notification-worker` |
 | FC | C2 | Giữ kết nối DB | `course` | `course-postgres` |
 | FD | C3 | Độ trễ nhà cung cấp LLM | `ai` (process chạm provider là `ai-worker`) | `ai-llm-provider` |
-| FE | C5 | Độ trễ dependency nhỏ | `student` | `student-postgres` |
+| FE | C5 | Độ trễ dependency nhỏ | `identity` | `identity-postgres` |
 | FF | không có case riêng | Quá tải tài nguyên | bất kỳ service | instance (CPU/RSS); bằng chứng phụ cho C1–C2 |
-| FG | C6 | Độ trễ/ngắt xác thực | `auth` | `auth` |
-| FH | C7 | Lệch khóa ký | `auth` | `auth-jwks` |
+| FG | C6 | Độ trễ/ngắt xác thực | `identity` | `identity` |
+| FH | C7 | Lệch khóa ký | `identity` | `identity-jwks` |
 
 Trạng thái kiểm chứng (29/10/2026, theo complex-case-catalogue): chỉ C6 đã chạy thật; C1–C5, C7 mới đo tín hiệu, chuỗi nhân quả của C1 sang `media-worker` là giả thuyết; C2 thiếu metric pool DB. Một case chỉ vào tập đánh giá khi chuỗi nhân quả đã chạy thật và có ground truth; case không tái lập được phải ghi lý do vào ledger, không âm thầm loại.
 
@@ -180,7 +182,7 @@ RCA sử dụng cùng candidate set và cùng logic ranking cho các variant mod
 
 ### 4.2. Giả thuyết và phép so sánh
 
-Giả thuyết H2: graph-aware ranking giúp phân biệt service gây lỗi với các symptom upstream tốt hơn anomaly-severity-only khi incident có fault propagation qua dependency. Topology v2 tạo nhiều trường hợp severity-only dễ nhầm: triệu chứng ở `media` hoặc `gateway` trong khi nguyên nhân ở `notification-worker` (C1), ở mọi cạnh `*-auth-token` trong khi nguyên nhân ở `auth` (C6), hoặc ở `course` khi `ai-worker` báo lỗi (vòng `course → ai → course`, C3).
+Giả thuyết H2: graph-aware ranking giúp phân biệt service gây lỗi với các symptom upstream tốt hơn anomaly-severity-only khi incident có fault propagation qua dependency. Topology v2 tạo nhiều trường hợp severity-only dễ nhầm: triệu chứng ở `media` hoặc `gateway` trong khi nguyên nhân ở `notification-worker` (C1), ở mọi cạnh `*-identity-token` trong khi nguyên nhân ở `auth` (C6), hoặc ở `course` khi `ai-worker` báo lỗi (vòng `course → ai → course`, C3).
 
 So sánh chính:
 
@@ -515,7 +517,7 @@ Trước khi task được chuyển `Hoàn thành`, Đức xác nhận tối thi
 
 | RQ | Điểm cần xác nhận tính khả thi từ backend/testbed |
 | --- | --- |
-| RQ1 | Metrics/traces/logs có correlation (đã đo: `trace_id`/`span_id` khớp ở 12/12 runtime; 9/9 luồng trace đủ service); fault tạo được symptom quan sát được ở nhiều modality. Cần chạy thật các fault chưa chạy (C1–C5, C7). |
+| RQ1 | Metrics/traces/logs có correlation (đã đo: `trace_id`/`span_id` khớp ở 11/11 runtime; 9/9 luồng trace đủ service); fault tạo được symptom quan sát được ở nhiều modality. Cần chạy thật các fault chưa chạy (C1–C5, C7). |
 | RQ2 | Distributed traces dựng được dependency edge ổn định ở các flow HTTP/RabbitMQ (command nối qua `traceparent` trong envelope, đã sửa ở R-12); case severity-only dễ nhầm root cause tồn tại (C1, C3, C6) nhưng chưa chạy thật hết. |
 | RQ3 | Timestamp/trace timing và fault `start/end` đủ nhất quán; khoảng yên lặng của C6 được báo riêng trong Detection Delay (evaluation-protocol-v1 mục 7.3). |
 | RQ4 | Tạo được degraded telemetry reproducible từ artifact của cùng baseline run; coverage/missingness lưu rõ; async edge có fallback không synthesize trace link giả. |

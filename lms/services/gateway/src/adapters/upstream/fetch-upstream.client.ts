@@ -15,8 +15,7 @@ import type { UpstreamName } from '../../domain/route-table.js';
 
 /** Identity canonical của từng upstream theo catalogue v2 (`gateway-<service>`). */
 const DEPENDENCY_IDENTITY: Record<UpstreamName, string> = {
-  auth: 'gateway-auth',
-  student: 'gateway-student',
+  identity: 'gateway-identity',
   course: 'gateway-course',
   media: 'gateway-media',
   notification: 'gateway-notification',
@@ -66,7 +65,7 @@ export class FetchUpstreamClient implements UpstreamClient {
     if (!baseUrl) throw AppError.notFound('Không tìm thấy route');
     const dependency = DEPENDENCY_IDENTITY[upstream];
     const method = normalizeHttpMethod(request.method);
-    // Token trước khi mở span dependency: lỗi lấy token thuộc dependency `gateway-auth-token`,
+    // Token trước khi mở span dependency: lỗi lấy token thuộc dependency `gateway-identity-token`,
     // không bị tính nhầm là upstream lỗi.
     const token = await this.tokens.getToken(upstream);
 

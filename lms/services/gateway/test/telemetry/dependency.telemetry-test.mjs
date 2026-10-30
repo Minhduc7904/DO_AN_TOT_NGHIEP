@@ -45,9 +45,8 @@ const base = `http://127.0.0.1:${server.address().port}`;
 
 const client = new FetchUpstreamClient(
   {
-    auth: base,
+    identity: base,
     course: base,
-    student: base,
     notification: base,
     ai: base,
     // Không ai nghe cổng này: lỗi kết nối.
@@ -72,14 +71,14 @@ function request(method, target) {
 }
 
 try {
-  const ok = await client.forward('auth', request('POST', '/api/v1/auth/student/login'));
+  const ok = await client.forward('identity', request('POST', '/api/v1/auth/student/login'));
   assert.equal(ok.status, 200);
   await drain(ok);
   const notFound = await client.forward('course', request('GET', '/api/v1/courses/course-001'));
   assert.equal(notFound.status, 404);
   await drain(notFound);
   // 5xx của upstream vẫn được trả nguyên vẹn cho client nhưng bị ghi nhận là lỗi dependency.
-  const gatewayTimeout = await client.forward('student', request('GET', '/api/v1/students'));
+  const gatewayTimeout = await client.forward('identity', request('GET', '/api/v1/students'));
   assert.equal(gatewayTimeout.status, 504);
   await drain(gatewayTimeout);
   const serverError = await client.forward(
@@ -105,9 +104,9 @@ try {
   assert.deepEqual(
     spans.map((span) => span.attributes.dependency_identity),
     [
-      'gateway-auth',
+      'gateway-identity',
       'gateway-course',
-      'gateway-student',
+      'gateway-identity',
       'gateway-notification',
       'gateway-ai',
       'gateway-media',
@@ -116,9 +115,9 @@ try {
   assert.deepEqual(
     spans.map((span) => span.name),
     [
-      'gateway-auth POST',
+      'gateway-identity POST',
       'gateway-course GET',
-      'gateway-student GET',
+      'gateway-identity GET',
       'gateway-notification GET',
       'gateway-ai GET',
       'gateway-media GET',

@@ -10,7 +10,7 @@
 >
 > **Vị trí canonical dự kiến:** `docs/processed/architecture/telemetry-and-ground-truth-schema-v1.md`
 >
-> **Mục đích:** chốt logical schema v1 cho metrics, traces, structured logs, telemetry artifact/data quality và ground truth của controlled experiment trên topology v2 (8 service + 4 worker). Schema phải đủ để tái lập run, tạo service/edge feature, dựng incident timeline, xếp hạng RCA service-level và đánh giá RQ1–RQ5 mà không làm thay đổi topology, HTTP/command contract hoặc fault semantics đã chốt ở bộ tài liệu v2.
+> **Mục đích:** chốt logical schema v1 cho metrics, traces, structured logs, telemetry artifact/data quality và ground truth của controlled experiment trên topology v2 (7 service + 4 worker). Schema phải đủ để tái lập run, tạo service/edge feature, dựng incident timeline, xếp hạng RCA service-level và đánh giá RQ1–RQ5 mà không làm thay đổi topology, HTTP/command contract hoặc fault semantics đã chốt ở bộ tài liệu v2.
 >
 > **Quy ước tên gọi lịch sử:** "T4" là phần schema telemetry và ground truth (tài liệu này); "T5" là experiment/evaluation manifest do mảng AI canonicalize sau; "T3" là fault matrix. Ba tên này giữ từ v0 để các mục ranh giới trách nhiệm không phải viết lại.
 
@@ -20,8 +20,8 @@
 
 Artifact này phải nhất quán với các tài liệu và code sau. Khi mâu thuẫn, ưu tiên theo thứ tự:
 
-1. [ADR-002](../adr/adr-002-ai-primary-root-cause-analysis-v1.md) và [ADR-004](../adr/adr-004-service-access-token-and-api-surfaces-v1.md) — vai trò RCA engine, telemetry phải đủ `service.name`/`trace_id`/`span_id`, hai loại cạnh xác thực `<caller>-auth-token` và `<caller>-auth-jwks`.
-2. [service-catalogue-and-topology-v2](service-catalogue-and-topology-v2.md) — 12 `service.name`, 17 dependency identity, edge catalogue `e01–e29`, workflow W1–W7.
+1. [ADR-002](../adr/adr-002-ai-primary-root-cause-analysis-v1.md) và [ADR-004](../adr/adr-004-service-access-token-and-api-surfaces-v1.md) — vai trò RCA engine, telemetry phải đủ `service.name`/`trace_id`/`span_id`, hai loại cạnh xác thực `<caller>-identity-token` và `<caller>-identity-jwks`.
+2. [service-catalogue-and-topology-v2](service-catalogue-and-topology-v2.md) — 11 `service.name`, 16 dependency identity hạ tầng, edge catalogue `e01–e29` (bỏ `e03`, `e09` ở R-13), workflow W1–W7.
 3. [http-and-event-contracts-v2](http-and-event-contracts-v2.md) — HTTP boundary, error semantics, command envelope và quy ước queue (mục 6, 8).
 4. [data-ownership-and-fault-matrix-v2](data-ownership-and-fault-matrix-v2.md) — ownership và ma trận fault FA–FH.
 5. [complex-case-catalogue-and-rca-result-v0](complex-case-catalogue-and-rca-result-v0.md) — **nguồn sự thật về tín hiệu có thật** (mục 1), quy ước đọc telemetry (mục 2), case C1–C7 (mục 3) và schema `RcaIncidentResult` (mục 5). Khi catalogue và ma trận fault v2 mục 5 khác nhau ở component hoặc tín hiệu, tài liệu này theo catalogue (xem mục 17.1).
@@ -36,7 +36,7 @@ Khi implementation backend phát ra tên field/library-specific khác logical sc
 - Không viết OpenTelemetry SDK bootstrap, Collector/Prometheus/Tempo/Loki config hoặc instrumentation code (đã có ở `lms/packages/observability` và `aiops-platform/observability`).
 - Không freeze metric threshold, detector/window size, RCA weight hoặc evaluation tolerance.
 - Không freeze workload rate/duration, fault intensity cụ thể hoặc timeout milliseconds; các giá trị đó thuộc pilot/protocol rồi được version hóa.
-- Không thay đổi topology 8 service + 4 worker.
+- Không thay đổi topology 7 service + 4 worker (sau R-13: `auth` + `student` → `identity`, ADR-005).
 - Không thay đổi HTTP/command business payload đã chốt ở contract v2.
 - Không thêm business service/dependency mới.
 - Không biến component/dependency thành primary RCA candidate; primary RCA vẫn là **service-level**.
@@ -83,8 +83,7 @@ Version là string để tránh nhầm giữa schema generation và version củ
 
 ```text
 gateway
-auth
-student
+identity
 course
 media
 media-worker
@@ -96,7 +95,7 @@ ai
 ai-worker
 ```
 
-12 giá trị này là danh sách duy nhất mà `defineTelemetryConfig` (`lms/packages/observability/src/telemetry-config.ts`) chấp nhận; runtime khởi động với `service.name` ngoài danh sách sẽ báo lỗi. Worker là process riêng, cùng image và cùng owner dữ liệu với service tương ứng nhưng có `service.name` riêng để Analysis phân biệt được nguồn triệu chứng.
+11 giá trị này là danh sách duy nhất mà `defineTelemetryConfig` (`lms/packages/observability/src/telemetry-config.ts`) chấp nhận; runtime khởi động với `service.name` ngoài danh sách sẽ báo lỗi. Worker là process riêng, cùng image và cùng owner dữ liệu với service tương ứng nhưng có `service.name` riêng để Analysis phân biệt được nguồn triệu chứng.
 
 Mỗi telemetry record thuộc service boundary phải truy được:
 
@@ -112,11 +111,10 @@ Candidate set RCA mặc định theo catalogue mục 8: mọi `service_name` tr�
 
 ## 3.2. Dependency identity
 
-### 3.2.1. 17 identity hạ tầng (catalogue mục 2.2)
+### 3.2.1. 16 identity hạ tầng (catalogue mục 2.2)
 
 ```text
-auth-postgres
-student-postgres
+identity-postgres
 course-postgres
 media-postgres
 notification-postgres
@@ -141,16 +139,16 @@ Quy ước đặt tên: `<service.name của bên sử dụng>-<hạ tầng>`. W
 Cạnh HTTP đồng bộ giữa service và cạnh ADR-004 cũng mang `dependency_identity` theo mẫu `<service.name bên gọi>-<đích>`; metric `lms_dependency_*` của cạnh này do **bên gọi** ghi (catalogue mục 2, quy ước 4):
 
 ```text
-gateway-auth  gateway-student  gateway-course  gateway-media
+gateway-identity  gateway-course  gateway-media
 gateway-notification  gateway-scheduler  gateway-ai
-auth-student  course-media  course-ai  media-student
-notification-worker-student  scheduler-worker-media
+course-media  course-ai  media-identity
+notification-worker-identity  scheduler-worker-media
 ai-worker-course  ai-worker-media
-<caller>-auth-token      # lấy service token (ADR-004), caller = gateway và mọi worker, course, media
-<caller>-auth-jwks       # tải JWKS (ADR-004), ở mọi runtime verify token
+<caller>-identity-token      # lấy service token (ADR-004), caller = gateway và mọi worker, course, media
+<caller>-identity-jwks       # tải JWKS (ADR-004), ở mọi runtime verify token
 ```
 
-Nguồn: mapping `HTTP_DEPENDENCY_PEERS` trong `lms/packages/observability/src/http-client-span-attributes.ts` (15 cạnh HTTP, gắn `peer.service`) và catalogue mục 1.1 (cạnh `*-auth-token`, `*-auth-jwks`). `media-student` có trong mapping và edge `e12` nhưng không nằm trong danh sách cạnh đo ở catalogue mục 1.1 (chưa kiểm chứng đã quan sát được trong lần đo).
+Nguồn: mapping `HTTP_DEPENDENCY_PEERS` trong `lms/packages/observability/src/http-client-span-attributes.ts` (13 cạnh HTTP, gắn `peer.service`) và catalogue mục 1.1 (cạnh `*-identity-token`, `*-identity-jwks`). `media-identity` có trong mapping và edge `e12` nhưng không nằm trong danh sách cạnh đo ở catalogue mục 1.1 (chưa kiểm chứng đã quan sát được trong lần đo).
 
 ### 3.2.3. Quy tắc
 
@@ -325,7 +323,7 @@ Schema không bắt buộc mỗi signal đều là raw metric riêng; một số
 
 | Logic | Metric thật | Ghi chú |
 | --- | --- | --- |
-| `request_count` | `http_server_request_count_total` | Nhãn `service_name`, `http_method`, `http_route_template`, `http_status_class`; 12/12 runtime (worker chỉ có `/health`, `/ready`) |
+| `request_count` | `http_server_request_count_total` | Nhãn `service_name`, `http_method`, `http_route_template`, `http_status_class`; 11/11 runtime (worker chỉ có `/health`, `/ready`) |
 | `request_error_count` | `http_server_request_error_count_total` | Chỉ tính HTTP 5xx và request bị ngắt (`client_aborted`/`exception`); 4xx nghiệp vụ **không** vào metric lỗi |
 | `request_duration` | `http_server_request_duration_seconds_bucket/_sum/_count` | Đơn vị giây |
 | `request_rate`, `error_rate`, `latency_p50/p95/p99` | derive bằng query | Provenance phải ghi query/aggregation |
@@ -334,8 +332,8 @@ Schema không bắt buộc mỗi signal đều là raw metric riêng; một số
 
 | Logic | Metric thật | Ghi chú |
 | --- | --- | --- |
-| `cpu_usage` | `process_cpu_time_seconds_total` | CPU user+system tích lũy của process, 12/12 runtime; lấy `rate(...)`. Là nguồn canonical, không cộng thêm CPU container |
-| `memory_usage` | `process_memory_usage_bytes` | RSS của process, 12/12 runtime |
+| `cpu_usage` | `process_cpu_time_seconds_total` | CPU user+system tích lũy của process, 11/11 runtime; lấy `rate(...)`. Là nguồn canonical, không cộng thêm CPU container |
+| `memory_usage` | `process_memory_usage_bytes` | RSS của process, 11/11 runtime |
 | `network_rx`, `network_tx`, `disk_io`, `event_loop_lag` | chưa có | Không có trong catalogue mục 1.1; grep `createCounter\|createHistogram\|createObservable*` trong `lms/packages` và `lms/services` chỉ thấy 8 instrument (HTTP ×3, dependency ×3, CPU, RSS) |
 | `connection_pool_usage` | chưa có | Catalogue mục 1.5: chưa có pool PostgreSQL và thời gian chờ pool |
 
@@ -352,7 +350,7 @@ Chỉ signal có instrumentation thực tế mới được dùng. Signal chưa 
 | `storage_latency` | cùng họ, `dependency_identity=media-minio` | `media` và `media-worker` |
 | `smtp_latency` (mới ở v1) | cùng họ, `dependency_identity=notification-smtp` | `notification-worker` |
 | `llm_provider_latency` (mới ở v1) | cùng họ, `dependency_identity=ai-llm-provider` | `ai` và `ai-worker` |
-| `auth_edge_latency/error` (mới ở v1) | cùng họ, `dependency_identity=<caller>-auth-token`, `<caller>-auth-jwks` | ADR-004 |
+| `auth_edge_latency/error` (mới ở v1) | cùng họ, `dependency_identity=<caller>-identity-token`, `<caller>-identity-jwks` | ADR-004 |
 | `queue_depth` | `rabbitmq_detailed_queue_messages`, `_ready`, `_unacked` | Nhãn `service_name` (worker tiêu thụ), `dependency_identity`, `queue`; nguồn là broker, scrape 5 giây |
 | `consumer_count` (mới ở v1) | `rabbitmq_detailed_queue_consumers` | Cùng nhãn |
 | `consumer_lag` theo thời gian, tuổi message cũ nhất | chưa có | Catalogue mục 1.5: chỉ đo được theo độ sâu; suy từ span (thời điểm PRODUCER so với CONSUMER cùng trace) |
@@ -443,7 +441,7 @@ gateway -> course            # dependency_identity=gateway-course
 gateway -> media
 course -> media              # course-media
 ai-worker -> course          # ai-worker-course (đóng vòng course -> ai -> course)
-notification-worker -> student
+notification-worker -> identity
 ```
 
 Static edge ID `e01...e29` của topology là validation/enrichment metadata, không bắt buộc phải được application emit vào span. Các edge `e25–e26` (JWKS và token) là cạnh nền tần suất thấp: token làm mới nền ở 50% TTL (khoảng 5 phút mỗi cặp caller/audience), JWKS chỉ tải khi khởi động, cache hết hạn (mặc định 5 phút) hoặc gặp `kid` lạ.
@@ -530,7 +528,7 @@ Message của log do code phát có dạng ổn định (`Dependency <identity> 
 
 ### Log thực tế của testbed v2
 
-- 12/12 runtime có log; chỉ `service_name` là index label ở Loki, còn `trace_id`, `span_id`, `service_version`, `service_instance_id` là structured metadata.
+- 11/11 runtime có log; chỉ `service_name` là index label ở Loki, còn `trace_id`, `span_id`, `service_version`, `service_instance_id` là structured metadata.
 - Field chẩn đoán qua allowlist (`structured-logger.ts`): `dependency_identity`, `duration_ms`, `error_type`, `event`, `event_id`, `http_method`, `http_route`, `http_status_code`, `operation_name`, `outcome`. Field ngoài allowlist bị bỏ để không lộ payload/PII; message đi qua bộ che credential/PII.
 - Ba `event` có thật: `http.server.request` (access log của mọi request trừ `/health`; INFO, 4xx là WARN), `http.server.error` (5xx, `client_aborted`, exception) và `dependency.failure` (kèm `dependency_identity`, `error_type`, `trace_id`, `span_id` trỏ đúng span CLIENT lỗi).
 - Worker chỉ có access log `/ready`; chưa có log khi xử lý command (catalogue mục 1.5). Log ngoài span context (startup, background) không có `trace_id`.
@@ -876,8 +874,8 @@ Healthy run có các field workload giống fault run để matched comparison k
 | `expected_symptom` | ✓ | healthy expectation | Human-readable summary ngắn |
 | `expected_propagation_path` | ✓ | expected healthy path | Ordered service/edge/dependency expectation để audit propagation, không phải model input |
 | `expected_evidence` | ✓ | expected healthy evidence | Structured expectation để verification/evidence audit, không phải model input |
-| `expected_symptom_services` | tùy chọn | null | Chỉ cho fault tầng auth (FG/FH); xem mục 9.1; không phải model input |
-| `expected_symptom_lag` | tùy chọn | null | Chỉ cho fault tầng auth (FG/FH); tính từ cấu hình, không từ quan sát; xem mục 9.1 |
+| `expected_symptom_services` | tùy chọn | null | Chỉ cho fault tầng xác thực (FG/FH); xem mục 9.1; không phải model input |
+| `expected_symptom_lag` | tùy chọn | null | Chỉ cho fault tầng xác thực (FG/FH); tính từ cấu hình, không từ quan sát; xem mục 9.1 |
 
 `expected_evidence` item logical schema:
 
@@ -923,8 +921,7 @@ Exact baseline tolerance/check duration được version hóa ở experiment/eva
 ```text
 {
   "gateway": "...",
-  "auth": "...",
-  "student": "...",
+  "identity": "...",
   "course": "...",
   "media": "...",
   "media-worker": "...",
@@ -973,45 +970,45 @@ Nguồn: ma trận fault FA–FH ở [data-ownership-and-fault-matrix-v2](data-o
 | **FB** Backlog hàng đợi | C1 | `queue_backlog` | `notification-worker` | `consumer` | `notification-worker` | `notification-worker-rabbitmq` | cỡ batch (seed R-10: 100000 recipient), cách làm chậm worker (giới hạn CPU hoặc `docker pause` theo chu kỳ), interval | Đã đo tín hiệu; chuỗi lan sang `media-worker` là giả thuyết |
 | **FC** Giữ kết nối DB | C2 | `db_connection_hold` | `course` | `service` | `course` | `course-postgres` | số và kích thước export CSV đồng thời, mức tải học chạy song song, interval | Đã đo tín hiệu; metric pool chưa có |
 | **FD** Provider AI chậm | C3 | `dependency_latency` | `ai-llm-provider` | `dependency` | `ai` | `ai-llm-provider` | delay hoặc tỷ lệ lỗi ngắt quãng của stub LLM, interval | Đã đo tín hiệu; stub chậm chưa chạy |
-| **FE** Student chậm | C5 | `dependency_latency` | `student-postgres` | `dependency` | `student` | `student-postgres` | delay chèn vào truy vấn snapshot recipient, interval | Đã đo tín hiệu; chèn trễ chưa chạy |
+| **FE** Identity chậm | C5 | `dependency_latency` | `identity-postgres` | `dependency` | `identity` | `identity-postgres` | delay chèn vào truy vấn snapshot recipient, interval | Đã đo tín hiệu; chèn trễ chưa chạy |
 | **FF** Quá tải tài nguyên | không có case riêng | `resource_pressure` (đề xuất) | `<service>-instance` | `resource` | một service bất kỳ, ghi đúng một giá trị mỗi run | `<service>-instance` | tài nguyên (CPU hoặc bộ nhớ), giới hạn container, interval | CPU/RSS có thật, dùng làm bằng chứng phụ cho C1–C2 |
-| **FG** Độ trễ/ngắt xác thực | C6 | `dependency_unavailable` | `auth` | `service` | `auth` | `auth` | kiểu tác động (`pause`/dừng), `AUTH_SERVICE_TOKEN_TTL_SECONDS`, TTL cache JWKS, interval | **Đã chạy** bởi `tracing-smoke` |
-| **FH** Lệch khóa ký | C7 | `config_drift` | `auth-signing-key` | `config` | `auth` | `auth-jwks` | thay `AUTH_SIGNING_KEY_PEM`, có giữ khóa cũ (`AUTH_PREVIOUS_PUBLIC_KEY_PEM`) hay không, TTL cache JWKS, interval | Đã đo tín hiệu; cơ chế đổi khóa chưa chạy |
+| **FG** Độ trễ/ngắt xác thực | C6 | `dependency_unavailable` | `identity` | `service` | `identity` | `identity` | kiểu tác động (`pause`/dừng), `IDENTITY_SERVICE_TOKEN_TTL_SECONDS`, TTL cache JWKS, interval | **Đã chạy** bởi `tracing-smoke` |
+| **FH** Lệch khóa ký | C7 | `config_drift` | `identity-signing-key` | `config` | `identity` | `identity-jwks` | thay `IDENTITY_SIGNING_KEY_PEM`, có giữ khóa cũ (`IDENTITY_PREVIOUS_PUBLIC_KEY_PEM`) hay không, TTL cache JWKS, interval | Đã đo tín hiệu; cơ chế đổi khóa chưa chạy |
 
 Ghi chú:
 
 - `fault_type` của FF không có trong catalogue (không có case riêng); `resource_pressure` là giá trị đề xuất thay `cpu_pressure` của v0 vì ma trận v2 mục 5 ghi cả CPU lẫn bộ nhớ. Chưa kiểm chứng.
 - FA: ma trận ghi root-cause `media` / `media-worker`, catalogue C4 chốt `media`. Mỗi run chỉ ghi một `root_cause_service`; nếu sau này có run nhắm riêng process `media-worker`, quy tắc chọn giá trị chưa được catalogue nêu.
 - FD: chủ sở hữu root cause là `ai`; process chạm provider là `ai-worker` (catalogue C3). Evidence nằm ở span/metric của cả `ai` và `ai-worker`.
-- FG: ma trận ghi component `auth` / `auth-postgres`; catalogue chỉ chốt `auth` và chỉ có kịch bản `docker pause`/dừng (`dependency_unavailable`). Biến thể chèn trễ (`dependency_latency`) và component `auth-postgres` chưa có kịch bản, chưa kiểm chứng (mục 17.1).
-- FH: `auth-jwks` là nhãn component gom các identity `<caller>-auth-jwks` của mọi runtime verify token, không phải một `dependency_identity` đơn lẻ.
+- FG: ma trận ghi component `identity` / `identity-postgres`; catalogue chỉ chốt `identity` và chỉ có kịch bản `docker pause`/dừng (`dependency_unavailable`). Biến thể chèn trễ (`dependency_latency`) và component `identity-postgres` chưa có kịch bản, chưa kiểm chứng (mục 17.1).
+- FH: `identity-jwks` là nhãn component gom các identity `<caller>-identity-jwks` của mọi runtime verify token, không phải một `dependency_identity` đơn lẻ.
 - `fault_target_kind` thêm giá trị `config` cho `config_drift` (v0 chỉ có `service | dependency | resource | consumer`).
 
 Exact numeric intensity được pilot/freeze ngoài schema; sau freeze nó phải xuất hiện trong `fault_intensity`/`fault_parameters` và versioned experiment config.
 
 Mỗi FA–FH dùng cùng `RunGroundTruth` shape: fault identity/target/kind, service-level root cause, component evidence, actual injection interval/parameters, workload identity, expected symptom/propagation, verification/reset và execution provenance. Không có field special-case chỉ dành cho một fault; khác biệt scenario nằm trong `fault_parameters`, `expected_propagation_path`, `expected_evidence` và hai field tùy chọn cho fault có triệu chứng trễ (mục 9.1).
 
-## 9.1. Fault ở tầng auth (FG, FH): root cause cách xa triệu chứng và có độ trễ
+## 9.1. Fault ở tầng xác thực (FG, FH): root cause cách xa triệu chứng và có độ trễ
 
 FG và FH khác các fault còn lại ở ba điểm, và ground truth phải ghi được cả ba (ADR-004, catalogue C6/C7):
 
-1. **Triệu chứng không nằm ở service gốc.** Với FG, triệu chứng nằm ở cạnh `<service>-auth-token` của bên gọi (đầu tiên là `gateway-auth-token`), kéo theo mọi route qua gateway lỗi 504 dù `course`, `media` khỏe; request không tới service đích. Với FH, nhiều service cùng trả 401 dù hạ tầng khỏe. `root_cause_service=auth` không xuất hiện ở span lỗi của service bị ảnh hưởng (catalogue mục 2, quy ước 3).
-2. **Có khoảng yên lặng.** Token đã cache còn dùng đến khi hết hạn (stale-while-error), JWKS đã cache còn dùng đến khi hết hạn hoặc gặp `kid` lạ. Do đó `fault_start` (lúc dừng `auth`/đổi khóa) và thời điểm triệu chứng đầu tiên cách nhau. Đo ở `tracing-smoke` (catalogue C6): login lỗi ngay, request dùng token người dùng còn hạn vẫn thành công, lỗi `gateway-auth-token` xuất hiện sau 72 giây khi TTL đặt 60 giây (mặc định 600 giây). Số 72 giây là một lần đo, không phải giá trị freeze.
+1. **Triệu chứng không nằm ở service gốc.** Với FG, triệu chứng nằm ở cạnh `<service>-identity-token` của bên gọi (đầu tiên là `gateway-identity-token`), kéo theo mọi route qua gateway lỗi 504 dù `course`, `media` khỏe; request không tới service đích. Với FH, nhiều service cùng trả 401 dù hạ tầng khỏe. `root_cause_service=identity` không xuất hiện ở span lỗi của service bị ảnh hưởng (catalogue mục 2, quy ước 3).
+2. **Có khoảng yên lặng.** Token đã cache còn dùng đến khi hết hạn (stale-while-error), JWKS đã cache còn dùng đến khi hết hạn hoặc gặp `kid` lạ. Do đó `fault_start` (lúc dừng `identity`/đổi khóa) và thời điểm triệu chứng đầu tiên cách nhau. Đo ở `tracing-smoke` (catalogue C6): login lỗi ngay, request dùng token người dùng còn hạn vẫn thành công, lỗi `gateway-identity-token` xuất hiện sau 72 giây khi TTL đặt 60 giây (mặc định 600 giây). Số 72 giây là một lần đo, không phải giá trị freeze.
 3. **Phạm vi triệu chứng rộng.** Nhiều service/worker lỗi cùng lúc khi token hoặc cache JWKS của chúng hết hạn; thời điểm lỗi của mỗi bên phụ thuộc thời điểm token của nó được cấp lần cuối.
 
-Vì vậy với fault tầng auth, `RunGroundTruth` bổ sung (tùy chọn, null với fault có triệu chứng ngay):
+Vì vậy với fault tầng xác thực, `RunGroundTruth` bổ sung (tùy chọn, null với fault có triệu chứng ngay):
 
 | Field | Required | Rule |
 | --- | :---: | --- |
 | `expected_symptom_services` | tùy chọn | Mảng `service_name` nơi triệu chứng đầu tiên được kỳ vọng. FG: `gateway` (và `<worker>` khi token của worker hết hạn); FH: các service verify token. Không chứa `root_cause_service`. Chỉ phục vụ audit, không phải model input |
-| `expected_symptom_lag` | tùy chọn | Object `{ min_seconds, max_seconds, basis }` mô tả độ trễ kỳ vọng từ `fault_start` đến triệu chứng đầu tiên, tính **từ cấu hình** (`basis` trỏ tới `AUTH_SERVICE_TOKEN_TTL_SECONDS` hoặc TTL cache JWKS đã version hóa), không tính từ quan sát. Giá trị số thuộc pilot/protocol |
+| `expected_symptom_lag` | tùy chọn | Object `{ min_seconds, max_seconds, basis }` mô tả độ trễ kỳ vọng từ `fault_start` đến triệu chứng đầu tiên, tính **từ cấu hình** (`basis` trỏ tới `IDENTITY_SERVICE_TOKEN_TTL_SECONDS` hoặc TTL cache JWKS đã version hóa), không tính từ quan sát. Giá trị số thuộc pilot/protocol |
 
 Quy tắc đi kèm:
 
-- `fault_parameters` của FG/FH ghi `AUTH_SERVICE_TOKEN_TTL_SECONDS` (mặc định 600, test rút còn 60), TTL cache JWKS (mặc định 5 phút), kiểu tác động; FH ghi thêm việc có giữ khóa cũ hay không. Cấu hình này là provenance của execution, bị cấm làm feature (mục 12).
+- `fault_parameters` của FG/FH ghi `IDENTITY_SERVICE_TOKEN_TTL_SECONDS` (mặc định 600, test rút còn 60), TTL cache JWKS (mặc định 5 phút), kiểu tác động; FH ghi thêm việc có giữ khóa cũ hay không. Cấu hình này là provenance của execution, bị cấm làm feature (mục 12).
 - Interval `fault_start`–`fault_end` phải đủ dài hơn `expected_symptom_lag.max_seconds` cộng độ trễ thu thập (mục 7.2) thì mới có triệu chứng để đánh giá. `verification_checks` nên có một check kiểu `symptom_observed_within_lag_window`; nếu fault đã kích hoạt thành công mà triệu chứng không xuất hiện trong cửa sổ, run không được tính là mẫu RCA hợp lệ của fault đó (`run_status=invalid` theo protocol), thay vì bị gán nhầm thành "fault không tác dụng".
 - Đánh giá detection onset/lag không được lấy `fault_start` làm mốc triệu chứng; `fault_start` chỉ dùng cho evaluation/overlay (mục 11.3).
-- Tập `expected_evidence` của FG/FH dùng `entity_type=dependency` với `entity_id=<caller>-auth-token` hoặc `<caller>-auth-jwks`, không dùng `entity_id=auth` cho signal nằm ở service khác.
+- Tập `expected_evidence` của FG/FH dùng `entity_type=dependency` với `entity_id=<caller>-identity-token` hoặc `<caller>-identity-jwks`, không dùng `entity_id=identity` cho signal nằm ở service khác.
 
 ---
 
@@ -1092,17 +1089,17 @@ ground truth:
 
 Schema phải cho phép: triệu chứng ở hai service (job AI mãi `RUNNING` rồi `WORKER_INTERRUPTED`; tài liệu mãi `EXTRACTING`), nguyên nhân gián tiếp ở provider qua `ai-worker` giữ lease. Chưa có: telemetry riêng cho lease hết hạn hoặc job/tài liệu `FAILED` (trạng thái này ở DB `ai`), log xử lý command trong worker.
 
-## 10.5. FE — Student chậm khi snapshot (C5)
+## 10.5. FE — Identity chậm khi snapshot (C5)
 
 ```text
 dependency evidence:
-  span CLIENT `notification-worker-student GET /internal/v1/students` chậm
-  span `student-postgres student.list` chậm
-  lms_dependency_duration_seconds{dependency_identity="notification-worker-student"}
+  span CLIENT `notification-worker-identity GET /internal/v1/students` chậm
+  span `identity-postgres student.list` chậm
+  lms_dependency_duration_seconds{dependency_identity="notification-worker-identity"}
 trace:
-  luồng "Thông báo hàng loạt": notification-worker -> student -> student-postgres
+  luồng "Thông báo hàng loạt": notification-worker -> identity -> identity-postgres
 ground truth:
-  FE interval + delay truy vấn + student/student-postgres
+  FE interval + delay truy vấn + identity/identity-postgres
 ```
 
 Đặc điểm cần giữ: batch `PARTIAL_FAILED`, thiếu recipient, **log không có lỗi**; vì vậy không được đặt log lỗi làm required. Chưa có: telemetry cho số item lệch (dữ liệu nghiệp vụ).
@@ -1115,19 +1112,19 @@ Không có case riêng. Evidence là `process_cpu_time_seconds_total` hoặc `pr
 
 ```text
 dependency evidence:
-  span CLIENT lỗi `gateway-auth-token POST /internal/v1/auth/service-token`
-  span `gateway-auth POST` ở span gốc của request lỗi
-  lms_dependency_error_count_total{dependency_identity="gateway-auth-token"} tăng
-  `<worker>-auth-token` của worker khi token của chúng hết hạn
+  span CLIENT lỗi `gateway-identity-token POST /internal/v1/auth/service-token`
+  span `gateway-identity POST` ở span gốc của request lỗi
+  lms_dependency_error_count_total{dependency_identity="gateway-identity-token"} tăng
+  `<worker>-identity-token` của worker khi token của chúng hết hạn
 trace:
   trace của request lỗi không có span của service đích
 log:
   `dependency.failure` có span_id khớp span CLIENT lỗi
 ground truth:
-  FG interval + kiểu tác động + TTL + auth/auth ; expected_symptom_lag, expected_symptom_services (mục 9.1)
+  FG interval + kiểu tác động + TTL + identity/identity ; expected_symptom_lag, expected_symptom_services (mục 9.1)
 ```
 
-Trạng thái: đã chạy ở `tracing-smoke` (login 504 ngay; token người dùng còn hạn vẫn 200; lỗi `gateway-auth-token` sau 72 giây khi TTL 60 giây; phục hồi sau `unpause`). Chưa có trong catalogue mục 1: tín hiệu riêng cho trạng thái circuit breaker mở (ma trận v2 mục 5 có nhắc; chưa kiểm chứng ở code).
+Trạng thái: đã chạy ở `tracing-smoke` (login 504 ngay; token người dùng còn hạn vẫn 200; lỗi `gateway-identity-token` sau 72 giây khi TTL 60 giây; phục hồi sau `unpause`). Chưa có trong catalogue mục 1: tín hiệu riêng cho trạng thái circuit breaker mở (ma trận v2 mục 5 có nhắc; chưa kiểm chứng ở code).
 
 ## 10.8. FH — Lệch khóa ký (C7)
 
@@ -1136,12 +1133,12 @@ http evidence:
   http_server_request_count_total{http_status_class="4xx"} tăng đồng thời ở nhiều service
   access log `http.server.request` mức WARN với http_status_code=401 ở nhiều service
 dependency evidence:
-  span `<caller>-auth-jwks` có refetch
+  span `<caller>-identity-jwks` có refetch
 ground truth:
-  FH interval + việc đổi/giữ khóa + TTL JWKS + auth/auth-jwks ; expected_symptom_lag, expected_symptom_services (mục 9.1)
+  FH interval + việc đổi/giữ khóa + TTL JWKS + identity/identity-jwks ; expected_symptom_lag, expected_symptom_services (mục 9.1)
 ```
 
-Lưu ý khi đọc: mã lỗi `SERVICE_TOKEN_INVALID` nằm trong body phản hồi, không phải nhãn telemetry; metric chỉ phân biệt `http_status_class=4xx`, không phân biệt 401 với 404. Tín hiệu phân biệt được là `http_status_code=401` trong access log (Loki) xuất hiện đồng thời ở nhiều service. 4xx không vào `http_server_request_error_count_total`. Trạng thái: đã đo tín hiệu (cạnh `*-auth-jwks` có ở các runtime verify token); cơ chế đổi khóa chưa chạy.
+Lưu ý khi đọc: mã lỗi `SERVICE_TOKEN_INVALID` nằm trong body phản hồi, không phải nhãn telemetry; metric chỉ phân biệt `http_status_class=4xx`, không phân biệt 401 với 404. Tín hiệu phân biệt được là `http_status_code=401` trong access log (Loki) xuất hiện đồng thời ở nhiều service. 4xx không vào `http_server_request_error_count_total`. Trạng thái: đã đo tín hiệu (cạnh `*-identity-jwks` có ở các runtime verify token); cơ chế đổi khóa chưa chạy.
 
 ---
 
@@ -1294,24 +1291,24 @@ Bảng này ghi **hiện trạng đã đo và đã đối chiếu code**, không
 
 | Signal/field | Nguồn thực tế hiện có | Trạng thái | Ghi chú |
 | --- | --- | :---: | --- |
-| `service.name`, `service.version`, `service.instance.id` | `createTelemetryResource`; `defineTelemetryConfig` kiểm `service.name` thuộc 12 giá trị canonical | **Có** (12/12 runtime) | Series broker không có version/instance (nullable hợp lệ, mục 5.1) |
+| `service.name`, `service.version`, `service.instance.id` | `createTelemetryResource`; `defineTelemetryConfig` kiểm `service.name` thuộc 11 giá trị canonical | **Có** (11/11 runtime) | Series broker không có version/instance (nullable hợp lệ, mục 5.1) |
 | UTC timestamp | log stdout `timestamp` ISO-8601 `...Z`; OTel | **Có** | Reject/quality-fail timestamp không timezone |
-| HTTP server trace + RED metric | `createHttpTelemetryMiddleware`: `http_server_request_*`, span SERVER, access log | **Có** (12/12; worker chỉ có `/health`, `/ready`) | Route dùng template hoặc `unmatched`; method lạ thành `_OTHER` |
+| HTTP server trace + RED metric | `createHttpTelemetryMiddleware`: `http_server_request_*`, span SERVER, access log | **Có** (11/11; worker chỉ có `/health`, `/ready`) | Route dùng template hoặc `unmatched`; method lạ thành `_OTHER` |
 | W3C trace propagation HTTP | `W3CTraceContextPropagator`, `AlwaysOnSampler` (100% sampling) | **Có** | Contract v2 giữ nguyên |
 | Command trace propagation | `traceparent` trong envelope + header AMQP; relay nối vào trace HTTP gây ra command | **Có** (9/9 luồng ở catalogue mục 1.2 đủ service trong cùng trace) | Đã sửa ở R-12 (catalogue mục 4.2) |
 | `message_id` trong span/log | `messaging.message.id` trên span CONSUMER | **Có điều kiện** | Span PRODUCER không có; chưa log nào mang `message_id`; không dùng làm label |
 | `command_name`, `queue` | tên span PRODUCER/CONSUMER, `messaging.destination.name` | **Có điều kiện** | `command_name` chưa là attribute riêng (mục 4.3) |
 | Nối `scheduler` → `scheduler-worker` | không có | **Chưa có** | Hướng xử lý (thuộc mảng AI hoặc R sau): truyền `traceparent` qua bản ghi job |
 | PostgreSQL, MinIO, SMTP, LLM provider dependency | `observeDependency`: span CLIENT và `lms_dependency_*`, 42 cặp (service, identity) | **Có** | Span MinIO có ở cả `media` và `media-worker` |
-| HTTP edge và cạnh auth (`*-auth-token`, `*-auth-jwks`) | `observeDependency` ở caller; `peer.service` theo mapping | **Có** | Metric do bên gọi ghi |
+| HTTP edge và cạnh xác thực (`*-identity-token`, `*-identity-jwks`) | `observeDependency` ở caller; `peer.service` theo mapping | **Có** | Metric do bên gọi ghi |
 | Queue depth, consumer count | broker `rabbitmq_detailed_queue_*`, Collector scrape 5 giây, 24 queue | **Có** | Hiện sau khoảng 9 giây; thiếu gauge là unavailable |
 | Tuổi message cũ nhất, consumer lag theo thời gian | không có | **Chưa có** | Suy từ span (PRODUCER so với CONSUMER cùng trace) |
 | Publish/consume RabbitMQ ở runtime dạng metric | không có `lms_dependency_*` cho `*-rabbitmq` | **Chưa có** | Chỉ có span; bọc bằng `observeDependency` cần đổi tên metric, cần ADR nhỏ |
 | Độ trễ outbox (số command chưa phát) | không có | **Chưa có** | Metric đếm `outbox_messages` chưa phát |
-| CPU, RSS | `process_cpu_time_seconds_total`, `process_memory_usage_bytes` | **Có** (12/12) | Một nguồn canonical, không cộng CPU container |
+| CPU, RSS | `process_cpu_time_seconds_total`, `process_memory_usage_bytes` | **Có** (11/11) | Một nguồn canonical, không cộng CPU container |
 | Độ sử dụng pool PostgreSQL | không có | **Chưa có** | Thêm vào `lms/packages/common/src/prisma/` (catalogue mục 1.5) |
 | event-loop lag, network, disk I/O | không có instrument | **Chưa có** | Không dùng làm signal; absence explicit |
-| Structured logs + trace context | `emitStructuredLog`: access log `http.server.request`, `http.server.error`, `dependency.failure`; `trace_id`/`span_id` khớp span thật ở 12/12 runtime | **Có** | Loki chỉ index `service_name` |
+| Structured logs + trace context | `emitStructuredLog`: access log `http.server.request`, `http.server.error`, `dependency.failure`; `trace_id`/`span_id` khớp span thật ở 11/11 runtime | **Có** | Loki chỉ index `service_name` |
 | Log khi worker xử lý command | không có | **Chưa có** | Worker chỉ có access log `/ready`; lỗi xử lý chỉ thấy ở span và `dependency.failure` |
 | `run_id` trên normalized records | experiment artifact manifest + ingestion | **Có** (theo thiết kế) | Không cần raw app emit, không là label |
 | fault labels | control-plane manifest | **Có** ở ground truth | **Cấm** đưa vào feature telemetry |
@@ -1485,8 +1482,7 @@ Ví dụ minh họa semantics, **không freeze numeric intensity** và **không 
   "code_commit": "<git-sha>",
   "service_versions": {
     "gateway": "<version>",
-    "auth": "<version>",
-    "student": "<version>",
+    "identity": "<version>",
     "course": "<version>",
     "media": "<version>",
     "media-worker": "<version>",
@@ -1511,26 +1507,26 @@ Ví dụ minh họa semantics, **không freeze numeric intensity** và **không 
   "scenario_id": "FG",
   "fault_id": "FG",
   "fault_type": "dependency_unavailable",
-  "fault_target": "auth",
+  "fault_target": "identity",
   "fault_target_kind": "service",
   "fault_parameters": {
     "injection_mode": "pause",
-    "auth_service_token_ttl_seconds": "FROM_VERSIONED_CONFIG",
+    "identity_service_token_ttl_seconds": "FROM_VERSIONED_CONFIG",
     "jwks_cache_ttl_seconds": "FROM_VERSIONED_CONFIG"
   },
 
-  "root_cause_service": "auth",
-  "root_cause_component": "auth",
+  "root_cause_service": "identity",
+  "root_cause_component": "identity",
   "expected_symptom": "Sau khoảng yên lặng, token dịch vụ của gateway hết hạn và không làm mới được: mọi route qua gateway lỗi 504 dù service đích khỏe.",
   "expected_propagation_path": [
-    "auth",
-    "gateway-auth-token",
+    "identity",
+    "gateway-identity-token",
     "gateway"
   ],
   "expected_evidence": [
     {
       "entity_type": "dependency",
-      "entity_id": "gateway-auth-token",
+      "entity_id": "gateway-identity-token",
       "modality": "traces",
       "signal": "dependency_error",
       "expectation": "error spans after the quiet period",
@@ -1541,12 +1537,12 @@ Ví dụ minh họa semantics, **không freeze numeric intensity** và **không 
   "expected_symptom_lag": {
     "min_seconds": "FROM_VERSIONED_CONFIG",
     "max_seconds": "FROM_VERSIONED_CONFIG",
-    "basis": "AUTH_SERVICE_TOKEN_TTL_SECONDS"
+    "basis": "IDENTITY_SERVICE_TOKEN_TTL_SECONDS"
   }
 }
 ```
 
-Timestamps ở ví dụ chỉ minh họa format/schema, không phải protocol duration canonical. `expected_propagation_path` của FG theo đường lan ở catalogue C6 (`auth` → `gateway-auth-token` → mọi upstream của gateway); FA theo catalogue C4 (MinIO → `media`/`media-worker` → usage trống → `scheduler-worker`).
+Timestamps ở ví dụ chỉ minh họa format/schema, không phải protocol duration canonical. `expected_propagation_path` của FG theo đường lan ở catalogue C6 (`identity` → `gateway-identity-token` → mọi upstream của gateway); FA theo catalogue C4 (MinIO → `media`/`media-worker` → usage trống → `scheduler-worker`).
 
 ---
 
@@ -1591,7 +1587,7 @@ Catalogue (R-12, đo thực tế) mới hơn bản đề xuất ban đầu của
 
 | Chỗ lệch | Tài liệu v2 | Catalogue / code | Xử lý ở v1 |
 | --- | --- | --- | --- |
-| Component của FG | ma trận ghi `auth` / `auth-postgres` | catalogue chỉ chốt `auth` | Theo catalogue; `auth-postgres` chưa có kịch bản (mục 9) |
+| Component của FG | ma trận ghi `identity` / `identity-postgres` | catalogue chỉ chốt `identity` | Theo catalogue; `identity-postgres` chưa có kịch bản (mục 9) |
 | Tín hiệu pool utilization (FC), tuổi message cũ nhất (FB), breaker mở (FG) | ma trận mục 5 liệt kê là tín hiệu quan sát | chưa có (catalogue mục 1.5) hoặc không có trong mục 1 | Không đặt `required=true` (mục 10) |
 | Attribute `command_name`, attempt, metric retry count | contract v2 mục 8 yêu cầu | code chỉ phát một phần (mục 4.3) | Ingestion trích từ tên span/queue; phần chưa phát ghi "chưa có" |
 
@@ -1603,9 +1599,9 @@ Khác với v0, các mục dưới đây không ghi "Đạt" chỉ dựa vào th
 
 | Yêu cầu | Trạng thái | Bằng chứng |
 | --- | --- | --- |
-| Identity (12 `service.name`, dependency identity), UTC time, trace/log/metric correlation, resource attributes và coverage/data-quality cho mỗi modality | Đề xuất; identity và resource đã đối chiếu code | Mục 3–7; `telemetry-config.ts`, `telemetry-resource.ts` |
+| Identity (11 `service.name`, dependency identity), UTC time, trace/log/metric correlation, resource attributes và coverage/data-quality cho mỗi modality | Đề xuất; identity và resource đã đối chiếu code | Mục 3–7; `telemetry-config.ts`, `telemetry-resource.ts` |
 | Ground truth có run ID, fault target/type, start/end, parameters, expected symptom, reset/verification metadata cho FA–FH | Đề xuất | Mục 8–10 |
-| Fault tầng auth (FG/FH) biểu diễn được root cause cách xa triệu chứng và khoảng yên lặng | Đề xuất; FG đã chạy ở catalogue, FH mới đo tín hiệu | Mục 9.1, 10.7, 10.8, 16.2 |
+| Fault tầng xác thực (FG/FH) biểu diễn được root cause cách xa triệu chứng và khoảng yên lặng | Đề xuất; FG đã chạy ở catalogue, FH mới đo tín hiệu | Mục 9.1, 10.7, 10.8, 16.2 |
 | Schema map được tới service/edge feature và service-level RCA trong Analysis blueprint | Đề xuất; blueprint v1 đã tồn tại, chưa đối chiếu từng mục | Mục 11 |
 | Missing telemetry explicit, không thay bằng `0` | Đề xuất; các signal chưa có đã liệt kê | Mục 5.2, 7, 13 |
 | Async correlation bằng command envelope, `message_id` fallback | Đã đối chiếu code và catalogue (9/9 luồng cùng trace) | Mục 4.3, 5.3, 13 |
@@ -1631,7 +1627,7 @@ Khác với v0, các mục dưới đây không ghi "Đạt" chỉ dựa vào th
 - exact workload rates/stages/durations;
 - exact fault intensity/delay/CPU parameters;
 - exact HTTP/dependency timeout milliseconds và số lần retry consumer (contract v2 mục 10 để mở);
-- `AUTH_SERVICE_TOKEN_TTL_SECONDS`, TTL cache JWKS và `expected_symptom_lag` dùng trong các run FG/FH;
+- `IDENTITY_SERVICE_TOKEN_TTL_SECONDS`, TTL cache JWKS và `expected_symptom_lag` dùng trong các run FG/FH;
 - exact experiment phase durations và reset baseline tolerance;
 - exact metric histogram buckets (hiện 11 biên từ 0,005 đến 10 giây ở `service-metrics.ts`);
 - exact instrumentation package/library version;
@@ -1664,16 +1660,16 @@ Chỉ liệt kê thay đổi thực chất; các phần logical schema (run iden
 | Mục | v0 | v1 |
 | --- | --- | --- |
 | Topology | 6 business service + Gateway | 8 service + 4 worker, `service.name` canonical gồm cả worker |
-| Dependency identity | 9 (`course-redis`, `submission-storage`, `grading-rabbitmq`, `notification-rabbitmq`…) | 17 identity hạ tầng + identity cạnh HTTP `<caller>-<callee>` + `<caller>-auth-token`/`<caller>-auth-jwks` (ADR-004); `<service>-rabbitmq` đổi nghĩa (mục 3.2.4) |
+| Dependency identity | 9 (`course-redis`, `submission-storage`, `grading-rabbitmq`, `notification-rabbitmq`…) | 16 identity hạ tầng + identity cạnh HTTP `<caller>-<callee>` + `<caller>-identity-token`/`<caller>-identity-jwks` (ADR-004); `<service>-rabbitmq` đổi nghĩa (mục 3.2.4) |
 | Async correlation | event `grade.completed`, `event_id`, inject/extract header RabbitMQ | command envelope (`message_id`, `correlation.traceparent`), relay nối vào trace HTTP, `message_id` làm fallback, span PRODUCER/CONSUMER (mục 4.3) |
 | Metric | vocabulary logic, tên metric chưa cố định, `redis_latency`, app metric `submission_*`/`notification_*` | ánh xạ sang metric thật (`http_server_request_*`, `lms_dependency_*`, `process_*`, `rabbitmq_detailed_queue_*`); bỏ Redis và app metric; liệt kê signal chưa có (mục 5.2) |
 | Trace và log | `peer_service`, `event_id`, `event_name` | tên span thực tế, `message_id`/`command_name`/`queue`, bảng ánh xạ attribute (mục 13.1); log `http.server.request`, `http.server.error`, `dependency.failure` |
 | Quality report | `async_event_*`, `event_correlated_context_log_count` | `async_command_*`, `async_message_id_fallback_*`, `noise_trace_excluded_count`; bỏ field log theo `event_id`; ghi độ trễ thu thập (mục 7.2) |
 | Ground truth | F1–F5 | FA–FH theo fault matrix v2 và catalogue C1–C7; `fault_type` mới `queue_backlog`, `db_connection_hold`, `dependency_unavailable`, `config_drift`, `resource_pressure`; `fault_target_kind` thêm `config` (mục 9) |
-| Fault tầng auth | không có | `expected_symptom_services`, `expected_symptom_lag` và quy tắc khoảng yên lặng cho FG/FH (mục 9.1) |
+| Fault tầng xác thực | không có | `expected_symptom_services`, `expected_symptom_lag` và quy tắc khoảng yên lặng cho FG/FH (mục 9.1) |
 | Evidence requirement | F1–F5, ghi theo mong đợi | FA–FH theo tín hiệu có thật; tín hiệu chưa có ghi "Chưa có" và không đặt `required=true` (mục 10) |
 | Feasibility | capability expectation | hiện trạng đã đo (mục 13) |
 | Kết quả RCA | không có | link tới `RcaIncidentResult` ở catalogue mục 5, không chép lại (mục 11.5) |
 | Schema version | `telemetry.v0`, `ground-truth.v0`, `telemetry-quality.v0`, `telemetry-artifact.v0` | `telemetry.v1`, `ground-truth.v1`, `telemetry-quality.v1`; `telemetry-artifact.v0` giữ (manifest không đổi cấu trúc) |
-| Ví dụ | F2 (Storage) | FA (MinIO) và FG (auth) |
+| Ví dụ | F2 (Storage) | FA (MinIO) và FG (identity) |
 | Checkpoint | DoD W4-T4 "Đạt" | checkpoint R-12 phân biệt đã đối chiếu và chưa kiểm chứng |

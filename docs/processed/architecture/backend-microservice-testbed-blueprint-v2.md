@@ -2,6 +2,8 @@
 
 > **Task:** R-12 — [bảng task refactor](../plan/refactor/refactor-board-v1.md)
 >
+> **Cập nhật R-13:** `auth` và `student` đã gộp thành service `identity` ([ADR-005](../adr/adr-005-merge-auth-student-into-identity-v1.md)); tài liệu được sửa tại chỗ theo topology 7 service + 4 worker (11 runtime). Các số đo chưa đo lại sau khi gộp được ghi rõ ở chỗ dùng.
+>
 > **Trạng thái:** Đề xuất — chờ Đức tự xác nhận (refactor do một mình Đức làm, không cần Bách review). Nội dung đối chiếu với code và Compose ngày 29/10/2026; chỗ chưa kiểm ghi rõ "chưa kiểm chứng".
 >
 > **Thay thế:** [backend_microservice_testbed_blueprint](backend_microservice_testbed_blueprint.md) (giữ làm lịch sử, không dùng cho dataset mới).
@@ -39,14 +41,14 @@ Các nguyên tắc bắt buộc:
 
 ### 2.1. Topology v2
 
-**8 service và 4 worker**; worker là process riêng, cùng image với service tương ứng (`command: ["node", "dist/worker.js"]`), có `service.name` riêng.
+**7 service và 4 worker**; worker là process riêng, cùng image với service tương ứng (`command: ["node", "dist/worker.js"]`), có `service.name` riêng.
 
 ```text
-gateway  auth  student  course  media  notification  scheduler  ai
+gateway  identity  course  media  notification  scheduler  ai
                           media-worker  notification-worker  scheduler-worker  ai-worker
 ```
 
-Hạ tầng bắt buộc (Compose): PostgreSQL 17 (một instance, **7 logical DB** `auth_db`, `student_db`, `course_db`, `media_db`, `notification_db`, `scheduler_db`, `ai_db`, mỗi DB một role riêng), RabbitMQ, MinIO, Mailpit làm SMTP cho dev/CI, và nhà cung cấp LLM bên ngoài (OpenAI-compatible; test dùng HTTP stub). Không còn Redis, Storage Mock, service `enrollment`/`submission`/`grading`, service `admin` ([ADR-003](../adr/adr-003-remove-admin-service-v1.md)) hay event `grade.completed`.
+Hạ tầng bắt buộc (Compose): PostgreSQL 17 (một instance, **6 logical DB** `identity_db`, `course_db`, `media_db`, `notification_db`, `scheduler_db`, `ai_db`, mỗi DB một role riêng), RabbitMQ, MinIO, Mailpit làm SMTP cho dev/CI, và nhà cung cấp LLM bên ngoài (OpenAI-compatible; test dùng HTTP stub). Không còn Redis, Storage Mock, service `enrollment`/`submission`/`grading`, service `admin` ([ADR-003](../adr/adr-003-remove-admin-service-v1.md)) hay event `grade.completed`.
 
 Dependency graph đầy đủ (HTTP đồng bộ, command qua RabbitMQ, component/dependency, cạnh xác thực) và `service.name`, dependency identity canonical nằm ở [service-catalogue-and-topology-v2](service-catalogue-and-topology-v2.md) mục 2, 5 và 6; blueprint không nhân bản lại. Ba điểm kiến trúc cần nhớ:
 
@@ -61,16 +63,16 @@ Mỗi service chỉ truy cập database do chính nó sở hữu (worker dùng D
 Theo [ADR-004](../adr/adr-004-service-access-token-and-api-surfaces-v1.md):
 
 ```text
-login:           Client -> Gateway -> auth -> auth_db -> user access token (EdDSA)
+login:           Client -> Gateway -> identity -> identity_db -> user access token (EdDSA)
 request sau login: Client -> Gateway verify user token cục bộ (JWKS)
                    -> Gateway gắn service token của chính nó -> service đích
-service-to-service: bên gọi lấy service token từ auth (cache, làm mới nền) -> /internal/v1
+service-to-service: bên gọi lấy service token từ identity (cache, làm mới nền) -> /internal/v1
 ```
 
-- `auth` là bên duy nhất giữ khóa riêng Ed25519 (`AUTH_SIGNING_KEY_PEM`) và công bố khóa công khai tại `GET /.well-known/jwks.json`; mọi bên khác verify cục bộ bằng JWKS (cache, tải lại khi hết hạn hoặc gặp `kid` lạ). Không có remote introspection cho mỗi request.
+- `identity` là bên duy nhất giữ khóa riêng Ed25519 (`IDENTITY_SIGNING_KEY_PEM`) và công bố khóa công khai tại `GET /.well-known/jwks.json`; mọi bên khác verify cục bộ bằng JWKS (cache, tải lại khi hết hạn hoặc gặp `kid` lạ). Không có remote introspection cho mỗi request.
 - Hai loại token cùng ký EdDSA, phân biệt bằng claim `typ`: user token (TTL mặc định 1 giờ, kèm refresh token 24 giờ) và service token (TTL mặc định 10 phút, không refresh, `aud` = service đích, có `scope`). Client dịch vụ đăng ký trong `auth_service_clients` (secret băm scrypt), đồng bộ lúc khởi động từ `SERVICE_CLIENTS_BOOTSTRAP`.
 - Mỗi service có hai bề mặt HTTP tách thư mục: public `/api/v1` (chỉ Gateway gọi, cần service token `gateway:proxy`) và internal `/internal/v1` (service khác gọi, cần scope của route). `/health`, `/ready`, JWKS và `POST /internal/v1/auth/service-token` không cần bearer.
-- `auth` không phải dependency của từng request sau login, nhưng là điểm lỗi chung của lớp xác thực: khi `auth` chậm/chết, token và JWKS đã cache vẫn dùng đến hết hạn (stale-while-error), sau đó lỗi lan sang mọi service ([dependency-resilience-policy-v2](dependency-resilience-policy-v2.md) mục 6). Đây là nguồn của case FG/FH (mục 10).
+- `identity` không phải dependency của từng request sau login, nhưng là điểm lỗi chung của lớp xác thực: khi `identity` chậm/chết, token và JWKS đã cache vẫn dùng đến hết hạn (stale-while-error), sau đó lỗi lan sang mọi service ([dependency-resilience-policy-v2](dependency-resilience-policy-v2.md) mục 6). Đây là nguồn của case FG/FH (mục 10).
 - Gateway xóa `Authorization` và mọi `x-principal-*` do client gửi, đặt lại `x-principal-id`/`x-principal-role` từ claim, không bao giờ chuyển tiếp credential của client.
 
 ### 2.3. Async workflow
@@ -94,8 +96,7 @@ Bảng trách nhiệm đầy đủ ở catalogue v2 mục 4. Tóm tắt:
 | Component | Vai trò chính |
 | --- | --- |
 | `gateway` | Entry point duy nhất; route theo prefix; verify user JWT; kiểm role; gắn service token; chuẩn hóa lỗi proxy; không có DB |
-| `auth` | Đăng ký student, ba cửa đăng nhập (student/instructor/admin), refresh, phát user/service token, JWKS, registry client dịch vụ; `auth_db` |
-| `student` | Hồ sơ và danh sách student; `student_db` |
+| `identity` | Đăng ký student (một transaction tài khoản + hồ sơ), ba cửa đăng nhập (student/instructor/admin), refresh, phát user/service token, JWKS, registry client dịch vụ, hồ sơ và danh sách student; `identity_db` |
 | `course` | Course, lesson, quiz, enrollment, tiến độ, quiz attempt, export CSV, facade mỏng cho luồng AI soạn bài; `course_db` |
 | `media` / `media-worker` | Upload (multipart/trực tiếp lên MinIO), library, content stream, usage, thumbnail; worker xử lý thumbnail và đồng bộ usage; `media_db` + MinIO |
 | `notification` / `notification-worker` | Thông báo đơn, batch, inbox; worker snapshot recipient, dispatch, gửi email SMTP; `notification_db` |
@@ -115,7 +116,7 @@ W1–W7 được tái hiện tự động bởi bảy file regression (mục 12)
 
 ### 2.5. Phân tầng scope
 
-- **Đã có trong code:** topology 8 service + 4 worker, PostgreSQL/RabbitMQ/MinIO/Mailpit, hai bề mặt API và token EdDSA, outbox/inbox, seeder quy mô lớn, reset/seed có kiểm soát, regression, Postman, CI, telemetry đa nguồn có correlation (smoke observability).
+- **Đã có trong code:** topology 7 service + 4 worker, PostgreSQL/RabbitMQ/MinIO/Mailpit, hai bề mặt API và token EdDSA, outbox/inbox, seeder quy mô lớn, reset/seed có kiểm soát, regression, Postman, CI, telemetry đa nguồn có correlation (smoke observability).
 - **Chưa có (mảng AI, `aiops-platform/`):** dataset, huấn luyện và đánh giá RCA engine, workload k6, fault injector, experiment runner, MCP server và agent. README của `aiops-platform` ghi các thư mục này "Chưa tạo". Tài liệu này mô tả ranh giới và hợp đồng, không khẳng định chúng đã tồn tại.
 - **Ngoài scope:** Redis, frontend, kênh real-time, notification tự động theo sự kiện, Kubernetes/service mesh, multi-fault, RCA mức instance/component làm primary.
 
@@ -129,7 +130,7 @@ Business scope được freeze khi topology, observability và các fault ở m�
 | Service và Gateway | NestJS `12.0.x`; cấu hình bằng zod (`parseEnvironment`) |
 | Truy cập dữ liệu | Prisma `7.10.1` với `@prisma/adapter-pg`; migration bằng `prisma migrate deploy` khi `service` khởi động (xem 3.1) |
 | Contract | zod schema trong `@aiops-lms/contracts` (`http/`, `commands/`) |
-| Database | PostgreSQL `17.6-alpine`, một instance, 7 logical DB |
+| Database | PostgreSQL `17.6-alpine`, một instance, 6 logical DB |
 | Messaging | RabbitMQ `4.1.4-management-alpine` (`amqplib`); exchange `lms.commands` |
 | Object storage | MinIO (client `minio` `8.0.7`; 5 bucket `images`, `videos`, `documents`, `audios`, `other` do `minio-init` tạo) |
 | Email | `nodemailer`; Mailpit `v1.31.6` cho dev/CI, SMTP thật khi production (đổi biến môi trường) |
@@ -155,7 +156,7 @@ Không dùng polyglot business service. Analysis có thể là modular monolith 
 DO_AN_TOT_NGHIEP/
 ├── README.md, AGENTS.md, CLAUDE.md
 ├── lms/                        # backend workspace (pnpm workspace)
-│   ├── services/               # gateway, auth, student, course, media,
+│   ├── services/               # gateway, identity, course, media,
 │   │                           # notification, scheduler, ai  (+ worker.ts trong service có worker)
 │   ├── packages/
 │   │   ├── common/             # @aiops-lms/common: auth, clients, config, errors, http,
@@ -195,11 +196,11 @@ DO_AN_TOT_NGHIEP/
 
 | File | Nội dung | Dùng cho |
 | --- | --- | --- |
-| `docker-compose/compose.yaml` | Chỉ LMS (12 runtime + PostgreSQL, MinIO, `minio-init`, Mailpit, RabbitMQ) | Regression, Postman, phát triển. Không có Collector nên không có telemetry (chưa kiểm chứng hành vi exporter khi thiếu Collector) |
+| `docker-compose/compose.yaml` | Chỉ LMS (11 runtime + PostgreSQL, MinIO, `minio-init`, Mailpit, RabbitMQ) | Regression, Postman, phát triển. Không có Collector nên không có telemetry (chưa kiểm chứng hành vi exporter khi thiếu Collector) |
 | `aiops-platform/observability/compose.yaml` | Chỉ Collector, Prometheus, Tempo, Loki, Grafana | Dựng riêng stack quan sát |
-| `docker-compose/compose.full.yaml` | Ghép hai bên bằng `include` trong một project: 22 thành phần | Reset/seed, smoke observability, CI |
+| `docker-compose/compose.full.yaml` | Ghép hai bên bằng `include` trong một project: 21 thành phần | Reset/seed, smoke observability, CI |
 
-Hai bên nối bằng network `aiops-net` (biến `AIOPS_NETWORK_NAME`); LMS chỉ gửi OTLP/HTTP tới `otel-collector:4318`, Collector scrape `rabbitmq:15692`. Cổng host mặc định: `gateway` 3000, `auth` 3001, `student` 3012 (trong network là `student:3002`), `course` 3003, `media` 3004, `media-worker` 3005, `notification` 3006, `notification-worker` 3007, `scheduler` 3018 (host 3008 thuộc Grafana; trong network là `scheduler:3008`), `scheduler-worker` 3010, `ai` 3009, `ai-worker` 3011. Chi tiết lệnh: [docker-compose/README.md](../../../docker-compose/README.md).
+Hai bên nối bằng network `aiops-net` (biến `AIOPS_NETWORK_NAME`); LMS chỉ gửi OTLP/HTTP tới `otel-collector:4318`, Collector scrape `rabbitmq:15692`. Cổng host mặc định: `gateway` 3000, `identity` 3001, `course` 3003, `media` 3004, `media-worker` 3005, `notification` 3006, `notification-worker` 3007, `scheduler` 3018 (host 3008 thuộc Grafana; trong network là `scheduler:3008`), `scheduler-worker` 3010, `ai` 3009, `ai-worker` 3011. Chi tiết lệnh: [docker-compose/README.md](../../../docker-compose/README.md).
 
 Dữ liệu và trạng thái sạch:
 
@@ -259,7 +260,7 @@ Quy ước: timestamp UTC ISO-8601; `run_id` duy nhất, `repeat_index` bắt đ
 
 ## 8. Kiến trúc nội bộ service
 
-Template canonical (`lms/templates/service`, tạo bằng `pnpm new-service <name> --port <port>`; `student` là service mẫu):
+Template canonical (`lms/templates/service`, tạo bằng `pnpm new-service <name> --port <port>`):
 
 ```text
 service/
@@ -337,7 +338,7 @@ Ví dụ lỗi (envelope thực tế):
 
 ### 10.1. Resource identity và thời gian
 
-Mọi telemetry có `service.name`, `service.version`, `service.instance.id` (lấy từ cấu hình, không từ hostname/container); `service.name` là một trong 12 giá trị canonical, gồm cả worker. Timestamp UTC ISO-8601. Không dùng `trace_id`, `span_id`, user ID, request ID hoặc `message_id` làm Prometheus label; view của SDK chỉ cho phép allowlist thuộc tính và giới hạn 512 tổ hợp mỗi instrument.
+Mọi telemetry có `service.name`, `service.version`, `service.instance.id` (lấy từ cấu hình, không từ hostname/container); `service.name` là một trong 11 giá trị canonical, gồm cả worker. Timestamp UTC ISO-8601. Không dùng `trace_id`, `span_id`, user ID, request ID hoặc `message_id` làm Prometheus label; view của SDK chỉ cho phép allowlist thuộc tính và giới hạn 512 tổ hợp mỗi instrument.
 
 ### 10.2. Tracing
 
@@ -362,7 +363,7 @@ Pool kết nối PostgreSQL, tuổi message cũ nhất trong queue, độ trễ 
 
 ### 10.6. Correlation
 
-Một fault test đạt yêu cầu khi đi được từ metric symptom tới trace/span liên quan và log evidence bằng `service.name` cùng khoảng thời gian; với log trong request context truy được bằng `trace_id`/`span_id`. Lưu ý đọc telemetry: span PRODUCER thuộc process relay, queue thuộc worker tiêu thụ, triệu chứng lỗi xác thực nằm ở cạnh `<caller>-auth-token` (complex-case catalogue mục 2).
+Một fault test đạt yêu cầu khi đi được từ metric symptom tới trace/span liên quan và log evidence bằng `service.name` cùng khoảng thời gian; với log trong request context truy được bằng `trace_id`/`span_id`. Lưu ý đọc telemetry: span PRODUCER thuộc process relay, queue thuộc worker tiêu thụ, triệu chứng lỗi xác thực nằm ở cạnh `<caller>-identity-token` (complex-case catalogue mục 2).
 
 ## 11. Fault scope và RCA boundary
 
@@ -376,17 +377,17 @@ Ma trận fault v0 (FA–FH) và case phức tạp C1–C7 nằm ở [data-owner
 | FB | Backlog hàng đợi | `notification-worker` | `notification-rabbitmq` |
 | FC | Giữ kết nối DB | `course` | `course-postgres` |
 | FD | Độ trễ nhà cung cấp AI | `ai` | `ai-llm-provider` |
-| FE | Độ trễ dependency nhỏ | `student` | `student-postgres` |
+| FE | Độ trễ dependency nhỏ | `identity` | `identity-postgres` |
 | FF | Quá tải tài nguyên | service bất kỳ | instance |
-| FG | Độ trễ/ngắt xác thực | `auth` | `auth` / `auth-postgres` |
-| FH | Lệch khóa ký | `auth` | JWKS / khóa ký |
+| FG | Độ trễ/ngắt xác thực | `identity` | `identity` / `identity-postgres` |
+| FH | Lệch khóa ký | `identity` | JWKS / khóa ký |
 
 Trạng thái trung thực: tại thời điểm viết, chỉ case C6 (FG) đã được chạy thật (bởi `tracing-smoke`); các case còn lại mới ở mức "đã đo tín hiệu" hoặc giả thuyết và cần chạy thật trước khi dùng làm case đánh giá. Chưa có fault injector; không cần inject fault trên mọi service.
 
 ### 11.2. RCA và evaluation
 
 - RCA engine (ML + dependency graph) là phần chính của đề tài; MCP và agent là thứ yếu, chỉ đọc kết quả của RCA engine ([ADR-002](../adr/adr-002-ai-primary-root-cause-analysis-v1.md)).
-- Primary evaluation là **service-level**. Candidate set mặc định: `auth`, `student`, `course`, `media`, `media-worker`, `notification`, `notification-worker`, `scheduler`, `scheduler-worker`, `ai`, `ai-worker`; `gateway` là symptom mặc định, chỉ là candidate khi protocol có gateway fault. Hạ tầng (PostgreSQL, RabbitMQ, MinIO, SMTP, LLM provider) là component/evidence, không trộn vào candidate set.
+- Primary evaluation là **service-level**. Candidate set mặc định: `identity`, `course`, `media`, `media-worker`, `notification`, `notification-worker`, `scheduler`, `scheduler-worker`, `ai`, `ai-worker`; `gateway` là symptom mặc định, chỉ là candidate khi protocol có gateway fault. Hạ tầng (PostgreSQL, RabbitMQ, MinIO, SMTP, LLM provider) là component/evidence, không trộn vào candidate set.
 - Component/dependency là evidence bổ sung; không trộn service và component trong cùng metric chính. Output dùng thuật ngữ root-cause candidate ranking, không tuyên bố causal proof chỉ từ telemetry quan sát.
 - Metric tối thiểu (Precision/Recall/F1/Detection Delay cho detection; Top-1/Top-3/MRR cho RCA; thời gian chẩn đoán thủ công so với AI) và quy tắc split theo run: [evaluation-protocol-v0](evaluation-protocol-v1.md), tài liệu này vẫn ở v0 và chưa cập nhật theo topology v2.
 - Schema kết quả RCA (`RcaIncidentResult`) và nơi lưu đề xuất: complex-case catalogue mục 5.
@@ -399,14 +400,14 @@ Kiểm thử đang có (chạy từ `lms/`):
 | --- | --- | --- |
 | Kiến trúc | `pnpm run test:architecture` | ESLint boundary (cấm import chéo service, `public` ↔ `internal`), `new-service`, `http-surface` |
 | Unit | `pnpm run test` | Jest cho `common`, `observability` và từng service; kèm test reset, seeder, queue-scrape, `test:telemetry` của Gateway |
-| e2e theo service | `pnpm run test:<service>:e2e` | `auth`, `student`, `course`, `media`, `notification`, `ai`, `scheduler`, chạy với PostgreSQL, RabbitMQ, MinIO, Mailpit thật (đã `prisma migrate deploy`); Gateway có unit + e2e với upstream HTTP giả |
+| e2e theo service | `pnpm run test:<service>:e2e` | `identity`, `course`, `media`, `notification`, `ai`, `scheduler`, chạy với PostgreSQL, RabbitMQ, MinIO, Mailpit thật (đã `prisma migrate deploy`); Gateway có unit + e2e với upstream HTTP giả |
 | Integration | `@aiops-lms/common` `test:integration`, `test:seed-data:db` | Outbox qua RabbitMQ thật; seeder trên PostgreSQL thật |
 | Regression xuyên service | `pnpm run test:regression` | Dựng stack `compose.yaml` sạch, chạy bảy workflow W1–W7 qua Gateway (`lms/test/regression/*.regression.mjs`); workflow AI dùng provider giả |
 | Postman/newman | `pnpm run test:postman` | `postman/lms-v2.postman_collection.json` (90 request, 224 assertion theo README của Postman), bảy workflow tương ứng |
 | Smoke observability | `pnpm run test:observability` | Dựng `compose.full.yaml`, chạy regression làm traffic rồi `stack`, `tracing`, `logs`, `acceptance`, `metrics` (và `queue-scrape` không cần Docker) |
 | Reset/seed | `pnpm run test:testbed:reset[:compose]` | Guard của lệnh reset; reset hai lần và so fingerprint trên stack thật |
 
-CI ([`ci.yml`](../../../.github/workflows/ci.yml), chạy trên mọi PR và merge vào `main`): `static` (format, lint, build), `unit`, `e2e` (ma trận 7 service), `integration-db`, `compose-config` (validate ba file Compose bằng `.env.example`, bảo đảm không có `docker-compose/.env`), `compose-reset` (reset hai lần, fingerprint ổn định). [`regression.yml`](../../../.github/workflows/regression.yml) chạy regression và Postman (dựng cả 22 thành phần, 10–25 phút) khi PR gắn label `run-regression`, khi merge vào `main`, hằng đêm hoặc chạy tay. `pnpm run ci:verify` = `format:check` + `build` + `lint` + `test`.
+CI ([`ci.yml`](../../../.github/workflows/ci.yml), chạy trên mọi PR và merge vào `main`): `static` (format, lint, build), `unit`, `e2e` (ma trận 7 service), `integration-db`, `compose-config` (validate ba file Compose bằng `.env.example`, bảo đảm không có `docker-compose/.env`), `compose-reset` (reset hai lần, fingerprint ổn định). [`regression.yml`](../../../.github/workflows/regression.yml) chạy regression và Postman (dựng cả 21 thành phần, 10–25 phút) khi PR gắn label `run-regression`, khi merge vào `main`, hằng đêm hoặc chạy tay. `pnpm run ci:verify` = `format:check` + `build` + `lint` + `test`.
 
 Mỗi service chỉ tạo loại test có ý nghĩa: unit cho domain/use case có logic; e2e cho HTTP + persistence thật; contract test cho command/route đã publish; telemetry assertion cho propagation và attribute quan trọng. Danh sách contract test tối thiểu: [http-and-event-contracts-v2](http-and-event-contracts-v2.md) mục 9. Chưa có fault test (chưa có injector).
 
@@ -429,7 +430,7 @@ Mỗi service chỉ tạo loại test có ý nghĩa: unit cho domain/use case c�
 Phần hạ tầng đã đạt: dựng được từ trạng thái sạch và lặp lại được, có runbook và artifact kiểm chứng.
 
 ```text
-reset (down --volumes) -> up --build --wait (22 thành phần healthy)
+reset (down --volumes) -> up --build --wait (21 thành phần healthy)
 -> seed -> chạy workflow (regression) -> thu telemetry (Collector -> Tempo/Prometheus/Loki)
 -> smoke observability xác nhận tín hiệu -> reset -> lặp lại
 ```
@@ -453,9 +454,9 @@ Phần còn thiếu để testbed đạt DoD đầy đủ, thuộc mảng AI: st
 
 | Mục | Bản trước (blueprint, baseline v1) | Bản v2 (theo code) |
 | --- | --- | --- |
-| Topology | 6 business service + Gateway; `Assignment` là Target | 8 service + 4 worker (Gateway là một trong 8); không còn `enrollment`/`submission`/`grading`/`admin` |
+| Topology | 6 business service + Gateway; `Assignment` là Target | 7 service + 4 worker (Gateway là một trong 7); không còn `enrollment`/`submission`/`grading`/`admin` |
 | Cache và storage | Redis; Storage Mock điều khiển được; MinIO chỉ ở Target | Bỏ Redis và Storage Mock; MinIO thật thuộc `media` |
-| Database | PostgreSQL, 5 DB, SQL tay | PostgreSQL 17 với 7 logical DB và role riêng, Prisma `7.10.1` + migration |
+| Database | PostgreSQL, 5 DB, SQL tay | PostgreSQL 17 với 6 logical DB và role riêng, Prisma `7.10.1` + migration |
 | Async | Event `grade.completed` pub/sub duy nhất | Command qua exchange `lms.commands`, queue `<worker>--<command>-v<n>`, outbox/inbox, retry rồi `<queue>.error` |
 | Xác thực | JWT do Gateway verify cục bộ (thuật toán không nêu); service tin header | EdDSA/JWKS, hai loại token, service token cho mọi request, hai bề mặt `/api/v1` và `/internal/v1` (ADR-004) |
 | Contract | OpenAPI trong `lms/contracts/http/<service>/`, event ở `contracts/events/grade-completed/` | zod trong `lms/contracts/src/http` và `src/commands`; envelope phản hồi bốn khóa; contract `grade.completed` bỏ |
@@ -463,7 +464,7 @@ Phần còn thiếu để testbed đạt DoD đầy đủ, thuộc mảng AI: st
 | Kiến trúc service | Không bắt buộc cấu trúc use case riêng; template có `config/main.*` | Mỗi use case một class `execute` (ADR-001); template có hai bề mặt HTTP, Prisma, `worker.ts`; `pnpm new-service` |
 | Cấu trúc repo | Cây có `analysis/`, `load/`, `faults/`, `experiments/` ở root, `lms/packages/testing/`, `lms/infrastructure/{postgres,redis,rabbitmq,storage}`, observability ở `docker-compose/observability/` | Cây thực tế: không có các root trên (phần AI chuyển vào `aiops-platform/`, chưa tạo); không có `packages/testing`; observability ở `aiops-platform/observability/`; thêm `postman/`, `templates/`, `scripts/`, `test/` |
 | Tách `aiops-platform` | Không có | LMS không import mã từ đó; nối bằng OTLP/HTTP và network `aiops-net` |
-| Runtime | Một `compose.yaml` | `compose.yaml` (LMS), `aiops-platform/observability/compose.yaml`, `compose.full.yaml` (22 thành phần) |
+| Runtime | Một `compose.yaml` | `compose.yaml` (LMS), `aiops-platform/observability/compose.yaml`, `compose.full.yaml` (21 thành phần) |
 | Fault scope | 5 scenario F1–F5 (Redis, storage, service error, consumer, CPU); floor 5 × 3 = 15 run | FA–FH và case C1–C7, mỗi case ghi trạng thái kiểm chứng; chưa có injector; bỏ ngưỡng số run (thuộc evaluation protocol) |
 | RCA | AI hỗ trợ, service-level là primary | AI là bên truy vết chính, MCP/agent thứ yếu (ADR-002); service-level vẫn là primary; thêm đo thời gian chẩn đoán thủ công so với AI |
 | Metric/identity | Metric dependency cho Redis, storage; resource identity 3 field | `lms_dependency_*` với `dependency_identity`/`operation_name`/`status`; broker metric từ Collector; chỉ nêu tín hiệu có thật và liệt kê tín hiệu chưa có |

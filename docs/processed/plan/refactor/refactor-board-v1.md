@@ -26,6 +26,7 @@
 | R-10  | Data seeder quy mô lớn cho PostgreSQL                                                                                                                                                                               | 9–10 | R-04, R-05  | Hoàn thành (29/10/2026; PR #66, bỏ qua CI theo chỉ thị của Đức; xem bên dưới) |
 | R-11  | Test, CI, Postman v2; viết lại regression và job CI `mvp-regression`/`w7-compose` (gỡ ở R-05); đổi tên test `w1/w2/w3/w5` theo nghiệp vụ                                                                            | 8–10 | R-04…R-09   | Hoàn thành (29/10/2026; PR #67, CI GitHub xanh trừ GitGuardian báo nhầm; xem bên dưới) |
 | R-12  | Viết lại docs, viết lại smoke tracing/metrics/logs/acceptance (đang gắn luồng v1), kiểm chứng telemetry xuyên service, danh mục case phức tạp v0; ghi nhận schema kết quả RCA và nơi lưu (cho MCP thứ yếu, ADR-002) | 9–10 | tất cả      | Hoàn thành (29/10/2026; PR #68, CI GitHub xanh; xem "R-12" bên dưới) |
+| R-13  | Gộp `auth` + `student` thành service `identity` (code, DB `identity_db`, env, telemetry, compose, CI, docs; [ADR-005](../../adr/adr-005-merge-auth-student-into-identity-v1.md)) | 11–12 | R-04, R-12 | Đang thực hiện (nhánh `refactor/week-13/task-15-merge-identity-service`, chưa có PR; xem "R-13" bên dưới) |
 
 ## Mốc kiểm tra
 
@@ -52,6 +53,7 @@ Mỗi task chỉ chuyển `Hoàn thành` khi output ghi lệnh đã chạy và k
 | R-10 | Seed lặp cho cùng fingerprint; ghi thời gian và số dòng                                               |
 | R-11 | CI xanh; regression pass; Postman v2 chạy được                                                        |
 | R-12 | Trace đủ span xuyên service; docs đối chiếu code; danh mục case phức tạp v0 có ground truth           |
+| R-13 | Đăng ký student là một transaction trong `identity_db`; e2e `identity` đạt trên PostgreSQL thật; không còn tham chiếu service `auth`/`student` ngoài các ngoại lệ đã ghi; stack compose 21 thành phần healthy; regression và smoke observability đạt với topology mới; số đo (runtime, cặp dependency, cạnh HTTP) đo lại thật |
 
 ## Bằng chứng đã chạy
 
@@ -328,3 +330,23 @@ Phạm vi đã làm: khôi phục metric RabbitMQ, viết lại 5 smoke observab
 - Các mục R-05b/R-08/R-09 từng ghi "→ R-12" mà R-12 không làm: giới hạn tốc độ `POST /internal/v1/auth/service-token`; retention cho `ai_documents`/`ai_jobs` mồ côi; ràng buộc `AI_WORKER_LEASE_MS > AI_COMPLETION_TIMEOUT_MS` bằng schema; header `Location` cho `POST …/ai-jobs`; tệp thật cho media seed; chạy thử với provider LLM thật → Đức phân công lại (không thuộc DoD của R-12).
 - Cảnh báo GitGuardian báo nhầm ở PR #67 vẫn chờ Đức đánh dấu false positive (từ R-11).
 - Thư mục `docs/processed/description/` (mô tả đề tài) chưa rà soát → Đức.
+
+
+### R-13 (đang thực hiện, Node 22.13.1, pnpm 11.19.0)
+
+**Trạng thái:** chưa hoàn thành. Mục dưới ghi những gì đã chạy; mục nào chưa có kết quả thì nằm ở "Chưa chạy" và task không được chuyển `Hoàn thành` khi chưa có đủ bằng chứng cho từng DoD ở bảng trên.
+
+Quyết định: [ADR-005](../../adr/adr-005-merge-auth-student-into-identity-v1.md). Bỏ hướng saga `PENDING`/`activate` của nhánh task-14 (còn trong `git stash@{0}`, không nhập vào).
+
+**Đã chạy:**
+
+- `identity.e2e-spec.ts` (PostgreSQL 17 tạm, cổng 55432): 17 test đạt (đăng ký/đăng nhập/refresh, đua refresh, seed, ba cửa đăng nhập, phân trang, hồ sơ chặn/`INACTIVE`/thiếu → 403, route student public và internal, không có `POST /internal/v1/students`, health/ready, service-token/JWKS, tách bề mặt).
+- Test seed-data (`test:seed-data`) đạt với một DB `identity` và dataset dẫn xuất `identity.student_profiles`.
+- `pnpm format:check`, `pnpm lint`, `pnpm build` đạt; `pnpm test` (architecture, testbed-reset, seed-data, queue-scrape, observability, common, unit mọi service, telemetry) exit 0.
+- `test:observability` lần 1 (project `aiops-lms-test-observability`, stack sạch, 21 container lên được): **thất bại** ở bước regression làm traffic, 44/46 đạt; test `media-upload` bước usage hết 60 giây chờ `usage COURSE_DESCRIPTION xuất hiện` (đường `course` → outbox → RabbitMQ → `media-worker`, không đi qua `identity`; log container không có lỗi). Chưa rõ flaky hay lỗi thật; lần chạy lại bị dừng theo yêu cầu, các smoke tracing/logs/acceptance/metrics chưa chạy.
+
+**Chưa chạy** (cập nhật mục này khi có kết quả): e2e của gateway/media/notification/course/ai/scheduler, `test:seed-data:db`, `test:testbed:reset:compose`, `test:regression`, `test:postman`, `test:observability` (đỏ ở lần 1, chưa chạy lại), CI GitHub (xem PR).
+
+**Số đo** (runtime, cặp dependency, cạnh HTTP, identity, độ trễ C6): chưa đo lại; sẽ ghi từ lần chạy `test:observability` thật, không dùng số suy luận.
+
+**Hệ quả cần Đức quyết định:** C5, C6, C7 cùng có `root_cause_service=identity`; ranking hằng tốt nhất Top-3 ≈ 71% (5/7) và Top-1 ≈ 43% (3/7). Đã ghi ở ADR-005 và evaluation-protocol; chưa quyết thêm case hay báo cáo theo component.

@@ -20,8 +20,7 @@ concurrency:
 env:
   PGUSER: lms_test
   PGPASSWORD: lms_test_password
-  AUTH_DATABASE_URL: postgresql://lms_test:lms_test_password@127.0.0.1:5432/auth_db
-  STUDENT_DATABASE_URL: postgresql://lms_test:lms_test_password@127.0.0.1:5432/student_db
+  IDENTITY_DATABASE_URL: postgresql://lms_test:lms_test_password@127.0.0.1:5432/identity_db
   COURSE_DATABASE_URL: postgresql://lms_test:lms_test_password@127.0.0.1:5432/course_db
   MEDIA_DATABASE_URL: postgresql://lms_test:lms_test_password@127.0.0.1:5432/media_db
   NOTIFICATION_DATABASE_URL: postgresql://lms_test:lms_test_password@127.0.0.1:5432/notification_db
@@ -89,7 +88,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        service: [auth, student, course, media, notification, ai, scheduler]
+        service: [identity, course, media, notification, ai, scheduler]
     defaults:
       run:
         working-directory: lms
@@ -97,13 +96,13 @@ jobs:
       postgres:
         image: postgres:17.6-alpine
         env:
-          POSTGRES_DB: auth_db
+          POSTGRES_DB: identity_db
           POSTGRES_USER: lms_test
           POSTGRES_PASSWORD: lms_test_password
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -U lms_test -d auth_db"
+          --health-cmd "pg_isready -U lms_test -d identity_db"
           --health-interval 5s
           --health-timeout 5s
           --health-retries 12
@@ -152,8 +151,8 @@ jobs:
         uses: ./.github/actions/setup-lms
 
       - name: Create service database
-        if: matrix.service != 'auth'
-        run: psql -h 127.0.0.1 -d auth_db -c "CREATE DATABASE ${{ matrix.service }}_db"
+        if: matrix.service != 'identity'
+        run: psql -h 127.0.0.1 -d identity_db -c "CREATE DATABASE ${{ matrix.service }}_db"
 
       - name: Build
         run: pnpm run build
@@ -176,13 +175,13 @@ jobs:
       postgres:
         image: postgres:17.6-alpine
         env:
-          POSTGRES_DB: auth_db
+          POSTGRES_DB: identity_db
           POSTGRES_USER: lms_test
           POSTGRES_PASSWORD: lms_test_password
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -U lms_test -d auth_db"
+          --health-cmd "pg_isready -U lms_test -d identity_db"
           --health-interval 5s
           --health-timeout 5s
           --health-retries 12
@@ -208,8 +207,8 @@ jobs:
 
       - name: Create databases
         run: |
-          for database in student_db course_db media_db notification_db ai_db scheduler_db common_integration_db; do
-            psql -h 127.0.0.1 -d auth_db -c "CREATE DATABASE $database"
+          for database in course_db media_db notification_db ai_db scheduler_db common_integration_db; do
+            psql -h 127.0.0.1 -d identity_db -c "CREATE DATABASE $database"
           done
 
       - name: Build
@@ -217,7 +216,7 @@ jobs:
 
       - name: Migrate all services
         run: |
-          for service in auth student course media notification ai scheduler; do
+          for service in identity course media notification ai scheduler; do
             (cd "services/$service" && pnpm exec prisma migrate deploy)
           done
 

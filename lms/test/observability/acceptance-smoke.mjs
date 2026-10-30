@@ -12,8 +12,7 @@ const grafana = stack.urls.grafana;
 const headers = { authorization: stack.grafana.authorization };
 const RUNTIMES = [
   'gateway',
-  'auth',
-  'student',
+  'identity',
   'course',
   'media',
   'media-worker',
@@ -62,7 +61,7 @@ assert.ok(!V1_TERMS.test(text), `dashboard còn thuật ngữ v1: ${V1_TERMS.exe
 const panels = dashboard.panels.filter((panel) => panel.type !== 'row');
 assert.ok(panels.length >= 10, `dashboard chỉ có ${panels.length} panel`);
 
-// 3. Giá trị biến `service` lấy bằng chính query của dashboard: phải đúng 12 runtime.
+// 3. Giá trị biến `service` lấy bằng chính query của dashboard: phải đúng 11 runtime.
 const variable = dashboard.templating.list.find((item) => item.name === 'service');
 const labelQuery = /label_values\((.+), service_name\)/u.exec(variable.query.query)[1];
 const labelValues = await proxy(
@@ -70,7 +69,7 @@ const labelValues = await proxy(
   `/api/v1/label/service_name/values?match[]=${encodeURIComponent(labelQuery)}`,
 );
 const services = labelValues.data.filter((name) => RUNTIMES.includes(name)).sort();
-assert.deepEqual(services, [...RUNTIMES].sort(), 'biến service phải gồm đủ 12 runtime');
+assert.deepEqual(services, [...RUNTIMES].sort(), 'biến service phải gồm đủ 11 runtime');
 const unknown = labelValues.data.filter((name) => !RUNTIMES.includes(name));
 assert.deepEqual(unknown, [], `service ngoài catalogue v2: ${unknown.join(', ')}`);
 

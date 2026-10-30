@@ -1,6 +1,6 @@
 name: Regression
 
-# Dựng cả stack compose 22 thành phần nên chậm (10–25 phút mỗi job). Chạy khi: gắn label
+# Dựng cả stack compose 21 thành phần nên chậm (10–25 phút mỗi job). Chạy khi: gắn label
 # `run-regression` lên PR, merge vào main, hằng đêm, hoặc chạy tay.
 on:
   pull_request:

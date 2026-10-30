@@ -52,10 +52,10 @@ Thay đổi service boundary, `service.name`, dependency identity, telemetry sch
 
 ## 3.1. Testbed topology và workflow
 
-MVP dùng topology canonical **8 service + 4 worker** (12 `service.name`). Worker là process riêng, cùng image với service tương ứng, entrypoint `worker.ts`, có `service.name` riêng; Analysis nhờ đó phân biệt được nguồn triệu chứng.
+MVP dùng topology canonical **7 service + 4 worker** (11 `service.name`). Worker là process riêng, cùng image với service tương ứng, entrypoint `worker.ts`, có `service.name` riêng; Analysis nhờ đó phân biệt được nguồn triệu chứng.
 
 ```text
-service:  gateway  auth  student  course  media  notification  scheduler  ai
+service:  gateway  identity  course  media  notification  scheduler  ai
 worker:   media-worker  notification-worker  scheduler-worker  ai-worker
 ```
 
@@ -63,14 +63,13 @@ Dependency canonical (rút gọn; bản đầy đủ và danh mục edge `e01–
 
 ```text
 HTTP đồng bộ
-gateway ──> auth | student | course | media | notification | scheduler | ai
-auth ──> student                    (tạo hồ sơ khi đăng ký)
+gateway ──> identity | course | media | notification | scheduler | ai
 course ──> media | ai               (usage/tệp đính kèm; tài liệu và job AI)
 ai-worker ──> course | media        (đóng vòng course -> ai -> course, bất đồng bộ qua job)
-media ──> student                   (kiểm tra actor)
-notification-worker ──> student     (snapshot recipient)
+media ──> identity                  (kiểm tra actor)
+notification-worker ──> identity    (snapshot recipient)
 scheduler-worker ──> media          (cleanup media không dùng)
-mọi service ──> auth                (service token và JWKS, ADR-004)
+mọi service ──> identity            (service token và JWKS, ADR-004)
 
 Command bất đồng bộ qua RabbitMQ (outbox/inbox)
 course | media | notification ──> media-worker
@@ -78,7 +77,7 @@ notification ──> notification-worker (và tự enqueue lại)
 ai | media ──> ai-worker
 
 Hạ tầng
-<service> ──> <service>-postgres    (7 logical DB)
+<service> ──> <service>-postgres    (6 logical DB)
 media, media-worker ──> media-minio
 notification-worker ──> notification-smtp
 ai, ai-worker ──> ai-llm-provider
@@ -88,18 +87,18 @@ ai, ai-worker ──> ai-llm-provider
 
 - Worker dùng chung DB với service owner nhưng khác `service.name`; backlog queue thuộc worker tiêu thụ, không thuộc bên gửi.
 - Có vòng phụ thuộc `course -> ai -> course` (bất đồng bộ qua job) và các chuỗi async dài; W5 chạm 5 service/worker.
-- Mọi cạnh đều xác thực bằng service access token (ADR-004), nên `auth` là điểm lỗi chung có chủ đích: lỗi xuất hiện sau khoảng yên lặng (token còn hạn) và ở cạnh `<caller>-auth-token`, không ở service lỗi.
-- Candidate set RCA mặc định gồm 11 service/worker (mọi `service.name` trừ `gateway`); `gateway` là symptom mặc định và chỉ là candidate khi evaluation protocol có gateway fault. Hạ tầng (PostgreSQL, RabbitMQ, MinIO, SMTP, LLM provider) là component/dependency evidence, không vào candidate set service-level.
+- Mọi cạnh đều xác thực bằng service access token (ADR-004), nên `identity` là điểm lỗi chung có chủ đích: lỗi xuất hiện sau khoảng yên lặng (token còn hạn) và ở cạnh `<caller>-identity-token`, không ở service lỗi.
+- Candidate set RCA mặc định gồm 10 service/worker (mọi `service.name` trừ `gateway`); `gateway` là symptom mặc định và chỉ là candidate khi evaluation protocol có gateway fault. Hạ tầng (PostgreSQL, RabbitMQ, MinIO, SMTP, LLM provider) là component/dependency evidence, không vào candidate set service-level.
 
 ### Workflow bắt buộc
 
 | ID | Workflow | Giá trị nghiên cứu |
 | --- | --- | --- |
-| W1 | Đăng ký và đăng nhập: `Client -> gateway -> auth -> auth-postgres`; đăng ký: `auth -> student` | Flow xác thực tối thiểu; nền cho FG/FH vì mọi service phụ thuộc token do `auth` phát |
+| W1 | Đăng ký và đăng nhập: `Client -> gateway -> identity -> identity-postgres`; đăng ký: một transaction tạo tài khoản và hồ sơ | Flow xác thực tối thiểu; nền cho FG/FH vì mọi service phụ thuộc token do `identity` phát |
 | W2 | Soạn nội dung khóa học: `gateway -> course -> course-postgres`; markdown có media: `course => media-worker` (command) | Database dependency và async usage sync |
 | W3 | Ghi danh và học: `gateway -> course` (enroll, tiến độ, quiz attempt) | Tải DB chính của `course`; nền cho FC |
 | W4 | Upload media: `gateway -> media -> media-minio`; `media => media-worker` tạo thumbnail | Storage dependency thật (MinIO) và async; nền cho FA |
-| W5 | Thông báo batch và email: `gateway -> notification => notification-worker` (snapshot từ `student`, dispatch, SMTP) `=> media-worker` (usage) | Chuỗi dài nhất; nền cho FB, FE |
+| W5 | Thông báo batch và email: `gateway -> notification => notification-worker` (snapshot từ `identity`, dispatch, SMTP) `=> media-worker` (usage) | Chuỗi dài nhất; nền cho FB, FE |
 | W6 | AI soạn bài và sinh quiz: `gateway -> course -> ai => ai-worker` (provider, `course`, `media`) | Vòng phụ thuộc và dependency provider; nền cho FD |
 | W7 | Dọn media không dùng: `scheduler-worker -> media -> media-minio` | Tác động trễ nhiều bước; nền cho C4 |
 
@@ -108,8 +107,7 @@ ai, ai-worker ──> ai-llm-provider
 | Thành phần | Scope MVP tối thiểu | Không mở rộng thành |
 | --- | --- | --- |
 | `gateway` | Route theo prefix, verify JWT người dùng bằng JWKS, gắn service token khi proxy, propagate trace, chuẩn hóa lỗi | API management/enterprise gateway |
-| `auth` | Đăng ký/đăng nhập/refresh, token EdDSA (user và service), JWKS, 3 role (`student`, `instructor`, `admin`), registry client dịch vụ | IAM/SSO production-grade |
-| `student` | Hồ sơ, danh sách, thống kê student | CRM/quản lý học viên đầy đủ |
+| `identity` | Đăng ký/đăng nhập/refresh, token EdDSA (user và service), JWKS, 3 role (`student`, `instructor`, `admin`), registry client dịch vụ, hồ sơ và danh sách student | IAM/SSO production-grade, CRM/quản lý học viên đầy đủ |
 | `course` | Course, lesson, quiz, enrollment, tiến độ, quiz attempt, export CSV, facade mỏng cho luồng AI | Sản phẩm quản lý khóa học đầy đủ |
 | `media` (+ `media-worker`) | Upload, library, usage, thumbnail, jobs, thống kê; object trong MinIO | Sản phẩm object-storage/CDN |
 | `notification` (+ `notification-worker`) | Thông báo đơn, batch, inbox student; gửi email qua SMTP (Mailpit khi dev/CI) | Hệ thống email/SMS/push production |
@@ -124,7 +122,7 @@ ai, ai-worker ──> ai-llm-provider
 
 | Hạng mục MVP | Vai trò trong nghiên cứu |
 | --- | --- |
-| PostgreSQL 17 (7 logical DB, mỗi service một DB và role riêng) | Persistence theo service và database dependency telemetry; nền cho FC, FE, FG |
+| PostgreSQL 17 (6 logical DB, mỗi service một DB và role riêng) | Persistence theo service và database dependency telemetry; nền cho FC, FE, FG |
 | RabbitMQ (command qua exchange `lms.commands`, outbox/inbox) | Async dependency dùng chung giữa nhiều worker; nền cho FB |
 | MinIO (S3 tương thích, thuộc `media`) | Object storage thật thay Storage Mock; nền cho FA |
 | SMTP (Mailpit khi dev/CI) | Dependency của `notification-worker`; làm chậm dispatch trong FB |
@@ -155,7 +153,7 @@ Telemetry tối thiểu phải hỗ trợ:
 - timestamp UTC, ISO-8601 tại boundary/artifact;
 - trace context qua HTTP và qua RabbitMQ (`traceparent` trong envelope command, relay outbox phát lại đúng context);
 - RED metrics cho HTTP; CPU/RSS theo process;
-- dependency metrics/spans theo `dependency_identity` cho PostgreSQL, MinIO, SMTP, nhà cung cấp LLM, outbound HTTP (gồm cạnh `<caller>-auth-token` và `<caller>-auth-jwks`) và RabbitMQ khi boundary tồn tại; metric broker (độ sâu queue, consumer) lấy từ RabbitMQ;
+- dependency metrics/spans theo `dependency_identity` cho PostgreSQL, MinIO, SMTP, nhà cung cấp LLM, outbound HTTP (gồm cạnh `<caller>-identity-token` và `<caller>-identity-jwks`) và RabbitMQ khi boundary tồn tại; metric broker (độ sâu queue, consumer) lấy từ RabbitMQ;
 - structured logs có `trace_id`/`span_id` trong request/message context và log lỗi dependency (`dependency.failure`);
 - error status, HTTP status/error type, dependency identity và timeout semantics;
 - correlation từ metric symptom -> trace/span -> log evidence.
@@ -192,10 +190,10 @@ Fault là **cơ chế gây lỗi** (bật/tắt được, tái lập được, k
 | FB | Backlog hàng đợi | `notification-worker` | `notification-worker-rabbitmq` (queue) | C1 | Đã đo tín hiệu (backlog tăng/drain); chuỗi lan sang `media-worker` là **giả thuyết** |
 | FC | Giữ kết nối DB | `course` | `course-postgres` | C2 | Đã đo tín hiệu; metric pool chưa có |
 | FD | Độ trễ nhà cung cấp | `ai` (process chạm provider là `ai-worker`) | `ai-llm-provider` | C3 | Đã đo tín hiệu; stub chậm chưa chạy |
-| FE | Độ trễ dependency nhỏ | `student` | `student-postgres` | C5 | Đã đo tín hiệu; chèn trễ chưa chạy |
+| FE | Độ trễ dependency nhỏ | `identity` | `identity-postgres` | C5 | Đã đo tín hiệu; chèn trễ chưa chạy |
 | FF | Quá tải tài nguyên | bất kỳ service | instance | không có case riêng | Tín hiệu CPU/RSS có thật; dùng làm bằng chứng phụ cho C1–C2 |
-| FG | Độ trễ/ngắt xác thực (ADR-004) | `auth` | `auth` | C6 | **Đã chạy** (`tracing-smoke`): lỗi `gateway-auth-token` xuất hiện 72 giây sau khi dừng `auth` (TTL 60 giây) |
-| FH | Lệch khóa ký (ADR-004) | `auth` | `auth-jwks` | C7 | Đã đo tín hiệu; cơ chế đổi khóa chưa chạy |
+| FG | Độ trễ/ngắt xác thực (ADR-004) | `identity` | `identity` | C6 | **Đã chạy** (`tracing-smoke`): lỗi `gateway-identity-token` xuất hiện 72 giây sau khi dừng `identity` (TTL 60 giây) |
+| FH | Lệch khóa ký (ADR-004) | `identity` | `identity-jwks` | C7 | Đã đo tín hiệu; cơ chế đổi khóa chưa chạy |
 
 Quy tắc dùng case làm dữ liệu đánh giá:
 
@@ -260,7 +258,7 @@ Cấu trúc module và mô hình cụ thể thuộc [analysis-anomaly-rca-bluepr
 Bắt buộc:
 
 - metrics + traces + structured logs;
-- service/time-window alignment trên 12 `service.name`;
+- service/time-window alignment trên 11 `service.name`;
 - missing modality semantics rõ ràng; data-quality report; telemetry quan sát được nhưng chưa có (mục 3.3) phải thể hiện trong coverage;
 - feature schema/config có version;
 - split theo experiment run, không random window của cùng run;
@@ -290,13 +288,13 @@ Bắt buộc:
 
 ### Dynamic dependency graph
 
-Graph được xây chủ yếu từ distributed traces theo hướng caller -> callee và theo run/window, và được **đối chiếu** với graph thiết kế (service-catalogue v2 mục 8); edge thiếu trong trace là vấn đề coverage. Async edge nối bằng trace context trong header RabbitMQ; fallback `message_id`/thời gian chỉ khi cần và phải giảm confidence. Quy ước đọc telemetry ảnh hưởng ground truth (span PRODUCER thuộc process relay, queue thuộc worker tiêu thụ, triệu chứng lỗi xác thực nằm ở cạnh `<service>-auth-token` của bên gọi) ghi ở catalogue mục 2.
+Graph được xây chủ yếu từ distributed traces theo hướng caller -> callee và theo run/window, và được **đối chiếu** với graph thiết kế (service-catalogue v2 mục 8); edge thiếu trong trace là vấn đề coverage. Async edge nối bằng trace context trong header RabbitMQ; fallback `message_id`/thời gian chỉ khi cần và phải giảm confidence. Quy ước đọc telemetry ảnh hưởng ground truth (span PRODUCER thuộc process relay, queue thuộc worker tiêu thụ, triệu chứng lỗi xác thực nằm ở cạnh `<service>-identity-token` của bên gọi) ghi ở catalogue mục 2.
 
 Infrastructure dependency (PostgreSQL, RabbitMQ, MinIO, SMTP, LLM provider) là evidence graph nhưng **không mặc định trở thành service-level RCA candidate**.
 
 ### Mô hình RCA service-level
 
-Primary candidate identity là service (candidate set mặc định: 11 service/worker, mục 3.1).
+Primary candidate identity là service (candidate set mặc định: 10 service/worker, mục 3.1).
 
 Baseline tối thiểu:
 
@@ -441,7 +439,7 @@ Ràng buộc an toàn: nội dung log/trace là dữ liệu không tin cậy (c�
 | Component-level evidence chi tiết hơn | Service-level RCA ổn định | Tăng explainability, không đổi primary metric |
 | Mở rộng thử nghiệm người thật (thêm người, thêm case) | Thử nghiệm MVP đã chạy | Tăng độ tin cậy so sánh AI và thủ công |
 
-Các Target trên **không nằm trong critical path** và có thể bỏ hoàn toàn mà MVP vẫn hợp lệ. MinIO, `student`, `media`, `notification`, `scheduler`, `ai` không còn là Target vì đã thuộc topology v2 (ADR-001). Assignment (Target của v1) không còn nghĩa trong topology v2 vì `submission` đã bị bỏ; thêm service mới phải có ADR.
+Các Target trên **không nằm trong critical path** và có thể bỏ hoàn toàn mà MVP vẫn hợp lệ. MinIO, `identity` (đã gồm hồ sơ student), `media`, `notification`, `scheduler`, `ai` không còn là Target vì đã thuộc topology v2 (ADR-001). Assignment (Target của v1) không còn nghĩa trong topology v2 vì `submission` đã bị bỏ; thêm service mới phải có ADR.
 
 ---
 
@@ -495,7 +493,7 @@ Các Target trên **không nằm trong critical path** và có thể bỏ hoàn 
 
 Business scope được **freeze** khi:
 
-1. topology v2 (8 service + 4 worker) chạy được;
+1. topology v2 (7 service + 4 worker) chạy được;
 2. W1–W7 quan sát được;
 3. metrics/traces/logs có correlation;
 4. các fault/case canonical tạo được experiment hợp lệ;
@@ -505,9 +503,9 @@ Trạng thái theo bằng chứng hiện có (không nhằm đánh dấu hoàn t
 
 | Điều kiện | Bằng chứng | Trạng thái |
 | --- | --- | --- |
-| 1. Topology v2 chạy được | `docker-compose/README.md` (compose.full.yaml, 22 thành phần); catalogue mục 1 đo trên 12 runtime ngày 29/10/2026 | Có bằng chứng đo; chưa tự kiểm lại khi viết tài liệu này |
+| 1. Topology v2 chạy được | `docker-compose/README.md` (compose.full.yaml, 21 thành phần); catalogue mục 1 đo trên 11 runtime ngày 29/10/2026 | Có bằng chứng đo; chưa tự kiểm lại khi viết tài liệu này |
 | 2. W1–W7 quan sát được | Catalogue mục 4.1: 9/9 luồng trace đủ service | Có bằng chứng đo |
-| 3. Correlation M/T/L | Catalogue mục 4.1: `trace_id`/`span_id` khớp ở 12/12 runtime | Có bằng chứng đo |
+| 3. Correlation M/T/L | Catalogue mục 4.1: `trace_id`/`span_id` khớp ở 11/11 runtime | Có bằng chứng đo |
 | 4. Fault/case tạo experiment hợp lệ | Chỉ C6 đã chạy; C1–C5, C7 mới đo tín hiệu | **Chưa đạt**; thuộc mảng AI |
 | 5. Ground truth và ledger | Schema đang viết ở telemetry-and-ground-truth-schema-v1 | **Chưa kiểm chứng** |
 
@@ -548,7 +546,7 @@ Giai đoạn buffer/contingency của plan là buffer, **không dùng để hợ
 | MinIO | ✓ | ✓ | ✓ | ✓ | FA |
 | SMTP (Mailpit) | ✓ | ✓ | ✓ |  | FB (dispatch chậm) |
 | Nhà cung cấp LLM (stub) | ✓ | ✓ | ✓ | ✓ | FD |
-| Service token và JWKS (`auth`) | ✓ | ✓ | ✓ | ✓ | FG, FH, C6/C7 |
+| Service token và JWKS (`identity`) | ✓ | ✓ | ✓ | ✓ | FG, FH, C6/C7 |
 | OTel + M/T/L stack |  | ✓ | ✓ |  | RQ1–RQ6 |
 | k6 workload (chưa triển khai) |  |  | ✓ | ✓ | healthy/fault controls, nhiễu nền |
 | Fault framework (chưa triển khai) |  | ✓ | ✓ | ✓ | mọi controlled experiment |
@@ -566,7 +564,7 @@ Giai đoạn buffer/contingency của plan là buffer, **không dùng để hợ
 
 Đức tự xác nhận (refactor do một mình Đức làm, không cần Bách review):
 
-- [ ] Topology v2 ở mục 3.1 (12 `service.name`, candidate set 11 service/worker) là phạm vi MVP.
+- [ ] Topology v2 ở mục 3.1 (11 `service.name`, candidate set 10 service/worker) là phạm vi MVP.
 - [ ] Bộ fault FA–FH và bảy case C1–C7 ở mục 3.4; FF không có case riêng.
 - [ ] Evaluation floor đề xuất `K × R` với `R = 3` (21 run nếu đủ bảy case) và `K` tối thiểu để kết luận.
 - [ ] Quy tắc owner/process: chấm theo `root_cause_service` của ground truth kèm owner-level Top-K phụ (evaluation-protocol-v1 mục 4.2).
@@ -614,10 +612,10 @@ Mọi hạng mục không trực tiếp giúp chuỗi trên hoặc RQ1–RQ6 đ�
 | Mục | v1 | v2 |
 | --- | --- | --- |
 | Vai trò AI | AI/pipeline hỗ trợ developer/SRE; kết quả là Top-K cho người đọc | RCA engine là bên truy vết chính; phần chính là huấn luyện và đánh giá mô hình ML + dependency graph; kết luận không cần người can thiệp (ADR-002) |
-| Topology | 6 business service + Gateway (Auth, Course, Enrollment, Submission, Grading, Notification) | 8 service + 4 worker (12 `service.name`); bỏ `enrollment`/`submission`/`grading`; thêm `student`, `media`, `scheduler`, `ai`; `admin` bị bỏ (ADR-001, ADR-003) |
-| Hạ tầng | PostgreSQL (5 DB), Redis, RabbitMQ, Storage Mock; MinIO là Target | PostgreSQL 17 (7 DB), RabbitMQ (command, outbox/inbox), MinIO, SMTP (Mailpit), nhà cung cấp LLM; bỏ Redis và Storage Mock |
+| Topology | 6 business service + Gateway (Auth, Course, Enrollment, Submission, Grading, Notification) | 7 service + 4 worker (11 `service.name`); bỏ `enrollment`/`submission`/`grading`; thêm `identity` (R-13 gộp `auth` và `student`), `media`, `scheduler`, `ai`; `admin` bị bỏ (ADR-001, ADR-003) |
+| Hạ tầng | PostgreSQL (5 DB), Redis, RabbitMQ, Storage Mock; MinIO là Target | PostgreSQL 17 (6 DB), RabbitMQ (command, outbox/inbox), MinIO, SMTP (Mailpit), nhà cung cấp LLM; bỏ Redis và Storage Mock |
 | Workflow | W1–W5 | W1–W7 |
-| Xác thực | JWT HS256 tối thiểu | Token EdDSA (user và service), JWKS, tách `/api/v1` và `/internal/v1`; `auth` thành điểm lỗi chung có chủ đích (ADR-004) |
+| Xác thực | JWT HS256 tối thiểu | Token EdDSA (user và service), JWKS, tách `/api/v1` và `/internal/v1`; `identity` (trước R-13 là `auth`) thành điểm lỗi chung có chủ đích (ADR-004) |
 | Fault | F1–F5 (Redis, Storage latency, service error, consumer backlog, CPU) | FA–FH (8 fault) và case phức tạp C1–C7 |
 | Evaluation floor | 5 × 3 = 15 run | Đề xuất chờ Đức xác nhận: `K × R` với `R = 3` (21 run nếu đủ bảy case); chốt ở evaluation-protocol-v1 |
 | Research questions | RQ1–RQ5; RQ6 không vào MVP | RQ1–RQ6 (RQ6 mới: AI so với thủ công); RQ "fault category" thành RQ7 tùy chọn |

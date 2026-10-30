@@ -2,18 +2,16 @@ import type { Span } from '@opentelemetry/api';
 
 /** Cạnh HTTP đồng bộ của topology v2: `<service.name bên gọi>-<service.name bên nhận>`. */
 const HTTP_DEPENDENCY_PEERS: Readonly<Record<string, string>> = {
-  'gateway-auth': 'auth',
-  'gateway-student': 'student',
+  'gateway-identity': 'identity',
   'gateway-course': 'course',
   'gateway-media': 'media',
   'gateway-notification': 'notification',
   'gateway-scheduler': 'scheduler',
   'gateway-ai': 'ai',
-  'auth-student': 'student',
   'course-media': 'media',
   'course-ai': 'ai',
-  'media-student': 'student',
-  'notification-worker-student': 'student',
+  'media-identity': 'identity',
+  'notification-worker-identity': 'identity',
   'scheduler-worker-media': 'media',
   'ai-worker-course': 'course',
   'ai-worker-media': 'media',

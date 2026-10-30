@@ -14,8 +14,8 @@ Chứa HTTP và event contract đã publish để service hoặc client tích h�
 | File         | Nội dung                                                                                                                                                                              |
 | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `common.ts`  | `idSchema`, `roleSchema`, phân trang (`paginationQuerySchema`, `paginationMetaSchema`), envelope (`apiSuccessSchema`, `apiErrorSchema`, `apiResponseSchema`, `apiListResponseSchema`) |
-| `auth.ts`    | Request/response DTO của `auth` (`registerRequestSchema`, `loginRequestSchema`, `accountDtoSchema`, `loginResponseDtoSchema`, …)                                                      |
-| `student.ts` | Request/response DTO của `student`                                                                                                                                                    |
+| `auth.ts`    | Request/response DTO của `identity` (route `/api/v1/auth/*`: `registerRequestSchema`, `loginRequestSchema`, `accountDtoSchema`, `loginResponseDtoSchema`, …)                          |
+| `student.ts` | Request/response DTO hồ sơ student của `identity` (route `/api/v1/students/*`)                                                                                                        |
 
 ### Envelope thống nhất
 

@@ -16,13 +16,13 @@ export class StudentHttpClient implements StudentClient {
 
   constructor(config: ConfigService, @Inject(SERVICE_TOKEN_PROVIDER) tokens: TokenProvider) {
     this.client = new HttpQueryClient({
-      dependency: 'media-student',
-      baseUrl: config.getOrThrow<string>('MEDIA_STUDENT_BASE_URL'),
-      auth: { audience: 'student', tokens },
-      timeoutMs: config.getOrThrow<number>('MEDIA_STUDENT_TIMEOUT_MS'),
+      dependency: 'media-identity',
+      baseUrl: config.getOrThrow<string>('MEDIA_IDENTITY_BASE_URL'),
+      auth: { audience: 'identity', tokens },
+      timeoutMs: config.getOrThrow<number>('MEDIA_IDENTITY_TIMEOUT_MS'),
       breaker: {
-        failureThreshold: config.getOrThrow<number>('MEDIA_STUDENT_BREAKER_THRESHOLD'),
-        cooldownMs: config.getOrThrow<number>('MEDIA_STUDENT_BREAKER_COOLDOWN_MS'),
+        failureThreshold: config.getOrThrow<number>('MEDIA_IDENTITY_BREAKER_THRESHOLD'),
+        cooldownMs: config.getOrThrow<number>('MEDIA_IDENTITY_BREAKER_COOLDOWN_MS'),
       },
     });
   }
@@ -33,9 +33,10 @@ export class StudentHttpClient implements StudentClient {
       path: `/${INTERNAL_PREFIX}/students/${encodeURIComponent(studentId)}`,
     });
     if (response.status === 404) return null;
-    if (response.status !== 200) throw AppError.dependencyUnavailable('media-student');
+    if (response.status !== 200) throw AppError.dependencyUnavailable('media-identity');
     const parsed = responseSchema.safeParse(response.body);
-    if (!parsed.success || !parsed.data.data) throw AppError.dependencyUnavailable('media-student');
+    if (!parsed.success || !parsed.data.data)
+      throw AppError.dependencyUnavailable('media-identity');
     return parsed.data.data.status;
   }
 }

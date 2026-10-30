@@ -6,6 +6,8 @@
 >
 > **Thay thế:** [data-ownership-and-fault-matrix-v1](data-ownership-and-fault-matrix-v1.md) (lịch sử).
 >
+> **Cập nhật R-13:** `auth_db` và `student_db` gộp thành `identity_db` của service `identity` ([ADR-005](../adr/adr-005-merge-auth-student-into-identity-v1.md)); bảng đổi tên `identity_*` và còn 6 logical DB.
+>
 > **Phụ thuộc:** [service-catalogue-and-topology-v2](service-catalogue-and-topology-v2.md), [http-and-event-contracts-v2](http-and-event-contracts-v2.md), [ADR-001](../adr/adr-001-restructure-lms-testbed-v1.md), [ADR-002](../adr/adr-002-ai-primary-root-cause-analysis-v1.md).
 >
 > **Mục đích:** chốt ai sở hữu dữ liệu nào, ràng buộc toàn vẹn quan trọng, và đặt nền cho fault/case demo "AI tìm được, truy vết thủ công không tìm ra".
@@ -17,7 +19,7 @@ Schema chi tiết (cột, kiểu, index) nằm trong `prisma/schema.prisma` củ
 # 1. Nguyên tắc sở hữu
 
 1. Mỗi service sở hữu đúng một logical DB (gateway không có DB). Worker dùng DB của service cùng owner.
-2. Một instance PostgreSQL 17 chứa các DB `auth_db`, `student_db`, `course_db`, `media_db`, `notification_db`, `scheduler_db`, `ai_db`; mỗi DB có role riêng, không role nào đọc được DB khác.
+2. Một instance PostgreSQL 17 chứa các DB `identity_db`, `course_db`, `media_db`, `notification_db`, `scheduler_db`, `ai_db`; mỗi DB có role riêng, không role nào đọc được DB khác.
 3. Tham chiếu chéo service là ID logic (UUID), **không có foreign key** xuyên DB.
 4. Dữ liệu bất đồng bộ đi qua outbox/inbox trong DB của chính service; consumer không đọc DB của producer.
 5. Migration chỉ do service owner chạy bằng `prisma migrate deploy` khi khởi động; không sửa migration đã áp dụng.
@@ -27,23 +29,18 @@ Schema chi tiết (cột, kiểu, index) nằm trong `prisma/schema.prisma` củ
 
 # 2. Ownership theo service
 
-## 2.1. `auth_db` — auth
+## 2.1. `identity_db` — identity
 
-| Bảng                  | Nội dung                                                                               | Ghi chú                                                                    |
-| --------------------- | -------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
-| `auth_users`          | Tài khoản: email duy nhất, mật khẩu băm, `role` (student/instructor/admin), trạng thái | Mở rộng role từ 2 lên 3; `id` dùng làm `sub` JWT và làm `id` hồ sơ student |
-| `auth_refresh_tokens` | Refresh token băm, hạn, thu hồi                                                        | Giữ như hiện tại                                                           |
-| `auth_service_clients` | Registry client dịch vụ (ADR-004): `client_id`, secret băm scrypt, `allowed_audiences`, `allowed_scopes`, `active` | Đồng bộ khi khởi động từ `SERVICE_CLIENTS_BOOTSTRAP`; không chứa secret thô |
+| Bảng                        | Nội dung                                                                                             | Ghi chú                                                                                                                    |
+| --------------------------- | ---------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `identity_users`            | Tài khoản dùng chung 3 role: email duy nhất, mật khẩu băm, `role` (student/instructor/admin), `status` `ACTIVE` hoặc `DISABLED` | `id` dùng làm `sub` JWT và làm khóa của hồ sơ student                                                                      |
+| `identity_student_profiles` | Hồ sơ riêng của student: `user_id` (khóa chính, khóa ngoại → `identity_users.id`, `ON DELETE CASCADE`), `status` là `ACTIVE`, `INACTIVE` hoặc `BLOCKED` | Chỉ student có hồ sơ; email và tên chỉ nằm ở `identity_users`; tạo cùng transaction với tài khoản khi đăng ký                |
+| `identity_refresh_tokens`   | Refresh token băm, hạn, thu hồi                                                                      | Giữ như `auth` cũ                                                                                                          |
+| `identity_service_clients`  | Registry client dịch vụ (ADR-004): `client_id`, secret băm scrypt, `allowed_audiences`, `allowed_scopes`, `active` | Đồng bộ khi khởi động từ `SERVICE_CLIENTS_BOOTSTRAP`; không chứa secret thô                                                |
 
-Khóa ký token (Ed25519) không nằm trong DB: lấy từ `AUTH_SIGNING_KEY_PEM`; `auth` chỉ công bố khóa công khai qua JWKS.
+Khóa ký token (Ed25519) không nằm trong DB: lấy từ `IDENTITY_SIGNING_KEY_PEM`; `identity` chỉ công bố khóa công khai qua JWKS.
 
-Seed: một admin cố định (qua `AUTH_BOOTSTRAP_ADMIN_*`), một instructor mẫu và một student mẫu (kèm hồ sơ ở `student`).
-
-## 2.2. `student_db` — student
-
-| Bảng       | Ràng buộc chính                      |
-| ---------- | ------------------------------------ |
-| `students` | `email` duy nhất; `status` ∈ `ACTIVE | INACTIVE | BLOCKED`; `id`bằng`auth_users.id` (logic) |
+Seed (trước khi service listen): một admin cố định (qua `IDENTITY_BOOTSTRAP_ADMIN_*`), một instructor mẫu và một student mẫu (hồ sơ tạo cùng tài khoản trong một transaction). Vì tài khoản và hồ sơ cùng DB nên ràng buộc "student có hồ sơ" là khóa ngoại thật, không còn là tham chiếu logic giữa hai service.
 
 ## 2.3. `course_db` — course
 
@@ -80,7 +77,7 @@ MinIO: bucket `images`, `videos`, `documents`, `audios`, `other` do `media` sở
 | `notification_batch_items`        | Từng recipient: `PENDING                                                         | PROCESSING              | SUCCESS                               | RETRY                                                                                | FAILED`, `lease_token`, `lease_expires_at`, email người nhận       | Chèn idempotent (`ON CONFLICT DO NOTHING`) khi snapshot; claim bằng lease |
 | `outbox_messages`, `inbox_states` | Outbox của `notification`/`notification-worker`; inbox của `notification-worker` |                         |
 
-SMTP (`notification-smtp`) thuộc `notification-worker`; email người nhận được snapshot vào item để worker không gọi lại student khi gửi/retry.
+SMTP (`notification-smtp`) thuộc `notification-worker`; email người nhận được snapshot vào item để worker không gọi lại identity khi gửi/retry.
 
 Cột thực tế (R-07): `notifications.email_status` (`NOT_REQUESTED`/`PENDING`/`SENT`/`FAILED`) và unique `(batch_id, student_id)`; `notification_batches.media_usage_job_id`, `media_usage_expected`, `last_error`, `completed_at`; `notification_batch_items.attempts`, `next_attempt_at` (backoff), `last_error`, `notification_id`. Chỉ `notification_batch_items.email` là bản sao dữ liệu student, không đồng bộ lại.
 
@@ -115,7 +112,7 @@ Mất hoặc đổi `AI_ENCRYPTION_KEY` thì mọi API key đã lưu không gi�
 
 ## 2.9. Dữ liệu seed quy mô lớn (R-10)
 
-Seeder (`lms/scripts/seed-data.mjs`) ghi **trực tiếp bằng SQL** vào từng DB nên dữ liệu seed không đi qua API, outbox hay command: không có `outbox_messages`, `inbox_states`, trace hay log nghiệp vụ nào cho các dòng này, và không có media usage được đồng bộ bằng command. Quy ước để dữ liệu seed không kích hoạt việc ngầm: mọi `id` bắt đầu bằng `5eed` (dọn lại được theo khoảng id), không seed dòng đang xử lý dở (`PENDING`, `RUNNING`, `PROCESSING`, `RETRY`, `SNAPSHOT_*`) để relay và worker không nhặt, mọi tệp gốc ở `media_db` có ít nhất một `media_usages` để job `MEDIA_UNUSED_CLEANUP` không dọn nhầm, và tệp seed không có đối tượng trong MinIO. Tham chiếu chéo DB giữ nhất quán bằng id sinh theo chỉ số (`auth_users.id` = `students.id`). Chi tiết: `lms/scripts/seed-data/README.md`.
+Seeder (`lms/scripts/seed-data.mjs`) ghi **trực tiếp bằng SQL** vào từng DB nên dữ liệu seed không đi qua API, outbox hay command: không có `outbox_messages`, `inbox_states`, trace hay log nghiệp vụ nào cho các dòng này, và không có media usage được đồng bộ bằng command. Quy ước để dữ liệu seed không kích hoạt việc ngầm: mọi `id` bắt đầu bằng `5eed` (dọn lại được theo khoảng id), không seed dòng đang xử lý dở (`PENDING`, `RUNNING`, `PROCESSING`, `RETRY`, `SNAPSHOT_*`) để relay và worker không nhặt, mọi tệp gốc ở `media_db` có ít nhất một `media_usages` để job `MEDIA_UNUSED_CLEANUP` không dọn nhầm, và tệp seed không có đối tượng trong MinIO. Tham chiếu chéo DB giữ nhất quán bằng id sinh theo chỉ số (`identity_users.id` = `identity_student_profiles.user_id`). Chi tiết: `lms/scripts/seed-data/README.md`.
 
 ---
 
@@ -123,12 +120,11 @@ Seeder (`lms/scripts/seed-data.mjs`) ghi **trực tiếp bằng SQL** vào từn
 
 | Từ           | Trường                                                            | Tới                         | Ghi chú                                   |
 | ------------ | ----------------------------------------------------------------- | --------------------------- | ----------------------------------------- |
-| course       | `courses.instructor_id`                                           | auth (`auth_users.id`)      | Không xác thực tồn tại lúc ghi; tin JWT   |
-| course       | `enrollments.student_id`                                          | student                     | Tin JWT                                   |
+| course       | `courses.instructor_id`                                           | identity (`identity_users.id`) | Không xác thực tồn tại lúc ghi; tin JWT   |
+| course       | `enrollments.student_id`                                          | identity                    | Tin JWT                                   |
 | course       | `media_id` trong markdown                                         | media                       | Đồng bộ qua command, không ràng buộc cứng |
-| media        | `media_usages.owner_id`                                           | course/student/notification | Theo `owner_service` + `owner_type`       |
-| notification | `notifications.student_id`, `notification_batch_items.student_id` | student                     | Snapshot email tại thời điểm tạo item     |
-| student      | `students.id`                                                     | auth                        | Cùng `id` với tài khoản                   |
+| media        | `media_usages.owner_id`                                           | course/identity/notification | Theo `owner_service` + `owner_type`       |
+| notification | `notifications.student_id`, `notification_batch_items.student_id` | identity                    | Snapshot email tại thời điểm tạo item     |
 | scheduler    | job `MEDIA_UNUSED_CLEANUP`                                        | media                       | Qua `/internal/v1/media/cleanup`          |
 
 Mất đồng bộ giữa các ID này (ví dụ student bị xóa nhưng còn enrollment) là hành vi có thể quan sát được và phục vụ fault, không sửa bằng ràng buộc xuyên DB.
@@ -139,7 +135,7 @@ Mất đồng bộ giữa các ID này (ví dụ student bị xóa nhưng còn e
 
 | Thành phần       | Chủ sở hữu            | Quy tắc                                                                                                                                           |
 | ---------------- | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| PostgreSQL 17    | Compose LMS           | 7 logical DB + 7 role; `POSTGRES_DB` mặc định không dùng cho nghiệp vụ                                                                            |
+| PostgreSQL 17    | Compose LMS           | 6 logical DB + 6 role; `POSTGRES_DB` mặc định không dùng cho nghiệp vụ                                                                            |
 | RabbitMQ         | Compose LMS           | Exchange `lms.commands`; queue theo `<consumer>--<command>-v<n>`; vhost riêng cho LMS; metric broker được collector trong `aiops-platform` scrape |
 | MinIO            | `media`               | Bucket do `minio-init` tạo; access key riêng cho `media`/`media-worker`                                                                           |
 | Mailpit / SMTP   | `notification-worker` | Dev/CI dùng Mailpit; production đổi biến môi trường SMTP                                                                                          |
@@ -157,10 +153,10 @@ Mục tiêu v2: các fault phải tạo triệu chứng **không nằm ở nơi 
 | **FB** | Backlog hàng đợi      | `notification-worker`    | `notification-worker-rabbitmq` | Chạy batch lớn kèm làm chậm dispatch                      | Độ sâu queue, tuổi message cũ nhất          | thumbnail của `media-worker` chậm, command `course` trễ  |
 | **FC** | Giữ kết nối DB        | `course`                 | `course-postgres`       | Export CSV streaming khối lượng lớn đồng thời với tải học | Pool utilization, độ trễ truy vấn           | enroll/quiz submit chậm, không có span lỗi               |
 | **FD** | Độ trễ nhà cung cấp   | `ai`                     | `ai-llm-provider`       | Stub LLM chậm hoặc trả lỗi ngắt quãng                     | Span provider của `ai-worker`, lease hết hạn, job/tài liệu `FAILED` | job AI `WORKER_INTERRUPTED`, tài liệu kẹt `PROCESSING`, `course` hiện lỗi/`EXTRACTING` kéo dài |
-| **FE** | Độ trễ dependency nhỏ | `student`                | `student-postgres`      | Chèn trễ truy vấn                                         | Span student chậm ở snapshot                | batch `PARTIAL_FAILED`, số liệu lệch, log không có error |
+| **FE** | Độ trễ dependency nhỏ | `identity`               | `identity-postgres`     | Chèn trễ truy vấn                                         | Span identity chậm ở snapshot (route `/internal/v1/students`) | batch `PARTIAL_FAILED`, số liệu lệch, log không có error |
 | **FF** | Quá tải tài nguyên    | bất kỳ service           | instance                | Giới hạn CPU/bộ nhớ container                             | CPU/RSS, độ trễ, tỉ lệ lỗi                  | latency/error lan theo dependency                        |
-| **FG** | Độ trễ/ngắt xác thực  | `auth`                   | `auth` / `auth-postgres` | Chèn trễ hoặc dừng `auth` (ADR-004)                       | Span `*-auth-token`/`*-auth-jwks` chậm hoặc lỗi, breaker mở | Chưa thấy gì trong ≤10 phút (stale-while-error), rồi mọi request qua gateway lỗi 5xx hàng loạt (đo được 504) |
-| **FH** | Lệch khóa ký          | `auth`                   | JWKS / khóa ký          | Đổi `AUTH_SIGNING_KEY_PEM` mà không giữ khóa cũ           | `SERVICE_TOKEN_INVALID` tăng sau khi cache JWKS hết hạn | 401 đồng thời ở nhiều service, hạ tầng đều khỏe          |
+| **FG** | Độ trễ/ngắt xác thực  | `identity`               | `identity` / `identity-postgres` | Chèn trễ hoặc dừng `identity` (ADR-004)            | Span `*-identity-token`/`*-identity-jwks` chậm hoặc lỗi, breaker mở | Chưa thấy gì trong ≤10 phút (stale-while-error), rồi mọi request qua gateway lỗi 5xx hàng loạt (đo được 504) |
+| **FH** | Lệch khóa ký          | `identity`               | JWKS / khóa ký          | Đổi `IDENTITY_SIGNING_KEY_PEM` mà không giữ khóa cũ           | `SERVICE_TOKEN_INVALID` tăng sau khi cache JWKS hết hạn | 401 đồng thời ở nhiều service, hạ tầng đều khỏe          |
 
 Mỗi lần chạy phải ghi ground truth theo [telemetry-and-ground-truth-schema](telemetry-and-ground-truth-schema-v1.md): `root_cause_service`, `component`, `fault_type`, thời điểm bắt đầu/kết thúc, `run_id`, cường độ. Ground truth không đưa vào payload nghiệp vụ.
 
@@ -178,9 +174,9 @@ Tiêu chí: một người đọc dashboard/trace thông thường theo đườn
 | **C2** | Enroll/quiz submit chậm đột ngột                            | FC: export CSV của `course` giữ kết nối DB | Pool cạn → mọi truy vấn xếp hàng                                                                              | Trace không có span lỗi, mọi span chậm đều thuộc `course`, không rõ do request nào |
 | **C3** | Job AI soạn bài mãi `RUNNING` rồi `WORKER_INTERRUPTED`, tài liệu mãi `EXTRACTING` | FD: provider AI chậm                       | `ai-worker` giữ lease lâu → job/tài liệu hết lease → `course` thấy lỗi muộn ở `ai-worker → course`                                             | Hai triệu chứng ở hai service, chung nguyên nhân gián tiếp                         |
 | **C4** | Khóa học `READY` nhưng thumbnail mất, job cleanup xóa media | FA: MinIO promote chậm                     | Media `PENDING` kẹt → usage chưa gắn → `scheduler-worker` coi là không dùng và xóa                            | Lỗi lộ ở scheduler muộn, cách nguyên nhân gốc nhiều bước và nhiều phút             |
-| **C5** | Batch notification `PARTIAL_FAILED`, số item lệch           | FE: `student` chậm khi snapshot            | Snapshot timeout từng trang → thiếu recipient                                                                 | Log không có lỗi, chỉ lệch số liệu so với kỳ vọng                                  |
-| **C6** | Request qua gateway lỗi 5xx (đo được 504) hàng loạt sau một khoảng yên lặng          | FG: `auth` chậm/chết                       | Token đã cache còn hạn → không lỗi → hết hạn mà không làm mới được → gateway/auth không gọi được ai          | Triệu chứng ở mọi service cùng lúc nhưng chỉ sau ≤10 phút; lỗi ở cạnh `*-auth-token` chứ không ở service lỗi |
-| **C7** | 401 đồng loạt ở nhiều service, hạ tầng đều khỏe             | FH: đổi khóa ký `auth` mà không giữ khóa cũ | JWKS mới → cache JWKS hết hạn → verify token thất bại ở mọi service                                           | Không service nào hỏng; nguyên nhân là cấu hình ở `auth`, lỗi lộ ở từng service dưới dạng 401 |
+| **C5** | Batch notification `PARTIAL_FAILED`, số item lệch           | FE: `identity` chậm khi snapshot            | Snapshot timeout từng trang → thiếu recipient                                                                 | Log không có lỗi, chỉ lệch số liệu so với kỳ vọng                                  |
+| **C6** | Request qua gateway lỗi 5xx (đo được 504) hàng loạt sau một khoảng yên lặng          | FG: `identity` chậm/chết                       | Token đã cache còn hạn → không lỗi → hết hạn mà không làm mới được → gateway không lấy được token mới từ identity          | Triệu chứng ở mọi service cùng lúc nhưng chỉ sau ≤10 phút; lỗi ở cạnh `*-auth-token` chứ không ở service lỗi |
+| **C7** | 401 đồng loạt ở nhiều service, hạ tầng đều khỏe             | FH: đổi khóa ký `identity` mà không giữ khóa cũ | JWKS mới → cache JWKS hết hạn → verify token thất bại ở mọi service                                           | Không service nào hỏng; nguyên nhân là cấu hình ở `identity`, lỗi lộ ở từng service dưới dạng 401 |
 
 Mỗi case dùng workload chạy song song (k6) để tạo nhiễu. Đối chứng thủ công: baseline tự động (ngưỡng + trace lỗi/chậm nhất) và thử nghiệm người nhỏ theo [ADR-002](../adr/adr-002-ai-primary-root-cause-analysis-v1.md).
 

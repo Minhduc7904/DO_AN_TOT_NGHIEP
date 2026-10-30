@@ -7,9 +7,9 @@ import { spawn } from 'node:child_process';
 export const REQUIRED_SERVICES = Object.freeze([
   'ai',
   'ai-worker',
-  'auth',
   'course',
   'gateway',
+  'identity',
   'media',
   'media-worker',
   'notification',
@@ -18,7 +18,6 @@ export const REQUIRED_SERVICES = Object.freeze([
   'rabbitmq',
   'scheduler',
   'scheduler-worker',
-  'student',
 ]);
 
 const SCRIPT_PATH = fileURLToPath(import.meta.url);
@@ -285,20 +284,20 @@ export async function collectFingerprint(options, runner = runProcess) {
     'printenv',
     'POSTGRES_USER',
   ]);
-  const [auth, students, courses, enrollments, rabbit] = await Promise.all([
+  const [accounts, students, courses, enrollments, rabbit] = await Promise.all([
     queryPostgres(
       options,
       runner,
       postgresUser,
-      'auth_db',
-      "SELECT id::text,email,role::text,created_at AT TIME ZONE 'UTC' FROM auth_users ORDER BY email;",
+      'identity_db',
+      "SELECT id::text,email,role::text,created_at AT TIME ZONE 'UTC' FROM identity_users ORDER BY email;",
     ),
     queryPostgres(
       options,
       runner,
       postgresUser,
-      'student_db',
-      'SELECT id::text,email,full_name,status::text FROM students ORDER BY email;',
+      'identity_db',
+      'SELECT u.id::text,u.email,u.full_name,p.status::text FROM identity_student_profiles p JOIN identity_users u ON u.id = p.user_id ORDER BY u.email;',
     ),
     queryPostgres(
       options,
@@ -318,7 +317,7 @@ export async function collectFingerprint(options, runner = runProcess) {
   ]);
 
   const fingerprint = {
-    auth: lines(auth),
+    accounts: lines(accounts),
     courses: lines(courses),
     enrollments: lines(enrollments),
     rabbit,

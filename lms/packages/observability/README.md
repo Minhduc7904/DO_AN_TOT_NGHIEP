@@ -20,7 +20,7 @@ Khi telemetry bị tắt, handle trả về là no-op. Khi bật nhưng OTLP bac
 
 ## Tracing
 
-Baseline dùng `AlwaysOnSampler` (100%), kể cả caller gửi sampled flag `00`, và W3C Trace Context. Caller cần truyền cùng synthetic parent nếu muốn liên kết nhiều HTTP action độc lập; ứng dụng không tự ghép các lần click/request không có chung context. Resource chỉ lấy ba field identity từ config, tắt auto-detection để không capture command-line/environment tùy ý. 12 runtime là `gateway`, `auth`, `student`, `course`, `media`, `media-worker`, `notification`, `notification-worker`, `scheduler`, `scheduler-worker`, `ai` và `ai-worker`; hạ tầng (PostgreSQL, RabbitMQ, MinIO, SMTP, provider LLM) không có `service.name` riêng và không là RCA service candidate.
+Baseline dùng `AlwaysOnSampler` (100%), kể cả caller gửi sampled flag `00`, và W3C Trace Context. Caller cần truyền cùng synthetic parent nếu muốn liên kết nhiều HTTP action độc lập; ứng dụng không tự ghép các lần click/request không có chung context. Resource chỉ lấy ba field identity từ config, tắt auto-detection để không capture command-line/environment tùy ý. 11 runtime là `gateway`, `identity`, `course`, `media`, `media-worker`, `notification`, `notification-worker`, `scheduler`, `scheduler-worker`, `ai` và `ai-worker`; hạ tầng (PostgreSQL, RabbitMQ, MinIO, SMTP, provider LLM) không có `service.name` riêng và không là RCA service candidate.
 
 HTTP server span dùng route template hoặc `unmatched`, không raw path/query/header/payload. `finish` kết thúc với HTTP status thật; `close`/request `aborted` trước finish đặt `ERROR`, `error.type=client_aborted` và không giả status 200. Synchronous exception được rethrow nguyên trạng cho caller nhưng span chỉ giữ exception event đã làm sạch. Một span được kết thúc tối đa một lần và listener được tháo; metric status class cho request chưa hoàn tất là `client_aborted`/`exception`, không giả 5xx.
 
@@ -30,13 +30,13 @@ Timeout/unavailable có span `ERROR` và bounded `error.type`; HTTP 4xx nghiệp
 
 `TelemetryStartOptions.traceExporter` là hook tùy chọn cho test/exporter; nếu không truyền `spanProcessor`, bootstrap bọc exporter bằng default `BatchSpanProcessor` và `forceFlush()` chờ processor thật hoàn tất. `spanProcessor` truyền tường minh giữ ưu tiên cũ. `shutdown()` chỉ chạy một lần. Đã có test pending batch chưa export, gọi flush rồi thấy span ở exporter trước shutdown; test lifecycle gồm socket HTTP thật bị ngắt.
 
-Nghiệm thu trên **application container thật** bằng `pnpm run test:observability` (xem [docker-compose/README.md](../../../docker-compose/README.md#smoke-observability)): `tracing-smoke` kiểm mỗi luồng v2 có một trace chứa đủ service, đúng span gốc, không đứt parent, cùng kịch bản lỗi nhiều bước khi `auth` ngừng phản hồi.
+Nghiệm thu trên **application container thật** bằng `pnpm run test:observability` (xem [docker-compose/README.md](../../../docker-compose/README.md#smoke-observability)): `tracing-smoke` kiểm mỗi luồng v2 có một trace chứa đủ service, đúng span gốc, không đứt parent, cùng kịch bản lỗi nhiều bước khi `identity` ngừng phản hồi.
 
 Khi không bật metrics hoặc không truyền metric reader, bootstrap truyền `metricReaders: []` tường minh để NodeSDK không tự tạo OTLP reader từ môi trường. Regression test ghi counter và quan sát HTTP exporter endpoint mock, chứng minh shutdown không phát metrics ngoài opt-in; tránh shutdown chờ mạng trong process chỉ dùng tracing.
 
 ## Metrics
 
-12 runtime bật metrics và gửi OTLP HTTP qua Collector mỗi 5 giây. `otlpMetricsEndpoint`/`OTEL_EXPORTER_OTLP_METRICS_ENDPOINT` là override tùy chọn; khi bỏ trống, đổi hậu tố `/v1/traces` sang `/v1/metrics` và giữ proxy path prefix. `metricExportIntervalMillis`/`OTEL_METRIC_EXPORT_INTERVAL` nhận 1000–60000 ms, mặc định 5000; SDK export timeout tối đa 3000 ms. Khi metrics disabled, danh sách reader rỗng tường minh, không export ngầm. Request path không await exporter/network; outage có thể mất dữ liệu nhưng không làm business request fail.
+11 runtime bật metrics và gửi OTLP HTTP qua Collector mỗi 5 giây. `otlpMetricsEndpoint`/`OTEL_EXPORTER_OTLP_METRICS_ENDPOINT` là override tùy chọn; khi bỏ trống, đổi hậu tố `/v1/traces` sang `/v1/metrics` và giữ proxy path prefix. `metricExportIntervalMillis`/`OTEL_METRIC_EXPORT_INTERVAL` nhận 1000–60000 ms, mặc định 5000; SDK export timeout tối đa 3000 ms. Khi metrics disabled, danh sách reader rỗng tường minh, không export ngầm. Request path không await exporter/network; outage có thể mất dữ liệu nhưng không làm business request fail.
 
 | Metric SDK                                                                                 | Prometheus                                                                                                    | Ý nghĩa và label chính                                                                                                                                                                                                                                  |
 | ------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -66,13 +66,13 @@ rabbitmq_detailed_queue_messages_ready{service_name="notification-worker"}
 
 Healthy không có error series cho tới lỗi đầu là absence/no error, không tự khẳng định exporter khỏe; dùng request series/CPU/target freshness để đánh giá coverage.
 
-Nghiệm thu: `metrics-smoke` (trong `pnpm run test:observability`) kiểm RED, CPU, RSS của 12 runtime, 42 cạnh dependency đúng danh mục identity, 24 queue broker đúng chủ sở hữu và consumer, cùng kịch bản dừng một worker (backlog tăng, command lỗi vào `.error`, drain), và label không chứa ID.
+Nghiệm thu: `metrics-smoke` (trong `pnpm run test:observability`) kiểm RED, CPU, RSS của 11 runtime, 42 cạnh dependency đúng danh mục identity, 24 queue broker đúng chủ sở hữu và consumer, cùng kịch bản dừng một worker (backlog tăng, command lỗi vào `.error`, drain), và label không chứa ID.
 
 HTTP exporter traces/metrics dùng DNS c-ares riêng (A/AAAA, timeout 750 ms, một lần thử), tránh `dns.lookup` chiếm libuv thread pool khiến PostgreSQL không mở được kết nối khi Collector ngừng chạy. Mỗi exporter giới hạn một request/socket, timeout 1 giây; batch traces timeout 2 giây. Agent vẫn giữ TLS/SNI mặc định của endpoint HTTPS. Literal IPv4/IPv6 và localhost hoạt động trực tiếp; hostname khác phải có DNS record (bao gồm Docker DNS), alias chỉ khai báo trong hosts file không được hỗ trợ cho endpoint telemetry. Cách phân giải DNS của business dependency giữ nguyên.
 
 ## Structured logs
 
-12 runtime ghi log qua `StructuredLogger`, logger tương thích `LoggerService` của NestJS được truyền vào `NestFactory.create`. Mọi log của Nest, kể cả `new Logger(context)`, và log chủ động của package đều đi qua `emitStructuredLog`. Mỗi lần gọi ghi một dòng JSON ra stdout và một OTel log record gửi qua Collector tới Loki.
+11 runtime ghi log qua `StructuredLogger`, logger tương thích `LoggerService` của NestJS được truyền vào `NestFactory.create`. Mọi log của Nest, kể cả `new Logger(context)`, và log chủ động của package đều đi qua `emitStructuredLog`. Mỗi lần gọi ghi một dòng JSON ra stdout và một OTel log record gửi qua Collector tới Loki.
 
 | Field stdout                                             | Ý nghĩa                                                                                                                                                          |
 | -------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -112,4 +112,4 @@ Loki chỉ index `service_name`; `service_version`, `service_instance_id`, `trac
 sum by (service_name) (count_over_time({service_name=~".+"} | severity_text="ERROR" [1m]))
 ```
 
-Nghiệm thu: `logs-smoke` (trong `pnpm run test:observability`) kiểm Loki chỉ có label `service_name`, 12 runtime có log, `trace_id`/`span_id` khớp span thật trong Tempo, log `dependency.failure` khớp span lỗi cùng service, không lộ secret trong log và đo độ trễ request → log.
+Nghiệm thu: `logs-smoke` (trong `pnpm run test:observability`) kiểm Loki chỉ có label `service_name`, 11 runtime có log, `trace_id`/`span_id` khớp span thật trong Tempo, log `dependency.failure` khớp span lỗi cùng service, không lộ secret trong log và đo độ trễ request → log.

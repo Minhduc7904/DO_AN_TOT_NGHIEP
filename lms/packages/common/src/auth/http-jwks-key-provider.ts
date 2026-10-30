@@ -8,7 +8,7 @@ import { publicKeyFromJwkX } from './jwt.js';
 import type { KeyProvider } from './keys.js';
 
 export interface HttpJwksKeyProviderOptions {
-  /** Định danh dependency canonical, ví dụ `course-auth-jwks`. */
+  /** Định danh dependency canonical, ví dụ `course-identity-jwks`. */
   dependency: string;
   url: string;
   timeoutMs: number;

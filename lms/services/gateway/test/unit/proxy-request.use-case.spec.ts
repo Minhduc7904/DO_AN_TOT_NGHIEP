@@ -36,7 +36,7 @@ class RecordingUpstream implements UpstreamClient {
 
 function setup(): { upstream: RecordingUpstream; useCase: ProxyRequestUseCase } {
   const upstream = new RecordingUpstream();
-  const enabled = new Set<UpstreamName>(['auth', 'student', 'course', 'scheduler', 'ai', 'media']);
+  const enabled = new Set<UpstreamName>(['identity', 'course', 'scheduler', 'ai', 'media']);
   return {
     upstream,
     useCase: new ProxyRequestUseCase(
@@ -63,7 +63,7 @@ describe('ProxyRequestUseCase', () => {
 
     expect(upstream.calls).toHaveLength(1);
     expect(upstream.calls[0]).toMatchObject({
-      upstream: 'auth',
+      upstream: 'identity',
       request: { method: 'POST', target: '/api/v1/auth/student/login?x=1' },
     });
     expect(upstream.calls[0]?.request.headers).not.toHaveProperty('x-principal-id');

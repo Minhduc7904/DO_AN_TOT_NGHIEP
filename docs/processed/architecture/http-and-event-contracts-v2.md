@@ -6,6 +6,8 @@
 >
 > **Thay thế:** [http-and-event-contracts-v1](http-and-event-contracts-v1.md) (lịch sử).
 >
+> **Cập nhật R-13:** `auth` và `student` đã gộp thành service `identity` ([ADR-005](../adr/adr-005-merge-auth-student-into-identity-v1.md)); URL public `/api/v1/auth/*`, `/api/v1/students/*` và `/internal/v1/auth/service-token` không đổi, các route ghi nội bộ của student (`POST /internal/v1/students`, scope `student:profile:write`) đã bỏ.
+>
 > **Phụ thuộc:** [service-catalogue-and-topology-v2](service-catalogue-and-topology-v2.md), [ADR-001](../adr/adr-001-restructure-lms-testbed-v1.md), [ADR-004](../adr/adr-004-service-access-token-and-api-surfaces-v1.md) (xác thực và hai bề mặt API).
 >
 > **Mục đích:** chốt quy ước chung, danh mục route, ma trận role và danh mục command để các service được scaffold và ghép mà không vỡ ranh giới. Request/response chi tiết từng endpoint không nằm ở đây mà được viết bằng zod trong `lms/contracts/` cùng từng service; tài liệu này là danh mục và luật chung mà schema đó phải tuân theo.
@@ -40,11 +42,11 @@ Mỗi service có **hai bề mặt HTTP tách thư mục** (`adapters/http/publi
 
 `POST /internal/v1/auth/service-token` cũng không dùng bearer (`@SkipAuth()`): danh tính chứng minh bằng `client_id`/`client_secret` trong body.
 
-`auth` phát **hai loại token**, ký EdDSA (Ed25519), verify cục bộ bằng JWKS:
+`identity` phát **hai loại token**, ký EdDSA (Ed25519), verify cục bộ bằng JWKS:
 
 | Loại                 | Cấp bởi                                                         | Claim chính                                                                             | TTL                    |
 | -------------------- | --------------------------------------------------------------- | --------------------------------------------------------------------------------------- | ---------------------- |
-| User access token    | `POST /api/v1/auth/{student,instructor,admin}/login`, `refresh` | `iss=aiops-lms-auth`, `typ=user`, `sub`=user id, `role`, `aud=aiops-lms`                | 1 giờ                  |
+| User access token    | `POST /api/v1/auth/{student,instructor,admin}/login`, `refresh` | `iss=aiops-lms-identity`, `typ=user`, `sub`=user id, `role`, `aud=aiops-lms`                | 1 giờ                  |
 | Service access token | `POST /internal/v1/auth/service-token` (client-credentials)     | `typ=service`, `sub`=tên service, `aud`=service đích, `scope` (cách nhau bằng dấu cách) | 10 phút, không refresh |
 
 Header JWT có `kid` (thumbprint khóa công khai); mọi token có `jti`, `iat`, `exp`. Token sai loại bị `TOKEN_TYPE_MISMATCH`.
@@ -66,8 +68,7 @@ Route đọc nội dung media công khai với người dùng (không cần JWT)
 | Scope                   | Cấp cho client                   | Dùng ở                                | Trạng thái                                                |
 | ----------------------- | -------------------------------- | ------------------------------------- | --------------------------------------------------------- |
 | `gateway:proxy`         | gateway                          | Mọi route public của mọi service      | Đã có                                                     |
-| `student:profile:write` | auth                             | `POST /internal/v1/students`          | Đã có                                                     |
-| `student:profile:read`  | auth, media, notification-worker | `GET /internal/v1/students[/{id}]`    | Đã có (client media ở R-06, notification-worker ở R-07)      |
+| `student:profile:read`  | media, notification-worker       | `GET /internal/v1/students[/{id}]`    | Đã có (client media ở R-06, notification-worker ở R-07); `identity` là audience |
 | `media:usage:read`      | course                           | `ids:query`, `usages/urls`, `usages/by-owner` | Đã có (R-06; `by-owner` ở R-08)                    |
 | `media:content:read`    | ai-worker                        | `GET /internal/v1/media/{id}/content` | Đã có (R-06 cấp cho course; **R-08 chuyển sang `ai-worker`**, course không còn cần)  |
 | `media:cleanup`         | scheduler-worker                 | `POST /internal/v1/media/cleanup`     | Đã có (R-09)                                              |
@@ -79,9 +80,9 @@ Route đọc nội dung media công khai với người dùng (không cần JWT)
 | `course:lesson-ai:read` | ai-worker                        | `GET /internal/v1/courses/{c}/lessons/{l}/ai-context` | Đã có (R-08) |
 | `course:lesson-ai:write`| ai-worker                        | `PUT …/ai-content`, `POST …/ai-quizzes` | Đã có (R-08) |
 
-Các scope `ai:document:*`, `ai:job:*` và `course:lesson-ai:*` đã được cấp trong registry `auth` (client `course` và `ai-worker`, xem `SERVICE_CLIENTS_BOOTSTRAP` ở compose).
+Các scope `ai:document:*`, `ai:job:*` và `course:lesson-ai:*` đã được cấp trong registry của `identity` (client `course` và `ai-worker`, xem `SERVICE_CLIENTS_BOOTSTRAP` ở compose).
 
-Một client chỉ được xin token cho các `audience` và `scope` trong registry (`auth_service_clients`); xin ngoài phạm vi → `SERVICE_SCOPE_FORBIDDEN`.
+Một client chỉ được xin token cho các `audience` và `scope` trong registry (`identity_service_clients`); xin ngoài phạm vi → `SERVICE_SCOPE_FORBIDDEN`.
 
 ## 1.2. Envelope phản hồi thống nhất
 
@@ -188,8 +189,8 @@ Gateway chọn service theo prefix dài nhất; chỉ proxy `/api/v1/*`, không 
 
 | Prefix công khai                                        | Service      | Ghi chú                                                           |
 | ------------------------------------------------------- | ------------ | ----------------------------------------------------------------- |
-| `/api/v1/auth`                                          | auth         | Public: `register`, `{student,instructor,admin}/login`, `refresh` |
-| `/api/v1/students`                                      | student      |                                                                   |
+| `/api/v1/auth`                                          | identity     | Public: `register`, `{student,instructor,admin}/login`, `refresh` |
+| `/api/v1/students`                                      | identity     | Cùng upstream với `/api/v1/auth` (một `GATEWAY_IDENTITY_BASE_URL`) |
 | `/api/v1/courses`, `/api/v1/student`                    | course       | `/api/v1/student/*` là route học của student                      |
 | `/api/v1/media`                                         | media        |                                                                   |
 | `/api/v1/notifications`, `/api/v1/notification-batches` | notification |                                                                   |
@@ -209,14 +210,14 @@ Quy tắc Gateway (chi tiết: [`lms/services/gateway/README.md`](../../../lms/s
 
 Quy ước cột Role: `A`=admin, `I`=instructor, `S`=student, `*`=bất kỳ role đã xác thực, `–`=công khai. `I*` nghĩa là instructor chỉ trên resource của mình, admin luôn được.
 
-## 4.1. auth
+## 4.1. identity: tài khoản và đăng nhập
 
-Ba cửa đăng nhập riêng theo role dùng chung bảng `auth_users` và cùng body `{ email, password }`. Chỉ tài khoản đúng role đăng nhập được qua cửa tương ứng; sai email, sai mật khẩu, tài khoản bị khóa và đúng mật khẩu nhưng sai cửa đều trả cùng một `401 UNAUTHORIZED` ("Thông tin đăng nhập không hợp lệ") để không lộ tài khoản tồn tại hay thuộc role nào. `refresh` dùng chung vì refresh token đã gắn với tài khoản.
+Ba cửa đăng nhập riêng theo role dùng chung bảng `identity_users` và cùng body `{ email, password }`. Chỉ tài khoản đúng role đăng nhập được qua cửa tương ứng; sai email, sai mật khẩu, tài khoản bị khóa và đúng mật khẩu nhưng sai cửa đều trả cùng một `401 UNAUTHORIZED` ("Thông tin đăng nhập không hợp lệ") để không lộ tài khoản tồn tại hay thuộc role nào. `refresh` dùng chung vì refresh token đã gắn với tài khoản.
 
 | Method | Path                            | Role | Use case                                                      |
 | ------ | ------------------------------- | :--: | ------------------------------------------------------------- |
-| POST   | `/api/v1/auth/register`         |  –   | `register-student` (tạo tài khoản, gọi student tạo hồ sơ)     |
-| POST   | `/api/v1/auth/student/login`    |  –   | `login-student` (cần hồ sơ `ACTIVE` ở student; sai cửa → 401) |
+| POST   | `/api/v1/auth/register`         |  –   | `register-student` (một transaction tạo tài khoản và hồ sơ)   |
+| POST   | `/api/v1/auth/student/login`    |  –   | `login-student` (cần hồ sơ `ACTIVE`; sai cửa → 401)           |
 | POST   | `/api/v1/auth/instructor/login` |  –   | `login-instructor`                                            |
 | POST   | `/api/v1/auth/admin/login`      |  –   | `login-admin`                                                 |
 | POST   | `/api/v1/auth/refresh`          |  –   | `refresh-token`                                               |
@@ -224,7 +225,7 @@ Ba cửa đăng nhập riêng theo role dùng chung bảng `auth_users` và cùn
 | POST   | `/api/v1/auth/accounts`         |  A   | `create-account` (instructor/admin)                           |
 | GET    | `/api/v1/auth/accounts`         |  A   | `list-accounts`                                               |
 
-## 4.2. student
+## 4.2. identity: hồ sơ student
 
 | Method | Path                            | Role | Use case               |
 | ------ | ------------------------------- | :--: | ---------------------- |
@@ -463,11 +464,10 @@ Quy tắc (R-08, đối chiếu `lms/services/ai`):
 
 | Owner   | Method | Path                                    | Caller               | Scope                   | Mục đích                                                                                                                 |
 | ------- | ------ | --------------------------------------- | -------------------- | ----------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| auth    | POST   | `/internal/v1/auth/service-token`       | mọi bên cần token    | — (client-credentials)  | Cấp service token: body `{client_id, client_secret, audience, scope?}` → `{access_token, token_type, expires_in, scope}` |
-| auth    | GET    | `/.well-known/jwks.json`                | mọi service, gateway | — (không xác thực)      | JWKS (RFC 7517) công bố khóa công khai; không bọc envelope                                                               |
-| student | POST   | `/internal/v1/students`                 | auth                 | `student:profile:write` | Tạo hồ sơ student cùng `id` với tài khoản                                                                                |
-| student | GET    | `/internal/v1/students`                 | notification-worker  | `student:profile:read`  | Danh sách `ACTIVE` theo trang (`page_size` ≤ 100, sắp theo `id`) để snapshot recipient (đã có từ R-07)                    |
-| student | GET    | `/internal/v1/students/{student_id}`    | auth, media          | `student:profile:read`  | auth: kiểm tra hồ sơ tồn tại và `ACTIVE` khi student đăng nhập (404 → 403, student lỗi → 503); media: kiểm tra actor     |
+| identity | POST   | `/internal/v1/auth/service-token`       | mọi bên cần token    | — (client-credentials)  | Cấp service token: body `{client_id, client_secret, audience, scope?}` → `{access_token, token_type, expires_in, scope}` |
+| identity | GET    | `/.well-known/jwks.json`                | mọi service, gateway | — (không xác thực)      | JWKS (RFC 7517) công bố khóa công khai; không bọc envelope                                                               |
+| identity | GET    | `/internal/v1/students`                 | notification-worker  | `student:profile:read`  | Danh sách `ACTIVE` theo trang (`page_size` ≤ 100, sắp theo `id`) để snapshot recipient (đã có từ R-07)                    |
+| identity | GET    | `/internal/v1/students/{student_id}`    | media, notification-worker | `student:profile:read`  | Hồ sơ theo id; media kiểm tra actor (avatar); 404 khi chưa có hồ sơ. Hồ sơ chỉ được tạo qua đăng ký (cùng transaction với tài khoản), không có route ghi nội bộ |
 | media   | POST   | `/internal/v1/media/usages/ids:query`   | course               | `media:usage:read`      | Lấy usage ID theo owner (xóa khóa học)                                                                                   |
 | media   | GET    | `/internal/v1/media/usages/urls`        | course               | `media:usage:read`      | URL các usage                                                                                                            |
 | media   | GET    | `/internal/v1/media/{media_id}/content` | ai-worker            | `media:content:read`    | Byte tệp cho trích văn bản AI (R-06 cấp cho course; R-08 chuyển sang `ai-worker`)                                        |

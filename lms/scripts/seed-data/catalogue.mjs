@@ -42,11 +42,11 @@ function answerIsCorrectSql(ctx, rn, question) {
   return `${randomSql(ctx.seed, `(${rn})::text || ':' || (${question})::text`, 100)} < 70`;
 }
 
-// ---- auth_db ---------------------------------------------------------------------------------
+// ---- identity_db -----------------------------------------------------------------------------
 
-const authUser = (role, kind, emailPrefix, fullNamePrefix) => (ctx, from, to) => [
+const identityUser = (role, kind, emailPrefix, fullNamePrefix) => (ctx, from, to) => [
   {
-    table: 'auth_users',
+    table: 'identity_users',
     columns: {
       id: idSql(kind, 'g.i'),
       email: `${text(`${emailPrefix}-`)} || g.i || '@seed.test'`,
@@ -61,46 +61,43 @@ const authUser = (role, kind, emailPrefix, fullNamePrefix) => (ctx, from, to) =>
   },
 ];
 
-const authDatasets = [
+const identityDatasets = [
   {
-    key: 'auth.students',
-    db: 'auth',
-    table: 'auth_users',
+    key: 'identity.students',
+    db: 'identity',
+    table: 'identity_users',
     kind: 'user',
-    label: 'auth_users (học viên)',
+    label: 'identity_users (học viên)',
     defaults: profile(1_000, 20_000, 100_000),
-    statements: authUser('student', 'user', 'seed-student', 'Học viên Seed'),
+    statements: identityUser('student', 'user', 'seed-student', 'Học viên Seed'),
   },
   {
-    key: 'auth.instructors',
-    db: 'auth',
-    table: 'auth_users',
+    key: 'identity.instructors',
+    db: 'identity',
+    table: 'identity_users',
     kind: 'instructor',
-    label: 'auth_users (giảng viên)',
+    label: 'identity_users (giảng viên)',
     defaults: profile(10, 50, 200),
-    statements: authUser('instructor', 'instructor', 'seed-instructor', 'Giảng viên Seed'),
+    statements: identityUser('instructor', 'instructor', 'seed-instructor', 'Giảng viên Seed'),
   },
-];
-
-// ---- student_db ------------------------------------------------------------------------------
-
-const studentDatasets = [
   {
-    key: 'student.students',
-    db: 'student',
-    table: 'students',
+    key: 'identity.student_profiles',
+    db: 'identity',
+    table: 'identity_student_profiles',
     kind: 'user',
-    label: 'students',
-    defaults: profile(1_000, 20_000, 100_000),
-    // Hồ sơ học viên khớp từng tài khoản đăng nhập ở auth_users.
-    defaultFrom: (ctx) => ctx.get('auth.students') || undefined,
+    // Khóa chính của bảng hồ sơ là user_id (trùng id tài khoản student cùng khoảng seed).
+    idColumn: 'user_id',
+    label: 'identity_student_profiles',
+    derived: true,
+    needs: ['identity.students'],
+    // Mỗi tài khoản student seed có đúng một hồ sơ ACTIVE, nên đăng nhập student được và
+    // notification-worker thấy đủ recipient.
+    count: (ctx) => ctx.get('identity.students'),
     statements: (_ctx, from, to) => [
       {
-        table: 'students',
+        table: 'identity_student_profiles',
         columns: {
-          id: idSql('user', 'g.i'),
-          email: `'seed-student-' || g.i || '@seed.test'`,
-          full_name: `'Học viên Seed ' || g.i`,
+          user_id: idSql('user', 'g.i'),
           status: text('ACTIVE'),
           created_at: timeSql('g.i'),
           updated_at: timeSql('g.i'),
@@ -120,7 +117,7 @@ const courseDatasets = [
     table: 'courses',
     kind: 'course',
     label: 'courses',
-    needs: ['auth.instructors'],
+    needs: ['identity.instructors'],
     defaults: profile(20, 100, 300),
     statements: (ctx, from, to) => [
       {
@@ -130,7 +127,10 @@ const courseDatasets = [
           name: `'Khóa học seed ' || g.i`,
           description_markdown: `'Mô tả khóa học seed số ' || g.i`,
           status: text('PUBLISHED'),
-          instructor_id: idSql('instructor', `((g.i - 1) % ${ctx.get('auth.instructors')}) + 1`),
+          instructor_id: idSql(
+            'instructor',
+            `((g.i - 1) % ${ctx.get('identity.instructors')}) + 1`,
+          ),
           created_at: timeSql('g.i'),
           updated_at: timeSql('g.i'),
         },
@@ -259,11 +259,11 @@ const courseDatasets = [
     table: 'enrollments',
     kind: 'enrollment',
     label: 'enrollments',
-    needs: ['student.students', 'course.courses'],
+    needs: ['identity.students', 'course.courses'],
     defaults: profile(3_000, 60_000, 400_000),
-    max: (ctx) => ctx.get('student.students') * ctx.get('course.courses'),
+    max: (ctx) => ctx.get('identity.students') * ctx.get('course.courses'),
     statements: (ctx, from, to) => {
-      const students = ctx.get('student.students');
+      const students = ctx.get('identity.students');
       const courses = ctx.get('course.courses');
       return [
         {
@@ -387,7 +387,7 @@ const mediaDatasets = [
     table: 'media_objects',
     kind: 'media',
     label: 'media_objects (tệp gốc)',
-    needs: ['auth.instructors'],
+    needs: ['identity.instructors'],
     defaults: profile(500, 5_000, 50_000),
     statements: (ctx, from, to) => {
       const z = '(g.i - 1)';
@@ -427,7 +427,10 @@ const mediaDatasets = [
               text('other'),
             ),
             object_key: `'seed/' || ${idSql('media', 'g.i')}::text || '.' || ${extension}`,
-            uploaded_by: idSql('instructor', `((g.i - 1) % ${ctx.get('auth.instructors')}) + 1`),
+            uploaded_by: idSql(
+              'instructor',
+              `((g.i - 1) % ${ctx.get('identity.instructors')}) + 1`,
+            ),
             created_at: timeSql('g.i'),
             updated_at: timeSql('g.i'),
           },
@@ -446,7 +449,7 @@ const mediaDatasets = [
     needs: ['media.objects'],
     count: (ctx) => thumbnailCount(ctx.get('media.objects')),
     statements: (ctx, from, to) => {
-      const instructors = ctx.get('auth.instructors');
+      const instructors = ctx.get('identity.instructors');
       const original = `((((g.i - 1) / 6) * 10) + (ARRAY[0, 1, 2, 3, 4, 7])[((g.i - 1) % 6) + 1] + 1)`;
       const uploader = idSql('instructor', `((${original} - 1) % ${instructors}) + 1`);
       const source = `FROM ${generate(from, to)}`;
@@ -504,8 +507,8 @@ const mediaDatasets = [
       const media = ctx.get('media.objects');
       const courses = ctx.get('course.courses');
       const lessons = ctx.get('course.lessons');
-      const students = ctx.get('student.students');
-      const instructors = ctx.get('auth.instructors');
+      const students = ctx.get('identity.students');
+      const instructors = ctx.get('identity.instructors');
       const x = {
         m: `(((g.i - 1) % ${media}) + 1)`,
         round: `((g.i - 1) / ${media})`,
@@ -544,7 +547,7 @@ const notificationDatasets = [
     table: 'notifications',
     kind: 'notification',
     label: 'notifications (đơn lẻ)',
-    needs: ['student.students'],
+    needs: ['identity.students'],
     defaults: profile(2_000, 40_000, 300_000),
     statements: (ctx, from, to) => {
       const read = `${randomSql(ctx.seed, `'nr:' || g.i`, 2)} = 0`;
@@ -553,7 +556,7 @@ const notificationDatasets = [
           table: 'notifications',
           columns: {
             id: idSql('notification', 'g.i'),
-            student_id: idSql('user', `((g.i - 1) % ${ctx.get('student.students')}) + 1`),
+            student_id: idSql('user', `((g.i - 1) % ${ctx.get('identity.students')}) + 1`),
             title: `'Thông báo seed ' || g.i`,
             content_markdown: `'Nội dung thông báo seed số ' || g.i`,
             source_type: text('SINGLE'),
@@ -608,10 +611,11 @@ const notificationDatasets = [
     table: 'notification_batch_items',
     kind: 'notificationItem',
     label: 'notification_batch_items (đã gửi)',
-    needs: ['notification.batches', 'student.students'],
+    needs: ['notification.batches', 'identity.students'],
     defaults: profile(1_500, 50_000, 600_000),
     max: (ctx) =>
-      ctx.get('notification.batches') * Math.min(ctx.get('student.students'), MAX_BATCH_RECIPIENTS),
+      ctx.get('notification.batches') *
+      Math.min(ctx.get('identity.students'), MAX_BATCH_RECIPIENTS),
     statements: (ctx, from, to) => {
       const batches = ctx.get('notification.batches');
       return [
@@ -742,7 +746,7 @@ const aiDatasets = [
     table: 'ai_jobs',
     kind: 'aiJob',
     label: 'ai_jobs (đã kết thúc)',
-    needs: ['course.lessons', 'course.courses', 'auth.instructors'],
+    needs: ['course.lessons', 'course.courses', 'identity.instructors'],
     defaults: profile(100, 2_000, 20_000),
     statements: (ctx, from, to) => {
       const lessons = ctx.get('course.lessons');
@@ -764,7 +768,7 @@ const aiDatasets = [
             error_code: `CASE WHEN ${failed} THEN 'AI_PROVIDER_ERROR' END`,
             requested_by_id: idSql(
               'instructor',
-              `((g.i - 1) % ${ctx.get('auth.instructors')}) + 1`,
+              `((g.i - 1) % ${ctx.get('identity.instructors')}) + 1`,
             ),
             requested_by_role: text('instructor'),
             created_at: timeSql('g.i'),
@@ -855,18 +859,12 @@ const schedulerDatasets = [
 // Thứ tự của mảng này cũng là thứ tự nạp (cha trước con, kể cả giữa các DB).
 export const DATABASES = Object.freeze([
   {
-    key: 'auth',
-    dbName: 'auth_db',
-    label: 'auth_db',
-    wipe: ['auth_users'],
-    datasets: authDatasets,
-  },
-  {
-    key: 'student',
-    dbName: 'student_db',
-    label: 'student_db',
-    wipe: ['students'],
-    datasets: studentDatasets,
+    key: 'identity',
+    dbName: 'identity_db',
+    label: 'identity_db',
+    // Xóa tài khoản kéo theo hồ sơ student và refresh token (ON DELETE CASCADE).
+    wipe: ['identity_users'],
+    datasets: identityDatasets,
   },
   {
     key: 'course',
@@ -932,10 +930,10 @@ export function wipeStatement(table) {
 
 /** Câu đếm số dòng seed hiện có của một mục. */
 export function countStatement(dataset) {
-  return `SELECT count(*)::int AS count FROM ${dataset.table} WHERE ${kindRangeSql(dataset.kind)}`;
+  return `SELECT count(*)::int AS count FROM ${dataset.table} WHERE ${kindRangeSql(dataset.kind, dataset.idColumn ?? 'id')}`;
 }
 
 /** Câu băm nội dung các dòng seed của một mục (thứ tự theo id nên cùng dữ liệu thì cùng băm). */
 export function fingerprintStatement(dataset) {
-  return `SELECT count(*)::int AS count, COALESCE(md5(string_agg(md5(t::text), '' ORDER BY t.id)), '') AS hash FROM ${dataset.table} t WHERE ${kindRangeSql(dataset.kind, 't.id')}`;
+  return `SELECT count(*)::int AS count, COALESCE(md5(string_agg(md5(t::text), '' ORDER BY t.${dataset.idColumn ?? 'id'})), '') AS hash FROM ${dataset.table} t WHERE ${kindRangeSql(dataset.kind, `t.${dataset.idColumn ?? 'id'}`)}`;
 }

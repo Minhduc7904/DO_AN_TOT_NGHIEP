@@ -22,7 +22,7 @@ export function createContext({ seed, passwordHash, counts = {}, existing = {}, 
     },
     capacities() {
       capacities ??= enrollmentCapacities({
-        students: context.get('student.students'),
+        students: context.get('identity.students'),
         courses: context.get('course.courses'),
         lessons: context.get('course.lessons'),
         quizzes: context.get('course.quizzes'),
@@ -111,12 +111,6 @@ export function validatePlan({ selected, counts, existing, seed, passwordHash })
     }
   }
 
-  const students = context.get('student.students');
-  if (selected.includes('student') && students > context.get('auth.students')) {
-    warnings.push(
-      'student.students lớn hơn số học viên ở auth_users: học viên dư không có tài khoản để đăng nhập.',
-    );
-  }
   return { context, items, errors, warnings };
 }
 

@@ -6,9 +6,11 @@
 >
 > **Thay thế:** [dependency-resilience-policy-v1](dependency-resilience-policy-v1.md) (giữ làm lịch sử, không dùng cho dataset mới).
 >
+> **Cập nhật R-13:** service `auth` và `student` đã gộp thành `identity` ([ADR-005](../adr/adr-005-merge-auth-student-into-identity-v1.md)); cạnh `auth-student` (và biến `AUTH_STUDENT_*`) không còn, các tham chiếu `auth`/`student` ở dưới đã đổi sang `identity`.
+>
 > **Phụ thuộc:** [service-catalogue-and-topology-v2](service-catalogue-and-topology-v2.md), [http-and-event-contracts-v2](http-and-event-contracts-v2.md), [data-ownership-and-fault-matrix-v2](data-ownership-and-fault-matrix-v2.md), [complex-case-catalogue-and-rca-result-v0](complex-case-catalogue-and-rca-result-v0.md), [ADR-004](../adr/adr-004-service-access-token-and-api-surfaces-v1.md).
 >
-> **Phạm vi:** mọi outbound dependency của 12 runtime LMS: HTTP đồng bộ giữa service (gồm Gateway → upstream), lấy service token và tải JWKS, RabbitMQ (outbox, consumer), và các dependency hạ tầng (PostgreSQL, MinIO, SMTP, LLM provider).
+> **Phạm vi:** mọi outbound dependency của 11 runtime LMS: HTTP đồng bộ giữa service (gồm Gateway → upstream), lấy service token và tải JWKS, RabbitMQ (outbox, consumer), và các dependency hạ tầng (PostgreSQL, MinIO, SMTP, LLM provider).
 
 ## 1. Mục tiêu
 
@@ -28,12 +30,11 @@ Mọi biến được validate bằng zod khi khởi động (`parseEnvironment`
 
 | Caller (process) | Biến cấu hình | Mặc định code | Compose | Khoảng hợp lệ (ms) | Dependency |
 | --- | --- | ---: | ---: | --- | --- |
-| `gateway` | `GATEWAY_UPSTREAM_TIMEOUT_MS` | 30.000 | 5.000 | 100–300.000 | auth, student, course, media, notification, scheduler, ai |
-| `auth` | `AUTH_STUDENT_TIMEOUT_MS` | 3.000 | 3.000 | 100–60.000 | student |
+| `gateway` | `GATEWAY_UPSTREAM_TIMEOUT_MS` | 30.000 | 5.000 | 100–300.000 | identity, course, media, notification, scheduler, ai |
 | `course` | `COURSE_MEDIA_TIMEOUT_MS` | 3.000 | 3.000 | 100–60.000 | media |
 | `course` | `COURSE_AI_TIMEOUT_MS` | 5.000 | 5.000 | 100–60.000 | ai |
-| `media` | `MEDIA_STUDENT_TIMEOUT_MS` | 3.000 | 3.000 | 100–60.000 | student |
-| `notification-worker` | `NOTIFICATION_STUDENT_TIMEOUT_MS` | 3.000 | 3.000 | 100–60.000 | student |
+| `media` | `MEDIA_IDENTITY_TIMEOUT_MS` | 3.000 | 3.000 | 100–60.000 | identity |
+| `notification-worker` | `NOTIFICATION_IDENTITY_TIMEOUT_MS` | 3.000 | 3.000 | 100–60.000 | identity |
 | `scheduler-worker` | `SCHEDULER_MEDIA_TIMEOUT_MS` | 60.000 | 60.000 | 100–600.000 | media (cleanup) |
 | `ai-worker` | `AI_COURSE_TIMEOUT_MS` | 5.000 | | 100–60.000 | course |
 | `ai-worker` | `AI_MEDIA_CONTENT_TIMEOUT_MS` | 30.000 | 30.000 | 100–300.000 | media (tải byte tệp) |
@@ -44,12 +45,12 @@ Cơ chế: mỗi request dùng `AbortController` và `setTimeout`, timer đượ
 
 | Biến | Mặc định | Khoảng hợp lệ (ms) | Áp dụng cho |
 | --- | ---: | --- | --- |
-| `AUTH_TOKEN_TIMEOUT_MS` | 3.000 | 100–60.000 | Lấy service token: `gateway`, `course`, `media`, `notification-worker`, `ai-worker`, `scheduler-worker` |
-| `AUTH_JWKS_TIMEOUT_MS` | 3.000 | 100–60.000 | Tải JWKS của mọi bên verify token (kể cả Gateway) |
-| `AUTH_JWKS_CACHE_TTL_MS` | 300.000 | 1.000–86.400.000 | Tuổi tối đa của JWKS trước khi coi là cũ |
-| `AUTH_JWKS_MIN_REFETCH_MS` | 10.000 | 100–3.600.000 | Khoảng tối thiểu giữa hai lần tải JWKS |
+| `IDENTITY_TOKEN_TIMEOUT_MS` | 3.000 | 100–60.000 | Lấy service token: `gateway`, `course`, `media`, `notification-worker`, `ai-worker`, `scheduler-worker` |
+| `IDENTITY_JWKS_TIMEOUT_MS` | 3.000 | 100–60.000 | Tải JWKS của mọi bên verify token (kể cả Gateway) |
+| `IDENTITY_JWKS_CACHE_TTL_MS` | 300.000 | 1.000–86.400.000 | Tuổi tối đa của JWKS trước khi coi là cũ |
+| `IDENTITY_JWKS_MIN_REFETCH_MS` | 10.000 | 100–3.600.000 | Khoảng tối thiểu giữa hai lần tải JWKS |
 
-Compose không đặt bốn biến này nên dùng mặc định. TTL service token do `auth` quyết định (`AUTH_SERVICE_TOKEN_TTL_SECONDS`, mặc định 600 giây).
+Compose không đặt bốn biến này nên dùng mặc định. TTL service token do `identity` quyết định (`IDENTITY_SERVICE_TOKEN_TTL_SECONDS`, mặc định 600 giây).
 
 ### 2.3. Hạ tầng và broker
 
@@ -77,7 +78,7 @@ Breaker nằm trong `HttpQueryClient`, nên áp dụng cho **mọi client servic
 
 | Tham số | Biến (theo client) | Mặc định | Khoảng hợp lệ |
 | --- | --- | ---: | --- |
-| Ngưỡng lỗi liên tiếp | `AUTH_STUDENT_BREAKER_THRESHOLD`, `COURSE_MEDIA_…`, `COURSE_AI_…`, `MEDIA_STUDENT_…`, `NOTIFICATION_STUDENT_…`, `SCHEDULER_MEDIA_…`, `AI_COURSE_…`, `AI_MEDIA_…`, `AUTH_TOKEN_BREAKER_THRESHOLD` | 3 | 1–100 |
+| Ngưỡng lỗi liên tiếp | `COURSE_MEDIA_…`, `COURSE_AI_…`, `MEDIA_IDENTITY_…`, `NOTIFICATION_IDENTITY_…`, `SCHEDULER_MEDIA_…`, `AI_COURSE_…`, `AI_MEDIA_…`, `IDENTITY_TOKEN_BREAKER_THRESHOLD` | 3 | 1–100 |
 | Cooldown | cùng tiền tố, hậu tố `_BREAKER_COOLDOWN_MS` | 5.000 ms | 1–300.000 |
 
 Compose không đặt các biến này nên dùng mặc định.
@@ -166,8 +167,7 @@ Metric chỉ có vocabulary `status` hữu hạn: `ok`, `timeout`, `unavailable`
 
 | Cạnh | Phản hồi 4xx của dependency | Ghi chú |
 | --- | --- | --- |
-| `auth-student` | `GET`: `404` thành `null` (không có hồ sơ); `POST` tạo hồ sơ: mọi mã khác `201` (kể cả 4xx) thành `DEPENDENCY_UNAVAILABLE` | Tài khoản không có hồ sơ là trạng thái lỗi, nên đăng ký thất bại |
-| `media-student`, `notification-worker-student` | `404` thành `null`; mã khác `200` thành `DEPENDENCY_UNAVAILABLE` | |
+| `media-identity`, `notification-worker-identity` | `404` thành `null`; mã khác `200` thành `DEPENDENCY_UNAVAILABLE` | |
 | `course-media` | Mọi mã khác `200` thành `DEPENDENCY_UNAVAILABLE` | Không có ngữ nghĩa nghiệp vụ cho 4xx ở cạnh này |
 | `course-ai` | Giữ nguyên mã nghiệp vụ, HTTP status và `details` của `ai` (ví dụ `AI_JOB_ALREADY_ACTIVE`, `AI_DOCUMENTS_NOT_EXTRACTED`, 404) | Body lỗi không đọc được thì `DEPENDENCY_UNAVAILABLE` |
 | `ai-worker-course`, `ai-worker-media` | Giữ nguyên mã nghiệp vụ và status của `course`/`media` để lưu vào job (`upstreamError`); riêng tạo quiz, `400` được trả về cho model sửa thay vì làm hỏng job | |
@@ -175,34 +175,34 @@ Metric chỉ có vocabulary `status` hữu hạn: `ok`, `timeout`, `unavailable`
 
 ### 5.3. Gateway
 
-Gateway **không** ánh xạ lại lỗi của upstream: mọi phản hồi của service phía sau (kể cả 4xx/5xx và mã nghiệp vụ) được trả nguyên vẹn (status, header, body). Gateway chỉ tự sinh envelope khi: không có route (`404`), thiếu/sai user token (`401`), sai role (`403`), upstream không kết nối được (`503 DEPENDENCY_UNAVAILABLE`, `details.dependency=gateway-<service>`), upstream không trả header trong `GATEWAY_UPSTREAM_TIMEOUT_MS` (`504 DEPENDENCY_TIMEOUT`), hoặc không lấy được service token (`503/504` với `details.dependency=gateway-auth-token`). Phản hồi 5xx của upstream vẫn được ghi là lỗi ở span và metric `lms_dependency_*` của `gateway-<service>` (status `timeout` nếu 504, còn lại `unavailable`), nên telemetry thấy lỗi dù client nhận đúng body gốc. Đây là khác biệt so với v1, nơi Gateway cũng ánh xạ 500–599 sang `503 DEPENDENCY_UNAVAILABLE`.
+Gateway **không** ánh xạ lại lỗi của upstream: mọi phản hồi của service phía sau (kể cả 4xx/5xx và mã nghiệp vụ) được trả nguyên vẹn (status, header, body). Gateway chỉ tự sinh envelope khi: không có route (`404`), thiếu/sai user token (`401`), sai role (`403`), upstream không kết nối được (`503 DEPENDENCY_UNAVAILABLE`, `details.dependency=gateway-<service>`), upstream không trả header trong `GATEWAY_UPSTREAM_TIMEOUT_MS` (`504 DEPENDENCY_TIMEOUT`), hoặc không lấy được service token (`503/504` với `details.dependency=gateway-identity-token`). Phản hồi 5xx của upstream vẫn được ghi là lỗi ở span và metric `lms_dependency_*` của `gateway-<service>` (status `timeout` nếu 504, còn lại `unavailable`), nên telemetry thấy lỗi dù client nhận đúng body gốc. Đây là khác biệt so với v1, nơi Gateway cũng ánh xạ 500–599 sang `503 DEPENDENCY_UNAVAILABLE`.
 
 ## 6. Xác thực service-to-service (ADR-004)
 
-Lấy service token (`<caller>-auth-token`) và tải JWKS (`<caller>-auth-jwks`) là outbound HTTP có timeout bắt buộc và telemetry như mọi dependency. Lấy token đi qua `HttpQueryClient` (có breaker, không retry); tải JWKS gọi `fetch` trực tiếp (không breaker, không retry).
+Lấy service token (`<caller>-identity-token`) và tải JWKS (`<caller>-identity-jwks`) là outbound HTTP có timeout bắt buộc và telemetry như mọi dependency. Lấy token đi qua `HttpQueryClient` (có breaker, không retry); tải JWKS gọi `fetch` trực tiếp (không breaker, không retry).
 
 ### 6.1. Service token
 
-`ServiceTokenProvider` cache token **theo audience** và không bắt request thường chờ `auth`:
+`ServiceTokenProvider` cache token **theo audience** và không bắt request thường chờ `identity`:
 
 - **Làm mới nền ở 50% TTL**, single-flight (nhiều request đồng thời dùng chung một lần lấy). Request vẫn nhận token cũ ngay trong lúc làm mới. Với TTL mặc định 600 giây: làm mới nền sau khoảng 300 giây, mỗi cặp (caller, audience).
-- **Stale-while-error**: làm mới nền lỗi thì tiếp tục dùng token cũ **đến khi hết hạn**; sau lỗi, lần làm mới nền kế tiếp bị giãn **5 giây** để không dồn lên `auth` đang lỗi (mỗi lần thử đi qua breaker của `<caller>-auth-token`).
-- Chỉ khi **chưa có token hoặc token đã hết hạn** thì request mới chờ lấy token; lúc đó lỗi của nguồn được ném ra: timeout hoặc 5xx/mạng/breaker mở thành `DEPENDENCY_TIMEOUT`/`DEPENDENCY_UNAVAILABLE` với `details.dependency=<caller>-auth-token`. Lỗi này xảy ra **trước** khi mở span của dependency đích nên không bị tính nhầm cho upstream.
-- `401/403` từ `auth` khi xin token là cấu hình sai (`client_id`/`client_secret`/`audience`) nên thành `SERVICE_CLIENT_INVALID` (401), không phải dependency lỗi và không tính vào breaker. Mọi phản hồi khác `200` hoặc sai schema thành `DEPENDENCY_UNAVAILABLE`.
-- Hệ quả: `auth` chết **không** gây lỗi ngay ở request thường; lỗi chỉ lộ sau tối đa ~một TTL (khoảng yên lặng), rồi lan ra mọi service qua cạnh `<caller>-auth-token` (case FG/C6). Giá trị đo được: lỗi `gateway-auth-token` xuất hiện 72 giây sau khi dừng `auth` khi TTL = 60 giây (complex-case catalogue, C6).
+- **Stale-while-error**: làm mới nền lỗi thì tiếp tục dùng token cũ **đến khi hết hạn**; sau lỗi, lần làm mới nền kế tiếp bị giãn **5 giây** để không dồn lên `identity` đang lỗi (mỗi lần thử đi qua breaker của `<caller>-identity-token`).
+- Chỉ khi **chưa có token hoặc token đã hết hạn** thì request mới chờ lấy token; lúc đó lỗi của nguồn được ném ra: timeout hoặc 5xx/mạng/breaker mở thành `DEPENDENCY_TIMEOUT`/`DEPENDENCY_UNAVAILABLE` với `details.dependency=<caller>-identity-token`. Lỗi này xảy ra **trước** khi mở span của dependency đích nên không bị tính nhầm cho upstream.
+- `401/403` từ `identity` khi xin token là cấu hình sai (`client_id`/`client_secret`/`audience`) nên thành `SERVICE_CLIENT_INVALID` (401), không phải dependency lỗi và không tính vào breaker. Mọi phản hồi khác `200` hoặc sai schema thành `DEPENDENCY_UNAVAILABLE`.
+- Hệ quả: `identity` chết **không** gây lỗi ngay ở request thường; lỗi chỉ lộ sau tối đa ~một TTL (khoảng yên lặng), rồi lan ra mọi service qua cạnh `<caller>-identity-token` (case FG/C6). Giá trị đo được: lỗi `gateway-identity-token` xuất hiện 72 giây sau khi dừng `identity` khi TTL = 60 giây (complex-case catalogue, C6).
 
 ### 6.2. JWKS
 
 `HttpJwksKeyProvider` verify token luôn cục bộ; chỉ tải JWKS khi cần:
 
-- Tải khi chưa có khóa, khi cache quá `AUTH_JWKS_CACHE_TTL_MS` (5 phút) ở lần dùng kế tiếp, hoặc khi gặp `kid` lạ (xoay khóa). Mọi lần tải bị giới hạn **tối đa một lần mỗi `AUTH_JWKS_MIN_REFETCH_MS` (10 giây)** và single-flight.
-- **Stale-while-error**: tải lỗi mà khóa của `kid` đó đã có trong cache thì tiếp tục dùng khóa cũ — **không có thời hạn tuyệt đối** (khác token, khóa cũ được dùng đến khi tải lại thành công). `kid` chưa biết mà tải lỗi thì ném `DEPENDENCY_TIMEOUT`/`DEPENDENCY_UNAVAILABLE` (`details.dependency=<service>-auth-jwks`); cold start khi `auth` chưa lên cũng rơi vào trường hợp này.
+- Tải khi chưa có khóa, khi cache quá `IDENTITY_JWKS_CACHE_TTL_MS` (5 phút) ở lần dùng kế tiếp, hoặc khi gặp `kid` lạ (xoay khóa). Mọi lần tải bị giới hạn **tối đa một lần mỗi `IDENTITY_JWKS_MIN_REFETCH_MS` (10 giây)** và single-flight.
+- **Stale-while-error**: tải lỗi mà khóa của `kid` đó đã có trong cache thì tiếp tục dùng khóa cũ — **không có thời hạn tuyệt đối** (khác token, khóa cũ được dùng đến khi tải lại thành công). `kid` chưa biết mà tải lỗi thì ném `DEPENDENCY_TIMEOUT`/`DEPENDENCY_UNAVAILABLE` (`details.dependency=<service>-identity-jwks`); cold start khi `identity` chưa lên cũng rơi vào trường hợp này.
 - Chưa tải được vì còn trong khoảng 10 giây mà `kid` chưa biết thì trả "không có khóa", token bị từ chối `401 SERVICE_TOKEN_INVALID` (hoặc `UNAUTHORIZED` với user token), không ném lỗi dependency.
 - Khi tải thành công, bộ khóa trong cache được thay hoàn toàn bằng JWKS mới; token ký bằng khóa đã bị loại bị từ chối (cơ sở của case FH).
 
 ### 6.3. Mã lỗi
 
-Timeout/network/5xx từ `auth` → `DEPENDENCY_TIMEOUT`/`DEPENDENCY_UNAVAILABLE` với `details.dependency` là identity ở mục 8; `401/403` từ `auth` khi xin token → `SERVICE_CLIENT_INVALID`; token không hợp lệ ở bên nhận → `SERVICE_TOKEN_*`/`TOKEN_TYPE_MISMATCH` (xem [http-and-event-contracts-v2](http-and-event-contracts-v2.md) mục 2).
+Timeout/network/5xx từ `identity` → `DEPENDENCY_TIMEOUT`/`DEPENDENCY_UNAVAILABLE` với `details.dependency` là identity ở mục 8; `401/403` từ `identity` khi xin token → `SERVICE_CLIENT_INVALID`; token không hợp lệ ở bên nhận → `SERVICE_TOKEN_*`/`TOKEN_TYPE_MISMATCH` (xem [http-and-event-contracts-v2](http-and-event-contracts-v2.md) mục 2).
 
 ## 7. Hạ tầng không có breaker
 
@@ -219,22 +219,21 @@ Mỗi dependency call có client span và ba metric `lms_dependency_request_coun
 
 | Edge | `dependency_identity` | `operation_name` |
 | --- | --- | --- |
-| Gateway → auth, student, course, media, notification, scheduler, ai | `gateway-<service>` | HTTP method |
-| Gateway → auth (lấy token) | `gateway-auth-token` | `POST /internal/v1/auth/service-token` |
-| course, media, notification-worker, ai-worker, scheduler-worker → auth (lấy token) | `<caller>-auth-token` | `POST /internal/v1/auth/service-token` |
-| Mọi bên verify token → auth (JWKS) | `<service>-auth-jwks` | `GET jwks` |
-| auth → student | `auth-student` | `<METHOD> <path>` |
+| Gateway → identity, course, media, notification, scheduler, ai | `gateway-<service>` | HTTP method |
+| Gateway → identity (lấy token) | `gateway-identity-token` | `POST /internal/v1/auth/service-token` |
+| course, media, notification-worker, ai-worker, scheduler-worker → identity (lấy token) | `<caller>-identity-token` | `POST /internal/v1/auth/service-token` |
+| Mọi bên verify token → identity (JWKS) | `<service>-identity-jwks` | `GET jwks` |
 | course → media | `course-media` | `<METHOD> <path>` |
 | course → ai | `course-ai` | `<METHOD> <path>` |
-| media → student | `media-student` | `<METHOD> <path>` |
-| notification-worker → student | `notification-worker-student` | `<METHOD> <path>` |
+| media → identity | `media-identity` | `<METHOD> <path>` |
+| notification-worker → identity | `notification-worker-identity` | `<METHOD> <path>` |
 | scheduler-worker → media | `scheduler-worker-media` | `<METHOD> <path>` |
 | ai-worker → course | `ai-worker-course` | `<METHOD> <path>` |
 | ai-worker → media | `ai-worker-media` | `<METHOD> <path>` |
 
 Lưu ý:
 
-- **`operation_name` của `HttpQueryClient` là `<METHOD> <path>` thô**, nên một số cạnh có ID trong operation: `GET /internal/v1/students/<id>` (`auth-student`, `media-student`, `notification-worker-student`), `GET /internal/v1/ai/jobs/<job_id>` (`course-ai`), `…/courses/<id>/lessons/<id>/…` (`ai-worker-course`), `…/media/<id>/content` (`ai-worker-media`). Điều này **lệch** với quy tắc của v1 (operation hữu hạn, không đưa ID vào metric label). Giảm nhẹ hiện có: view của SDK chỉ cho phép allowlist thuộc tính và giới hạn 512 tổ hợp mỗi instrument, phần tràn không chứa ID gốc; hành vi chính xác khi tràn chưa kiểm chứng. Đây là điểm cần Đức quyết định (chuẩn hóa operation bằng route template) trước khi thu dataset; policy này chưa sửa code.
+- **`operation_name` của `HttpQueryClient` là `<METHOD> <path>` thô**, nên một số cạnh có ID trong operation: `GET /internal/v1/students/<id>` (`media-identity`, `notification-worker-identity`), `GET /internal/v1/ai/jobs/<job_id>` (`course-ai`), `…/courses/<id>/lessons/<id>/…` (`ai-worker-course`), `…/media/<id>/content` (`ai-worker-media`). Điều này **lệch** với quy tắc của v1 (operation hữu hạn, không đưa ID vào metric label). Giảm nhẹ hiện có: view của SDK chỉ cho phép allowlist thuộc tính và giới hạn 512 tổ hợp mỗi instrument, phần tràn không chứa ID gốc; hành vi chính xác khi tràn chưa kiểm chứng. Đây là điểm cần Đức quyết định (chuẩn hóa operation bằng route template) trước khi thu dataset; policy này chưa sửa code.
 - Cạnh RabbitMQ chỉ có span (PRODUCER/CONSUMER mang `dependency_identity=<service.name>-rabbitmq`, `operation_name` là `publish`/`consume`); **không có** metric `lms_dependency_*` cho RabbitMQ, chỉ có metric broker. Lỗi publish ném `DEPENDENCY_*` với `details.dependency=rabbitmq` (chưa theo identity canonical).
 - Metric label chỉ chứa identity/operation/status; không đưa principal ID, resource ID, `message_id`, credential, token, query string hoặc fault truth vào label. Span có thể giữ path để chẩn đoán nhưng không ghi query string, credential hay token.
 
@@ -246,7 +245,7 @@ Test hiện có chứng minh các hành vi trên:
 - `lms/packages/common/test/unit/service-auth.spec.ts`: cache token theo audience và single-flight, làm mới nền ở 50% TTL, stale-while-error của token và JWKS, `kid` lạ refetch tối đa một lần mỗi khoảng tối thiểu, ma trận loại token.
 - `lms/packages/common/test/unit/messaging.spec.ts`: envelope và tên queue, ghi outbox, relay đánh dấu đã phát hoặc lên lịch thử lại khi lỗi, inbox bỏ qua message trùng, consumer khi channel đã đóng (không retry, không unhandled rejection), `stop` chờ command đang xử lý. `lms/packages/common/test/integration/rabbitmq-outbox.integration.mjs` (RabbitMQ thật): retry đủ `maxAttempts` rồi command nằm trong `<queue>.error`.
 - `lms/services/gateway/test/telemetry/dependency.telemetry-test.mjs` (qua `pnpm run test:telemetry`): span và metric dependency của Gateway.
-- `tracing-smoke` trong `pnpm run test:observability`: kịch bản `auth` ngừng phản hồi (login lỗi ngay tại `gateway-auth`, token còn hạn vẫn dùng được, lỗi `gateway-auth-token` sau khi token dịch vụ hết hạn, phục hồi sau `unpause`); `metrics-smoke`: dừng một worker làm backlog tăng, command sai vào `.error`, drain khi phục hồi.
+- `tracing-smoke` trong `pnpm run test:observability`: kịch bản `identity` ngừng phản hồi (login lỗi ngay tại `gateway-identity`, token còn hạn vẫn dùng được, lỗi `gateway-identity-token` sau khi token dịch vụ hết hạn, phục hồi sau `unpause`); `metrics-smoke`: dừng một worker làm backlog tăng, command sai vào `.error`, drain khi phục hồi.
 - `pnpm run ci:verify` (`format:check`, build, lint, test) và `docker compose config` phải pass trước khi chuyển `Chờ review`.
 
 Chưa có test riêng cho: số lần gọi mạng bằng 1 ở từng client của v2, hành vi khi `operation_name` vượt 512 tổ hợp, timeout/pool mặc định của PostgreSQL và MinIO.
@@ -262,12 +261,12 @@ Chưa có test riêng cho: số lần gọi mạng bằng 1 ở từng client c�
 
 | Mục | v1 (Testbed MVP) | v2 (theo code) |
 | --- | --- | --- |
-| Phạm vi | Outbound HTTP của Gateway, Enrollment, Submission, Grading; không có messaging | Mọi outbound dependency của 12 runtime: HTTP, token/JWKS, RabbitMQ, hạ tầng |
+| Phạm vi | Outbound HTTP của Gateway, Enrollment, Submission, Grading; không có messaging | Mọi outbound dependency của 11 runtime: HTTP, token/JWKS, RabbitMQ, hạ tầng |
 | Caller và timeout | 4 biến (`GATEWAY_UPSTREAM_TIMEOUT_MS`, `ENROLLMENT_COURSE_…`, `SUBMISSION_DEPENDENCY_…`, `GRADING_DEPENDENCY_…`), mặc định Gateway 5.000 ms | Mỗi cạnh một biến (bảng 2.1); mặc định code của Gateway là 30.000 ms, Compose đặt 5.000 ms; thêm timeout token, JWKS, LLM, SMTP, RabbitMQ |
 | Circuit breaker | Chỉ cạnh `Enrollment → Course` | Mọi `HttpQueryClient` và lấy token; ngưỡng 3 lỗi liên tiếp, cooldown 5 giây (cấu hình theo client); Gateway → upstream và JWKS không có breaker |
 | Retry | HTTP retry tắt; không định nghĩa retry/DLQ cho messaging | HTTP retry vẫn tắt; thêm retry consumer trong tiến trình (mặc định 5 lần, chờ cố định 1 giây, không có queue `.retry` hay DLX) rồi `<queue>.error`; outbox backoff không giới hạn số lần; inbox idempotent |
 | Error mapping của Gateway | Gateway ánh xạ upstream 504 → 504, 500–503/505–599 → 503 | Gateway trả nguyên vẹn phản hồi upstream; chỉ tự sinh 404/401/403/503/504 trong các trường hợp ở mục 5.3 |
-| Business 4xx | Course 404, Submission 404, `{ enrolled: false }` | Theo từng cạnh v2 (mục 5.2): student 404 → `null`, `ai`/`course`/`media` giữ mã nghiệp vụ, `course-media` và `auth-student` (tạo hồ sơ) coi mọi mã khác 2xx là dependency lỗi |
-| Dependency identity | 10 cạnh HTTP (`gateway-*`, `enrollment-course`, `submission-*`, `grading-submission`) với `operation_name` hữu hạn | Cạnh mới (`auth-student`, `course-media`, `course-ai`, `media-student`, `notification-worker-student`, `scheduler-worker-media`, `ai-worker-course`, `ai-worker-media`, `<caller>-auth-token`, `<service>-auth-jwks`); `operation_name` là `<METHOD> <path>` thô nên một số cạnh có ID (lệch quy tắc v1, ghi ở mục 8) |
+| Business 4xx | Course 404, Submission 404, `{ enrolled: false }` | Theo từng cạnh v2 (mục 5.2): hồ sơ student 404 → `null`, `ai`/`course`/`media` giữ mã nghiệp vụ, `course-media` coi mọi mã khác 2xx là dependency lỗi |
+| Dependency identity | 10 cạnh HTTP (`gateway-*`, `enrollment-course`, `submission-*`, `grading-submission`) với `operation_name` hữu hạn | Cạnh mới (`course-media`, `course-ai`, `media-identity`, `notification-worker-identity`, `scheduler-worker-media`, `ai-worker-course`, `ai-worker-media`, `<caller>-identity-token`, `<service>-identity-jwks`); `operation_name` là `<METHOD> <path>` thô nên một số cạnh có ID (lệch quy tắc v1, ghi ở mục 8) |
 | Xác thực service-to-service | Mục "Bổ sung v2" ngắn ở cuối bản v1 | Mục 6 viết lại đầy đủ: token (làm mới nền 50% TTL, single-flight, giãn 5 giây sau lỗi, stale đến hết hạn), JWKS (cache 5 phút, refetch tối đa 10 giây một lần, stale không thời hạn) |
 | Kiểm chứng | `format:check`, build, lint, unit test, `test:telemetry`, `ci:verify`, `git diff --check`, `docker compose config` | Dẫn test và smoke thực tế của v2 (mục 9), nêu rõ các khoảng chưa có test |

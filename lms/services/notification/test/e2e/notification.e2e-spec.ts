@@ -84,7 +84,7 @@ describe('notification + notification-worker (PostgreSQL, RabbitMQ, Mailpit tháº
         return send(200, {
           access_token: mintServiceToken(signingKey, {
             subject: 'notification-worker',
-            audience: 'student',
+            audience: 'identity',
             scopes: ['student:profile:read'],
           }),
           token_type: 'Bearer',
@@ -112,8 +112,8 @@ describe('notification + notification-worker (PostgreSQL, RabbitMQ, Mailpit tháº
 
     Object.assign(process.env, {
       OTEL_SDK_DISABLED: 'true',
-      AUTH_BASE_URL: stubUrl,
-      NOTIFICATION_STUDENT_BASE_URL: stubUrl,
+      IDENTITY_BASE_URL: stubUrl,
+      NOTIFICATION_IDENTITY_BASE_URL: stubUrl,
       SERVICE_CLIENT_ID: 'notification-worker',
       SERVICE_CLIENT_SECRET: 'notification-worker-secret-local-only',
       NOTIFICATION_RABBITMQ_URL:

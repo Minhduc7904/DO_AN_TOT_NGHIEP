@@ -7,6 +7,8 @@
 | Người đề xuất     | Đức                                                                                                                                                                                 |
 | Thay thế một phần | Quy ước "service tin `x-principal-*` trên mạng nội bộ" và "`/internal/v1/*` không cần JWT" ở [ADR-001](adr-001-restructure-lms-testbed-v1.md) và `http-and-event-contracts-v2` §1.1 |
 
+_Cập nhật 30/10/2026 ([ADR-005](adr-005-merge-auth-student-into-identity-v1.md)): service `auth` và `student` đã gộp thành `identity`. Cơ chế token/JWKS và bề mặt API trong ADR này giữ nguyên; chữ `auth` ở dưới là service phát token, nay là `identity` (audience `identity`, dependency `<caller>-identity-token`/`<caller>-identity-jwks`, `TOKEN_ISSUER=aiops-lms-identity`). URL `/internal/v1/auth/service-token` giữ nguyên, scope `student:profile:write` và client `auth` đã bỏ._
+
 ## Bối cảnh
 
 Sau R-04/R-05, danh tính được truyền theo hai cách tin cậy ngầm:

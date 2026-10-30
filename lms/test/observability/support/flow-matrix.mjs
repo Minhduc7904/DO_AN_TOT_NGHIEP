@@ -7,26 +7,30 @@
 export const FLOWS = [
   {
     id: 'http-login',
-    title: 'Đăng nhập: gateway → auth',
+    title: 'Đăng nhập: gateway → identity',
     root: 'gateway',
-    services: ['gateway', 'auth'],
+    services: ['gateway', 'identity'],
     spans: [
       {
-        service: 'auth',
+        service: 'identity',
         kind: 'SERVER',
         name: /^POST \/api\/v1\/auth\/(student|instructor|admin)\/login$/,
       },
-      { service: 'auth', kind: 'CLIENT', name: /^auth-postgres / },
+      { service: 'identity', kind: 'CLIENT', name: /^identity-postgres / },
     ],
   },
   {
     id: 'http-register',
-    title: 'Đăng ký: gateway → auth → student',
+    title: 'Đăng ký: gateway → identity (một transaction PostgreSQL)',
     root: 'gateway',
-    services: ['gateway', 'auth', 'student'],
+    services: ['gateway', 'identity'],
     spans: [
-      { service: 'auth', kind: 'CLIENT', name: /^auth-student POST/ },
-      { service: 'student', kind: 'SERVER' },
+      {
+        service: 'identity',
+        kind: 'SERVER',
+        name: /^POST \/api\/v1\/auth\/register$/,
+      },
+      { service: 'identity', kind: 'CLIENT', name: /^identity-postgres / },
     ],
   },
   {
@@ -66,9 +70,9 @@ export const FLOWS = [
   {
     id: 'async-notification-batch',
     title:
-      'Thông báo hàng loạt: gateway → notification → (outbox) notification-worker → student, SMTP',
+      'Thông báo hàng loạt: gateway → notification → (outbox) notification-worker → identity, SMTP',
     root: 'gateway',
-    services: ['gateway', 'notification', 'notification-worker', 'student'],
+    services: ['gateway', 'notification', 'notification-worker', 'identity'],
     spans: [
       {
         service: 'notification-worker',
@@ -80,7 +84,7 @@ export const FLOWS = [
         kind: 'CONSUMER',
         name: /^notification-worker--dispatch-notification-batch-v1 process$/,
       },
-      { service: 'student', kind: 'SERVER' },
+      { service: 'identity', kind: 'SERVER' },
       { service: 'notification-worker', kind: 'CLIENT', name: /^notification-smtp / },
     ],
   },

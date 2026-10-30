@@ -12,7 +12,7 @@ import { ConfigService } from '@nestjs/config';
 
 import type { Recipient, StudentDirectory } from '../../application/ports/student-directory.js';
 
-const DEPENDENCY = 'notification-worker-student';
+const DEPENDENCY = 'notification-worker-identity';
 const listSchema = apiListResponseSchema(studentDtoSchema);
 const oneSchema = apiResponseSchema(studentDtoSchema);
 
@@ -24,12 +24,12 @@ export class StudentHttpClient implements StudentDirectory {
   constructor(config: ConfigService, @Inject(SERVICE_TOKEN_PROVIDER) tokens: TokenProvider) {
     this.client = new HttpQueryClient({
       dependency: DEPENDENCY,
-      baseUrl: config.getOrThrow<string>('NOTIFICATION_STUDENT_BASE_URL'),
-      auth: { audience: 'student', tokens },
-      timeoutMs: config.getOrThrow<number>('NOTIFICATION_STUDENT_TIMEOUT_MS'),
+      baseUrl: config.getOrThrow<string>('NOTIFICATION_IDENTITY_BASE_URL'),
+      auth: { audience: 'identity', tokens },
+      timeoutMs: config.getOrThrow<number>('NOTIFICATION_IDENTITY_TIMEOUT_MS'),
       breaker: {
-        failureThreshold: config.getOrThrow<number>('NOTIFICATION_STUDENT_BREAKER_THRESHOLD'),
-        cooldownMs: config.getOrThrow<number>('NOTIFICATION_STUDENT_BREAKER_COOLDOWN_MS'),
+        failureThreshold: config.getOrThrow<number>('NOTIFICATION_IDENTITY_BREAKER_THRESHOLD'),
+        cooldownMs: config.getOrThrow<number>('NOTIFICATION_IDENTITY_BREAKER_COOLDOWN_MS'),
       },
     });
   }

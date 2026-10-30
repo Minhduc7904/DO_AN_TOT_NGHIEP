@@ -25,7 +25,7 @@ npm @corepackPnpm run test
 npm @corepackPnpm run test:e2e
 npm @corepackPnpm run test:telemetry
 npm @corepackPnpm run test:course:postgres # cần PostgreSQL test và hai database URL
-npm @corepackPnpm run test:auth:e2e # cần PostgreSQL đã `prisma migrate deploy` và AUTH_DATABASE_URL
+npm @corepackPnpm run test:identity:e2e # cần PostgreSQL đã `prisma migrate deploy` và IDENTITY_DATABASE_URL
 npm @corepackPnpm run build
 npm @corepackPnpm run ci:verify
 Pop-Location

@@ -27,7 +27,7 @@ export function createHttpServiceAuth(
     serviceName,
     verifier: new TokenVerifier(
       new HttpJwksKeyProvider({
-        dependency: `${serviceName}-auth-jwks`,
+        dependency: `${serviceName}-identity-jwks`,
         url: new URL(`/${JWKS_PATH}`, options.baseUrl).toString(),
         timeoutMs: options.timeoutMs,
         cacheTtlMs: options.cacheTtlMs,

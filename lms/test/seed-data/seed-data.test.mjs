@@ -233,7 +233,7 @@ test('validatePlan báo lỗi khi vượt trần, thiếu cha hoặc dưới sà
     selected: allKeys,
     counts: {
       ...base,
-      'course.enrollments': base['student.students'] * base['course.courses'] + 1,
+      'course.enrollments': base['identity.students'] * base['course.courses'] + 1,
     },
   });
   assert.match(tooMany.errors.join('\n'), /enrollments: tối đa/u);
@@ -243,7 +243,7 @@ test('validatePlan báo lỗi khi vượt trần, thiếu cha hoặc dưới sà
     selected: ['course'],
     counts: resolveCounts({ ...COMMON, selected: ['course'], profileName: 'small' }),
   });
-  assert.match(onlyCourse.errors.join('\n'), /cần "auth_users \(giảng viên\)"/u);
+  assert.match(onlyCourse.errors.join('\n'), /cần "identity_users \(giảng viên\)"/u);
 
   const fewOptions = validatePlan({
     ...COMMON,
@@ -256,9 +256,9 @@ test('validatePlan báo lỗi khi vượt trần, thiếu cha hoặc dưới sà
 test('DB không được chọn lấy số dòng seed đang có để làm cha', () => {
   const existing = {
     ...EXISTING,
-    'auth.instructors': 5,
-    'auth.students': 100,
-    'student.students': 100,
+    'identity.instructors': 5,
+    'identity.students': 100,
+    'identity.student_profiles': 100,
   };
   const selected = ['course'];
   const counts = resolveCounts({ ...COMMON, existing, selected, profileName: 'small' });
@@ -269,25 +269,14 @@ test('DB không được chọn lấy số dòng seed đang có để làm cha',
   );
 });
 
-test('mục dẫn xuất tự tính và student.students mặc định bằng số học viên auth', () => {
+test('mục dẫn xuất tự tính; hồ sơ student luôn bằng số tài khoản student', () => {
   const counts = resolveCounts({ ...COMMON, selected: allKeys, profileName: 'small' });
-  assert.equal(counts['student.students'], counts['auth.students']);
   const context = createContext({ ...COMMON, counts, selected: allKeys });
+  assert.equal(context.get('identity.student_profiles'), counts['identity.students']);
   assert.equal(context.get('media.thumbnails'), thumbnailCount(counts['media.objects']));
   assert.equal(context.get('notification.bulk'), counts['notification.items']);
   assert.ok(context.get('course.answers') > 0);
-  const student = findDataset('student.students');
-  assert.equal(suggestCount(student, context, 'large'), counts['auth.students']);
-});
-
-test('cảnh báo khi số hồ sơ student lớn hơn số tài khoản auth', () => {
-  const counts = resolveCounts({ ...COMMON, selected: allKeys, profileName: 'small' });
-  const plan = validatePlan({
-    ...COMMON,
-    selected: allKeys,
-    counts: { ...counts, 'student.students': counts['auth.students'] + 5 },
-  });
-  assert.match(plan.warnings.join('\n'), /student\.students lớn hơn/u);
+  assert.equal(findDataset('identity.student_profiles').derived, true);
 });
 
 // ---- progress --------------------------------------------------------------------------------
@@ -434,13 +423,13 @@ test('assertLocalHost chỉ cho phép host local và clientConfig áp dụng gua
       clientConfig(
         database,
         { host: 'localhost' },
-        { AUTH_DATABASE_URL: 'postgresql://u:p@db.example.com:5432/auth_db' },
+        { IDENTITY_DATABASE_URL: 'postgresql://u:p@db.example.com:5432/identity_db' },
       ),
     /không được phép/u,
   );
   assert.deepEqual(
     clientConfig(database, { host: 'localhost', port: 1, user: 'u', password: 'p' }, {}),
-    { host: 'localhost', port: 1, user: 'u', password: 'p', database: 'auth_db' },
+    { host: 'localhost', port: 1, user: 'u', password: 'p', database: 'identity_db' },
   );
 });
 
@@ -463,7 +452,7 @@ test('parseOptions kiểm tra môi trường, profile, --count và database', ()
     /dẫn xuất/u,
   );
   assert.throws(
-    () => parseOptions(['--environment', 'local', '--databases', 'auth,nope']),
+    () => parseOptions(['--environment', 'local', '--databases', 'identity,nope']),
     /không tồn tại/u,
   );
   const options = parseOptions([
@@ -508,10 +497,10 @@ test('chooseDatabases khóa database không dùng được và chọn sẵn data
     return [];
   });
   const media = captured.choices.find((choice) => choice.value === 'media');
-  const auth = captured.choices.find((choice) => choice.value === 'auth');
+  const identity = captured.choices.find((choice) => choice.value === 'identity');
   assert.match(media.disabled, /chưa migrate/u);
-  assert.equal(auth.disabled, false);
-  assert.equal(auth.checked, true);
+  assert.equal(identity.disabled, false);
+  assert.equal(identity.checked, true);
   assert.notEqual(captured.validate([]), true);
 });
 
@@ -527,7 +516,7 @@ test('chooseCounts hỏi theo thứ tự cha trước con, truyền trần và g
       return config.default;
     },
   });
-  assert.ok(asked[0].startsWith('auth_users (học viên)'));
+  assert.ok(asked[0].startsWith('identity_users (học viên)'));
   const plan = validatePlan({ ...COMMON, selected: allKeys, counts });
   assert.deepEqual(plan.errors, []);
   assert.ok(

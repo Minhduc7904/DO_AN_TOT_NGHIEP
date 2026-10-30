@@ -1,8 +1,7 @@
 import type { Role } from '@aiops-lms/common/ports';
 
 export const UPSTREAMS = [
-  'auth',
-  'student',
+  'identity',
   'course',
   'media',
   'notification',
@@ -27,8 +26,8 @@ interface PublicRule {
 }
 
 export const ROUTE_RULES: readonly RouteRule[] = [
-  { prefix: '/api/v1/auth', upstream: 'auth' },
-  { prefix: '/api/v1/students', upstream: 'student' },
+  { prefix: '/api/v1/auth', upstream: 'identity' },
+  { prefix: '/api/v1/students', upstream: 'identity' },
   { prefix: '/api/v1/courses', upstream: 'course' },
   { prefix: '/api/v1/student', upstream: 'course' },
   { prefix: '/api/v1/media', upstream: 'media' },

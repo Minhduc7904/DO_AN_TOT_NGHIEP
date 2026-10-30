@@ -1,6 +1,6 @@
 # Docker Compose baseline
 
-Thư mục này chứa manifest orchestration root cho LMS testbed. Baseline hiện tại build Gateway, Auth, Student, Course, Media (+ worker), Notification (+ worker), Scheduler (+ worker) và AI từ `lms/`, đồng thời khởi động PostgreSQL, RabbitMQ, MinIO, Mailpit.
+Thư mục này chứa manifest orchestration root cho LMS testbed. Baseline hiện tại build Gateway, Identity, Course, Media (+ worker), Notification (+ worker), Scheduler (+ worker) và AI từ `lms/`, đồng thời khởi động PostgreSQL, RabbitMQ, MinIO, Mailpit.
 
 > **Tách `aiops-platform/` (R-02):** 5 backend observability (Collector, Prometheus, Tempo, Loki, Grafana) cùng cấu hình đã chuyển sang [`../aiops-platform/observability/`](../aiops-platform/observability/) với `compose.yaml` và `.env.example` riêng. Có ba cách chạy:
 >
@@ -10,13 +10,15 @@ Thư mục này chứa manifest orchestration root cho LMS testbed. Baseline hi�
 >
 > Hai bên nối với nhau qua network `aiops-net` (biến `AIOPS_NETWORK_NAME`); service LMS chỉ gửi OTLP/HTTP tới `otel-collector:4318`. Các lệnh bên dưới dùng `compose.full.yaml` khi cần đủ 18 thành phần; mục observability ở dưới sẽ chuyển về `aiops-platform/` khi viết lại tài liệu ở R-12. Đường dẫn `observability/…` trong các mục đó nay là `../aiops-platform/observability/…`.
 
-> **Hạ tầng topology v2 (R-03):** `compose.yaml` đã thêm `student` (service mẫu Prisma, cổng host `3012`), `minio` + `minio-init` (5 bucket `images`, `videos`, `documents`, `audios`, `other`; API `9000`, console `9001`), `mailpit` (SMTP `1025`, UI `8025`) và các DB `student_db`, `media_db`, `notification_db`, `scheduler_db`, `ai_db` kèm role riêng (`postgres-init/02-create-v2-databases.sh`). Từ R-05 `enrollment`, `submission`, `grading`, `submission-storage-mock` và Redis đã bị gỡ; từ R-07 `notification` là service v2 (cổng `3006`) kèm `notification-worker` (cổng `3007`, gửi email qua Mailpit); từ R-08 `ai` (cổng `3009`, gateway LLM, sở hữu trích xuất tài liệu và job AI soạn bài; API key provider mã hóa bằng `AI_ENCRYPTION_KEY`) kèm `ai-worker` (cổng `3011`, nhận command trích xuất/chạy job, gọi `course` và `media`), `course` chỉ là facade; từ R-09 `scheduler` (cổng `3008` trong network, publish ra host `3018` vì `3008` thuộc Grafana) kèm `scheduler-worker` (cổng `3010`, job `MEDIA_UNUSED_CLEANUP` gọi `media`). Volume Postgres cũ còn `course_db` của v1 phải tạo lại (`down --volumes`) vì `course` v2 dùng Prisma và role riêng `course_user`. Container v2 chạy `prisma migrate deploy` trước khi khởi động.
+> **Hạ tầng topology v2 (R-03):** `compose.yaml` đã thêm `student` (service mẫu Prisma, sau này được gộp vào `identity`), `minio` + `minio-init` (5 bucket `images`, `videos`, `documents`, `audios`, `other`; API `9000`, console `9001`), `mailpit` (SMTP `1025`, UI `8025`) và các DB `media_db`, `notification_db`, `scheduler_db`, `ai_db` kèm role riêng (`postgres-init/02-create-v2-databases.sh`). Từ R-05 `enrollment`, `submission`, `grading`, `submission-storage-mock` và Redis đã bị gỡ; từ R-07 `notification` là service v2 (cổng `3006`) kèm `notification-worker` (cổng `3007`, gửi email qua Mailpit); từ R-08 `ai` (cổng `3009`, gateway LLM, sở hữu trích xuất tài liệu và job AI soạn bài; API key provider mã hóa bằng `AI_ENCRYPTION_KEY`) kèm `ai-worker` (cổng `3011`, nhận command trích xuất/chạy job, gọi `course` và `media`), `course` chỉ là facade; từ R-09 `scheduler` (cổng `3008` trong network, publish ra host `3018` vì `3008` thuộc Grafana) kèm `scheduler-worker` (cổng `3010`, job `MEDIA_UNUSED_CLEANUP` gọi `media`). Volume Postgres cũ còn `course_db` của v1 phải tạo lại (`down --volumes`) vì `course` v2 dùng Prisma và role riêng `course_user`. Container v2 chạy `prisma migrate deploy` trước khi khởi động.
+
+> **Gộp `auth` + `student` (R-13):** `identity` (cổng `3001`, database `identity_db` với role riêng) thay cho `auth` và `student`; còn 7 service + 4 worker (11 runtime), 6 logical DB và 21 thành phần Compose. Biến `AUTH_*` đổi thành `IDENTITY_*`, `GATEWAY_{AUTH,STUDENT}_BASE_URL` thành `GATEWAY_IDENTITY_BASE_URL`. `.env` local cũ và volume Postgres còn `auth_db`/`student_db` phải cập nhật và tạo lại (`down --volumes`). Xem [ADR-005](../docs/processed/adr/adr-005-merge-auth-student-into-identity-v1.md).
 
 ## Yêu cầu
 
 - Docker Engine đang chạy.
 - Docker Compose v2 hỗ trợ `docker compose up --wait`.
-- Các port mặc định `3000`–`3006`, `3012`, `5432`, `5672`, `15672`, `9000`–`9001`, `1025` và `8025` chưa bị chiếm, hoặc đã được đổi trong file `.env` local.
+- Các port mặc định `3000`–`3006`, `5432`, `5672`, `15672`, `9000`–`9001`, `1025` và `8025` chưa bị chiếm, hoặc đã được đổi trong file `.env` local.
 - Docker được cấp khoảng 8 GB RAM khi bật cả observability. Với bộ nhớ hạn chế, build lại toàn bộ image không dùng cache bằng một lệnh `build --no-cache` có thể lỗi `cannot allocate memory` vì các image build song song; khi đó build tuần tự theo mục [Build lại image không dùng cache](#build-lại-image-không-dùng-cache).
 - Reset/seed và regression cần toolchain của `lms/` (Node.js `22.13.1`, pnpm `11.19.0`) và dependency đã cài theo [`../lms/README.md`](../lms/README.md#cài-đặt-và-kiểm-tra).
 
@@ -38,7 +40,7 @@ Các credential trong `.env.example` chỉ dùng cho local development, không p
 
 `COMPOSE_PROJECT_NAME=aiops-lms` trong `.env.example` quyết định tên container, network và volume. Nếu máy đã có stack hoặc volume `aiops-lms_*` cần giữ, đổi `COMPOSE_PROJECT_NAME` trong `.env` (ví dụ `aiops-lms-fresh-setup`) trước khi kiểm chứng fresh setup; nếu không, `up` dùng lại volume cũ và lệnh reset `down --volumes` bên dưới xóa dữ liệu đó.
 
-12 runtime LMS (8 service và 4 worker) gửi OTLP HTTP tới `http://otel-collector:4318` (`/v1/traces`, `/v1/metrics`, `/v1/logs`) qua network `aiops-net`. Collector và các backend nằm trong [aiops-platform/observability](../aiops-platform/observability/README.md) và chỉ có khi dựng bằng `compose.full.yaml`; `compose.yaml` chạy một mình không có Collector (chưa kiểm chứng hành vi exporter khi thiếu Collector). Đặt `OTEL_SDK_DISABLED=true` để tắt SDK; không dùng `localhost` làm endpoint container tới container.
+11 runtime LMS (7 service và 4 worker) gửi OTLP HTTP tới `http://otel-collector:4318` (`/v1/traces`, `/v1/metrics`, `/v1/logs`) qua network `aiops-net`. Collector và các backend nằm trong [aiops-platform/observability](../aiops-platform/observability/README.md) và chỉ có khi dựng bằng `compose.full.yaml`; `compose.yaml` chạy một mình không có Collector (chưa kiểm chứng hành vi exporter khi thiếu Collector). Đặt `OTEL_SDK_DISABLED=true` để tắt SDK; không dùng `localhost` làm endpoint container tới container.
 
 ## Validate và khởi động
 
@@ -50,9 +52,9 @@ docker compose --env-file docker-compose/.env -f docker-compose/compose.full.yam
 docker compose --env-file docker-compose/.env -f docker-compose/compose.full.yaml ps
 ```
 
-Course tự chạy `prisma migrate deploy` trước khi mở HTTP (cổng `3003`, database `course_db` với role riêng `course_user`). Notification tự chạy `prisma migrate deploy` (cổng `3006`, `notification_db` với role `notification_user`); `notification-worker` dùng cùng image, chờ `notification` healthy, gửi email qua Mailpit (`mailpit:1025`, xem thư tại `http://localhost:8025`) và gọi `student` bằng service token `notification-worker`. `ai` (`ai_db`, role `ai_user`) tự migrate; `ai-worker` dùng cùng image, chờ `ai` healthy và gọi `course`, `media` bằng service token `ai-worker`; `AI_WORKER_LEASE_MS` phải lớn hơn `AI_COMPLETION_TIMEOUT_MS`. `scheduler` (`scheduler_db`, role `scheduler_user`) tự migrate; `scheduler-worker` dùng cùng image, chờ `scheduler` và `media` healthy rồi gọi `media` bằng service token `scheduler-worker` (scope `media:cleanup`).
+Course tự chạy `prisma migrate deploy` trước khi mở HTTP (cổng `3003`, database `course_db` với role riêng `course_user`). Notification tự chạy `prisma migrate deploy` (cổng `3006`, `notification_db` với role `notification_user`); `notification-worker` dùng cùng image, chờ `notification` healthy, gửi email qua Mailpit (`mailpit:1025`, xem thư tại `http://localhost:8025`) và gọi `identity` bằng service token `notification-worker`. `ai` (`ai_db`, role `ai_user`) tự migrate; `ai-worker` dùng cùng image, chờ `ai` healthy và gọi `course`, `media` bằng service token `ai-worker`; `AI_WORKER_LEASE_MS` phải lớn hơn `AI_COMPLETION_TIMEOUT_MS`. `scheduler` (`scheduler_db`, role `scheduler_user`) tự migrate; `scheduler-worker` dùng cùng image, chờ `scheduler` và `media` healthy rồi gọi `media` bằng service token `scheduler-worker` (scope `media:cleanup`).
 
-Compose chỉ báo thành công sau khi Gateway, Auth, Student, Course, Media, Media Worker, Notification, Notification Worker, AI, AI Worker, Scheduler, Scheduler Worker, PostgreSQL, MinIO, `minio-init`, Mailpit, RabbitMQ, Collector, Prometheus, Tempo, Loki và Grafana (22 thành phần) đều healthy. PostgreSQL tạo `auth_db`, `student_db`, `course_db`, `media_db`, `notification_db`, `scheduler_db` và `ai_db` riêng, mỗi DB một role; các service có persistence tự chạy `prisma migrate deploy` trước khi mở HTTP. Script khởi tạo PostgreSQL chỉ chạy trên volume mới; với volume cũ (còn DB hoặc bảng v1), reset volume theo hướng dẫn bên dưới. Credential lấy từ `.env`, không đặt trực tiếp trong manifest Compose.
+Compose chỉ báo thành công sau khi Gateway, Identity, Course, Media, Media Worker, Notification, Notification Worker, AI, AI Worker, Scheduler, Scheduler Worker, PostgreSQL, MinIO, `minio-init`, Mailpit, RabbitMQ, Collector, Prometheus, Tempo, Loki và Grafana (21 thành phần) đều healthy. PostgreSQL tạo `identity_db`, `course_db`, `media_db`, `notification_db`, `scheduler_db` và `ai_db` riêng, mỗi DB một role; các service có persistence tự chạy `prisma migrate deploy` trước khi mở HTTP. Script khởi tạo PostgreSQL chỉ chạy trên volume mới; với volume cũ (còn DB hoặc bảng v1), reset volume theo hướng dẫn bên dưới. Credential lấy từ `.env`, không đặt trực tiếp trong manifest Compose.
 
 ## Kiểm tra
 
@@ -62,7 +64,7 @@ Kiểm tra Course từ Bash:
 curl --fail http://localhost:3003/ready
 ```
 
-Kiểm tra Auth từ Bash:
+Kiểm tra Identity (qua Gateway) từ Bash:
 
 ```bash
 curl --fail http://localhost:3001/health
@@ -105,7 +107,7 @@ docker compose --env-file docker-compose/.env -f docker-compose/compose.full.yam
 docker compose --env-file docker-compose/.env -f docker-compose/compose.full.yaml down
 ```
 
-Log của 12 runtime là JSON một dòng (timestamp UTC, level, message, resource identity, `trace_id`/`span_id` khi có span). Cùng nội dung được gửi OTLP qua Collector tới Loki, nên khi điều tra theo trace nên dùng Loki thay vì `docker compose logs`; xem [structured logs](../lms/packages/observability/README.md#structured-logs).
+Log của 11 runtime là JSON một dòng (timestamp UTC, level, message, resource identity, `trace_id`/`span_id` khi có span). Cùng nội dung được gửi OTLP qua Collector tới Loki, nên khi điều tra theo trace nên dùng Loki thay vì `docker compose logs`; xem [structured logs](../lms/packages/observability/README.md#structured-logs).
 
 Xóa cả dữ liệu local để kiểm chứng fresh setup hoặc bắt đầu lại từ trạng thái sạch:
 
@@ -121,7 +123,7 @@ Không dùng lệnh reset volume với dữ liệu cần giữ lại.
 Khi Docker chỉ có khoảng 4 GB RAM, build từng image có Dockerfile theo thứ tự rồi khởi động bằng image vừa build:
 
 ```bash
-for service in gateway auth student course media notification ai scheduler; do
+for service in gateway identity course media notification ai scheduler; do
   docker compose --env-file docker-compose/.env -f docker-compose/compose.full.yaml build --no-cache "$service"
 done
 docker compose --env-file docker-compose/.env -f docker-compose/compose.full.yaml up -d --wait
@@ -152,7 +154,7 @@ Option canonical là `--compose-env-file` để không xung đột với option 
 
 Lệnh chỉ chấp nhận `local`, hoặc `test` với project `aiops-lms-test-*`; project local phải là `aiops-lms-local`. `--confirm` phải khớp chính xác project, còn env file và Compose file phải nằm trong repository. `production`, target rộng, file ngoài repository hoặc tham số thiếu đều bị từ chối trước khi gọi Docker.
 
-Quy trình chỉ tác động project đã xác nhận: `down --volumes --remove-orphans`, sau đó `up --build -d --wait`, kiểm tra toàn bộ service healthy và tạo fingerprint seed. Fingerprint gồm dữ liệu `auth_db`, `student_db`, `course_db` (khóa học, ghi danh) nhưng loại `password_hash`, và RabbitMQ phải có queue snapshot của `notification-worker` (`notification-worker--snapshot-notification-batch-v1`) durable/rỗng. Student và instructor dùng UUID cố định (bootstrap của `auth`).
+Quy trình chỉ tác động project đã xác nhận: `down --volumes --remove-orphans`, sau đó `up --build -d --wait`, kiểm tra toàn bộ service healthy và tạo fingerprint seed. Fingerprint gồm dữ liệu `identity_db`, `course_db` (khóa học, ghi danh) nhưng loại `password_hash`, và RabbitMQ phải có queue snapshot của `notification-worker` (`notification-worker--snapshot-notification-batch-v1`) durable/rỗng. Student và instructor dùng UUID cố định (bootstrap của `identity`).
 
 Nếu một bước lỗi, lệnh dừng với exit code khác `0` và không in thông báo thành công. Xem log bằng đúng project đã xác nhận, sửa nguyên nhân rồi chạy lại toàn bộ lệnh; không bỏ `--confirm` và không đổi sang project dùng chung khác.
 
@@ -198,15 +200,15 @@ cd lms
 LOKI_PORT=13100 pnpm run test:observability
 ```
 
-Lệnh dựng project `aiops-lms-test-observability` từ trạng thái sạch (`down --volumes`, rồi `up --build -d --wait`) với `AUTH_SERVICE_TOKEN_TTL_SECONDS=60`, dựng provider AI giả, chạy bảy workflow regression làm traffic, chờ một chu kỳ export rồi chạy tuần tự năm smoke và dọn stack. Thêm `--keep` để giữ stack. Chỉ project có tên `aiops-lms-test-*` được chấp nhận. Kỳ vọng và số đo của từng smoke ghi ở [danh mục case phức tạp](../docs/processed/architecture/complex-case-catalogue-and-rca-result-v0.md#1-tín-hiệu-có-thật-của-testbed-v2) và board R-12.
+Lệnh dựng project `aiops-lms-test-observability` từ trạng thái sạch (`down --volumes`, rồi `up --build -d --wait`) với `IDENTITY_SERVICE_TOKEN_TTL_SECONDS=60`, dựng provider AI giả, chạy bảy workflow regression làm traffic, chờ một chu kỳ export rồi chạy tuần tự năm smoke và dọn stack. Thêm `--keep` để giữ stack. Chỉ project có tên `aiops-lms-test-*` được chấp nhận. Kỳ vọng và số đo của từng smoke ghi ở [danh mục case phức tạp](../docs/processed/architecture/complex-case-catalogue-and-rca-result-v0.md#1-tín-hiệu-có-thật-của-testbed-v2) và board R-12.
 
 | Script (`pnpm run …`) | Khẳng định |
 | --- | --- |
 | `test:observability:stack` | OTLP tổng hợp qua Collector tới Tempo, Prometheus, Loki; Grafana có ba datasource. Không cần traffic LMS. |
-| `test:observability:tracing` | Mỗi luồng trong ma trận ([flow-matrix.mjs](../lms/test/observability/support/flow-matrix.mjs)) có một trace chứa đủ service, đúng span gốc, không đứt parent, không span lỗi, `service.version`/`service.instance.id` khớp compose. Kịch bản lỗi: `auth` ngừng phản hồi, login lỗi tại `gateway-auth`; token còn hạn vẫn dùng được; token dịch vụ hết hạn thì request qua gateway lỗi tại `gateway-auth-token`; phục hồi sau `unpause`. |
-| `test:observability:logs` | Loki chỉ index `service_name`; 12 runtime có log; `trace_id`/`span_id` khớp span thật trong Tempo; log `dependency.failure` khớp span lỗi; không lộ secret; độ trễ request → log. |
+| `test:observability:tracing` | Mỗi luồng trong ma trận ([flow-matrix.mjs](../lms/test/observability/support/flow-matrix.mjs)) có một trace chứa đủ service, đúng span gốc, không đứt parent, không span lỗi, `service.version`/`service.instance.id` khớp compose. Kịch bản lỗi: `identity` ngừng phản hồi, login lỗi tại `gateway-identity`; token còn hạn vẫn dùng được; token dịch vụ hết hạn thì request qua gateway lỗi tại `gateway-identity-token`; phục hồi sau `unpause`. |
+| `test:observability:logs` | Loki chỉ index `service_name`; 11 runtime có log; `trace_id`/`span_id` khớp span thật trong Tempo; log `dependency.failure` khớp span lỗi; không lộ secret; độ trễ request → log. |
 | `test:observability:acceptance` | Grafana: datasource healthy và liên kết trace ↔ log; dashboard provision đúng, không còn thuật ngữ v1; mọi query panel trả dữ liệu; data link metric → TraceQL → Loki; độ trễ thu thập của trace, log, metric. |
-| `test:observability:metrics` | RED, CPU, RSS của 12 runtime; 42 cạnh dependency đúng danh mục identity; 24 queue đúng chủ sở hữu và consumer; dừng một worker làm backlog tăng, command sai vào `.error`, drain khi phục hồi; độ trễ request → metric. |
+| `test:observability:metrics` | RED, CPU, RSS của 11 runtime; 42 cạnh dependency đúng danh mục identity; 24 queue đúng chủ sở hữu và consumer; dừng một worker làm backlog tăng, command sai vào `.error`, drain khi phục hồi; độ trễ request → metric. |
 | `test:observability:queue-scrape` | Regex queue của Collector phủ mọi queue canonical trong `contracts`. Không cần Docker; có trong `pnpm test`. |
 
 Bốn smoke giữa (`tracing`, `logs`, `acceptance`, `metrics`) gắn vào stack đã chạy và có traffic, nên chạy riêng được trên một stack đang dùng:
@@ -216,7 +218,7 @@ cd lms
 LOKI_PORT=13100 node test/observability/tracing-smoke.mjs --environment test --project aiops-lms-test-<tên> --confirm aiops-lms-test-<tên> --compose-env-file ../docker-compose/.env.example
 ```
 
-Thứ tự khuyến nghị là `tracing`, `logs`, `acceptance`, `metrics`: `tracing` tạo lỗi mà `logs` và `acceptance` cần, `metrics` dừng một worker nên chạy cuối. `tracing` chỉ chạy kịch bản lỗi khi `auth` có `AUTH_SERVICE_TOKEN_TTL_SECONDS` ≤ 120 (đặt 60 khi dựng stack); ngược lại bỏ qua phần này và in lý do. Biến `OBSERVABILITY_WINDOW_SECONDS` (mặc định 1800) giới hạn khoảng thời gian tìm trace/log.
+Thứ tự khuyến nghị là `tracing`, `logs`, `acceptance`, `metrics`: `tracing` tạo lỗi mà `logs` và `acceptance` cần, `metrics` dừng một worker nên chạy cuối. `tracing` chỉ chạy kịch bản lỗi khi `identity` có `IDENTITY_SERVICE_TOKEN_TTL_SECONDS` ≤ 120 (đặt 60 khi dựng stack); ngược lại bỏ qua phần này và in lý do. Biến `OBSERVABILITY_WINDOW_SECONDS` (mặc định 1800) giới hạn khoảng thời gian tìm trace/log.
 
 Lưu ý khi tự truy vấn: Tempo bị giới hạn 512 MiB và đã bị OOM-kill khi kéo hàng nghìn trace song song, nên truy vấn tuần tự và giới hạn số trace. Khi RAM hoặc build cache hạn chế, đặt `COMPOSE_PARALLEL_LIMIT=1` và không dựng nhiều stack đồng thời.
 
@@ -229,4 +231,4 @@ cd lms
 pnpm run test:testbed:reset:compose
 ```
 
-Test reset hai lần trên `aiops-lms-test-reset-seed`, so fingerprint, xác nhận 22 thành phần healthy, chạy smoke sau mỗi reset và xác nhận trace cũ trả 404 sau reset. Test tự dọn đúng project test cùng volume trong `finally`. **`down --volumes` và reset/seed xóa cả dữ liệu nghiệp vụ lẫn telemetry của project đã xác nhận**; không chạy reset project phát triển nếu cần giữ bằng chứng.
+Test reset hai lần trên `aiops-lms-test-reset-seed`, so fingerprint, xác nhận 21 thành phần healthy, chạy smoke sau mỗi reset và xác nhận trace cũ trả 404 sau reset. Test tự dọn đúng project test cùng volume trong `finally`. **`down --volumes` và reset/seed xóa cả dữ liệu nghiệp vụ lẫn telemetry của project đã xác nhận**; không chạy reset project phát triển nếu cần giữ bằng chứng.

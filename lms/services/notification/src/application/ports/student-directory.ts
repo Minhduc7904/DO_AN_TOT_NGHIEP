@@ -3,7 +3,7 @@ export interface Recipient {
   email: string;
 }
 
-/** Cạnh `notification-worker → student`: recipient lấy qua HTTP, không đọc `student_db`. */
+/** Cạnh `notification-worker → identity`: recipient lấy qua HTTP, không đọc `identity_db`. */
 export interface StudentDirectory {
   /** Student `ACTIVE`, trang bắt đầu từ 1. */
   listActive(page: number, pageSize: number): Promise<{ items: Recipient[]; total: number }>;

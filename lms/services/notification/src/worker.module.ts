@@ -59,14 +59,14 @@ const PROVIDERS: Provider[] = [
     useFactory: (config: Config): TokenProvider =>
       new ServiceTokenProvider(
         new HttpServiceTokenSource({
-          dependency: 'notification-worker-auth-token',
-          baseUrl: config.getOrThrow('AUTH_BASE_URL'),
+          dependency: 'notification-worker-identity-token',
+          baseUrl: config.getOrThrow('IDENTITY_BASE_URL'),
           clientId: config.getOrThrow('SERVICE_CLIENT_ID'),
           clientSecret: config.getOrThrow('SERVICE_CLIENT_SECRET'),
-          timeoutMs: config.getOrThrow('AUTH_TOKEN_TIMEOUT_MS'),
+          timeoutMs: config.getOrThrow('IDENTITY_TOKEN_TIMEOUT_MS'),
           breaker: {
-            failureThreshold: config.getOrThrow('AUTH_TOKEN_BREAKER_THRESHOLD'),
-            cooldownMs: config.getOrThrow('AUTH_TOKEN_BREAKER_COOLDOWN_MS'),
+            failureThreshold: config.getOrThrow('IDENTITY_TOKEN_BREAKER_THRESHOLD'),
+            cooldownMs: config.getOrThrow('IDENTITY_TOKEN_BREAKER_COOLDOWN_MS'),
           },
         }),
       ),
