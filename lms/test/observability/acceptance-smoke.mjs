@@ -139,10 +139,10 @@ for (let attempt = 0; attempt < 15 && !linkedTrace; attempt += 1) {
   for (const candidate of linked.traces) {
     const logsForTrace = await proxy(
       'loki',
-      `/loki/api/v1/query_range?query=${encodeURIComponent(`{service_name="${series.metric.service_name}"} | trace_id="${candidate.traceID}"`)}&start=${startSeconds}000000000&end=${Math.floor(Date.now() / 1_000) + 60}000000000&limit=10`,
+      `/loki/api/v1/query_range?query=${encodeURIComponent(`{service_name="${series.metric.service_name}"} | trace_id="${candidate.traceID.padStart(32, '0')}"`)}&start=${startSeconds}000000000&end=${Math.floor(Date.now() / 1_000) + 60}000000000&limit=10`,
     );
     if (logsForTrace.data.result.some((stream) => stream.values.length > 0)) {
-      linkedTrace = candidate.traceID;
+      linkedTrace = candidate.traceID.padStart(32, '0');
       break;
     }
   }

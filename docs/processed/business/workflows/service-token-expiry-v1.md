@@ -85,7 +85,7 @@ Số đo thật (stack một node, `IDENTITY_SERVICE_TOKEN_TTL_SECONDS=60`, `tra
 | Đăng nhập khi `identity` dừng | 504 ngay; span lỗi `gateway-identity`, trace không có span của `identity` |
 | Request có access token còn hạn trong khoảng yên lặng | 200 |
 | Request sau khi service token hết hạn | 504; span lỗi `gateway-identity-token`, trace không có span của `course` |
-| Thời điểm quan sát lỗi `gateway-identity-token` | 70–74 giây sau khi dừng (smoke chỉ gửi request sau TTL + 5 giây, nên đây là thời điểm quan sát, không phải thời điểm lỗi bắt đầu) |
+| Thời điểm quan sát lỗi `gateway-identity-token` | 70–74 giây sau khi dừng (hai lần đo R-13, TTL 60 giây) (smoke chỉ gửi request sau TTL + 5 giây, nên đây là thời điểm quan sát, không phải thời điểm lỗi bắt đầu) |
 | Sau `unpause` | Request trở lại bình thường |
 
 Triệu chứng nằm ở `gateway`; nguyên nhân gốc ở `identity`, nhìn thấy trên cạnh `gateway-identity-token` chứ không ở service đích. Đây là lý do case này khó truy vết thủ công.

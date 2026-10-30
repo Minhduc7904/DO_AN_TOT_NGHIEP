@@ -66,7 +66,7 @@ rabbitmq_detailed_queue_messages_ready{service_name="notification-worker"}
 
 Healthy không có error series cho tới lỗi đầu là absence/no error, không tự khẳng định exporter khỏe; dùng request series/CPU/target freshness để đánh giá coverage.
 
-Nghiệm thu: `metrics-smoke` (trong `pnpm run test:observability`) kiểm RED, CPU, RSS của 11 runtime, 42 cạnh dependency đúng danh mục identity, 24 queue broker đúng chủ sở hữu và consumer, cùng kịch bản dừng một worker (backlog tăng, command lỗi vào `.error`, drain), và label không chứa ID.
+Nghiệm thu: `metrics-smoke` (trong `pnpm run test:observability`) kiểm RED, CPU, RSS của 11 runtime, 38 cạnh dependency đúng danh mục identity, 24 queue broker đúng chủ sở hữu và consumer, cùng kịch bản dừng một worker (backlog tăng, command lỗi vào `.error`, drain), và label không chứa ID.
 
 HTTP exporter traces/metrics dùng DNS c-ares riêng (A/AAAA, timeout 750 ms, một lần thử), tránh `dns.lookup` chiếm libuv thread pool khiến PostgreSQL không mở được kết nối khi Collector ngừng chạy. Mỗi exporter giới hạn một request/socket, timeout 1 giây; batch traces timeout 2 giây. Agent vẫn giữ TLS/SNI mặc định của endpoint HTTPS. Literal IPv4/IPv6 và localhost hoạt động trực tiếp; hostname khác phải có DNS record (bao gồm Docker DNS), alias chỉ khai báo trong hosts file không được hỗ trợ cho endpoint telemetry. Cách phân giải DNS của business dependency giữ nguyên.
 

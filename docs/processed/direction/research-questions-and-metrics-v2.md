@@ -243,7 +243,7 @@ with temporal precedence
 
 Graph/evidence/anomaly inputs còn lại phải giữ cố định để cô lập giá trị của temporal information.
 
-Lưu ý riêng topology v2: ở FG/FH, triệu chứng chỉ xuất hiện sau một khoảng yên lặng vì token đã cache còn hạn (mặc định TTL 10 phút; trong test rút xuống 60 giây, lỗi hiện sau 72 giây theo C6) và sau khi cache JWKS hết hạn. Khoảng cách giữa `fault_start` và dấu hiệu quan sát đầu tiên không do detector gây ra. Theo evaluation-protocol-v1 mục 7.3, Detection Delay của C6 chứa khoảng yên lặng này và phải báo riêng theo case, không gộp vào delay trung bình mà không ghi chú; thời gian fault active phải lớn hơn độ trễ triệu chứng đo được của chính case đó. Chưa có số đo cho TTL mặc định 600 giây.
+Lưu ý riêng topology v2: ở FG/FH, triệu chứng chỉ xuất hiện sau một khoảng yên lặng vì token đã cache còn hạn (mặc định TTL 10 phút; trong test rút xuống 60 giây, lỗi hiện sau 70–74 giây theo C6) và sau khi cache JWKS hết hạn. Khoảng cách giữa `fault_start` và dấu hiệu quan sát đầu tiên không do detector gây ra. Theo evaluation-protocol-v1 mục 7.3, Detection Delay của C6 chứa khoảng yên lặng này và phải báo riêng theo case, không gộp vào delay trung bình mà không ghi chú; thời gian fault active phải lớn hơn độ trễ triệu chứng đo được của chính case đó. Chưa có số đo cho TTL mặc định 600 giây.
 
 ### 5.3. Input cần thiết
 

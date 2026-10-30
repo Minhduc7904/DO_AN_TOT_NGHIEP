@@ -343,7 +343,7 @@ Chỉ signal có instrumentation thực tế mới được dùng. Signal chưa 
 
 | Logic | Metric thật | Ghi chú |
 | --- | --- | --- |
-| `client_request_rate` | `lms_dependency_request_count_total` | Nhãn `service_name`, `dependency_identity`, `operation_name`, `status`; 42 cặp (service, identity) |
+| `client_request_rate` | `lms_dependency_request_count_total` | Nhãn `service_name`, `dependency_identity`, `operation_name`, `status`; 38 cặp (service, identity) |
 | `client_error_rate` | `lms_dependency_error_count_total` | Không tính `status=expected_failure` |
 | `client_latency` | `lms_dependency_duration_seconds_bucket/_sum/_count` | Histogram, đơn vị giây |
 | `db_latency`, `db_error_rate` | cùng họ, `dependency_identity=<service>-postgres` | 7 identity |
@@ -993,7 +993,7 @@ Mỗi FA–FH dùng cùng `RunGroundTruth` shape: fault identity/target/kind, se
 FG và FH khác các fault còn lại ở ba điểm, và ground truth phải ghi được cả ba (ADR-004, catalogue C6/C7):
 
 1. **Triệu chứng không nằm ở service gốc.** Với FG, triệu chứng nằm ở cạnh `<service>-identity-token` của bên gọi (đầu tiên là `gateway-identity-token`), kéo theo mọi route qua gateway lỗi 504 dù `course`, `media` khỏe; request không tới service đích. Với FH, nhiều service cùng trả 401 dù hạ tầng khỏe. `root_cause_service=identity` không xuất hiện ở span lỗi của service bị ảnh hưởng (catalogue mục 2, quy ước 3).
-2. **Có khoảng yên lặng.** Token đã cache còn dùng đến khi hết hạn (stale-while-error), JWKS đã cache còn dùng đến khi hết hạn hoặc gặp `kid` lạ. Do đó `fault_start` (lúc dừng `identity`/đổi khóa) và thời điểm triệu chứng đầu tiên cách nhau. Đo ở `tracing-smoke` (catalogue C6): login lỗi ngay, request dùng token người dùng còn hạn vẫn thành công, lỗi `gateway-identity-token` xuất hiện sau 72 giây khi TTL đặt 60 giây (mặc định 600 giây). Số 72 giây là một lần đo, không phải giá trị freeze.
+2. **Có khoảng yên lặng.** Token đã cache còn dùng đến khi hết hạn (stale-while-error), JWKS đã cache còn dùng đến khi hết hạn hoặc gặp `kid` lạ. Do đó `fault_start` (lúc dừng `identity`/đổi khóa) và thời điểm triệu chứng đầu tiên cách nhau. Đo ở `tracing-smoke` (catalogue C6): login lỗi ngay, request dùng token người dùng còn hạn vẫn thành công, lỗi `gateway-identity-token` xuất hiện sau 70–74 giây khi TTL đặt 60 giây (mặc định 600 giây). Số 70–74 giây là một lần đo, không phải giá trị freeze.
 3. **Phạm vi triệu chứng rộng.** Nhiều service/worker lỗi cùng lúc khi token hoặc cache JWKS của chúng hết hạn; thời điểm lỗi của mỗi bên phụ thuộc thời điểm token của nó được cấp lần cuối.
 
 Vì vậy với fault tầng xác thực, `RunGroundTruth` bổ sung (tùy chọn, null với fault có triệu chứng ngay):
@@ -1124,7 +1124,7 @@ ground truth:
   FG interval + kiểu tác động + TTL + identity/identity ; expected_symptom_lag, expected_symptom_services (mục 9.1)
 ```
 
-Trạng thái: đã chạy ở `tracing-smoke` (login 504 ngay; token người dùng còn hạn vẫn 200; lỗi `gateway-identity-token` sau 72 giây khi TTL 60 giây; phục hồi sau `unpause`). Chưa có trong catalogue mục 1: tín hiệu riêng cho trạng thái circuit breaker mở (ma trận v2 mục 5 có nhắc; chưa kiểm chứng ở code).
+Trạng thái: đã chạy ở `tracing-smoke` (login 504 ngay; token người dùng còn hạn vẫn 200; lỗi `gateway-identity-token` sau 70–74 giây khi TTL 60 giây; phục hồi sau `unpause`). Chưa có trong catalogue mục 1: tín hiệu riêng cho trạng thái circuit breaker mở (ma trận v2 mục 5 có nhắc; chưa kiểm chứng ở code).
 
 ## 10.8. FH — Lệch khóa ký (C7)
 
@@ -1287,7 +1287,7 @@ Không emit `fault_active=1`, `FA`, `root_cause=media` vào metric/log/span attr
 
 # 13. Instrument/export feasibility theo hiện trạng testbed v2
 
-Bảng này ghi **hiện trạng đã đo và đã đối chiếu code**, không còn là capability expectation như v0. Nguồn: [complex-case-catalogue-and-rca-result-v0](complex-case-catalogue-and-rca-result-v0.md) mục 1 (đo 29/10/2026 trên stack `docker-compose/compose.full.yaml`, 12 runtime, lặp lại bằng `pnpm run test:observability`) và code `lms/packages/observability/src`, `lms/packages/common/src`. Cột "Trạng thái" dùng ba giá trị: **Có** (đã đo/đã thấy ở code), **Chưa có** (catalogue mục 1.5 hoặc không có instrument trong code), **Có điều kiện**.
+Bảng này ghi **hiện trạng đã đo và đã đối chiếu code**, không còn là capability expectation như v0. Nguồn: [complex-case-catalogue-and-rca-result-v0](complex-case-catalogue-and-rca-result-v0.md) mục 1 (đo 30/10/2026 trên stack `docker-compose/compose.full.yaml`, 11 runtime, lặp lại bằng `pnpm run test:observability`) và code `lms/packages/observability/src`, `lms/packages/common/src`. Cột "Trạng thái" dùng ba giá trị: **Có** (đã đo/đã thấy ở code), **Chưa có** (catalogue mục 1.5 hoặc không có instrument trong code), **Có điều kiện**.
 
 | Signal/field | Nguồn thực tế hiện có | Trạng thái | Ghi chú |
 | --- | --- | :---: | --- |
@@ -1299,7 +1299,7 @@ Bảng này ghi **hiện trạng đã đo và đã đối chiếu code**, không
 | `message_id` trong span/log | `messaging.message.id` trên span CONSUMER | **Có điều kiện** | Span PRODUCER không có; chưa log nào mang `message_id`; không dùng làm label |
 | `command_name`, `queue` | tên span PRODUCER/CONSUMER, `messaging.destination.name` | **Có điều kiện** | `command_name` chưa là attribute riêng (mục 4.3) |
 | Nối `scheduler` → `scheduler-worker` | không có | **Chưa có** | Hướng xử lý (thuộc mảng AI hoặc R sau): truyền `traceparent` qua bản ghi job |
-| PostgreSQL, MinIO, SMTP, LLM provider dependency | `observeDependency`: span CLIENT và `lms_dependency_*`, 42 cặp (service, identity) | **Có** | Span MinIO có ở cả `media` và `media-worker` |
+| PostgreSQL, MinIO, SMTP, LLM provider dependency | `observeDependency`: span CLIENT và `lms_dependency_*`, 38 cặp (service, identity) | **Có** | Span MinIO có ở cả `media` và `media-worker` |
 | HTTP edge và cạnh xác thực (`*-identity-token`, `*-identity-jwks`) | `observeDependency` ở caller; `peer.service` theo mapping | **Có** | Metric do bên gọi ghi |
 | Queue depth, consumer count | broker `rabbitmq_detailed_queue_*`, Collector scrape 5 giây, 24 queue | **Có** | Hiện sau khoảng 9 giây; thiếu gauge là unavailable |
 | Tuổi message cũ nhất, consumer lag theo thời gian | không có | **Chưa có** | Suy từ span (PRODUCER so với CONSUMER cùng trace) |

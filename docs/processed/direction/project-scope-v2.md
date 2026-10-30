@@ -192,7 +192,7 @@ Fault là **cơ chế gây lỗi** (bật/tắt được, tái lập được, k
 | FD | Độ trễ nhà cung cấp | `ai` (process chạm provider là `ai-worker`) | `ai-llm-provider` | C3 | Đã đo tín hiệu; stub chậm chưa chạy |
 | FE | Độ trễ dependency nhỏ | `identity` | `identity-postgres` | C5 | Đã đo tín hiệu; chèn trễ chưa chạy |
 | FF | Quá tải tài nguyên | bất kỳ service | instance | không có case riêng | Tín hiệu CPU/RSS có thật; dùng làm bằng chứng phụ cho C1–C2 |
-| FG | Độ trễ/ngắt xác thực (ADR-004) | `identity` | `identity` | C6 | **Đã chạy** (`tracing-smoke`): lỗi `gateway-identity-token` xuất hiện 72 giây sau khi dừng `identity` (TTL 60 giây) |
+| FG | Độ trễ/ngắt xác thực (ADR-004) | `identity` | `identity` | C6 | **Đã chạy** (`tracing-smoke`): lỗi `gateway-identity-token` xuất hiện 70–74 giây sau khi dừng `identity` (TTL 60 giây) |
 | FH | Lệch khóa ký (ADR-004) | `identity` | `identity-jwks` | C7 | Đã đo tín hiệu; cơ chế đổi khóa chưa chạy |
 
 Quy tắc dùng case làm dữ liệu đánh giá:

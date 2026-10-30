@@ -358,7 +358,7 @@ Mỗi run (và mỗi cửa sổ giám sát thật) có báo cáo kiểm tra theo
 - tỷ lệ record thiếu `service.name` hoặc `service.name` ngoài 12 giá trị canonical;
 - tỷ lệ span thiếu parent hoặc trace relation, riêng cặp PRODUCER/CONSUMER không nối được;
 - độ phủ trace theo luồng (9 luồng ở catalogue v0 mục 1.2);
-- độ phủ metric theo họ (RED 12/12, `lms_dependency_*` theo cặp service/identity, queue 24) và khoảng trống scrape;
+- độ phủ metric theo họ (RED 11/11, `lms_dependency_*` theo cặp service/identity, queue 24) và khoảng trống scrape;
 - độ phủ log correlation (`trace_id`/`span_id` trong `dependency.failure`);
 - duplicate record;
 - artifact có bao phủ warm-up, healthy, fault, recovery (khi huấn luyện/đánh giá);
@@ -887,7 +887,7 @@ Các anomaly được gộp nếu:
 
 Mục tiêu là tránh một fault tạo nhiều incident độc lập không cần thiết. Hai rủi ro riêng của v2:
 
-- **Lỗi lộ muộn:** ở C6 lỗi `gateway-identity-token` xuất hiện 72 giây sau khi dừng `identity` với TTL 60 giây (số đo của catalogue v0), và có thể tới khoảng 10 phút với cấu hình mặc định (fault FG ở data-ownership v2 mục 5); C4 cách nguyên nhân gốc nhiều phút. Merge gap và cửa sổ tương quan phải cho phép khoảng cách này mà không gộp nhầm incident độc lập; giá trị chưa kiểm chứng, chốt sau pilot.
+- **Lỗi lộ muộn:** ở C6 lỗi `gateway-identity-token` xuất hiện 70–74 giây sau khi dừng `identity` với TTL 60 giây (số đo của catalogue v0), và có thể tới khoảng 10 phút với cấu hình mặc định (fault FG ở data-ownership v2 mục 5); C4 cách nguyên nhân gốc nhiều phút. Merge gap và cửa sổ tương quan phải cho phép khoảng cách này mà không gộp nhầm incident độc lập; giá trị chưa kiểm chứng, chốt sau pilot.
 - **Triệu chứng nhiều service cùng lúc** (C6, C7): nên thành một incident có nhiều `affected_services`, không phải nhiều incident.
 
 ### 10.4. Estimated start
@@ -1299,7 +1299,7 @@ Danh mục đầy đủ (kịch bản gây lỗi, triệu chứng, ground truth,
 | C3 | `ai` (`ai-llm-provider` chậm) → job AI kẹt, `course` lỗi muộn | `dependency` + vòng `course → ai → course`; quy về owner `ai` cho process `ai-worker` | Span CLIENT `ai-llm-provider POST chat/completions` dài hoặc lỗi; CONSUMER `run-ai-job` kéo dài; lỗi muộn ở `ai-worker-course` | Đã đo tín hiệu; stub chậm chưa chạy |
 | C4 | `media` (`media-minio` chậm) → thumbnail kẹt → `scheduler-worker` xóa media | `dependency` (`media-minio`) + `async` + bàn giao qua DB tới `scheduler-worker` | Span `media-minio *` chậm/lỗi; trace "Dọn media theo lịch" có số `remove-object` bất thường. `scheduler` và `scheduler-worker` không cùng trace; lỗi lộ muộn nhiều phút | Đã đo tín hiệu; cơ chế chèn trễ chưa chạy |
 | C5 | `identity` (`identity-postgres` chậm) → batch notification `PARTIAL_FAILED` | `sync` (`notification-worker-identity`) + `dependency` (`identity-postgres`) | Span `notification-worker-identity GET /internal/v1/students` và `identity-postgres student.list` chậm; **log không có lỗi**, triệu chứng nghiệp vụ không có trong telemetry | Đã đo tín hiệu; chèn trễ chưa chạy |
-| C6 | `identity` dừng → `gateway` lỗi 504 hàng loạt sau khoảng yên lặng | `identity` (cạnh `gateway-identity-token`); `identity` im lặng | Span CLIENT lỗi `gateway-identity-token`; trace gốc không có span của service đích; `lms_dependency_error_count_total{dependency_identity="gateway-identity-token"}` tăng | **Đã chạy** bởi `tracing-smoke`: login 504 ngay, lỗi token xuất hiện 72 giây sau khi dừng (TTL 60 giây), phục hồi sau `unpause` |
+| C6 | `identity` dừng → `gateway` lỗi 504 hàng loạt sau khoảng yên lặng | `identity` (cạnh `gateway-identity-token`); `identity` im lặng | Span CLIENT lỗi `gateway-identity-token`; trace gốc không có span của service đích; `lms_dependency_error_count_total{dependency_identity="gateway-identity-token"}` tăng | **Đã chạy** bởi `tracing-smoke`: login 504 ngay, lỗi token xuất hiện 70–74 giây sau khi dừng (TTL 60 giây), phục hồi sau `unpause` |
 | C7 | `identity` đổi khóa ký → 401 đồng loạt | `identity` (cạnh `*-identity-jwks`), độ rộng nhiều service | Tăng 4xx/`SERVICE_TOKEN_INVALID` ở nhiều service cùng lúc; span `*-identity-jwks` refetch; `identity` vẫn chạy nên không im lặng | Đã đo tín hiệu; cơ chế đổi khóa chưa chạy |
 
 Ba điểm rút ra cho thiết kế engine:

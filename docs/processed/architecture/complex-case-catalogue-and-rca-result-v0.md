@@ -4,7 +4,7 @@
 >
 > **Trạng thái:** v0, đề xuất — chờ Đức tự xác nhận (không cần Bách review, theo chỉ thị trực tiếp của Đức). Số đo lấy từ lần chạy `pnpm run test:observability` ngày 29/10/2026, ghi ở board mục "Bằng chứng đã chạy (R-12)".
 >
-> **Cập nhật R-13:** `auth` và `student` đã gộp thành `identity` ([ADR-005](../adr/adr-005-merge-auth-student-into-identity-v1.md)). Tên service, identity và case đã đổi tại chỗ; các **con số đo** (số cặp, số runtime, độ trễ) được đo lại trên stack 11 runtime và ghi ở mục "Bằng chứng đã chạy (R-13)" của board.
+> **Cập nhật R-13:** `auth` và `student` đã gộp thành `identity` ([ADR-005](../adr/adr-005-merge-auth-student-into-identity-v1.md)). Tên service, identity và case đã đổi tại chỗ; các **con số đo** (11 runtime, 38 cặp dependency, 70–74 giây ở C6) đo lại ngày 30/10/2026 trên stack 11 runtime, ghi ở mục "R-13" của board.
 >
 > **Phụ thuộc:** [service-catalogue-and-topology-v2](service-catalogue-and-topology-v2.md), [data-ownership-and-fault-matrix-v2](data-ownership-and-fault-matrix-v2.md) (mục 5–6 là bản đề xuất ban đầu, tài liệu này chốt chi tiết), [telemetry-and-ground-truth-schema-v1](telemetry-and-ground-truth-schema-v1.md), [ADR-002](../adr/adr-002-ai-primary-root-cause-analysis-v1.md), [ADR-004](../adr/adr-004-service-access-token-and-api-surfaces-v1.md).
 >
@@ -16,15 +16,15 @@
 
 # 1. Tín hiệu có thật của testbed v2
 
-Đo ngày 29/10/2026 trên stack `compose.full.yaml` (12 runtime), sau khi chạy bảy workflow regression qua Gateway. Lệnh kiểm chứng lặp lại được: `pnpm run test:observability` (mục 5 của [observability README](../../../aiops-platform/observability/README.md)).
+Đo ngày 30/10/2026 (sau R-13) trên stack `compose.full.yaml` (11 runtime), sau khi chạy bảy workflow regression qua Gateway. Lệnh kiểm chứng lặp lại được: `pnpm run test:observability` (mục 5 của [observability README](../../../aiops-platform/observability/README.md)).
 
 ## 1.1. Metric (Prometheus)
 
 | Họ metric | Nhãn chính | Phủ | Ghi chú |
 | --- | --- | --- | --- |
-| `http_server_request_count_total`, `http_server_request_error_count_total`, `http_server_request_duration_seconds_*` | `service_name`, `http_method`, `http_route_template`, `http_status_class` | 12/12 runtime | Worker chỉ có `/health`, `/ready` |
-| `lms_dependency_request_count_total`, `lms_dependency_error_count_total`, `lms_dependency_duration_seconds_*` | `service_name`, `dependency_identity`, `operation_name`, `status` | 42 cặp (service, identity) | `status`: `ok`, `timeout`, `unavailable`, `expected_failure` |
-| `process_cpu_time_seconds_total`, `process_memory_usage_bytes` | `service_name` | 12/12 runtime | CPU và RSS theo process |
+| `http_server_request_count_total`, `http_server_request_error_count_total`, `http_server_request_duration_seconds_*` | `service_name`, `http_method`, `http_route_template`, `http_status_class` | 11/11 runtime | Worker chỉ có `/health`, `/ready` |
+| `lms_dependency_request_count_total`, `lms_dependency_error_count_total`, `lms_dependency_duration_seconds_*` | `service_name`, `dependency_identity`, `operation_name`, `status` | 38 cặp (service, identity) | `status`: `ok`, `timeout`, `unavailable`, `expected_failure` |
+| `process_cpu_time_seconds_total`, `process_memory_usage_bytes` | `service_name` | 11/11 runtime | CPU và RSS theo process |
 | `rabbitmq_detailed_queue_messages`, `_ready`, `_unacked`, `rabbitmq_detailed_queue_consumers` | `service_name` (worker tiêu thụ), `dependency_identity` (`<worker>-rabbitmq`), `queue` | 24 queue (12 canonical và 12 `.error`) | Nguồn: broker, không phải runtime; tên queue lấy từ `contracts` |
 
 Cạnh dependency quan sát được (đủ cho dependency graph):
@@ -54,7 +54,7 @@ Ma trận luồng ↔ tập service trong một trace (đã đo, kiểm tự đ�
 
 ## 1.3. Log (Loki)
 
-12/12 runtime có log; chỉ `service_name` là index label. Mỗi request HTTP (trừ `/health`) có access log `http.server.request`; lỗi dependency có log `dependency.failure` kèm `dependency_identity`, `error_type`, `trace_id`, `span_id` (đã kiểm: `span_id` trỏ đúng span CLIENT lỗi). `trace_id`, `span_id`, `service_version`, `service_instance_id` là structured metadata.
+11/11 runtime có log; chỉ `service_name` là index label. Mỗi request HTTP (trừ `/health`) có access log `http.server.request`; lỗi dependency có log `dependency.failure` kèm `dependency_identity`, `error_type`, `trace_id`, `span_id` (đã kiểm: `span_id` trỏ đúng span CLIENT lỗi). `trace_id`, `span_id`, `service_version`, `service_instance_id` là structured metadata.
 
 ## 1.4. Độ trễ thu thập
 
@@ -147,7 +147,7 @@ Mọi case chạy song song workload k6 để tạo nhiễu; đối chứng th�
 | Triệu chứng | Đăng nhập lỗi ngay (504). Request có token người dùng còn hạn vẫn thành công trong khoảng yên lặng. Hết hạn token dịch vụ của `gateway` thì **mọi** route qua gateway lỗi 504 dù `course`, `media` khỏe; request không tới service đích. |
 | Ground truth | `fault_type=dependency_unavailable`, `root_cause_service=identity`, `root_cause_component=identity`, đường lan: `identity` → `gateway-identity-token` → mọi upstream của gateway (và `<worker>-identity-token` của các worker khi token của chúng hết hạn). |
 | Tín hiệu xác nhận | Span CLIENT lỗi `gateway-identity-token POST /internal/v1/auth/service-token` và `gateway-identity POST` ở span gốc; trace không có span của service đích; `lms_dependency_error_count_total{dependency_identity="gateway-identity-token"}` tăng; log `dependency.failure` có `span_id` khớp span lỗi. |
-| Trạng thái | **Đã chạy** bởi `tracing-smoke`: login 504 ngay; token người dùng còn hạn vẫn 200; lỗi `gateway-identity-token` xuất hiện **72 giây** sau khi dừng `identity` (TTL 60 giây); phục hồi sau `unpause`. Khác với bản đề xuất ban đầu: triệu chứng nằm ở gateway, không phải ở `course`/`media`. |
+| Trạng thái | **Đã chạy** bởi `tracing-smoke`: login 504 ngay; token người dùng còn hạn vẫn 200; lỗi `gateway-identity-token` xuất hiện **70–74 giây** sau khi dừng `identity` (TTL 60 giây); phục hồi sau `unpause`. Khác với bản đề xuất ban đầu: triệu chứng nằm ở gateway, không phải ở `course`/`media`. |
 
 ## C7 — Lệch khóa ký làm 401 đồng loạt (FH)
 
@@ -168,8 +168,8 @@ Ma trận fault FF (quá tải tài nguyên bất kỳ) không có case riêng: 
 ## 4.1. Đã đạt
 
 - 9/9 luồng ở mục 1.2 có trace chứa đủ service, đúng span gốc, không đứt parent, không span lỗi, `service.version`/`service.instance.id` khớp compose.
-- Metric: 12/12 runtime có RED, CPU, RSS; 42 cạnh dependency đúng danh mục identity; 24 queue đúng chủ sở hữu và consumer.
-- Log: 12/12 runtime; `trace_id`/`span_id` khớp span thật ở cả 12 runtime; log lỗi dependency khớp span lỗi; không rò secret.
+- Metric: 11/11 runtime có RED, CPU, RSS; 38 cạnh dependency đúng danh mục identity; 24 queue đúng chủ sở hữu và consumer.
+- Log: 11/11 runtime; `trace_id`/`span_id` khớp span thật ở cả 11 runtime; log lỗi dependency khớp span lỗi; không rò secret.
 - Dashboard: mọi query panel trả dữ liệu; data link metric → TraceQL → Loki dùng được.
 
 ## 4.2. Lỗi phát hiện và đã sửa
@@ -188,7 +188,7 @@ Ma trận fault FF (quá tải tài nguyên bất kỳ) không có case riêng: 
 
 ## 5.1. Yêu cầu bắt buộc từ telemetry
 
-Bằng chứng trong kết quả RCA phải tham chiếu lại được telemetry gốc, nên mỗi bằng chứng chứa: `service.name`, `trace_id` và `span_id` (với trace/log), hoặc `metric` + nhãn + khoảng thời gian (với metric). Telemetry đã đáp ứng (mục 1): 12/12 runtime có `service_name`; log có `trace_id`/`span_id`; trace có đủ span. Không có ground truth trong payload nghiệp vụ hay telemetry.
+Bằng chứng trong kết quả RCA phải tham chiếu lại được telemetry gốc, nên mỗi bằng chứng chứa: `service.name`, `trace_id` và `span_id` (với trace/log), hoặc `metric` + nhãn + khoảng thời gian (với metric). Telemetry đã đáp ứng (mục 1): 11/11 runtime có `service_name`; log có `trace_id`/`span_id`; trace có đủ span. Không có ground truth trong payload nghiệp vụ hay telemetry.
 
 ## 5.2. `RcaIncidentResult` (logical schema, JSON)
 

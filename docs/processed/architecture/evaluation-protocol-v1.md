@@ -57,10 +57,10 @@ Bảng này tách điều đã có bằng chứng khỏi điều mới là thi�
 
 | Hạng mục | Đã có (bằng chứng) | Chưa có (dự kiến, chưa kiểm chứng) |
 | --- | --- | --- |
-| Topology | 12 runtime (8 service + 4 worker) chạy bằng `compose.full.yaml`; 12 `service.name` canonical ([catalogue mục 2.1](service-catalogue-and-topology-v2.md)) | — |
-| Telemetry | 9/9 luồng xuyên service có trace đủ service; 12/12 runtime có RED, CPU, RSS và log; 42 cạnh dependency; 24 queue ([catalogue case mục 4.1](complex-case-catalogue-and-rca-result-v0.md)); lệnh lặp lại `pnpm run test:observability` | Pool kết nối PostgreSQL, tuổi message cũ nhất, metric publish/consume RabbitMQ ở runtime, độ trễ outbox, log consumer của worker, nối scheduler → scheduler-worker ([catalogue case mục 1.5](complex-case-catalogue-and-rca-result-v0.md)) |
+| Topology | 11 runtime (7 service + 4 worker) chạy bằng `compose.full.yaml`; 11 `service.name` canonical ([catalogue mục 2.1](service-catalogue-and-topology-v2.md)) | — |
+| Telemetry | 9/9 luồng xuyên service có trace đủ service; 11/11 runtime có RED, CPU, RSS và log; 38 cạnh dependency; 24 queue ([catalogue case mục 4.1](complex-case-catalogue-and-rca-result-v0.md)); lệnh lặp lại `pnpm run test:observability` | Pool kết nối PostgreSQL, tuổi message cũ nhất, metric publish/consume RabbitMQ ở runtime, độ trễ outbox, log consumer của worker, nối scheduler → scheduler-worker ([catalogue case mục 1.5](complex-case-catalogue-and-rca-result-v0.md)) |
 | Độ trễ thu thập | Log vào Loki ≈ 2 giây, trace vào Tempo ≈ 2,5 giây, counter vào Prometheus ≈ 4–10 giây, backlog queue ≈ 9 giây (catalogue case mục 1.4) | — |
-| Case C1–C7 | C6: **đã chạy** bởi [tracing-smoke](../../../lms/test/observability/tracing-smoke.mjs) (login 504 ngay, token còn hạn vẫn 200, lỗi `gateway-identity-token` sau **72 giây** với TTL 60 giây, phục hồi sau `unpause`). C1–C5, C7: **đã đo tín hiệu**, cơ chế gây lỗi **chưa chạy** | Fault injector (`aiops-platform/faults/`), workload k6 (`aiops-platform/load/`): thư mục chưa tồn tại. Chuỗi lan C1 sang `media-worker` là **giả thuyết** |
+| Case C1–C7 | C6: **đã chạy** bởi [tracing-smoke](../../../lms/test/observability/tracing-smoke.mjs) (login 504 ngay, token còn hạn vẫn 200, lỗi `gateway-identity-token` sau **70–74 giây** với TTL 60 giây, phục hồi sau `unpause`). C1–C5, C7: **đã đo tín hiệu**, cơ chế gây lỗi **chưa chạy** | Fault injector (`aiops-platform/faults/`), workload k6 (`aiops-platform/load/`): thư mục chưa tồn tại. Chuỗi lan C1 sang `media-worker` là **giả thuyết** |
 | Dữ liệu | Seeder R-10 ghi trực tiếp SQL, id bắt đầu bằng `5eed`, không tạo trace/log nghiệp vụ ([fault matrix mục 2.9](data-ownership-and-fault-matrix-v2.md)) | Dataset fault run, healthy run, split, ground truth theo run: chưa có |
 | RCA engine, training, MCP | Schema `RcaIncidentResult` và nơi lưu đề xuất (catalogue case mục 5) | `aiops-platform/training/`, `aiops-platform/mcp/` chưa tồn tại; chưa có kết quả Top-K/MRR/Delay nào |
 | Đối chứng thủ công | Quyết định ở ADR-002 mục 3–4 | Baseline thủ công tự động và thử nghiệm người chưa làm; chưa có thời gian chẩn đoán nào |
@@ -264,7 +264,7 @@ Ground truth root cause của campaign chỉ theo fault matrix/catalogue canonic
 | C3 | FD | `dependency_latency` | `ai` | `ai-llm-provider` | job AI mãi `RUNNING` rồi `WORKER_INTERRUPTED`, tài liệu `EXTRACTING` | **Đã đo tín hiệu**; stub chậm chưa chạy |
 | C4 | FA | `dependency_latency` | `media` | `media-minio` | media `PENDING` kẹt, thumbnail mất, cleanup xóa media | **Đã đo tín hiệu**; cơ chế chèn trễ chưa chạy |
 | C5 | FE | `dependency_latency` | `identity` | `identity-postgres` | batch `PARTIAL_FAILED`, số item lệch | **Đã đo tín hiệu**; chèn trễ chưa chạy |
-| C6 | FG | `dependency_unavailable` | `identity` | `identity` | mọi route qua gateway lỗi 504 sau khoảng yên lặng | **Đã chạy** (tracing-smoke, 72 giây với TTL 60 giây) |
+| C6 | FG | `dependency_unavailable` | `identity` | `identity` | mọi route qua gateway lỗi 504 sau khoảng yên lặng | **Đã chạy** (tracing-smoke, 70–74 giây với TTL 60 giây) |
 | C7 | FH | `config_drift` | `identity` | `identity-jwks` | 401 đồng loạt ở nhiều service | **Đã đo tín hiệu**; cơ chế đổi khóa chưa chạy |
 | — | FF | quá tải tài nguyên | bất kỳ service | instance | latency/error lan theo dependency | Không có case riêng; CPU/RSS là bằng chứng phụ cho C1–C2 |
 
@@ -501,7 +501,7 @@ Feature windows giữ `[window_start, window_end)` và cùng alignment policy c�
 
 Các case của v2 cố ý có triệu chứng xuất hiện **muộn và xa** nguyên nhân. Hệ quả cho evaluation interval:
 
-- **C6 (FG):** khi dừng `identity`, lỗi `gateway-identity-token` chỉ xuất hiện sau khoảng yên lặng (đã đo 72 giây với TTL 60 giây; mặc định TTL 600 giây, giá trị tương ứng chưa đo). Request có token người dùng còn hạn vẫn thành công trong khoảng này. `fault_start` do đó **trước** triệu chứng đầu tiên một khoảng tối thiểu bằng khoảng yên lặng; Detection Delay của C6 chứa khoảng này và phải báo riêng theo case, không gộp vào delay trung bình mà không ghi chú.
+- **C6 (FG):** khi dừng `identity`, lỗi `gateway-identity-token` chỉ xuất hiện sau khoảng yên lặng (đã đo 70–74 giây với TTL 60 giây; mặc định TTL 600 giây, giá trị tương ứng chưa đo). Request có token người dùng còn hạn vẫn thành công trong khoảng này. `fault_start` do đó **trước** triệu chứng đầu tiên một khoảng tối thiểu bằng khoảng yên lặng; Detection Delay của C6 chứa khoảng này và phải báo riêng theo case, không gộp vào delay trung bình mà không ghi chú.
 - **C4 (FA):** lỗi lộ muộn ở `scheduler-worker` cách nguyên nhân nhiều bước và nhiều phút (fault matrix v2 mục 6); độ trễ thật chưa đo.
 - **C1, C3, C5:** độ trễ từ chèn lỗi tới triệu chứng ở `media`/`course`/batch chưa đo (cơ chế chưa chạy).
 
@@ -1068,7 +1068,7 @@ Chỉ tính cho matched TP:
 Detection Delay = matched_incident.detected_at - fault_start
 ```
 
-Vì early tolerance = 0, delay primary không âm. FN không được gán delay giả; report `null` và denominator riêng. Delay báo kèm theo case vì khoảng yên lặng/độ trễ lan truyền khác nhau (C6: tối thiểu bằng khoảng yên lặng đã đo 72 giây ở TTL 60 giây).
+Vì early tolerance = 0, delay primary không âm. FN không được gán delay giả; report `null` và denominator riêng. Delay báo kèm theo case vì khoảng yên lặng/độ trễ lan truyền khác nhau (C6: tối thiểu bằng khoảng yên lặng đã đo 70–74 giây ở TTL 60 giây).
 
 ### 17.6. Precision/Recall/F1
 
@@ -1550,7 +1550,7 @@ Bảng này chỉ ghi điều đã viết trong protocol và điều đã có b�
 | Detection, RCA service-level, system metrics, `RcaIncidentResult` làm đầu ra | Đã viết | Mục 14, 16–22 |
 | Baseline/ablation/robustness | Đã viết; chưa chạy | Mục 10–13 |
 | Đối chứng thủ công và thời gian chẩn đoán (ADR-002) | Đã viết; chưa có luật baseline, chưa có người tham gia, chưa có số đo | Mục 15 |
-| Telemetry đủ để chấm | **Đã đo** cho 9 luồng, 12 runtime, 42 cạnh, 24 queue; thiếu các tín hiệu ở mục 1.3 | [Catalogue case mục 1 và 4](complex-case-catalogue-and-rca-result-v0.md) |
+| Telemetry đủ để chấm | **Đã đo** cho 9 luồng, 11 runtime, 38 cạnh, 24 queue; thiếu các tín hiệu ở mục 1.3 | [Catalogue case mục 1 và 4](complex-case-catalogue-and-rca-result-v0.md) |
 | Case chạy thật | **Chỉ C6** (smoke, một lần); C1–C5, C7 mới đo tín hiệu | Mục 4.2 |
 | Fault injector, workload k6, dataset, RCA engine, MCP | **Chưa có** | Mục 1.3 |
 | Đức review orchestration/lưu artifact | **Chưa xác nhận** | Mục 25 |
@@ -1623,7 +1623,7 @@ Không có requirement nào trong protocol này yêu cầu đổi service topolo
 | Đối chứng thủ công | không có | mục 15: baseline thủ công tự động, thử nghiệm người, thời gian chẩn đoán, agent MCP tùy chọn |
 | Prediction artifact | `prediction.json` không có schema cụ thể | `RcaIncidentResult` (`rca_result_schema_version = "0"`), mục 16 |
 | `insufficient_evidence` | không có | tính end-to-end miss, đếm riêng, không vào conditional metric |
-| Độ trễ lan truyền | không có | mục 7.3: khoảng yên lặng C6 (đã đo 72 giây ở TTL 60 giây), fault active phải dài hơn độ trễ triệu chứng |
+| Độ trễ lan truyền | không có | mục 7.3: khoảng yên lặng C6 (đã đo 70–74 giây ở TTL 60 giây), fault active phải dài hơn độ trễ triệu chứng |
 | Tín hiệu theo case | fault-to-telemetry requirement của W4-T4 | bảng 8.4 từ catalogue: tín hiệu có thật và tín hiệu chưa có |
 | Nhiễu telemetry | không có | mục 8.5: lọc trace `/ready` và thăm dò scheduler-worker, `noise_filter_version` |
 | Identity | `scenario_id` F1–F5 | `scenario_id` FA–FH + `case_id` C1–C7 + `analyst_kind`, `case_verification_status` |

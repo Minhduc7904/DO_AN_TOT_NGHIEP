@@ -160,7 +160,8 @@ export async function attachStack(argv, tag) {
       url.searchParams.set('end', String(endSeconds));
       url.searchParams.set('limit', String(limit));
       const data = await fetchJson(url);
-      return (data.traces ?? []).map((trace) => trace.traceID);
+      // Tempo search cắt số 0 đầu của trace ID; log và OTLP dùng đủ 32 ký tự hex.
+      return (data.traces ?? []).map((trace) => trace.traceID.padStart(32, '0'));
     },
   };
 
