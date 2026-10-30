@@ -171,11 +171,11 @@ test(
           token: student.token,
         });
         assert.equal(enrolled.status, 201);
-        const content = expectData(
-          await call('GET', `/api/v1/student/courses/${courseId}`, { token: student.token }),
+        const lessons = expectData(
+          await call('GET', `/api/v1/courses/${courseId}/lessons`, { token: student.token }),
           200,
         );
-        const lesson = lessonDtoSchema.parse(content.lessons.find((item) => item.id === lessonId));
+        const lesson = lessonDtoSchema.parse(lessons.find((item) => item.id === lessonId));
         assert.match(lesson.content_markdown ?? '', /Bài học do AI soạn/u);
       },
     );

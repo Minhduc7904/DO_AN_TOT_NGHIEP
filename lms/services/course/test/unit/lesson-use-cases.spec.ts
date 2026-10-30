@@ -1,10 +1,11 @@
 import { CreateLessonUseCase } from '../../src/application/use-cases/lessons/create-lesson.use-case.js';
 import { DeleteLessonUseCase } from '../../src/application/use-cases/lessons/delete-lesson.use-case.js';
 import { GetLessonUseCase } from '../../src/application/use-cases/lessons/get-lesson.use-case.js';
+import { ListCourseLessonsUseCase } from '../../src/application/use-cases/lessons/list-course-lessons.use-case.js';
 import { ReorderLessonsUseCase } from '../../src/application/use-cases/lessons/reorder-lessons.use-case.js';
 import { UpdateLessonUseCase } from '../../src/application/use-cases/lessons/update-lesson.use-case.js';
 import { createWorld, principals } from '../support/in-memory.js';
-import { seedCourse, seedLesson } from '../support/seed.js';
+import { enroll, seedCourse, seedLesson } from '../support/seed.js';
 
 describe('lesson use cases', () => {
   it('CreateLesson: thêm vào cuối, trùng display_order thì LESSON_ORDER_CONFLICT, người khác bị 403', async () => {
@@ -117,5 +118,39 @@ describe('lesson use cases', () => {
     ).rejects.toMatchObject({
       status: 403,
     });
+  });
+  it('ListCourseLessons: học viên phải ghi danh, giảng viên phải sở hữu khóa, kèm nội dung theo thứ tự', async () => {
+    const world = createWorld();
+    const list = new ListCourseLessonsUseCase(world.courses, world.lessons, world.enrollments);
+    const course = seedCourse(world, 'PUBLISHED');
+    const first = await seedLesson(world, course.id);
+    const second = await seedLesson(world, course.id);
+
+    // Học viên chưa ghi danh, hoặc khóa không tồn tại: cùng một lỗi, không lộ khóa.
+    await expect(list.execute(principals.student, course.id)).rejects.toMatchObject({
+      code: 'STUDENT_NOT_ENROLLED',
+      status: 403,
+    });
+    await expect(
+      list.execute(principals.student, '00000000-0000-4000-8000-0000000000ff'),
+    ).rejects.toMatchObject({ code: 'STUDENT_NOT_ENROLLED', status: 403 });
+
+    await enroll(world, course.id, principals.student.id);
+    const lessons = await list.execute(principals.student, course.id);
+    expect(lessons.map((lesson) => lesson.id)).toEqual([first.id, second.id]);
+    expect(lessons[0]?.contentMarkdown).toBe('Nội dung');
+    // Ghi danh của học viên này không mở khóa cho học viên khác.
+    await expect(list.execute(principals.otherStudent, course.id)).rejects.toMatchObject({
+      status: 403,
+    });
+
+    expect(await list.execute(principals.owner, course.id)).toHaveLength(2);
+    expect(await list.execute(principals.admin, course.id)).toHaveLength(2);
+    await expect(list.execute(principals.otherInstructor, course.id)).rejects.toMatchObject({
+      status: 403,
+    });
+    await expect(
+      list.execute(principals.admin, '00000000-0000-4000-8000-0000000000ff'),
+    ).rejects.toMatchObject({ status: 404 });
   });
 });

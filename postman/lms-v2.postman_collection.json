@@ -1075,7 +1075,7 @@
           ]
         },
         {
-          "name": "Chi tiết khóa học (dàn bài theo thứ tự mới)",
+          "name": "Chi tiết khóa học (không kèm bài học, giảng viên không có enrollment)",
           "request": {
             "method": "GET",
             "header": [],
@@ -1110,7 +1110,50 @@
                 "exec": [
                   "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
                   "const body = pm.response.json();",
-                  "pm.test('dàn bài đảo thứ tự, không kèm nội dung', () => { pm.expect(body.data.lessons[0].id).to.eql(pm.collectionVariables.get('lesson_id_2')); pm.expect(body.data.lessons[0]).to.not.have.property('content_markdown'); });"
+                  "pm.test('chi tiết không kèm bài học, giảng viên không có trạng thái ghi danh', () => { pm.expect(body.data).to.not.have.property('lessons'); pm.expect(body.data.enrollment).to.eql(null); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Danh sách bài học theo khóa học (thứ tự mới, kèm nội dung)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway_url}}/api/v1/courses/{{course_id}}/lessons",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "courses",
+                "{{course_id}}",
+                "lessons"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{instructor_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('bài học đảo thứ tự, kèm nội dung', () => { pm.expect(body.data[0].id).to.eql(pm.collectionVariables.get('lesson_id_2')); pm.expect(body.data[0]).to.have.property('content_markdown'); });"
                 ]
               }
             }
@@ -1496,21 +1539,21 @@
       "description": "Ghi danh, học, tiến độ và làm quiz. Cần chạy sau thư mục 01 và 02.",
       "item": [
         {
-          "name": "Chưa ghi danh: đọc nội dung → 403",
+          "name": "Chưa ghi danh: đọc danh sách bài học → 403",
           "request": {
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{gateway_url}}/api/v1/student/courses/{{course_id}}",
+              "raw": "{{gateway_url}}/api/v1/courses/{{course_id}}/lessons",
               "host": [
                 "{{gateway_url}}"
               ],
               "path": [
                 "api",
                 "v1",
-                "student",
                 "courses",
-                "{{course_id}}"
+                "{{course_id}}",
+                "lessons"
               ]
             },
             "auth": {
@@ -1669,21 +1712,21 @@
           ]
         },
         {
-          "name": "Đọc nội dung khóa đã ghi danh",
+          "name": "Đọc bài học khóa đã ghi danh",
           "request": {
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{gateway_url}}/api/v1/student/courses/{{course_id}}",
+              "raw": "{{gateway_url}}/api/v1/courses/{{course_id}}/lessons",
               "host": [
                 "{{gateway_url}}"
               ],
               "path": [
                 "api",
                 "v1",
-                "student",
                 "courses",
-                "{{course_id}}"
+                "{{course_id}}",
+                "lessons"
               ]
             },
             "auth": {
@@ -1705,7 +1748,7 @@
                 "exec": [
                   "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
                   "const body = pm.response.json();",
-                  "pm.test('đủ 2 bài kèm nội dung', () => { pm.expect(body.data.lessons).to.have.length(2); pm.expect(body.data.lessons[0].content_markdown).to.be.a('string'); });"
+                  "pm.test('đủ 2 bài kèm nội dung', () => { pm.expect(body.data).to.have.length(2); pm.expect(body.data[0].content_markdown).to.be.a('string'); });"
                 ]
               }
             }

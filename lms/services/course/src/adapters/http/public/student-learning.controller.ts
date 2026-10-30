@@ -3,7 +3,6 @@ import {
   type AttemptDetailDto,
   type AttemptDto,
   type CourseProgressDto,
-  type EnrolledCourseDto,
   type EnrollmentDto,
   idSchema,
   lessonProgressRequestSchema,
@@ -29,7 +28,6 @@ import {
 } from '@nestjs/common';
 
 import { EnrollCourseUseCase } from '../../../application/use-cases/learning/enroll-course.use-case.js';
-import { GetEnrolledCourseUseCase } from '../../../application/use-cases/learning/get-enrolled-course.use-case.js';
 import { GetMyCourseProgressUseCase } from '../../../application/use-cases/learning/get-my-course-progress.use-case.js';
 import { ListMyEnrollmentsUseCase } from '../../../application/use-cases/learning/list-my-enrollments.use-case.js';
 import { UpdateLessonProgressUseCase } from '../../../application/use-cases/learning/update-lesson-progress.use-case.js';
@@ -44,7 +42,6 @@ import {
   presentAttempt,
   presentAttemptDetail,
   presentCourseProgress,
-  presentEnrolledCourse,
   presentEnrollment,
   presentLessonProgress,
   presentQuiz,
@@ -62,7 +59,6 @@ export class StudentLearningController {
   constructor(
     @Inject(EnrollCourseUseCase) private readonly enrollCourse: EnrollCourseUseCase,
     @Inject(ListMyEnrollmentsUseCase) private readonly listEnrollments: ListMyEnrollmentsUseCase,
-    @Inject(GetEnrolledCourseUseCase) private readonly getEnrolledCourse: GetEnrolledCourseUseCase,
     @Inject(GetMyCourseProgressUseCase) private readonly getProgress: GetMyCourseProgressUseCase,
     @Inject(UpdateLessonProgressUseCase)
     private readonly updateProgress: UpdateLessonProgressUseCase,
@@ -97,16 +93,6 @@ export class StudentLearningController {
   ): Promise<EnrollmentDto> {
     return presentEnrollment(
       await this.enrollCourse.execute(principal.id, parseInput(idSchema, courseId)),
-    );
-  }
-
-  @Get('courses/:course_id')
-  async course(
-    @CurrentPrincipal() principal: Principal,
-    @Param('course_id') courseId: string,
-  ): Promise<EnrolledCourseDto> {
-    return presentEnrolledCourse(
-      await this.getEnrolledCourse.execute(principal.id, parseInput(idSchema, courseId)),
     );
   }
 

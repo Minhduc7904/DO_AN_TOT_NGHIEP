@@ -83,11 +83,18 @@ test('course-authoring: giảng viên dựng khóa học, bài học, quiz và x
       courseDetailDtoSchema,
       'chi tiết khóa học',
     );
+    assert.equal('lessons' in detail, false, 'chi tiết khóa học không kèm bài học');
+    assert.equal(detail.enrollment, null, 'giảng viên không có trạng thái ghi danh');
+    const ordered = expectData(
+      await call('GET', `/api/v1/courses/${courseId}/lessons`, { token: instructor.token }),
+      200,
+      lessonDtoSchema.array(),
+      'danh sách bài học',
+    );
     assert.deepEqual(
-      detail.lessons.map((lesson) => lesson.id),
+      ordered.map((lesson) => lesson.id),
       [lessons[1].id, lessons[0].id],
     );
-    assert.equal('content_markdown' in detail.lessons[0], false, 'dàn bài không kèm nội dung');
 
     const edited = await call('PATCH', `/api/v1/courses/${courseId}/lessons/${lessons[0].id}`, {
       token: instructor.token,

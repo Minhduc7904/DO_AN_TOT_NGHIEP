@@ -4,9 +4,10 @@ import { test } from 'node:test';
 import {
   attemptDetailDtoSchema,
   attemptDtoSchema,
+  courseDetailDtoSchema,
   courseProgressDtoSchema,
-  enrolledCourseDtoSchema,
   enrollmentDtoSchema,
+  lessonDtoSchema,
   lessonProgressDtoSchema,
   quizDtoSchema,
 } from '../../contracts/dist/index.js';
@@ -61,8 +62,16 @@ test('enroll-and-learn: ghi danh, học, tiến độ và làm quiz', async (t) 
       },
     );
     quiz = expectData(created, 201, quizDtoSchema, 'tạo quiz');
+    // Chi tiết khóa báo chưa ghi danh; danh sách bài học theo khóa bị chặn.
+    const before = expectData(
+      await call('GET', `/api/v1/courses/${courseId}`, { token: student.token }),
+      200,
+      courseDetailDtoSchema,
+      'chi tiết khóa học',
+    );
+    assert.deepEqual(before.enrollment, { status: 'NOT_ENROLLED', enrolled_at: null });
     expectError(
-      await call('GET', `/api/v1/student/courses/${courseId}`, { token: student.token }),
+      await call('GET', `/api/v1/courses/${courseId}/lessons`, { token: student.token }),
       403,
       'STUDENT_NOT_ENROLLED',
     );
@@ -87,18 +96,26 @@ test('enroll-and-learn: ghi danh, học, tiến độ và làm quiz', async (t) 
     assert.ok(
       expectList(mine, enrollmentDtoSchema).items.some((item) => item.course_id === courseId),
     );
+
+    const after = expectData(
+      await call('GET', `/api/v1/courses/${courseId}`, { token: student.token }),
+      200,
+      courseDetailDtoSchema,
+      'chi tiết khóa học',
+    );
+    assert.equal(after.enrollment.status, 'ENROLLED');
+    assert.ok(after.enrollment.enrolled_at);
+    const lessons = expectData(
+      await call('GET', `/api/v1/courses/${courseId}/lessons`, { token: student.token }),
+      200,
+      lessonDtoSchema.array(),
+      'danh sách bài học',
+    );
+    assert.equal(lessons.length, 2);
+    assert.equal(lessons[0].content_markdown, 'Nội dung bài 1');
   });
 
-  await t.test('đọc nội dung đã ghi danh; tiến độ chỉ tăng, không giảm', async () => {
-    const content = expectData(
-      await call('GET', `/api/v1/student/courses/${courseId}`, { token: student.token }),
-      200,
-      enrolledCourseDtoSchema,
-      'nội dung khóa học',
-    );
-    assert.equal(content.lessons.length, 2);
-    assert.equal(content.lessons[0].content_markdown, 'Nội dung bài 1');
-
+  await t.test('tiến độ chỉ tăng, không giảm', async () => {
     const progressPath = `/api/v1/student/lessons/${lessonA.id}/progress`;
     const half = await call('PUT', progressPath, {
       token: student.token,

@@ -5,7 +5,6 @@ import type {
   CourseDto,
   CourseProgressDto,
   CourseSummaryDto,
-  EnrolledCourseDto,
   EnrollmentDto,
   LessonDto,
   LessonOutlineDto,
@@ -15,6 +14,7 @@ import type {
 } from '@aiops-lms/contracts';
 
 import type { CourseCounts } from '../../../application/ports/course-repository.js';
+import type { CourseEnrollment } from '../../../application/use-cases/courses/get-course.use-case.js';
 import type { CourseProgress } from '../../../application/use-cases/learning/get-my-course-progress.use-case.js';
 import type {
   Course,
@@ -54,16 +54,15 @@ export function presentLesson(lesson: Lesson): LessonDto {
 
 export function presentCourseDetail(detail: {
   course: Course;
-  lessons: Lesson[];
+  enrollment: CourseEnrollment | null;
 }): CourseDetailDto {
-  return { ...presentCourse(detail.course), lessons: detail.lessons.map(presentLessonOutline) };
-}
-
-export function presentEnrolledCourse(detail: {
-  course: Course;
-  lessons: Lesson[];
-}): EnrolledCourseDto {
-  return { ...presentCourse(detail.course), lessons: detail.lessons.map(presentLesson) };
+  return {
+    ...presentCourse(detail.course),
+    enrollment: detail.enrollment && {
+      status: detail.enrollment.status,
+      enrolled_at: detail.enrollment.enrolledAt?.toISOString() ?? null,
+    },
+  };
 }
 
 export function presentCourseSummary(counts: CourseCounts): CourseSummaryDto {

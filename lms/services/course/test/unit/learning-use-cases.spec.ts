@@ -1,5 +1,4 @@
 import { EnrollCourseUseCase } from '../../src/application/use-cases/learning/enroll-course.use-case.js';
-import { GetEnrolledCourseUseCase } from '../../src/application/use-cases/learning/get-enrolled-course.use-case.js';
 import { GetMyCourseProgressUseCase } from '../../src/application/use-cases/learning/get-my-course-progress.use-case.js';
 import { ListMyEnrollmentsUseCase } from '../../src/application/use-cases/learning/list-my-enrollments.use-case.js';
 import { UpdateLessonProgressUseCase } from '../../src/application/use-cases/learning/update-lesson-progress.use-case.js';
@@ -43,21 +42,6 @@ describe('learning use cases', () => {
 
     expect(await list.execute(studentId, 1, 2)).toMatchObject({ total: 3 });
     expect((await list.execute(studentId, 2, 2)).items).toHaveLength(1);
-  });
-
-  it('GetEnrolledCourse: học viên đã ghi danh đọc được nội dung, người khác bị STUDENT_NOT_ENROLLED', async () => {
-    const world = createWorld();
-    const get = new GetEnrolledCourseUseCase(world.courses, world.lessons, world.enrollments);
-    const course = seedCourse(world);
-    await seedLesson(world, course.id);
-    await enroll(world, course.id, studentId);
-
-    const detail = await get.execute(studentId, course.id);
-    expect(detail.lessons[0]?.contentMarkdown).toBe('Nội dung');
-    await expect(get.execute(principals.otherStudent.id, course.id)).rejects.toMatchObject({
-      code: 'STUDENT_NOT_ENROLLED',
-      status: 403,
-    });
   });
 
   it('UpdateLessonProgress: tiến độ chỉ tăng, 100% đánh dấu hoàn thành, cần ghi danh', async () => {

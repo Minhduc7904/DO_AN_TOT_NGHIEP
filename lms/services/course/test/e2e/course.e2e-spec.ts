@@ -15,8 +15,8 @@ import {
   courseDtoSchema,
   courseProgressDtoSchema,
   courseSummaryDtoSchema,
-  enrolledCourseDtoSchema,
   enrollmentDtoSchema,
+  type LessonDto,
   lessonDtoSchema,
   lessonProgressDtoSchema,
   quizDtoSchema,
@@ -280,19 +280,27 @@ describe('course service (PostgreSQL thật)', () => {
     expect(catalogBody.meta.pagination).toMatchObject({ page: 1, page_size: 100 });
     expect((catalogBody.data as { id: string }[]).map((item) => item.id)).toContain(courseId);
 
+    // Chi tiết khóa học không kèm bài học; học viên thấy trạng thái ghi danh của chính mình.
     const detail = await http().get(`/api/v1/courses/${courseId}`).set(student).expect(200);
-    const outline = apiResponseSchema(courseDetailDtoSchema).parse(detail.body).data as {
-      lessons: Record<string, unknown>[];
-    };
-    expect(outline.lessons).toHaveLength(2);
-    expect(outline.lessons[0]).not.toHaveProperty('content_markdown');
+    const courseView = apiResponseSchema(courseDetailDtoSchema).parse(detail.body).data;
+    expect(courseView).not.toHaveProperty('lessons');
+    expect(courseView.enrollment).toEqual({ status: 'NOT_ENROLLED', enrolled_at: null });
+    const staffView = await http().get(`/api/v1/courses/${courseId}`).set(instructor).expect(200);
+    expect(apiResponseSchema(courseDetailDtoSchema).parse(staffView.body).data.enrollment).toBe(
+      null,
+    );
 
-    // Chưa ghi danh: không đọc được nội dung và không thấy quiz.
-    const notEnrolled = await http()
-      .get(`/api/v1/student/courses/${courseId}`)
-      .set(outsider)
-      .expect(403);
-    expect(apiErrorSchema.parse(notEnrolled.body).error.code).toBe('STUDENT_NOT_ENROLLED');
+    // Danh sách bài học theo khóa: học viên chưa ghi danh bị chặn; giảng viên khác bị chặn.
+    const lessonsPath = `/api/v1/courses/${courseId}/lessons`;
+    const blockedLessons = await http().get(lessonsPath).set(outsider).expect(403);
+    expect(apiErrorSchema.parse(blockedLessons.body).error.code).toBe('STUDENT_NOT_ENROLLED');
+    await http().get(lessonsPath).set(otherInstructor).expect(403);
+    const staffLessons = await http().get(lessonsPath).set(instructor).expect(200);
+    expect(
+      (apiResponseSchema(lessonDtoSchema.array()).parse(staffLessons.body).data as LessonDto[]).map(
+        (lesson) => lesson.id,
+      ),
+    ).toEqual([lessonB.id, lessonA.id]);
 
     const enrolled = await http()
       .post(`/api/v1/student/courses/${courseId}/enrollments`)
@@ -308,6 +316,19 @@ describe('course service (PostgreSQL thật)', () => {
       .expect(409);
     expect(apiErrorSchema.parse(again.body).error.code).toBe('ENROLLMENT_ALREADY_EXISTS');
 
+    // Sau khi ghi danh: trạng thái ghi danh đổi và đọc được bài học kèm nội dung.
+    const enrolledView = await http().get(`/api/v1/courses/${courseId}`).set(student).expect(200);
+    expect(
+      apiResponseSchema(courseDetailDtoSchema).parse(enrolledView.body).data.enrollment,
+    ).toMatchObject({ status: 'ENROLLED', enrolled_at: expect.any(String) as string });
+    const studentLessons = await http().get(lessonsPath).set(student).expect(200);
+    const readable = apiResponseSchema(lessonDtoSchema.array()).parse(studentLessons.body)
+      .data as LessonDto[];
+    expect(readable.find((lesson) => lesson.id === lessonA.id)?.content_markdown).toBe(
+      'Nội dung A',
+    );
+    await http().get(lessonsPath).set(outsider).expect(403);
+
     const mine = await http().get('/api/v1/student/enrollments').set(student).expect(200);
     expect(
       (
@@ -316,17 +337,6 @@ describe('course service (PostgreSQL thật)', () => {
     ).toContain(courseId);
 
     // ---- Học: nội dung và tiến độ ---------------------------------------------------------
-    const content = await http()
-      .get(`/api/v1/student/courses/${courseId}`)
-      .set(student)
-      .expect(200);
-    const enrolledCourse = apiResponseSchema(enrolledCourseDtoSchema).parse(content.body).data as {
-      lessons: { id: string; content_markdown: string | null }[];
-    };
-    expect(
-      enrolledCourse.lessons.find((lesson) => lesson.id === lessonA.id)?.content_markdown,
-    ).toBe('Nội dung A');
-
     const half = await http()
       .put(`/api/v1/student/lessons/${lessonA.id}/progress`)
       .set(student)
