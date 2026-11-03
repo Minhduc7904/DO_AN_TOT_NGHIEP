@@ -61,7 +61,7 @@ Luồng service-to-service: bên gọi lấy service token cho đúng `audience`
 
 Route `/internal/v1/*`, `/.well-known/*` **không được Gateway proxy**.
 
-Route đọc nội dung media công khai với người dùng (không cần JWT) vì trình duyệt nhúng ảnh/video không gửi được token: `GET /api/v1/media/{media_id}/content`, `.../thumbnail`, `/api/v1/media/usages/{usage_id}/url`, `/api/v1/media/avatars/{user_id}`. Gateway vẫn gắn service token của mình khi gọi `media`. Bảo vệ bằng UUID khó đoán, `Cache-Control: no-store`; đây là giới hạn được chấp nhận và ghi nhận ở R-12.
+Route đọc nội dung media không cần JWT của người dùng vì trình duyệt nhúng ảnh/video không gửi được token: `GET /api/v1/media/{media_id}/content`, `.../thumbnail`, `/api/v1/media/usages/{usage_id}/url`, `/api/v1/media/avatars/{user_id}`. Gateway vẫn gắn service token của mình khi gọi `media`. Quyền xem do URL quyết định (xem "Tầng truy cập URL media" ở §4.4 media), không còn dựa vào việc UUID khó đoán.
 
 ### Catalogue scope (đã dùng và dự kiến)
 
@@ -175,6 +175,7 @@ Mã nghiệp vụ bổ sung (giữ từ repo mẫu, cùng envelope):
 |  409 | `MEDIA_NOT_READY`                | media   | Media (hoặc thumbnail) chưa `READY` cho thao tác này       |
 |  413 | `MEDIA_TOO_LARGE`                | media   | Vượt giới hạn kích thước theo loại media                   |
 |  409 | `MEDIA_UPLOAD_NOT_COMPLETED`     | media   | `upload-complete` nhưng object chưa được tải lên           |
+|  403 | `MEDIA_URL_INVALID`              | media   | URL media có chữ ký sai hoặc hết hạn; xin URL mới từ API sở hữu |
 |  409 | `MEDIA_USAGE_CONFLICT`           | media   | Usage vi phạm quy tắc (trùng, singleton, sai loại owner)   |
 |  409 | `NOTIFICATION_BATCH_NOT_RETRYABLE` | notification | Batch chưa kết thúc hoặc không có recipient `FAILED`  |
 |  409 | `NOTIFICATION_BATCH_RETRY_EXISTS`  | notification | Batch nguồn đã có batch retry (`details.retry_batch_id`) |
@@ -316,6 +317,19 @@ Quy tắc:
 | GET    | `/api/v1/media/jobs`                       |  A   | `get-media-background-jobs`                                                                          |
 
 Bucket MinIO: `images`, `videos`, `documents`, `audios`, `other` (chọn theo loại media suy ra từ MIME). Client không bao giờ thấy bucket hay object key cuối cùng; response chỉ có `content_url` và `thumbnail_url` qua Gateway.
+
+**Tầng truy cập URL media** (bảng `MEDIA_ACCESS_TIER_BY_USAGE` ở `contracts/src/http/public/media-access.ts`):
+
+| Tầng | Usage type | URL | Điều kiện xem |
+| --- | --- | --- | --- |
+| `PUBLIC` | `USER_AVATAR`, `COURSE_THUMBNAIL`, `COURSE_GALLERY`, `COURSE_DESCRIPTION` | `/api/v1/media/{id}/content` (trần) | media có ít nhất một usage thuộc tầng này, nếu không `404` |
+| `SIGNED` | `LESSON_CONTENT`, `LESSON_ATTACHMENT`, `QUIZ_CONTENT`, `NOTIFICATION_BODY`, `MEDIA_THUMBNAIL` | `/api/v1/media/{id}/content?exp=&sig=` | chữ ký hợp lệ và chưa hết hạn, nếu không `403 MEDIA_URL_INVALID` |
+
+- Chữ ký HMAC-SHA256 trên `media_id|variant|exp` (`variant` là `content` hoặc `thumbnail`), khóa `MEDIA_URL_SIGNING_KEY` chỉ `media` giữ (production bắt buộc đặt khóa riêng). `exp` làm tròn lên mốc `MEDIA_URL_TTL_SECONDS` nên URL sống từ 1 đến dưới 2 TTL và ổn định trong một cửa sổ. Chữ ký của `content` không mở được `thumbnail` và ngược lại.
+- Phản hồi dùng chữ ký có `Cache-Control: private`; media công khai dùng `public, max-age=300`.
+- `content_url`/`thumbnail_url` của `upload-complete`, `POST /media` và `GET /media/library` luôn là URL ký (dành cho người sở hữu). `GET /usages/urls` và `/usages/{id}/url` công khai chỉ trả usage tầng `PUBLIC`; usage tầng `SIGNED` trả `404`/bị lọc. Bản nội bộ (`/internal/v1/media/usages/urls`, scope `media:usage:read`) trả URL ký cho `course` sau khi `course` đã kiểm quyền.
+- Đồng bộ markdown chỉ gắn usage cho media do chính người thao tác upload, để không ai biến media của người khác thành công khai bằng cách nhúng id vào markdown.
+- Chưa làm (task tiếp theo): `course`/`notification` chưa tự dựng URL ký khi trả `*_markdown` và chưa trả `thumbnail_url`/`gallery`/`attachments`; markdown cũ lưu `/api/v1/media/{id}/content` của tầng `SIGNED` sẽ trả `404` cho tới khi làm.
 
 **Object key** (múi giờ UTC):
 

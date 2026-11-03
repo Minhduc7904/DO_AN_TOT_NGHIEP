@@ -8,6 +8,7 @@ export const MEDIA_ERROR_CODES = {
   tooLarge: 'MEDIA_TOO_LARGE',
   uploadNotCompleted: 'MEDIA_UPLOAD_NOT_COMPLETED',
   usageConflict: 'MEDIA_USAGE_CONFLICT',
+  urlInvalid: 'MEDIA_URL_INVALID',
 } as const;
 
 export const mediaErrors = {
@@ -43,4 +44,7 @@ export const mediaErrors = {
     ),
   usageConflict: (message: string): AppError =>
     new AppError(MEDIA_ERROR_CODES.usageConflict, 409, message),
+  /** Chữ ký sai hoặc hết hạn: client xin lại URL từ API sở hữu thay vì dùng lại URL cũ. */
+  urlInvalid: (): AppError =>
+    new AppError(MEDIA_ERROR_CODES.urlInvalid, 403, 'URL media không hợp lệ hoặc đã hết hạn'),
 };

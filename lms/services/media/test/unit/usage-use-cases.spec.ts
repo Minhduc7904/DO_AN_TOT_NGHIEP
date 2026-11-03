@@ -17,6 +17,8 @@ import {
   SynchronizeMarkdownUsageUseCase,
 } from '../../src/application/use-cases/worker/synchronize-markdown-usage.use-case.js';
 import type { MediaObject, MediaUsage } from '../../src/domain/media.js';
+import { MediaUrlBuilder } from '../../src/application/media-url-builder.js';
+import { MediaUrlSigner } from '../../src/domain/url-signer.js';
 import { InMemoryUnitOfWork } from './fakes.js';
 
 let counter = 0;
@@ -253,12 +255,52 @@ describe('reorder / delete usage', () => {
   });
 });
 
+const NOW = new Date('2026-11-03T10:00:00Z');
+const signer = new MediaUrlSigner({ key: 'khoa-thu-nghiem-chi-dung-cho-test', ttlSeconds: 900 });
+const urlBuilder = new MediaUrlBuilder(signer, { now: () => NOW });
+
 describe('GetMediaUsageUrlsUseCase', () => {
+  it('usage tầng SIGNED nhận URL ký hợp lệ, tầng PUBLIC nhận URL trần', async () => {
+    const { uow, rules } = setup();
+    await seedMedia(uow, { id: uuid(1) });
+    await seedMedia(uow, { id: uuid(2), thumbnailStatus: 'READY' });
+    const signedUsage = await rules.attach(uow.stores, instructor, {
+      mediaId: uuid(1),
+      ownerKind: 'COURSE',
+      ownerId: courseId,
+      usageType: 'LESSON_ATTACHMENT',
+    });
+    const publicUsage = await rules.attach(uow.stores, instructor, {
+      mediaId: uuid(2),
+      ownerKind: 'COURSE',
+      ownerId: courseId,
+      usageType: 'COURSE_THUMBNAIL',
+    });
+
+    const useCase = new GetMediaUsageUrlsUseCase(uow, urlBuilder);
+    const [signed, bare] = await useCase.execute([signedUsage.id, publicUsage.id], 'internal');
+    const [path, query] = signed!.url.split('?');
+    expect(path).toBe(`/api/v1/media/${uuid(1)}/content`);
+    const params = new URLSearchParams(query);
+    expect(signer.verify(uuid(1), 'content', params.get('exp'), params.get('sig'), NOW)).toBe(true);
+    expect(bare).toMatchObject({
+      url: `/api/v1/media/${uuid(2)}/content`,
+      thumbnailUrl: `/api/v1/media/${uuid(2)}/thumbnail`,
+    });
+
+    // Route ẩn danh không bao giờ trả URL ký: biết usage id không đổi được thành quyền xem.
+    const publicOnly = await useCase.execute([signedUsage.id, publicUsage.id], 'public');
+    expect(publicOnly.map((item) => item.usageId)).toEqual([publicUsage.id]);
+    await expect(useCase.executeOne(signedUsage.id, 'public')).rejects.toMatchObject({
+      status: 404,
+    });
+  });
+
   it('trả URL công khai, thumbnail chỉ khi READY, bỏ qua media chưa sẵn sàng', async () => {
     const { uow, rules } = setup();
     await seedMedia(uow, { id: uuid(1), thumbnailStatus: 'READY' });
     await seedMedia(uow, { id: uuid(2), thumbnailStatus: 'PENDING' });
-    const urls = new GetMediaUsageUrlsUseCase(uow);
+    const urls = new GetMediaUsageUrlsUseCase(uow, urlBuilder);
     const usages = [];
     for (const n of [1, 2]) {
       usages.push(
@@ -271,7 +313,10 @@ describe('GetMediaUsageUrlsUseCase', () => {
       );
     }
 
-    const result = await urls.execute(usages.map((usage) => usage.id));
+    const result = await urls.execute(
+      usages.map((usage) => usage.id),
+      'public',
+    );
     expect(result).toEqual([
       {
         usageId: usages[0]!.id,
@@ -287,8 +332,10 @@ describe('GetMediaUsageUrlsUseCase', () => {
       },
     ]);
     await uow.media.update(uuid(2), { status: 'FAILED' });
-    expect(await urls.execute([usages[1]!.id])).toEqual([]);
-    await expect(urls.executeOne(usages[1]!.id)).rejects.toMatchObject({ status: 404 });
+    expect(await urls.execute([usages[1]!.id], 'public')).toEqual([]);
+    await expect(urls.executeOne(usages[1]!.id, 'public')).rejects.toMatchObject({
+      status: 404,
+    });
   });
 });
 
@@ -368,6 +415,21 @@ describe('worker: markdown usage sync', () => {
 
     await sync.execute('m3', 'q', input(null));
     expect(await uow.usages.listByGroup(group)).toEqual([]);
+  });
+
+  it('bỏ qua media do người khác upload để không biến media của họ thành công khai', async () => {
+    const { uow } = setup();
+    await seedMedia(uow, { id: uuid(1) });
+    await seedMedia(uow, { id: uuid(2), uploadedBy: otherInstructor.id });
+    const sync = new SynchronizeMarkdownUsageUseCase(uow, ids);
+
+    await sync.execute('own', 'q', input(md(uuid(1), uuid(2))));
+    expect([...uow.usages.rows.values()].map((usage) => usage.mediaId)).toEqual([uuid(1)]);
+    expect(await uow.jobs.findByKey('markdown-sync:own')).toMatchObject({
+      status: 'PARTIAL_FAILED',
+      processedCount: 1,
+      failedCount: 1,
+    });
   });
 
   it('giao lại cùng message_id là no-op (inbox)', async () => {

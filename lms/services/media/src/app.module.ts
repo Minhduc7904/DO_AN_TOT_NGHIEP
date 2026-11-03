@@ -38,6 +38,10 @@ import { GetMediaContentUseCase } from './application/use-cases/media/get-media-
 import { GetUserAvatarContentUseCase } from './application/use-cases/media/get-user-avatar-content.use-case.js';
 import { GetMediaLibraryUseCase } from './application/use-cases/media/get-media-library.use-case.js';
 import { GetMediaThumbnailUseCase } from './application/use-cases/media/get-media-thumbnail.use-case.js';
+import { ServePublicMediaUseCase } from './application/use-cases/media/serve-public-media.use-case.js';
+import { MediaAccessPolicy } from './application/media-access-policy.js';
+import { MediaUrlBuilder } from './application/media-url-builder.js';
+import { MediaUrlSigner } from './domain/url-signer.js';
 import { RetryMediaThumbnailUseCase } from './application/use-cases/media/retry-media-thumbnail.use-case.js';
 import { UploadMediaUseCase } from './application/use-cases/media/upload-media.use-case.js';
 import {
@@ -188,6 +192,32 @@ const USE_CASES: Provider[] = [
     inject: [MEDIA_UNIT_OF_WORK, OBJECT_STORAGE],
   },
   {
+    provide: MediaUrlSigner,
+    useFactory: (config: Config) =>
+      new MediaUrlSigner({
+        key: config.getOrThrow('MEDIA_URL_SIGNING_KEY'),
+        ttlSeconds: config.getOrThrow('MEDIA_URL_TTL_SECONDS'),
+      }),
+    inject: [ConfigService],
+  },
+  {
+    provide: MediaUrlBuilder,
+    useFactory: (signer: MediaUrlSigner, clock: Clock) => new MediaUrlBuilder(signer, clock),
+    inject: [MediaUrlSigner, CLOCK],
+  },
+  {
+    provide: GetMediaUsageUrlsUseCase,
+    useFactory: (uow: MediaUnitOfWork, urls: MediaUrlBuilder) =>
+      new GetMediaUsageUrlsUseCase(uow, urls),
+    inject: [MEDIA_UNIT_OF_WORK, MediaUrlBuilder],
+  },
+  {
+    provide: MediaAccessPolicy,
+    useFactory: (uow: MediaUnitOfWork, signer: MediaUrlSigner, clock: Clock) =>
+      new MediaAccessPolicy(uow, signer, clock),
+    inject: [MEDIA_UNIT_OF_WORK, MediaUrlSigner, CLOCK],
+  },
+  {
     provide: GetUserAvatarContentUseCase,
     useFactory: (uow: MediaUnitOfWork, content: GetMediaContentUseCase) =>
       new GetUserAvatarContentUseCase(uow, content),
@@ -198,6 +228,15 @@ const USE_CASES: Provider[] = [
     useFactory: (uow: MediaUnitOfWork, content: GetMediaContentUseCase) =>
       new GetMediaThumbnailUseCase(uow, content),
     inject: [MEDIA_UNIT_OF_WORK, GetMediaContentUseCase],
+  },
+  {
+    provide: ServePublicMediaUseCase,
+    useFactory: (
+      policy: MediaAccessPolicy,
+      content: GetMediaContentUseCase,
+      thumbnail: GetMediaThumbnailUseCase,
+    ) => new ServePublicMediaUseCase(policy, content, thumbnail),
+    inject: [MediaAccessPolicy, GetMediaContentUseCase, GetMediaThumbnailUseCase],
   },
   {
     provide: RetryMediaThumbnailUseCase,
@@ -236,7 +275,6 @@ const USE_CASES: Provider[] = [
   })),
   ...withUow(
     GetMediaLibraryUseCase,
-    GetMediaUsageUrlsUseCase,
     QueryUsageIdsUseCase,
     ListOwnerUsagesUseCase,
     GetUsageJobStatusUseCase,
