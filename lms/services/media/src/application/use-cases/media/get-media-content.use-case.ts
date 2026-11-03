@@ -11,6 +11,8 @@ export interface MediaContent extends ObjectContent {
   media: MediaObject;
   /** `null` khi trả toàn bộ file. */
   range: { start: number; end: number } | null;
+  /** `true` khi quyền xem đến từ URL ký: response không được vào cache chung (CDN/proxy). */
+  privateCache?: boolean;
 }
 
 /** Stream nội dung media (hỗ trợ một khoảng `Range`). Dùng cho route công khai và nội bộ. */

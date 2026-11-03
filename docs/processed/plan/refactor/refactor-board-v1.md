@@ -27,6 +27,7 @@
 | R-11  | Test, CI, Postman v2; viết lại regression và job CI `mvp-regression`/`w7-compose` (gỡ ở R-05); đổi tên test `w1/w2/w3/w5` theo nghiệp vụ                                                                            | 8–10 | R-04…R-09   | Hoàn thành (29/10/2026; PR #67, CI GitHub xanh trừ GitGuardian báo nhầm; xem bên dưới) |
 | R-12  | Viết lại docs, viết lại smoke tracing/metrics/logs/acceptance (đang gắn luồng v1), kiểm chứng telemetry xuyên service, danh mục case phức tạp v0; ghi nhận schema kết quả RCA và nơi lưu (cho MCP thứ yếu, ADR-002) | 9–10 | tất cả      | Hoàn thành (29/10/2026; PR #68, CI GitHub xanh; xem "R-12" bên dưới) |
 | R-13  | Gộp `auth` + `student` thành service `identity` (code, DB `identity_db`, env, telemetry, compose, CI, docs; [ADR-005](../../adr/adr-005-merge-auth-student-into-identity-v1.md)) | 11–12 | R-04, R-12 | Hoàn thành (30/10/2026; PR #69, CI GitHub đạt 12 job; xem "R-13" bên dưới) |
+| R-18  | URL media theo tầng truy cập: URL ký có hạn (HMAC) cho media riêng tư, URL trần cho media công khai; course/notification dựng lại URL khi trả markdown | 12–14 | R-06, R-16, R-17 | **Đang thực hiện** (slice 1: cổng truy cập ở `media`, xem "R-18" bên dưới; `course`/`notification` chưa làm) |
 
 ## Mốc kiểm tra
 
@@ -354,3 +355,25 @@ Quyết định: [ADR-005](../../adr/adr-005-merge-auth-student-into-identity-v1
 **Số đo thật (30/10/2026, stack một node, thay cho các số suy luận trước đó):** 11/11 runtime có telemetry; **38** cặp (service, identity) (trước đó 42); 24 queue; 9/9 luồng tracing; log 11/11 runtime; độ trễ log/trace/metric khoảng 1,6 / 4,1 / 5,1 giây; C6: lỗi `gateway-identity-token` xuất hiện **70–74 giây** sau khi dừng `identity` (TTL 60 giây, HTTP 504). 16 identity hạ tầng đếm từ danh sách ở telemetry schema mục 3.2.1; 13 cạnh HTTP đếm từ `HTTP_DEPENDENCY_PEERS`.
 
 **Hệ quả cần Đức quyết định:** C5, C6, C7 cùng có `root_cause_service=identity`; ranking hằng tốt nhất Top-3 ≈ 71% (5/7) và Top-1 ≈ 43% (3/7). Đã ghi ở ADR-005 và evaluation-protocol; chưa quyết thêm case hay báo cáo theo component.
+
+### R-18 (slice 1, chạy cục bộ ngày 03/11/2026, Node 22.13.1, pnpm 11.19.0)
+
+Phạm vi đã làm: cổng truy cập của `media` (xem [contract §4.4](../../architecture/http-and-event-contracts-v2.md)). `GET /media/{id}/content|thumbnail` chỉ cho xem khi có chữ ký HMAC hợp lệ hoặc media có usage tầng `PUBLIC`; URL của `upload-complete`, `POST /media`, thư viện và `/internal/.../usages/urls` là URL ký; route công khai `usages/urls` và `usages/{id}/url` chỉ trả usage tầng `PUBLIC`; worker đồng bộ markdown chỉ gắn media do chính người thao tác upload; khóa ký production bắt buộc đặt riêng.
+
+| Hạng mục | Kết quả |
+| --- | --- |
+| Unit `media` | 130 test đạt (mới: `url-signer`, `media-access-policy` gồm ma trận 404/403/200, URL usage theo tầng, worker bỏ media của người khác) |
+| e2e `media` | `test:media:e2e` 22/22 với PostgreSQL 17, MinIO và RabbitMQ thật: URL ký đọc được (kể cả Range), URL trần 404, chữ ký sai/khác variant 403, `Cache-Control: private` |
+| Cổng chất lượng | `pnpm run lint` (max-warnings=0), `test:architecture`, `http-surface`, `prettier --check` các file đã sửa, `docker compose config` với `.env.example` đạt |
+| Review độc lập | Một agent review riêng; các điểm hợp lý đã sửa: khóa mặc định ở production, `exp` chuẩn hóa và giới hạn 2 TTL, tham số query lặp, `Cache-Control` riêng tư, truy vấn tồn tại usage thay vì tải cả danh sách, URL ký ở presenter, lỗ hổng gắn usage công khai qua markdown, route ẩn danh trả URL ký (phát hiện thêm khi sửa) |
+
+**Chưa chạy:** `test:regression`, `test:postman` và smoke observability (cần dựng cả stack compose); test regression và Postman đã sửa theo URL ký nhưng chưa chạy. `format:check` toàn repo báo 8 file ngoài phạm vi (tsconfig, prettier config) từ trước.
+
+**Chưa làm (task tiếp theo, vì vậy R-18 chưa hoàn thành):**
+
+- `course`/`notification` chưa kiểm id và chuẩn hóa markdown về `media://{id}` khi lưu, chưa dựng URL theo tầng khi trả `*_markdown`; DTO course chưa có `thumbnail_url`, `gallery`, `attachments`.
+- Hệ quả hiện tại: ảnh lưu trong markdown bài học, quiz, thông báo theo dạng `/api/v1/media/{id}/content` (tầng `SIGNED`) trả `404` cho tới khi làm phần trên. Ảnh mô tả khóa học (tầng `PUBLIC`) và avatar không bị ảnh hưởng.
+- Endpoint nội bộ `url-resolutions` và `validate`, scope tương ứng và cấu hình `SERVICE_CLIENTS_BOOTSTRAP`; script đổi markdown cũ; seeder.
+- Thumbnail/mô tả của khóa học nháp (`DRAFT`) vẫn xem được nếu biết id vì `media` không biết trạng thái khóa học.
+- Email thông báo chứa ảnh: URL ký tương đối và hết hạn nên ảnh sẽ hỏng; cần quyết định riêng.
+

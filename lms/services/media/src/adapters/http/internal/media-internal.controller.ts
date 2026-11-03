@@ -59,7 +59,7 @@ export class MediaInternalController {
   @Get('usages/urls')
   async urls(@Query() query: unknown): Promise<MediaUsageUrlDto[]> {
     const input = parseInput(usageUrlsQuerySchema, query);
-    return (await this.usageUrls.execute(input.usage_ids)).map(presentUsageUrl);
+    return (await this.usageUrls.execute(input.usage_ids, 'internal')).map(presentUsageUrl);
   }
 
   /** Usage của một owner kèm metadata tệp (course liệt kê tệp đính kèm của bài học để trích văn bản). */

@@ -175,6 +175,9 @@ services:
       MINIO_PUBLIC_URL: "${MINIO_PUBLIC_URL:-http://localhost:9000}"
       MEDIA_UPLOAD_EXPIRES_SECONDS: "${MEDIA_UPLOAD_EXPIRES_SECONDS:-900}"
       MEDIA_MULTIPART_MAX_BYTES: "${MEDIA_MULTIPART_MAX_BYTES:-26214400}"
+      # Khóa ký URL media tầng SIGNED; production thật phải đặt khóa riêng (media từ chối khóa mặc định của code).
+      MEDIA_URL_SIGNING_KEY: "${MEDIA_URL_SIGNING_KEY:-lms-media-url-signing-key-compose-local-only}"
+      MEDIA_URL_TTL_SECONDS: "${MEDIA_URL_TTL_SECONDS:-900}"
       # Tuổi tối thiểu (giờ) của media không dùng trước khi dọn; regression đặt 0 để dọn được ngay.
       MEDIA_CLEANUP_MIN_RETENTION_HOURS: "${MEDIA_CLEANUP_MIN_RETENTION_HOURS:-1}"
       MEDIA_IDENTITY_BASE_URL: http://identity:3001

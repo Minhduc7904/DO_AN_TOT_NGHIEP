@@ -43,7 +43,7 @@ Import collection và environment, chọn environment `LMS v2 - Local`, trỏ `W
 | `01 auth-register-login` | Đăng ký, ba cửa đăng nhập, refresh xoay vòng, phân quyền, từ chối `x-principal-*` tự khai |
 | `02 course-authoring` | Khóa học, bài học (thứ tự), quiz, xuất bản, tìm kiếm, tổng hợp, export CSV |
 | `03 enroll-and-learn` | Ghi danh, tiến độ, làm quiz và chấm điểm (1.5/3.5) |
-| `04 media-upload` | Presigned POST thẳng lên MinIO, `upload-complete`, nội dung công khai, Range, usage |
+| `04 media-upload` | Presigned POST thẳng lên MinIO, `upload-complete`, nội dung qua URL ký, Range, usage công khai |
 | `05 notification-batch-email` | Thông báo đơn, đợt gửi hàng loạt, email trong Mailpit, inbox |
 | `06 media-cleanup-scheduler` | Job `MEDIA_UNUSED_CLEANUP`, run, chạy lặp cùng `idempotency_key` |
 | `07 ai-config` | Provider và model AI (không gán task, không gọi model thật) |

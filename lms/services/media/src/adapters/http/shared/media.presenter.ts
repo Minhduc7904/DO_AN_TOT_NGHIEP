@@ -7,14 +7,17 @@ import type {
   MediaUsageUrlDto,
 } from '@aiops-lms/contracts';
 
+import type { MediaUrlBuilder } from '../../../application/media-url-builder.js';
 import type { MediaSummary } from '../../../application/ports/repositories.js';
 import type { CleanupMediaSummary } from '../../../application/use-cases/cleanup/cleanup-media.use-case.js';
 import type { UsageUrl } from '../../../application/use-cases/usages/get-media-usage-urls.use-case.js';
 import type { MediaJob, MediaObject, MediaUsage } from '../../../domain/media.js';
-import { mediaContentUrl, mediaThumbnailUrl } from '../../../domain/urls.js';
 
-/** DTO không có `bucket`, `objectKey` hay `tmpObjectKey`: client chỉ thấy URL công khai. */
-export function presentMedia(media: MediaObject): MediaDto {
+/**
+ * DTO không có `bucket`, `objectKey` hay `tmpObjectKey`: client chỉ thấy URL. Thư viện và kết quả upload dành cho
+ * chính người sở hữu (hoặc admin) nên luôn là URL ký, dùng được cả khi media chưa gắn usage công khai.
+ */
+export function presentMedia(media: MediaObject, urls: MediaUrlBuilder): MediaDto {
   const ready = media.status === 'READY';
   return {
     id: media.id,
@@ -26,8 +29,8 @@ export function presentMedia(media: MediaObject): MediaDto {
     checksum_sha256: media.checksumSha256,
     extract_text: media.extractText,
     thumbnail_status: media.thumbnailStatus,
-    content_url: ready ? mediaContentUrl(media.id) : null,
-    thumbnail_url: media.thumbnailStatus === 'READY' ? mediaThumbnailUrl(media.id) : null,
+    content_url: ready ? urls.content(media.id, true) : null,
+    thumbnail_url: media.thumbnailStatus === 'READY' ? urls.thumbnail(media.id, true) : null,
     uploaded_by: media.uploadedBy,
     created_at: media.createdAt.toISOString(),
     updated_at: media.updatedAt.toISOString(),

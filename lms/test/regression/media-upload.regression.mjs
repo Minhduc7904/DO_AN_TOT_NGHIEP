@@ -31,6 +31,7 @@ test('media-upload: upload trực tiếp lên MinIO, thumbnail, tải nội dung
   const instructor = await loginInstructor();
   const admin = await loginAdmin();
   let mediaId;
+  let contentUrl;
 
   await t.test(
     'upload-intent → POST thẳng MinIO → upload-complete đưa media sang READY',
@@ -42,36 +43,46 @@ test('media-upload: upload trực tiếp lên MinIO, thumbnail, tải nội dung
       assert.equal(media.type, 'IMAGE');
       assert.equal(media.checksum_sha256, createHash('sha256').update(PNG_1X1).digest('hex'));
       assert.equal(JSON.stringify(media).includes('tmp/'), false, 'không lộ object key');
+      contentUrl = media.content_url;
+      assert.match(contentUrl, /\?exp=\d+&sig=/u, 'media chưa gắn usage công khai nhận URL ký');
     },
   );
 
-  await t.test('nội dung công khai qua Gateway đúng byte và hỗ trợ Range', async () => {
-    const full = await call('GET', `/api/v1/media/${mediaId}/content`, { raw: true });
-    assert.equal(full.status, 200);
-    assert.match(full.headers.get('content-type') ?? '', /image\/png/u);
-    assert.deepEqual(full.bytes, PNG_1X1);
+  await t.test(
+    'nội dung qua URL ký đúng byte, hỗ trợ Range; URL trần hoặc sai chữ ký bị từ chối',
+    async () => {
+      const full = await call('GET', contentUrl, { raw: true });
+      assert.equal(full.status, 200);
+      assert.match(full.headers.get('content-type') ?? '', /image\/png/u);
+      assert.deepEqual(full.bytes, PNG_1X1);
 
-    const range = await call('GET', `/api/v1/media/${mediaId}/content`, {
-      raw: true,
-      headers: { range: 'bytes=0-7' },
-    });
-    assert.equal(range.status, 206);
-    assert.deepEqual(range.bytes, PNG_1X1.subarray(0, 8));
+      const range = await call('GET', contentUrl, { raw: true, headers: { range: 'bytes=0-7' } });
+      assert.equal(range.status, 206);
+      assert.deepEqual(range.bytes, PNG_1X1.subarray(0, 8));
 
-    const beyond = await call('GET', `/api/v1/media/${mediaId}/content`, {
-      raw: true,
-      headers: { range: 'bytes=999999-' },
-    });
-    assert.equal(beyond.status, 416);
-  });
+      const beyond = await call('GET', contentUrl, {
+        raw: true,
+        headers: { range: 'bytes=999999-' },
+      });
+      assert.equal(beyond.status, 416);
+
+      // Biết id mà không có chữ ký thì không xem được.
+      const bare = await call('GET', `/api/v1/media/${mediaId}/content`, { raw: true });
+      assert.equal(bare.status, 404);
+      const tampered = await call('GET', contentUrl.replace(/sig=./u, 'sig=_'), { raw: true });
+      assert.equal(tampered.status, 403);
+    },
+  );
 
   await t.test('media-worker sinh thumbnail WebP rồi trạng thái chuyển READY', async () => {
+    let thumbnailUrl;
     await waitUntil('thumbnail READY', async () => {
       const entry = await libraryEntry(instructor.token, mediaId);
       if (entry?.thumbnail_status === 'FAILED') throw new Error('thumbnail FAILED');
+      thumbnailUrl = entry?.thumbnail_url;
       return entry?.thumbnail_status === 'READY';
     });
-    const thumbnail = await call('GET', `/api/v1/media/${mediaId}/thumbnail`, { raw: true });
+    const thumbnail = await call('GET', thumbnailUrl, { raw: true });
     assert.equal(thumbnail.status, 200);
     assert.match(thumbnail.headers.get('content-type') ?? '', /image\/webp/u);
     assert.equal(thumbnail.bytes.subarray(0, 4).toString('ascii'), 'RIFF');

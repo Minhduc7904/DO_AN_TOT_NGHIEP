@@ -1,4 +1,4 @@
-import type { MediaUsage } from '../../domain/media.js';
+import type { MediaUsage, UsageType } from '../../domain/media.js';
 import { mediaErrors } from '../../domain/errors.js';
 import type {
   NewUsage,
@@ -53,6 +53,16 @@ export class PrismaUsageRepository implements UsageRepository {
         orderBy: [{ position: 'asc' }, { createdAt: 'asc' }],
       });
       return rows.map(toUsage);
+    });
+  }
+
+  existsByMediaAndTypes(mediaId: string, usageTypes: readonly UsageType[]): Promise<boolean> {
+    return observeDb('usage.exists-by-media-and-types', async () => {
+      const row = await this.db.mediaUsage.findFirst({
+        where: { mediaId, usageType: { in: [...usageTypes] } },
+        select: { id: true },
+      });
+      return row !== null;
     });
   }
 

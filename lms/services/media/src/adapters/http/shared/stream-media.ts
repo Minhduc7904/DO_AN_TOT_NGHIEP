@@ -6,7 +6,10 @@ import type { MediaContent } from '../../../application/use-cases/media/get-medi
 /** Ghi header và trả stream cho content/thumbnail, kể cả `206 Partial Content` cho `Range`. */
 export function streamMedia(content: MediaContent, response: Response): StreamableFile {
   response.setHeader('Accept-Ranges', 'bytes');
-  response.setHeader('Cache-Control', 'public, max-age=300');
+  response.setHeader(
+    'Cache-Control',
+    content.privateCache ? 'private, max-age=300' : 'public, max-age=300',
+  );
   response.setHeader('X-Content-Type-Options', 'nosniff');
   if (content.range) {
     response.status(206);

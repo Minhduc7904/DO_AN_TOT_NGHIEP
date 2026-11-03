@@ -13,7 +13,7 @@ import type {
   UsageRepository,
 } from '../../src/application/ports/repositories.js';
 import type { MediaStores, MediaUnitOfWork } from '../../src/application/ports/unit-of-work.js';
-import type { MediaJob, MediaObject, MediaUsage } from '../../src/domain/media.js';
+import type { MediaJob, MediaObject, MediaUsage, UsageType } from '../../src/domain/media.js';
 
 const NOW = new Date('2026-10-28T10:00:00Z');
 
@@ -181,6 +181,14 @@ export class InMemoryUsages implements UsageRepository {
     return Promise.resolve(
       [...this.rows.values()].filter(
         (row) => row.ownerKind === kind && ownerIds.includes(row.ownerId),
+      ),
+    );
+  }
+
+  existsByMediaAndTypes(mediaId: string, usageTypes: readonly UsageType[]): Promise<boolean> {
+    return Promise.resolve(
+      [...this.rows.values()].some(
+        (row) => row.mediaId === mediaId && usageTypes.includes(row.usageType),
       ),
     );
   }

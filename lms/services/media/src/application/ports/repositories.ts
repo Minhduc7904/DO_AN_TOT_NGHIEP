@@ -107,6 +107,8 @@ export interface UsageRepository {
   findById(id: string): Promise<MediaUsage | null>;
   findManyByIds(ids: readonly string[]): Promise<MediaUsage[]>;
   listByGroup(group: UsageGroup): Promise<MediaUsage[]>;
+  /** Media có ít nhất một usage thuộc một trong các loại đã cho (quyết định tầng truy cập URL trần). */
+  existsByMediaAndTypes(mediaId: string, usageTypes: readonly UsageType[]): Promise<boolean>;
   listByOwners(kind: UsageOwnerKind, ownerIds: readonly string[]): Promise<MediaUsage[]>;
   nextPosition(group: UsageGroup): Promise<number>;
   /** Đặt `position` theo thứ tự của `orderedIds`; trả usage sau khi sắp xếp. */
