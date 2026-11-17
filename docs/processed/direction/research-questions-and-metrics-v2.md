@@ -2,6 +2,8 @@
 
 > **Task:** R-12 — [bảng task refactor](../plan/refactor/refactor-board-v1.md)
 >
+> **Cập nhật 17/11/2026 ([ADR-006](../adr/adr-006-trim-project-scope-v1.md)):** RQ6 vẫn thuộc MVP nhưng đo bằng độ chính xác Top-K, thời gian tới kết luận đúng và số artifact phải mở của RCA engine so với `base-manual-auto` (định nghĩa lại theo cách SRE làm thật); thử nghiệm người thật xuống Target; bộ case MVP còn C2 (viết lại), C3, C4, C6. Khi đoạn chi tiết mâu thuẫn, ADR-006 được ưu tiên.
+>
 > **Cập nhật R-13:** `auth` và `student` đã gộp thành service `identity` ([ADR-005](../adr/adr-005-merge-auth-student-into-identity-v1.md)); tài liệu được sửa tại chỗ theo topology 7 service + 4 worker (11 runtime). Các số đo chưa đo lại sau khi gộp được ghi rõ ở chỗ dùng.
 >
 > **Trạng thái:** Đề xuất — chờ Đức tự xác nhận (refactor do một mình Đức làm, không cần Bách review). Chỗ nào là lựa chọn chưa có nguồn xác nhận được ghi "đề xuất chờ Đức xác nhận".
@@ -182,7 +184,7 @@ RCA sử dụng cùng candidate set và cùng logic ranking cho các variant mod
 
 ### 4.2. Giả thuyết và phép so sánh
 
-Giả thuyết H2: graph-aware ranking giúp phân biệt service gây lỗi với các symptom upstream tốt hơn anomaly-severity-only khi incident có fault propagation qua dependency. Topology v2 tạo nhiều trường hợp severity-only dễ nhầm: triệu chứng ở `media` hoặc `gateway` trong khi nguyên nhân ở `notification-worker` (C1), ở mọi cạnh `*-identity-token` trong khi nguyên nhân ở `auth` (C6), hoặc ở `course` khi `ai-worker` báo lỗi (vòng `course → ai → course`, C3).
+Giả thuyết H2: graph-aware ranking giúp phân biệt service gây lỗi với các symptom upstream tốt hơn anomaly-severity-only khi incident có fault propagation qua dependency. Topology v2 tạo nhiều trường hợp severity-only dễ nhầm: triệu chứng ở `media` hoặc `gateway` trong khi nguyên nhân ở `notification-worker` (C1), ở mọi cạnh `*-identity-token` trong khi nguyên nhân ở `identity` (C6), hoặc ở `course` khi `ai-worker` báo lỗi (vòng `course → ai → course`, C3).
 
 So sánh chính:
 

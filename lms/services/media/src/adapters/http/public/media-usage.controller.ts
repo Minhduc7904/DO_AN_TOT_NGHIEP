@@ -105,20 +105,18 @@ export class MediaUsageController {
     await this.deleteUsage.execute(principal, parseInput(idSchema, usageId));
   }
 
-  /** Công khai: client dựng URL hiển thị từ usage id mà không cần biết media id. Chỉ usage tầng `PUBLIC`. */
+  /** Công khai: client dựng URL hiển thị từ usage id mà không cần biết media id. */
   @Anonymous()
   @Get('usages/urls')
   async urls(@Query() query: unknown): Promise<MediaUsageUrlDto[]> {
     const input = parseInput(usageUrlsQuerySchema, query);
-    return (await this.usageUrls.execute(input.usage_ids, 'public')).map(presentUsageUrl);
+    return (await this.usageUrls.execute(input.usage_ids)).map(presentUsageUrl);
   }
 
   @Anonymous()
   @Get('usages/:usage_id/url')
   async url(@Param('usage_id') usageId: string): Promise<MediaUsageUrlDto> {
-    return presentUsageUrl(
-      await this.usageUrls.executeOne(parseInput(idSchema, usageId), 'public'),
-    );
+    return presentUsageUrl(await this.usageUrls.executeOne(parseInput(idSchema, usageId)));
   }
 
   @Anonymous()

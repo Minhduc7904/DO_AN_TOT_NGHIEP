@@ -2644,23 +2644,28 @@
                 "exec": [
                   "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
                   "const body = pm.response.json();",
-                  "pm.test('READY, TXT là DOCUMENT, không lộ object key', () => { pm.expect(body.data.status).to.eql('READY'); pm.expect(body.data.type).to.eql('DOCUMENT'); pm.expect(JSON.stringify(body.data)).to.not.include('tmp/'); });",
-                  "pm.test('content_url là URL ký có hạn', () => { pm.expect(body.data.content_url).to.include('/content?exp='); pm.expect(body.data.content_url).to.include('&sig='); });",
-                  "pm.collectionVariables.set('media_content_url', body.data.content_url);"
+                  "pm.test('READY, TXT là DOCUMENT, không lộ object key', () => { pm.expect(body.data.status).to.eql('READY'); pm.expect(body.data.type).to.eql('DOCUMENT'); pm.expect(JSON.stringify(body.data)).to.not.include('tmp/'); });"
                 ]
               }
             }
           ]
         },
         {
-          "name": "Nội dung qua Gateway bằng URL ký (không token)",
+          "name": "Nội dung công khai qua Gateway (không token)",
           "request": {
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{gateway_url}}{{media_content_url}}",
+              "raw": "{{gateway_url}}/api/v1/media/{{media_id}}/content",
               "host": [
-                "{{gateway_url}}{{media_content_url}}"
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "media",
+                "{{media_id}}",
+                "content"
               ]
             }
           },
@@ -2688,9 +2693,16 @@
               }
             ],
             "url": {
-              "raw": "{{gateway_url}}{{media_content_url}}",
+              "raw": "{{gateway_url}}/api/v1/media/{{media_id}}/content",
               "host": [
-                "{{gateway_url}}{{media_content_url}}"
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "media",
+                "{{media_id}}",
+                "content"
               ]
             }
           },
@@ -2755,7 +2767,7 @@
           ]
         },
         {
-          "name": "Gắn media vào thư viện ảnh khóa học (COURSE_GALLERY)",
+          "name": "Gắn media làm tài liệu đính kèm bài học",
           "request": {
             "method": "POST",
             "header": [
@@ -2778,7 +2790,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"media_id\": \"{{media_id}}\",\n  \"owner_kind\": \"COURSE\",\n  \"owner_id\": \"{{course_id}}\",\n  \"usage_type\": \"COURSE_GALLERY\"\n}",
+              "raw": "{\n  \"media_id\": \"{{media_id}}\",\n  \"owner_kind\": \"COURSE\",\n  \"owner_id\": \"{{lesson_id_1}}\",\n  \"usage_type\": \"LESSON_ATTACHMENT\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -2811,7 +2823,7 @@
           ]
         },
         {
-          "name": "Đọc url của usage tầng công khai (không token)",
+          "name": "Đọc url của usage (công khai)",
           "request": {
             "method": "GET",
             "header": [],

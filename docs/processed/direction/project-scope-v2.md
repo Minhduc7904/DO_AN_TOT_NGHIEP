@@ -1,5 +1,7 @@
 # Project scope v2 — MVP, Target, Stretch và Out-of-scope
 
+> **Cập nhật 17/11/2026 ([ADR-006](../adr/adr-006-trim-project-scope-v1.md)):** LMS đóng băng, R-18 hủy; RCA engine **hỗ trợ** người vận hành theo tên đề tài đã đăng ký, bỏ yêu cầu "kết luận không cần người"; ranker học có giám sát xuống Stretch; thử nghiệm người thật xuống Target; MCP/agent ra Out-of-scope; bộ case MVP còn C2 (viết lại), C3, C4, C6 với `R = 5`. Khi đoạn chi tiết dưới đây mâu thuẫn, ADR-006 được ưu tiên.
+
 > **Task:** R-12 — [bảng task refactor](../plan/refactor/refactor-board-v1.md)
 >
 > **Trạng thái:** Đề xuất — chờ Đức tự xác nhận (refactor do một mình Đức làm, không cần Bách review). Các con số hoặc lựa chọn chưa có nguồn xác nhận được ghi rõ là "đề xuất chờ Đức xác nhận" và gom lại ở mục 10.
@@ -12,7 +14,7 @@
 > - Topology và dữ liệu: [service-catalogue-and-topology-v2](../architecture/service-catalogue-and-topology-v2.md), [data-ownership-and-fault-matrix-v2](../architecture/data-ownership-and-fault-matrix-v2.md), [complex-case-catalogue-and-rca-result-v0](../architecture/complex-case-catalogue-and-rca-result-v0.md), [`aiops-platform/README.md`](../../../aiops-platform/README.md).
 > - Định hướng và đo lường: [khung-dinh-huong-tong-the-lms-microservice-ai-rca-v1](khung-dinh-huong-tong-the-lms-microservice-ai-rca-v1.md), [research-questions-and-metrics-v2](research-questions-and-metrics-v2.md).
 > - Tài liệu đang được viết lại song song (link theo tên đích): [telemetry-and-ground-truth-schema-v1](../architecture/telemetry-and-ground-truth-schema-v1.md), [evaluation-protocol-v1](../architecture/evaluation-protocol-v1.md), [analysis-anomaly-rca-blueprint-v1](../architecture/analysis-anomaly-rca-blueprint-v1.md).
-> - WHEN/WHO: [plan-v0.2-24-weeks](../plan/plan-v0.2-24-weeks.md). Plan này chưa được cập nhật theo refactor (ADR-002 yêu cầu sửa plan; chưa có bản mới tại thời điểm viết), nên mọi thứ liên quan lịch trong tài liệu này chỉ là tham chiếu.
+> - WHEN/WHO: [plan-v0.3-24-weeks](../plan/plan-v0.3-24-weeks.md).
 > - Backend: [backend-microservice-testbed-blueprint-v2](../architecture/backend-microservice-testbed-blueprint-v2.md) (thay [backend_microservice_testbed_blueprint](../architecture/backend_microservice_testbed_blueprint.md) còn mô tả topology v1). Khi mâu thuẫn, ưu tiên theo thứ tự ADR → service-catalogue v2 → http-and-event-contracts v2 và data-ownership v2 → blueprint.
 
 ## 1. Mục tiêu của scope v2
@@ -39,7 +41,7 @@ Số lượng CRUD, độ đầy đủ nghiệp vụ LMS, mức độ production
 | Tầng | Ý nghĩa | Quy tắc |
 | --- | --- | --- |
 | **MVP** | Bắt buộc để đạt mục tiêu nghiên cứu và các milestone chính | Nằm trên critical path |
-| **Thứ yếu (ADR-002)** | MCP server chỉ đọc và agent đọc kết quả RCA để viết báo cáo | Làm **sau** khi RCA engine và phần đánh giá đạt; không phải điều kiện hoàn thành đề tài |
+| ~~Thứ yếu (ADR-002)~~ | MCP server và agent: chuyển ra Out-of-scope theo [ADR-006](../adr/adr-006-trim-project-scope-v1.md) | Không triển khai |
 | **Target** | Có giá trị nếu MVP đã ổn định và còn đủ nguồn lực | Không được làm chậm critical path |
 | **Stretch** | Nâng cao, chỉ xem xét khi toàn bộ MVP/evaluation đã an toàn | Không lên lịch như điều kiện hoàn thành |
 | **Out-of-scope** | Không phục vụ đủ trực tiếp cho mục tiêu hoặc có chi phí/rủi ro vượt phạm vi | Không triển khai trong MVP |
@@ -234,7 +236,7 @@ telemetry_artifact / prediction_artifact / evaluation_artifact
 
 ## 3.5. RCA engine (Analysis/AI/RCA) bắt buộc
 
-**Vai trò (thay đổi so với v1).** RCA engine là bên **truy vết chính**, không phải công cụ hỗ trợ: bước kết luận (xếp hạng nguyên nhân) không cần người can thiệp. Phần chính của đề tài là **huấn luyện và đánh giá mô hình (ML + dependency graph)** trên dataset từ fault injection (ADR-002). Mã module huấn luyện đặt ở `aiops-platform/training/` (chưa tạo); LMS không import mã từ đây.
+**Vai trò ([ADR-006](../adr/adr-006-trim-project-scope-v1.md)).** RCA engine là phần chính của đề tài: **tự động** phát hiện incident và tạo **xếp hạng ứng viên nguyên nhân kèm bằng chứng** để **hỗ trợ** người vận hành, đúng tên đề tài đã đăng ký. Phần học máy là detector không giám sát fit trên run khỏe và trọng số/ngưỡng hiệu chỉnh trên validation, đánh giá trên dataset từ fault injection; không gọi là huấn luyện có giám sát. Mã module huấn luyện đặt ở `aiops-platform/training/` (chưa tạo); LMS không import mã từ đây.
 
 Pipeline chạy **out-of-band** bằng Python (CLI), không nằm trên business request path:
 
@@ -301,7 +303,8 @@ Baseline tối thiểu:
 1. Max Anomaly.
 2. Earliest Anomaly.
 3. Graph-aware simple baseline.
-4. Proposed ranker (graph-temporal-evidence) là mô hình huấn luyện/hiệu chỉnh trên dataset từ fault injection.
+4. `base-manual-auto` (baseline thủ công tự động, định nghĩa ở [ADR-006](../adr/adr-006-trim-project-scope-v1.md) mục 3).
+5. Proposed ranker (graph-temporal-evidence, "Hướng 1"), trọng số hiệu chỉnh trên validation.
 
 Proposed ranker kết hợp:
 
@@ -313,16 +316,16 @@ anomaly severity
 + evidence strength
 ```
 
-Chưa chốt: ranker chỉ hiệu chỉnh trọng số trên validation hay còn huấn luyện có giám sát bằng run có nhãn fault. Nếu dùng run có nhãn để huấn luyện, phải tách run huấn luyện khỏi run đánh giá theo evaluation-protocol-v1 (v0 coi đây là protocol extension riêng, không được tái dùng ngầm run validation/test). Quyết định này thuộc analysis blueprint v1 và evaluation protocol v1.
+Đã chốt ([ADR-006](../adr/adr-006-trim-project-scope-v1.md)): MVP chỉ hiệu chỉnh trọng số trên validation; ranker học có giám sát ("Hướng 2") là Stretch. Ghi chú gốc: Nếu dùng run có nhãn để huấn luyện, phải tách run huấn luyện khỏi run đánh giá theo evaluation-protocol-v1 (v0 coi đây là protocol extension riêng, không được tái dùng ngầm run validation/test). Quyết định này thuộc analysis blueprint v1 và evaluation protocol v1.
 
 Output là `RcaIncidentResult` ([schema ở complex-case-catalogue mục 5](../architecture/complex-case-catalogue-and-rca-result-v0.md)): `ranking[]` kèm `score`, `mechanism`, `propagation_path` và `evidence[]` tham chiếu lại telemetry gốc (`service.name`, `trace_id`/`span_id` hoặc metric + nhãn + khoảng thời gian). Chứng cứ không đủ thì `verdict = "insufficient_evidence"` và `ranking` rỗng. Dùng thuật ngữ **root-cause candidate ranking**, không tuyên bố causal proof tuyệt đối từ telemetry quan sát.
 
 ### Đối chứng thủ công
 
-Để trả lời RQ6, MVP phải có hai đối chứng (ADR-002):
+Để trả lời RQ6 ([ADR-006](../adr/adr-006-trim-project-scope-v1.md) mục 3):
 
-1. **Baseline "thủ công" tự động**: ngưỡng + tìm trace lỗi/chậm nhất theo đường request của triệu chứng; chạy lặp được trên cùng telemetry và cùng case.
-2. **Thử nghiệm người thật nhỏ**: vài người dùng Grafana/Tempo/Loki để chẩn đoán case, đo thời gian chẩn đoán. Cấu trúc protocol (người tham gia không biết ground truth, brief chỉ nêu triệu chứng, dùng run của final test split) ở [evaluation-protocol-v1 mục 15](../architecture/evaluation-protocol-v1.md); số người và time cap chưa chốt, chờ Đức xác nhận.
+1. **Baseline "thủ công" tự động** (MVP): mô phỏng cách SRE làm thật. Từ triệu chứng, lấy trace lỗi/chậm nhất trong cửa sổ incident, đi theo span CLIENT lỗi hoặc chậm sâu nhất (kể cả qua cạnh async/auth sang service khác) và kết luận service sở hữu span đó; chạy lặp được trên cùng telemetry và cùng case. So sánh bằng độ chính xác Top-K, thời gian tới kết luận đúng và số artifact phải mở, không bằng lập luận "người không tìm ra".
+2. **Thử nghiệm người thật nhỏ** (Target, 2–3 người, minh họa định tính, không phải tiêu chí hoàn thành): vài người dùng Grafana/Tempo/Loki để chẩn đoán case, đo thời gian chẩn đoán. Cấu trúc protocol (người tham gia không biết ground truth, brief chỉ nêu triệu chứng, dùng run của final test split) ở [evaluation-protocol-v1 mục 15](../architecture/evaluation-protocol-v1.md); số người và time cap chưa chốt, chờ Đức xác nhận.
 
 ---
 
@@ -412,9 +415,9 @@ Notebook, screenshot hoặc demo thủ công không thay thế artifact có th�
 
 ---
 
-# 4. Thứ yếu — MCP server và agent (ADR-002)
+# 4. ~~Thứ yếu~~ Out-of-scope — MCP server và agent (ADR-002, [ADR-006](../adr/adr-006-trim-project-scope-v1.md))
 
-Làm **sau** khi RCA engine và phần đánh giá đạt; không phải tiêu chí hoàn thành đề tài và không nằm trên critical path.
+**Đã chuyển ra Out-of-scope** theo [ADR-006](../adr/adr-006-trim-project-scope-v1.md); chỉ nhắc như hướng phát triển. Nội dung dưới giữ làm lịch sử thiết kế.
 
 | Thành phần | Vị trí | Vai trò và ràng buộc |
 | --- | --- | --- |
@@ -437,7 +440,9 @@ Ràng buộc an toàn: nội dung log/trace là dữ liệu không tin cậy (c�
 | Expanded robustness | Focused MVP robustness đã chạy | Nhiều sampling level/missing-modality combination/live sampling |
 | External benchmark subset | Evaluation trên testbed chính không bị chậm | Validation bổ sung |
 | Component-level evidence chi tiết hơn | Service-level RCA ổn định | Tăng explainability, không đổi primary metric |
-| Mở rộng thử nghiệm người thật (thêm người, thêm case) | Thử nghiệm MVP đã chạy | Tăng độ tin cậy so sánh AI và thủ công |
+| Thử nghiệm người thật nhỏ (2–3 người) | Campaign MVP đã freeze ([ADR-006](../adr/adr-006-trim-project-scope-v1.md)) | Minh họa định tính cho RQ6 |
+| Case C1, C5, C7 | Chuỗi nhân quả đã chạy thật; bốn case MVP đã có dataset ([ADR-006](../adr/adr-006-trim-project-scope-v1.md)) | Thêm case async/dùng chung; C5, C7 cùng dồn về `identity` |
+| Graph tách loại cạnh (async/auth/shared) trong ablation; cạnh shared-resource | C1 chạy được ([ADR-006](../adr/adr-006-trim-project-scope-v1.md)) | Ablation chi tiết theo loại cạnh |
 
 Các Target trên **không nằm trong critical path** và có thể bỏ hoàn toàn mà MVP vẫn hợp lệ. MinIO, `identity` (đã gồm hồ sơ student), `media`, `notification`, `scheduler`, `ai` không còn là Target vì đã thuộc topology v2 (ADR-001). Assignment (Target của v1) không còn nghĩa trong topology v2 vì `submission` đã bị bỏ; thêm service mới phải có ADR.
 
@@ -456,7 +461,8 @@ Các Target trên **không nằm trong critical path** và có thể bỏ hoàn 
 - custom Kubernetes operator;
 - automatic remediation / self-healing;
 - full LMS frontend;
-- LLM thay RCA engine để xếp hạng nguyên nhân (LLM chỉ được viết báo cáo từ kết quả RCA ở mục 4);
+- LLM thay RCA engine để xếp hạng nguyên nhân;
+- ranker học có giám sát trên run có nhãn fault ("Hướng 2" của blueprint-v1, [ADR-006](../adr/adr-006-trim-project-scope-v1.md));
 - code-level bug localization;
 - resilience/enterprise infrastructure nâng cao không cần cho controlled experiments.
 
@@ -486,6 +492,8 @@ Các Target trên **không nằm trong critical path** và có thể bỏ hoàn 
 | Custom dashboard framework | Out-of-scope MVP | Grafana + artifact/API tối thiểu đủ |
 | Distributed analysis architecture/Celery/Kafka | Out-of-scope MVP | Python/CLI đủ cho quy mô hiện tại |
 | Fault injection đổi code nghiệp vụ | Out-of-scope | Fault phải bật/tắt được mà không sửa business rule |
+| MCP server và agent LLM đọc kết quả RCA | Out-of-scope ([ADR-006](../adr/adr-006-trim-project-scope-v1.md)) | Không phục vụ RQ; tiến độ AI đang trễ; chỉ là hướng phát triển |
+| Tính năng sản phẩm mới cho LMS (ví dụ URL ký media R-18) | Out-of-scope ([ADR-006](../adr/adr-006-trim-project-scope-v1.md)) | LMS đóng băng; chỉ nhận thay đổi phục vụ telemetry, fault, workload |
 
 ---
 

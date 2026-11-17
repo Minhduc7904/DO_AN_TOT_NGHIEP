@@ -19,9 +19,8 @@ export interface SynchronizeMarkdownUsageInput {
 
 /**
  * So khớp media tham chiếu trong markdown với usage hiện có của owner: thêm usage thiếu (chỉ media
- * `READY` có thật và do chính `actor` upload), xóa usage không còn được tham chiếu. Id không tồn tại, chưa sẵn
- * sàng hoặc của người khác tính vào `failed_count` và job thành `PARTIAL_FAILED`, không làm cả command lỗi.
- * Kiểm người upload để không ai biến media của người khác thành công khai bằng cách nhúng id vào markdown.
+ * `READY` có thật), xóa usage không còn được tham chiếu. Id không tồn tại/chưa sẵn sàng tính vào
+ * `failed_count` và job thành `PARTIAL_FAILED`, không làm cả command lỗi.
  */
 export class SynchronizeMarkdownUsageUseCase {
   constructor(
@@ -59,9 +58,7 @@ export class SynchronizeMarkdownUsageUseCase {
       const present = new Set(current.map((usage) => usage.mediaId));
       const missing = referenced.filter((id) => !present.has(id));
       const medias = await stores.media.findManyByIds(missing);
-      const ready = medias.filter(
-        (media) => media.status === 'READY' && media.uploadedBy === input.actorId,
-      );
+      const ready = medias.filter((media) => media.status === 'READY');
       let position = await stores.usages.nextPosition(group);
       for (const media of ready) {
         await stores.usages.create({
@@ -77,10 +74,7 @@ export class SynchronizeMarkdownUsageUseCase {
         status: failed > 0 ? 'PARTIAL_FAILED' : 'COMPLETED',
         processedDelta: stale.length + ready.length,
         failedDelta: failed,
-        lastError:
-          failed > 0
-            ? `${failed} media không tồn tại, chưa sẵn sàng hoặc không thuộc người thao tác`
-            : null,
+        lastError: failed > 0 ? `${failed} media không tồn tại hoặc chưa sẵn sàng` : null,
       });
     });
   }

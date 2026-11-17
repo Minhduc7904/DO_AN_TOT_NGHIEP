@@ -4,6 +4,8 @@
 
 > **Task:** R-12 — [bảng task refactor](../plan/refactor/refactor-board-v1.md)
 >
+> **Cập nhật 17/11/2026 ([ADR-006](../adr/adr-006-trim-project-scope-v1.md)):** giữ tên và vai trò theo đề tài đã đăng ký: hệ thống phát hiện bất thường và **hỗ trợ** phân tích nguyên nhân sự cố; RCA engine là phần chính nhưng không yêu cầu "kết luận không cần người"; MCP/agent ra Out-of-scope; bộ case MVP còn C2 (viết lại), C3, C4, C6. Khi đoạn chi tiết mâu thuẫn, ADR-006 được ưu tiên.
+>
 > **Cập nhật R-13:** `auth` và `student` đã gộp thành service `identity` ([ADR-005](../adr/adr-005-merge-auth-student-into-identity-v1.md)); tài liệu được sửa tại chỗ theo topology 7 service + 4 worker (11 runtime). Các số đo chưa đo lại sau khi gộp được ghi rõ ở chỗ dùng.
 >
 > **Trạng thái:** Đề xuất — chờ Đức tự xác nhận (refactor do một mình Đức làm, không cần Bách review).
@@ -16,7 +18,7 @@
 > - Topology và fault: [service-catalogue-and-topology-v2](../architecture/service-catalogue-and-topology-v2.md), [data-ownership-and-fault-matrix-v2](../architecture/data-ownership-and-fault-matrix-v2.md), [complex-case-catalogue-and-rca-result-v0](../architecture/complex-case-catalogue-and-rca-result-v0.md).
 > - Phạm vi và đo lường: [project-scope-v2](project-scope-v2.md), [research-questions-and-metrics-v2](research-questions-and-metrics-v2.md).
 > - Tài liệu đang được viết lại song song (link theo tên đích): [telemetry-and-ground-truth-schema-v1](../architecture/telemetry-and-ground-truth-schema-v1.md), [evaluation-protocol-v1](../architecture/evaluation-protocol-v1.md), [analysis-anomaly-rca-blueprint-v1](../architecture/analysis-anomaly-rca-blueprint-v1.md).
-> - WHEN/WHO: [plan-v0.2-24-weeks](../plan/plan-v0.2-24-weeks.md); plan chưa được cập nhật theo refactor (chưa có bản mới tại thời điểm viết).
+> - WHEN/WHO: [plan-v0.3-24-weeks](../plan/plan-v0.3-24-weeks.md).
 > - Backend: [backend-microservice-testbed-blueprint-v2](../architecture/backend-microservice-testbed-blueprint-v2.md) (thay [backend_microservice_testbed_blueprint](../architecture/backend_microservice_testbed_blueprint.md) còn mô tả topology v1); khi mâu thuẫn ưu tiên service-catalogue v2.
 >
 > **Vai trò canonical:** Source of truth cho WHY, WHAT, vấn đề nghiên cứu, research questions, research scope, high-level architecture, hướng anomaly detection/RCA và triết lý đánh giá. Khi mâu thuẫn, ưu tiên: ADR → service-catalogue v2 → tài liệu này.

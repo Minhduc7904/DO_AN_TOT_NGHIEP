@@ -2,6 +2,8 @@
 
 > **Task:** R-12 — [bảng task refactor](../plan/refactor/refactor-board-v1.md)
 >
+> **Cập nhật 17/11/2026 ([ADR-006](../adr/adr-006-trim-project-scope-v1.md)):** LMS đóng băng: không thêm nghiệp vụ hoặc tính năng sản phẩm, chỉ nhận thay đổi phục vụ telemetry, fault, workload; R-18 (URL ký media) đã hủy và revert; MCP/agent ra Out-of-scope. Khi đoạn chi tiết mâu thuẫn, ADR-006 được ưu tiên.
+>
 > **Cập nhật R-13:** `auth` và `student` đã gộp thành service `identity` ([ADR-005](../adr/adr-005-merge-auth-student-into-identity-v1.md)); tài liệu được sửa tại chỗ theo topology 7 service + 4 worker (11 runtime). Các số đo chưa đo lại sau khi gộp được ghi rõ ở chỗ dùng.
 >
 > **Trạng thái:** Đề xuất — chờ Đức tự xác nhận (refactor do một mình Đức làm, không cần Bách review). Nội dung đối chiếu với code và Compose ngày 29/10/2026; chỗ chưa kiểm ghi rõ "chưa kiểm chứng".
@@ -14,7 +16,7 @@
 >
 > **Định hướng WHY/WHAT:** [`../direction/khung-dinh-huong-tong-the-lms-microservice-ai-rca-v1.md`](../direction/khung-dinh-huong-tong-the-lms-microservice-ai-rca-v1.md)
 >
-> **WHEN/WHO:** [`../plan/plan-v0.2-24-weeks.md`](../plan/plan-v0.2-24-weeks.md)
+> **WHEN/WHO:** [`../plan/plan-v0.3-24-weeks.md`](../plan/plan-v0.3-24-weeks.md)
 
 Tài liệu này là tổng quan kiến trúc backend testbed: nó chỉ nêu quyết định và quy ước, còn danh mục chi tiết (service, edge, route, command, bảng dữ liệu, fault) nằm ở các tài liệu v2 ở phần Phụ thuộc và được link tại chỗ, không chép lại. Thứ tự ưu tiên khi mâu thuẫn: ADR-001..004 → catalogue/contract/data-ownership v2 → tài liệu này → các tài liệu còn ở v0/v1. Khi tài liệu và code lệch nhau, **code là chuẩn**: phải sửa tài liệu cùng PR hoặc ghi rõ migration đang diễn ra. Tài liệu không định nghĩa lịch triển khai theo tuần.
 
@@ -441,7 +443,7 @@ Phần còn thiếu để testbed đạt DoD đầy đủ, thuộc mảng AI: st
 
 - Thay đổi service boundary, ownership dữ liệu, command hoặc producer/consumer, đồng bộ ↔ bất đồng bộ, `service.name`, telemetry schema, experiment manifest hoặc granularity của RCA cần ADR trong `docs/processed/adr/` và cập nhật catalogue, contract, ground truth, evaluation protocol, fault matrix ([catalogue v2](service-catalogue-and-topology-v2.md) mục 11).
 - Không tạo cây tài liệu hoặc source code cạnh tranh với blueprint.
-- Lịch triển khai, primary và collaborator chỉ cập nhật trong [`plan-v0.2-24-weeks.md`](../plan/plan-v0.2-24-weeks.md) và [bảng task refactor](../plan/refactor/refactor-board-v1.md).
+- Lịch triển khai, primary và collaborator chỉ cập nhật trong [`plan-v0.3-24-weeks.md`](../plan/plan-v0.3-24-weeks.md) và [bảng task refactor](../plan/refactor/refactor-board-v1.md).
 
 ## 15. Điểm chưa kiểm chứng
 

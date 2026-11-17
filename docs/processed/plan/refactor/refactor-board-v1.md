@@ -6,7 +6,7 @@
 | Người phụ trách | Đức, làm một mình toàn bộ (code refactor và docs, gồm docs AI/scope); không cần Bách tham gia hay review                                                       |
 | Quyết định nền  | [ADR-001](../../adr/adr-001-restructure-lms-testbed-v1.md), [ADR-002](../../adr/adr-002-ai-primary-root-cause-analysis-v1.md)                                  |
 | Quy ước         | Mỗi task một nhánh `refactor/week-NN/task-NN-<short-title>` (hoặc `docs/…`) và một PR vào `main` theo [quy tắc Git](../../rules/git-and-pull-request-rules.md) |
-| Trạng thái bảng | Đang thực hiện                                                                                                                                                 |
+| Trạng thái bảng | Đóng (17/11/2026): R-01–R-13 hoàn thành, R-18 hủy; LMS đóng băng theo [ADR-006](../../adr/adr-006-trim-project-scope-v1.md) |
 
 ## Danh sách task
 
@@ -27,7 +27,7 @@
 | R-11  | Test, CI, Postman v2; viết lại regression và job CI `mvp-regression`/`w7-compose` (gỡ ở R-05); đổi tên test `w1/w2/w3/w5` theo nghiệp vụ                                                                            | 8–10 | R-04…R-09   | Hoàn thành (29/10/2026; PR #67, CI GitHub xanh trừ GitGuardian báo nhầm; xem bên dưới) |
 | R-12  | Viết lại docs, viết lại smoke tracing/metrics/logs/acceptance (đang gắn luồng v1), kiểm chứng telemetry xuyên service, danh mục case phức tạp v0; ghi nhận schema kết quả RCA và nơi lưu (cho MCP thứ yếu, ADR-002) | 9–10 | tất cả      | Hoàn thành (29/10/2026; PR #68, CI GitHub xanh; xem "R-12" bên dưới) |
 | R-13  | Gộp `auth` + `student` thành service `identity` (code, DB `identity_db`, env, telemetry, compose, CI, docs; [ADR-005](../../adr/adr-005-merge-auth-student-into-identity-v1.md)) | 11–12 | R-04, R-12 | Hoàn thành (30/10/2026; PR #69, CI GitHub đạt 12 job; xem "R-13" bên dưới) |
-| R-18  | URL media theo tầng truy cập: URL ký có hạn (HMAC) cho media riêng tư, URL trần cho media công khai; course/notification dựng lại URL khi trả markdown | 12–14 | R-06, R-16, R-17 | **Đang thực hiện** (slice 1: cổng truy cập ở `media`, xem "R-18" bên dưới; `course`/`notification` chưa làm) |
+| R-18  | URL media theo tầng truy cập: URL ký có hạn (HMAC) cho media riêng tư, URL trần cho media công khai; course/notification dựng lại URL khi trả markdown | 12–14 | R-06, R-16, R-17 | **Hủy** (17/11/2026, [ADR-006](../../adr/adr-006-trim-project-scope-v1.md)): slice 1 đã revert; không làm phần `course`/`notification` |
 
 ## Mốc kiểm tra
 
@@ -316,8 +316,8 @@ Phạm vi đã làm: khôi phục metric RabbitMQ, viết lại 5 smoke observab
 **Khác với kế hoạch / phát hiện:**
 
 - Khi chạy từ stack sạch, `MEDIA_CLEANUP_MIN_RETENTION_HOURS=0` và `AUTH_SERVICE_TOKEN_TTL_SECONDS=60` do runner đặt (`extraEnv`), stack thường không đổi.
-- `HttpQueryClient` đặt `operation_name` là `<METHOD> <path>` thô nên có ID trong nhãn metric ở nhiều cạnh (do agent tài liệu phát hiện, chưa sửa).
-- Lỗi publish RabbitMQ ném `details.dependency=rabbitmq`, chưa theo identity `<service>-rabbitmq` (chưa sửa).
+- `HttpQueryClient` đặt `operation_name` là `<METHOD> <path>` thô nên có ID trong nhãn metric ở nhiều cạnh (do agent tài liệu phát hiện). **Đã sửa 17/11/2026** trong Gate R ([plan-v0.3](../plan-v0.3-24-weeks.md)): `path` là route template, giá trị qua `params`.
+- Lỗi publish RabbitMQ ném `details.dependency=rabbitmq`, chưa theo identity `<service>-rabbitmq`. **Đã sửa 17/11/2026** trong Gate R: dùng identity canonical, span ghi lỗi gốc và log `dependency.failure`.
 - Cạnh `media→student` có trong mapping code nhưng không có trong danh sách cạnh đo ở catalogue.
 - Không thêm smoke vào CI trong task này (xem dưới).
 
@@ -357,6 +357,8 @@ Quyết định: [ADR-005](../../adr/adr-005-merge-auth-student-into-identity-v1
 **Hệ quả cần Đức quyết định:** C5, C6, C7 cùng có `root_cause_service=identity`; ranking hằng tốt nhất Top-3 ≈ 71% (5/7) và Top-1 ≈ 43% (3/7). Đã ghi ở ADR-005 và evaluation-protocol; chưa quyết thêm case hay báo cáo theo component.
 
 ### R-18 (slice 1, chạy cục bộ ngày 03/11/2026, Node 22.13.1, pnpm 11.19.0)
+
+> **Đã hủy ngày 17/11/2026** theo [ADR-006](../../adr/adr-006-trim-project-scope-v1.md): slice 1 (commit `a1ea944`) đã được revert vì là tính năng bảo mật không phục vụ RCA và đang làm ảnh markdown trả `404`. Phần dưới giữ làm lịch sử. Sau revert: build và 111/111 unit test của `media`, lint `media`/`contracts` và `test:architecture` đạt; regression, Postman và smoke chưa chạy lại (cần dựng stack compose).
 
 Phạm vi đã làm: cổng truy cập của `media` (xem [contract §4.4](../../architecture/http-and-event-contracts-v2.md)). `GET /media/{id}/content|thumbnail` chỉ cho xem khi có chữ ký HMAC hợp lệ hoặc media có usage tầng `PUBLIC`; URL của `upload-complete`, `POST /media`, thư viện và `/internal/.../usages/urls` là URL ký; route công khai `usages/urls` và `usages/{id}/url` chỉ trả usage tầng `PUBLIC`; worker đồng bộ markdown chỉ gắn media do chính người thao tác upload; khóa ký production bắt buộc đặt riêng.
 

@@ -36,12 +36,12 @@ import type { Response } from 'express';
 import multer from 'multer';
 import { z } from 'zod';
 
-import { MediaUrlBuilder } from '../../../application/media-url-builder.js';
 import { CompleteDirectUploadUseCase } from '../../../application/use-cases/media/complete-direct-upload.use-case.js';
 import { CreateUploadIntentUseCase } from '../../../application/use-cases/media/create-upload-intent.use-case.js';
+import { GetMediaContentUseCase } from '../../../application/use-cases/media/get-media-content.use-case.js';
 import { GetMediaLibraryUseCase } from '../../../application/use-cases/media/get-media-library.use-case.js';
 import { GetUserAvatarContentUseCase } from '../../../application/use-cases/media/get-user-avatar-content.use-case.js';
-import { ServePublicMediaUseCase } from '../../../application/use-cases/media/serve-public-media.use-case.js';
+import { GetMediaThumbnailUseCase } from '../../../application/use-cases/media/get-media-thumbnail.use-case.js';
 import { RetryMediaThumbnailUseCase } from '../../../application/use-cases/media/retry-media-thumbnail.use-case.js';
 import { UploadMediaUseCase } from '../../../application/use-cases/media/upload-media.use-case.js';
 import { MEDIA_MULTIPART_MAX_BYTES } from '../../multipart-limit.js';
@@ -70,8 +70,8 @@ export class MediaController {
     @Inject(CompleteDirectUploadUseCase)
     private readonly completeUpload: CompleteDirectUploadUseCase,
     @Inject(GetMediaLibraryUseCase) private readonly library: GetMediaLibraryUseCase,
-    @Inject(ServePublicMediaUseCase) private readonly servePublic: ServePublicMediaUseCase,
-    @Inject(MediaUrlBuilder) private readonly urls: MediaUrlBuilder,
+    @Inject(GetMediaContentUseCase) private readonly content: GetMediaContentUseCase,
+    @Inject(GetMediaThumbnailUseCase) private readonly thumbnail: GetMediaThumbnailUseCase,
     @Inject(GetUserAvatarContentUseCase) private readonly avatar: GetUserAvatarContentUseCase,
     @Inject(RetryMediaThumbnailUseCase) private readonly retryThumbnail: RetryMediaThumbnailUseCase,
   ) {}
@@ -97,7 +97,6 @@ export class MediaController {
         originalName: file.originalname,
         extractText: fields.extract_text,
       }),
-      this.urls,
     );
   }
 
@@ -129,7 +128,6 @@ export class MediaController {
   ): Promise<MediaDto> {
     return presentMedia(
       await this.completeUpload.execute(principal, parseInput(idSchema, mediaId)),
-      this.urls,
     );
   }
 
@@ -145,27 +143,19 @@ export class MediaController {
       input.page,
       input.page_size,
     );
-    return toPage(result, input, (media) => presentMedia(media, this.urls));
+    return toPage(result, input, presentMedia);
   }
 
-  /**
-   * Thẻ `<img>`/`<video>` không gửi được token nên route không đòi principal; quyền xem do URL quyết định: URL ký
-   * (`?exp=&sig=`) hoặc media có usage công khai. Vẫn cần service token của Gateway.
-   */
+  /** Công khai: thẻ `<img>`/`<video>` không gửi được token. Vẫn cần service token của Gateway. */
   @Anonymous()
   @RawResponse()
   @Get(':media_id/content')
   async getContent(
     @Param('media_id') mediaId: string,
-    @Query('exp') exp: unknown,
-    @Query('sig') sig: unknown,
     @Headers('range') range: string | undefined,
     @Res({ passthrough: true }) response: Response,
   ): Promise<StreamableFile> {
-    return streamMedia(
-      await this.servePublic.serveContent(parseInput(idSchema, mediaId), range, { exp, sig }),
-      response,
-    );
+    return streamMedia(await this.content.execute(parseInput(idSchema, mediaId), range), response);
   }
 
   /** Công khai: avatar hiện tại của tài khoản, URL ổn định (`userAvatarUrl`) nên `identity` ghép vào DTO mà không gọi `media`. */
@@ -185,13 +175,11 @@ export class MediaController {
   @Get(':media_id/thumbnail')
   async getThumbnail(
     @Param('media_id') mediaId: string,
-    @Query('exp') exp: unknown,
-    @Query('sig') sig: unknown,
     @Headers('range') range: string | undefined,
     @Res({ passthrough: true }) response: Response,
   ): Promise<StreamableFile> {
     return streamMedia(
-      await this.servePublic.serveThumbnail(parseInput(idSchema, mediaId), range, { exp, sig }),
+      await this.thumbnail.execute(parseInput(idSchema, mediaId), range),
       response,
     );
   }
@@ -204,7 +192,6 @@ export class MediaController {
   ): Promise<MediaDto> {
     return presentMedia(
       await this.retryThumbnail.execute(principal, parseInput(idSchema, mediaId)),
-      this.urls,
     );
   }
 }

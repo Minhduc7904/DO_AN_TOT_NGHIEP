@@ -18,7 +18,6 @@ import request from 'supertest';
 
 import { PrismaService } from '../../src/adapters/persistence/prisma.service.js';
 import { OBJECT_STORAGE, type ObjectStorage } from '../../src/application/ports/object-storage.js';
-import { MediaUrlSigner } from '../../src/domain/url-signer.js';
 
 /**
  * Chạy với PostgreSQL, MinIO và RabbitMQ thật; xem `pnpm test:media:e2e`. API và worker chạy cùng
@@ -26,13 +25,6 @@ import { MediaUrlSigner } from '../../src/domain/url-signer.js';
  */
 describe('media + media-worker (PostgreSQL, MinIO, RabbitMQ thật)', () => {
   const signingKey = generateSigningKey();
-  const urlSigningKey = 'khoa-ky-url-media-chi-dung-cho-e2e-0123456789';
-  const urlSigner = new MediaUrlSigner({ key: urlSigningKey, ttlSeconds: 900 });
-  /** URL đọc đã ký, dựng độc lập với API để thử cả media mà API không trả URL (đang FAILED, chưa có thumbnail). */
-  const signedPath = (mediaId: string, variant: 'content' | 'thumbnail'): string =>
-    `/api/v1/media/${mediaId}/${variant}?${urlSigner.query(mediaId, variant, new Date())}`;
-  const signedUrlPattern = (mediaId: string, variant: 'content' | 'thumbnail'): RegExp =>
-    new RegExp(String.raw`^/api/v1/media/${mediaId}/${variant}\?exp=\d+&sig=[\w-]+$`, 'u');
   const gatewayToken = mintGatewayToken(signingKey, 'media');
   const asRole = (role: string, id: string): Record<string, string> => ({
     authorization: `Bearer ${gatewayToken}`,
@@ -124,7 +116,6 @@ describe('media + media-worker (PostgreSQL, MinIO, RabbitMQ thật)', () => {
 
     Object.assign(process.env, {
       OTEL_SDK_DISABLED: 'true',
-      MEDIA_URL_SIGNING_KEY: urlSigningKey,
       IDENTITY_BASE_URL: stubUrl,
       MEDIA_IDENTITY_BASE_URL: stubUrl,
       SERVICE_CLIENT_ID: 'media',
@@ -246,47 +237,35 @@ describe('media + media-worker (PostgreSQL, MinIO, RabbitMQ thật)', () => {
       type: 'IMAGE',
       status: 'READY',
       thumbnail_status: 'PENDING',
-      content_url: expect.stringMatching(signedUrlPattern(mediaId, 'content')),
+      content_url: `/api/v1/media/${mediaId}/content`,
       uploaded_by: instructorId,
     });
     // Client không bao giờ thấy bucket hay object key.
     expect(JSON.stringify(complete.body)).not.toMatch(/bucket|object_key|tmp\//u);
 
-    // Route đọc không cần danh tính user (thẻ <img> không gửi được token): quyền xem nằm ở chữ ký trong URL.
-    const contentUrl = complete.body.data.content_url as string;
-    const full = await http().get(contentUrl).set(gatewayOnly).expect(200);
+    // Route công khai: chỉ cần service token của Gateway, không cần danh tính user.
+    const full = await http().get(`/api/v1/media/${mediaId}/content`).set(gatewayOnly).expect(200);
     expect(full.headers['content-type']).toContain('image/png');
-    expect(full.headers['cache-control']).toContain('private');
     expect(Buffer.from(full.body as Buffer).equals(content)).toBe(true);
 
     const partial = await http()
-      .get(contentUrl)
+      .get(`/api/v1/media/${mediaId}/content`)
       .set({ ...gatewayOnly, range: 'bytes=0-9' })
       .expect(206);
     expect(partial.headers['content-range']).toBe(`bytes 0-9/${content.length}`);
     await http()
-      .get(contentUrl)
+      .get(`/api/v1/media/${mediaId}/content`)
       .set({ ...gatewayOnly, range: `bytes=${content.length + 5}-` })
       .expect(416);
-
-    // Media chưa gắn usage công khai: biết id mà không có chữ ký thì không xem được; chữ ký sai/của variant khác bị từ chối.
-    await http().get(`/api/v1/media/${mediaId}/content`).set(gatewayOnly).expect(404);
-    const tampered = contentUrl.replace(
-      /sig=(.)/u,
-      (_m, c: string) => `sig=${c === 'A' ? 'B' : 'A'}`,
-    );
-    const rejected = await http().get(tampered).set(gatewayOnly).expect(403);
-    expect(rejected.body.error.code).toBe('MEDIA_URL_INVALID');
-    await http().get(contentUrl.replace('/content', '/thumbnail')).set(gatewayOnly).expect(403);
 
     // Thumbnail chưa có thì MEDIA_NOT_READY; worker sinh xong thì stream được WebP.
     const ready = await waitFor(async () => {
       const item = await getMedia(instructor, mediaId);
       return item['thumbnail_status'] === 'READY' ? item : undefined;
     });
-    expect(ready['thumbnail_url']).toMatch(signedUrlPattern(mediaId, 'thumbnail'));
+    expect(ready['thumbnail_url']).toBe(`/api/v1/media/${mediaId}/thumbnail`);
     const thumb = await http()
-      .get(ready['thumbnail_url'] as string)
+      .get(`/api/v1/media/${mediaId}/thumbnail`)
       .set(gatewayOnly)
       .expect(200);
     expect(thumb.headers['content-type']).toContain('image/webp');
@@ -316,7 +295,7 @@ describe('media + media-worker (PostgreSQL, MinIO, RabbitMQ thật)', () => {
       mime_type: 'application/pdf',
       thumbnail_status: 'NOT_APPLICABLE',
     });
-    await http().get(res.body.data.content_url).set(gatewayOnly).expect(200);
+    await http().get(`/api/v1/media/${res.body.data.id}/content`).set(gatewayOnly).expect(200);
   });
 
   it('upload trực tiếp: nội dung khác loại khai báo → 415 MEDIA_MIME_MISMATCH, FAILED; cùng loại thì lưu MIME thật', async () => {
@@ -354,7 +333,7 @@ describe('media + media-worker (PostgreSQL, MinIO, RabbitMQ thật)', () => {
       status: 'FAILED',
       content_url: null,
     });
-    await http().get(signedPath(mediaId, 'content')).set(gatewayOnly).expect(409);
+    await http().get(`/api/v1/media/${mediaId}/content`).set(gatewayOnly).expect(409);
     // Hoàn tất lại sau khi FAILED không phục hồi được.
     await http().post(`/api/v1/media/${mediaId}/upload-complete`).set(instructor).expect(409);
   });
@@ -414,7 +393,7 @@ describe('media + media-worker (PostgreSQL, MinIO, RabbitMQ thật)', () => {
       thumbnail_url: null,
     });
     const id = uploaded.body.data.id as string;
-    const missingThumb = await http().get(signedPath(id, 'thumbnail')).set(gatewayOnly);
+    const missingThumb = await http().get(`/api/v1/media/${id}/thumbnail`).set(gatewayOnly);
     expect(missingThumb.status).toBe(409);
     expect(missingThumb.body.error).toMatchObject({
       code: 'MEDIA_NOT_READY',
@@ -1145,8 +1124,7 @@ describe('media + media-worker (PostgreSQL, MinIO, RabbitMQ thật)', () => {
       for (const id of [replaced, avatar, recent]) {
         expect((await row(id))?.['deletedAt']).toBeNull();
         expect(await objectExists(id, 'objectKey')).toBe(true);
-        // `recent` chưa có usage công khai nên chỉ xem được bằng URL ký.
-        await http().get(signedPath(id, 'content')).set(gatewayOnly).expect(200);
+        await http().get(`/api/v1/media/${id}/content`).set(gatewayOnly).expect(200);
       }
       const keptThumbnail = await api
         .get(PrismaService)
