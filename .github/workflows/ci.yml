@@ -289,3 +289,30 @@ jobs:
 
       - name: Reset twice and compare fingerprint
         run: pnpm --dir lms run test:testbed:reset:compose
+
+  aiops-training:
+    name: aiops-platform training (Python)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: aiops-platform/training
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v6
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          version: 0.12.5
+
+      - name: Install locked dependencies
+        run: uv sync --frozen
+
+      - name: Lint and format
+        run: |
+          uv run ruff check .
+          uv run ruff format --check .
+
+      - name: Unit tests
+        run: uv run pytest

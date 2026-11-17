@@ -9,7 +9,7 @@ Quyết định tách: [ADR-001](../docs/processed/adr/adr-001-restructure-lms-t
 | Thư mục                           | Trạng thái | Nội dung                                                                                               |
 | --------------------------------- | ---------- | ------------------------------------------------------------------------------------------------------ |
 | `observability/`                  | Có         | Collector, Prometheus, Tempo, Loki, Grafana: cấu hình, Dockerfile, dashboard, `compose.yaml` riêng     |
-| `training/`                       | Chưa tạo   | **Phần chính**: RCA engine (detector không giám sát, incident, graph, xếp hạng nguyên nhân) và dataset |
+| `training/`                       | Có         | **Phần chính**: RCA engine (Python, uv); hiện có export telemetry theo run ([README](training/README.md)) |
 | `faults/`                         | Có         | Fault injection: toxiproxy trước `course-postgres` và MinIO, LLM stub, CLI `fault-control` ([README](faults/README.md)) |
 | `load/`                           | Có         | Workload k6 mức 1 cho W1–W7 ([README](load/README.md))                                                  |
 | `evaluation/`                     | Chưa tạo   | Đánh giá                                                                                               |
