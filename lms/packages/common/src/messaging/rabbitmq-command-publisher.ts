@@ -1,3 +1,4 @@
+import { logDependencyFailure } from '@aiops-lms/observability';
 import {
   context,
   propagation,
@@ -8,7 +9,7 @@ import {
   type Context,
 } from '@opentelemetry/api';
 
-import { AppError } from '../errors/index.js';
+import { AppError, ERROR_CODES } from '../errors/index.js';
 import { COMMAND_EXCHANGE, type CommandEnvelope } from './command-envelope.js';
 import type { RabbitMqSession } from './rabbitmq-session.js';
 
@@ -79,8 +80,19 @@ export class RabbitMqCommandPublisher {
         await this.publishAndConfirm(channel, routingKey, envelope, headers);
       });
     } catch (error) {
+      const identity = this.options.dependencyIdentity;
+      const failure = error instanceof AppError ? error : AppError.dependencyUnavailable(identity);
+      const errorType = failure.code === ERROR_CODES.dependencyTimeout ? 'timeout' : 'unavailable';
+      // Giữ lỗi gốc (kênh đóng, broker từ chối, ...) trên span và log trước khi đổi sang AppError.
+      span.recordException(error instanceof Error ? error : String(error));
+      span.setAttribute('error.type', errorType);
       span.setStatus({ code: SpanStatusCode.ERROR });
-      throw error instanceof AppError ? error : AppError.dependencyUnavailable('rabbitmq');
+      logDependencyFailure(span, {
+        dependency_identity: identity,
+        error_type: errorType,
+        operation_name: 'publish',
+      });
+      throw failure;
     } finally {
       span.end();
     }
@@ -94,7 +106,7 @@ export class RabbitMqCommandPublisher {
   ): Promise<void> {
     return new Promise<void>((resolve, reject) => {
       const timer = setTimeout(
-        () => reject(AppError.dependencyTimeout('rabbitmq')),
+        () => reject(AppError.dependencyTimeout(this.options.dependencyIdentity)),
         this.options.confirmTimeoutMs,
       );
       channel.publish(
@@ -110,7 +122,7 @@ export class RabbitMqCommandPublisher {
         },
         (error) => {
           clearTimeout(timer);
-          if (error) reject(AppError.dependencyUnavailable('rabbitmq'));
+          if (error) reject(AppError.dependencyUnavailable(this.options.dependencyIdentity));
           else resolve();
         },
       );

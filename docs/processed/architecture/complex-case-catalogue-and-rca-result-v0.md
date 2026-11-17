@@ -2,6 +2,8 @@
 
 > **Task:** R-12 — [bảng task refactor](../plan/refactor/refactor-board-v1.md)
 >
+> **Cập nhật 17/11/2026 ([ADR-006](../adr/adr-006-trim-project-scope-v1.md)):** bộ case MVP còn C2, C3, C4, C6; C1, C5, C7 là Target. Cơ chế FC của C2 ("export CSV giữ kết nối DB") không khớp code vì export đọc từng khối 500 dòng; C2 viết lại thành chèn trễ có kiểm soát trên `course` → `course-postgres`. Phần "nơi lưu để MCP đọc" (mục 5.3) không còn là yêu cầu vì MCP ra Out-of-scope. Khi đoạn chi tiết mâu thuẫn, ADR-006 được ưu tiên.
+>
 > **Trạng thái:** v0, đề xuất — chờ Đức tự xác nhận (không cần Bách review, theo chỉ thị trực tiếp của Đức). Số đo lấy từ lần chạy `pnpm run test:observability` ngày 29/10/2026, ghi ở board mục "Bằng chứng đã chạy (R-12)".
 >
 > **Cập nhật R-13:** `auth` và `student` đã gộp thành `identity` ([ADR-005](../adr/adr-005-merge-auth-student-into-identity-v1.md)). Tên service, identity và case đã đổi tại chỗ; các **con số đo** (11 runtime, 38 cặp dependency, 70–74 giây ở C6) đo lại ngày 30/10/2026 trên stack 11 runtime, ghi ở mục "R-13" của board.
@@ -80,6 +82,7 @@ Ma trận luồng ↔ tập service trong một trace (đã đo, kiểm tự đ�
 2. **Queue thuộc worker tiêu thụ**: `service_name` của metric broker là tiền tố trước `--` của tên queue. Backlog ở queue `media-worker--*` mô tả `media-worker`, kể cả khi nguyên nhân là nơi khác.
 3. **Triệu chứng của lỗi xác thực nằm ở cạnh `<service>-identity-token` của bên gọi**, không nằm ở service đích (mục C6).
 4. Metric `lms_dependency_*` của cạnh HTTP do **bên gọi** ghi (`service_name` = bên gọi); span SERVER của bên nhận nằm cùng trace.
+5. **Service bị `docker pause` mất lô span cuối của chính nó.** Đo ngày 17/11/2026 trong `tracing-smoke`: mọi span của `identity` trong khoảng 2 giây trước lúc pause không tới Tempo, dù log cùng thời điểm đã vào Loki. Hệ quả cho C6: không dùng "span cuối cùng của `identity`" để suy ra thời điểm fault; `fault_start` lấy từ execution truth của injector, và RCA engine phải chịu được việc service gốc im lặng (không có span) thay vì phát span lỗi.
 
 ---
 

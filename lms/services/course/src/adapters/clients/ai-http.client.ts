@@ -126,7 +126,8 @@ export class AiHttpClient implements LessonAiService {
 
   async getJob(lessonId: string, jobId: string): Promise<LessonAiJobDetail> {
     const response = await this.client.request({
-      path: `/${INTERNAL_PREFIX}/ai/jobs/${jobId}`,
+      path: `/${INTERNAL_PREFIX}/ai/jobs/:jobId`,
+      params: { jobId },
       query: { lesson_id: lessonId },
     });
     if (response.status !== 200) throw upstreamError(response.status, response.body);

@@ -175,7 +175,7 @@ Tiêu chí: một người đọc dashboard/trace thông thường theo đườn
 | **C3** | Job AI soạn bài mãi `RUNNING` rồi `WORKER_INTERRUPTED`, tài liệu mãi `EXTRACTING` | FD: provider AI chậm                       | `ai-worker` giữ lease lâu → job/tài liệu hết lease → `course` thấy lỗi muộn ở `ai-worker → course`                                             | Hai triệu chứng ở hai service, chung nguyên nhân gián tiếp                         |
 | **C4** | Khóa học `READY` nhưng thumbnail mất, job cleanup xóa media | FA: MinIO promote chậm                     | Media `PENDING` kẹt → usage chưa gắn → `scheduler-worker` coi là không dùng và xóa                            | Lỗi lộ ở scheduler muộn, cách nguyên nhân gốc nhiều bước và nhiều phút             |
 | **C5** | Batch notification `PARTIAL_FAILED`, số item lệch           | FE: `identity` chậm khi snapshot            | Snapshot timeout từng trang → thiếu recipient                                                                 | Log không có lỗi, chỉ lệch số liệu so với kỳ vọng                                  |
-| **C6** | Request qua gateway lỗi 5xx (đo được 504) hàng loạt sau một khoảng yên lặng          | FG: `identity` chậm/chết                       | Token đã cache còn hạn → không lỗi → hết hạn mà không làm mới được → gateway không lấy được token mới từ identity          | Triệu chứng ở mọi service cùng lúc nhưng chỉ sau ≤10 phút; lỗi ở cạnh `*-auth-token` chứ không ở service lỗi |
+| **C6** | Request qua gateway lỗi 5xx (đo được 504) hàng loạt sau một khoảng yên lặng          | FG: `identity` chậm/chết                       | Token đã cache còn hạn → không lỗi → hết hạn mà không làm mới được → gateway không lấy được token mới từ identity          | Triệu chứng ở mọi service cùng lúc nhưng chỉ sau ≤10 phút; lỗi ở cạnh `*-identity-token` chứ không ở service lỗi |
 | **C7** | 401 đồng loạt ở nhiều service, hạ tầng đều khỏe             | FH: đổi khóa ký `identity` mà không giữ khóa cũ | JWKS mới → cache JWKS hết hạn → verify token thất bại ở mọi service                                           | Không service nào hỏng; nguyên nhân là cấu hình ở `identity`, lỗi lộ ở từng service dưới dạng 401 |
 
 Mỗi case dùng workload chạy song song (k6) để tạo nhiễu. Đối chứng thủ công: baseline tự động (ngưỡng + trace lỗi/chậm nhất) và thử nghiệm người nhỏ theo [ADR-002](../adr/adr-002-ai-primary-root-cause-analysis-v1.md).
@@ -186,7 +186,7 @@ Mỗi case dùng workload chạy song song (k6) để tạo nhiễu. Đối ch�
 
 | Mục            | v1                                                | v2                                                |
 | -------------- | ------------------------------------------------- | ------------------------------------------------- |
-| Database       | 5 DB, SQL tay `pg`, `migrate.ts`                  | 7 DB, Prisma migration                            |
+| Database       | 5 DB, SQL tay `pg`, `migrate.ts`                  | 6 DB, Prisma migration                            |
 | Outbox         | Cột publish trong `grades`                        | Bảng `outbox_messages`/`inbox_states` mỗi service |
 | Cache          | Redis của Course                                  | Bỏ                                                |
 | Object storage | Storage Mock in-memory                            | MinIO thuộc `media`                               |

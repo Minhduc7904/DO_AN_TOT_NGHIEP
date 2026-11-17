@@ -30,7 +30,8 @@ export class StudentHttpClient implements StudentClient {
   async findStatus(studentId: string): Promise<string | null> {
     const response = await this.client.request({
       method: 'GET',
-      path: `/${INTERNAL_PREFIX}/students/${encodeURIComponent(studentId)}`,
+      path: `/${INTERNAL_PREFIX}/students/:studentId`,
+      params: { studentId },
     });
     if (response.status === 404) return null;
     if (response.status !== 200) throw AppError.dependencyUnavailable('media-identity');

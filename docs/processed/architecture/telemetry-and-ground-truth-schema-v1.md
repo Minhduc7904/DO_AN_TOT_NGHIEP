@@ -2,6 +2,8 @@
 
 > **Task:** R-12 — [bảng task refactor](../plan/refactor/refactor-board-v1.md)
 >
+> **Cập nhật 17/11/2026 ([ADR-006](../adr/adr-006-trim-project-scope-v1.md)):** MCP/agent ra Out-of-scope; trường chẩn đoán của người chỉ cần khi làm thử nghiệm người thật (đã xuống Target); bộ case MVP còn C2 (viết lại), C3, C4, C6. Khi đoạn chi tiết mâu thuẫn, ADR-006 được ưu tiên.
+>
 > **Trạng thái:** v1, đề xuất — chờ Đức tự xác nhận (không cần Bách review, theo chỉ thị trực tiếp của Đức). Phần "tín hiệu có thật" lấy từ [complex-case-catalogue-and-rca-result-v0](complex-case-catalogue-and-rca-result-v0.md) mục 1 (đo ngày 29/10/2026) và từ code `lms/packages/observability/src`, `lms/packages/common/src/messaging`, `lms/packages/common/src/telemetry`; chỗ chưa đối chiếu được ghi "chưa kiểm chứng".
 >
 > **Thay thế:** [telemetry-and-ground-truth-schema-v0](telemetry-and-ground-truth-schema-v0.md) (giữ làm lịch sử, không dùng cho dataset mới).

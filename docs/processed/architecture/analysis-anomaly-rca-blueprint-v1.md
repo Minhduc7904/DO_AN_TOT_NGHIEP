@@ -2,6 +2,8 @@
 
 > **Task:** R-12 — [bảng task refactor](../plan/refactor/refactor-board-v1.md)
 >
+> **Cập nhật 17/11/2026 ([ADR-006](../adr/adr-006-trim-project-scope-v1.md)):** RCA engine **hỗ trợ** người vận hành theo tên đề tài đã đăng ký; proposed ranker của MVP là "Hướng 1", "Hướng 2" (mục 12.4) là Stretch; `base-manual-auto` (mục 12.6) định nghĩa lại theo cách SRE làm thật; MCP/agent (mục 16) ra Out-of-scope; cạnh shared-resource và ablation tách theo loại cạnh xuống Target; bộ case MVP còn C2 (viết lại), C3, C4, C6. Khi đoạn chi tiết mâu thuẫn, ADR-006 được ưu tiên.
+>
 > **Cập nhật R-13:** `auth` và `student` đã gộp thành service `identity` ([ADR-005](../adr/adr-005-merge-auth-student-into-identity-v1.md)); tài liệu được sửa tại chỗ theo topology 7 service + 4 worker (11 runtime). Các số đo chưa đo lại sau khi gộp được ghi rõ ở chỗ dùng.
 >
 > **Trạng thái:** v1, đề xuất — chờ Đức tự xác nhận (refactor do một mình Đức làm, không cần Bách review). Mọi thuật toán, ngưỡng, trọng số và tên thư mục trong tài liệu này là **đề xuất chờ xác nhận hoặc chưa kiểm chứng** trừ chỗ ghi rõ là số đo hoặc quyết định đã chốt ở tài liệu nguồn.
@@ -23,7 +25,7 @@
 >
 > **Backend SUT scope, topology và implementation architecture:** [`backend-microservice-testbed-blueprint-v2.md`](backend-microservice-testbed-blueprint-v2.md) cùng [service-catalogue-and-topology-v2](service-catalogue-and-topology-v2.md) (bản cũ [`backend_microservice_testbed_blueprint.md`](backend_microservice_testbed_blueprint.md) còn nội dung v1).
 >
-> **WHEN/WHO:** [`../plan/plan-v0.2-24-weeks.md`](../plan/plan-v0.2-24-weeks.md) (ADR-002 nhắc plan v0.3 chưa có trong repository).
+> **WHEN/WHO:** [`../plan/plan-v0.3-24-weeks.md`](../plan/plan-v0.3-24-weeks.md).
 
 Tài liệu này mô tả **mục tiêu, phạm vi và cách triển khai RCA engine**: ranh giới module, telemetry contract theo tín hiệu có thật của LMS testbed v2, data model, feature pipeline, phát hiện bất thường, incident, dependency graph v2, xếp hạng nguyên nhân gốc, bằng chứng, đầu ra `RcaIncidentResult`, xử lý case phức tạp, đánh giá, kiểm thử và Definition of Done. Phần MCP và agent là thành phần thứ yếu, mô tả ở mục 16.
 
@@ -1089,6 +1091,8 @@ Tổng hợp mức thay đổi metric, span bất thường, `dependency.failure
 
 ### 12.4. Hai hướng xếp hạng (chọn sau pilot)
 
+> Đã chốt theo [ADR-006](../adr/adr-006-trim-project-scope-v1.md): MVP dùng Hướng 1; Hướng 2 là Stretch.
+
 Phần chính của đề tài là mô hình ML + dependency graph (ADR-002). Hai hướng dưới đây cùng dùng các component ở 12.3; **cả hai chưa kiểm chứng trên v2**.
 
 **Hướng 1 — điểm tuyến tính có giải thích** (kế thừa bản trước):
@@ -1156,7 +1160,7 @@ Phải có tối thiểu:
 1. **Max anomaly:** rank theo anomaly score.
 2. **Earliest anomaly:** rank theo estimated onset.
 3. **Graph-aware simple:** anomaly + graph relation/centrality hoặc propagation rule đơn giản (chỉ cạnh sync).
-4. **Baseline thủ công tự động** (đối chứng theo ADR-002): ngưỡng + tìm trace lỗi/chậm nhất, kết luận service gây lỗi/chậm trên đường request của symptom; đo lặp được. Baseline này mô phỏng cách truy vết thủ công nên không thấy nguyên nhân nằm ngoài đường request; tên `base-manual-auto`, chạy trên cùng run, cùng candidate set và xuất cùng schema `RcaIncidentResult` (evaluation-protocol-v1 mục 15.2). Luật chi tiết (ngưỡng nào, tìm trace thế nào, đổi trace thành ranking ra sao) là đề xuất chưa viết; version hóa, chọn trên validation, freeze trước final test. Protocol còn đưa constant ranking và random ranking làm mốc diagnostic.
+4. **Baseline thủ công tự động** (đối chứng theo ADR-002, định nghĩa lại ở [ADR-006](../adr/adr-006-trim-project-scope-v1.md)): từ symptom, lấy trace lỗi/chậm nhất trong cửa sổ incident, đi theo span CLIENT lỗi hoặc chậm sâu nhất (kể cả qua cạnh async/auth) và kết luận service sở hữu span đó; đo lặp được. Baseline không bị cố ý giới hạn trong đường request; tên `base-manual-auto`, chạy trên cùng run, cùng candidate set và xuất cùng schema `RcaIncidentResult` (evaluation-protocol-v1 mục 15.2). Luật chi tiết (ngưỡng nào, tìm trace thế nào, đổi trace thành ranking ra sao) là đề xuất chưa viết; version hóa, chọn trên validation, freeze trước final test. Protocol còn đưa constant ranking và random ranking làm mốc diagnostic.
 5. **Proposed method:** Hướng 1 hoặc Hướng 2 (mục 12.4).
 
 PageRank-like ranking có thể là baseline bổ sung. Causal/statistical analysis trên top-N là Stretch. Thử nghiệm với người thật dùng Grafana/Tempo/Loki để đo thời gian chẩn đoán (ADR-002) bổ sung cho baseline tự động, không thay thế.
@@ -1490,7 +1494,7 @@ Bản trước dùng 5 scenario × 3 repetition = 15 run cho fault F1–F5 của
 | Fault đơn | FF (quá tải CPU/bộ nhớ) | Bằng chứng phụ; có thể dùng làm scenario đơn giản đối chiếu |
 | Healthy | Các workload ở mục 18.1 | Đo false positive và workload shift |
 
-Theo evaluation-protocol-v1 mục 5.2–5.3, một case C1–C7 chỉ vào campaign khi injector chạy tái lập được, triệu chứng ngoài đường request quan sát được thật trong pilot, có tín hiệu bắt buộc và có ground truth; số repetition `R = 3` (thừa kế v0) là đề xuất chờ Đức xác nhận, repetition đầu cho validation, còn lại cho final test; số case `K` tối thiểu chưa chốt. Hiện trạng chỉ C6 đã chạy (mức smoke). Cơ chế gây lỗi (chèn trễ MinIO/PostgreSQL/SMTP/LLM stub, giới hạn CPU, dừng `auth`) thuộc fault injector của mảng AI.
+Theo evaluation-protocol-v1 mục 5.2–5.3, một case C1–C7 chỉ vào campaign khi injector chạy tái lập được, triệu chứng ngoài đường request quan sát được thật trong pilot, có tín hiệu bắt buộc và có ground truth; số repetition là `R = 5` mỗi case (1 validation + 4 final test) và bộ case MVP là C2, C3, C4, C6 theo [ADR-006](../adr/adr-006-trim-project-scope-v1.md). Hiện trạng chỉ C6 đã chạy (mức smoke). Cơ chế gây lỗi (chèn trễ MinIO/PostgreSQL/SMTP/LLM stub, giới hạn CPU, dừng `identity`) thuộc fault injector, lịch làm ở tuần 13–15 của [plan-v0.3](../plan/plan-v0.3-24-weeks.md).
 
 Ground truth mỗi run theo `RunGroundTruth` ([telemetry-and-ground-truth-schema-v1](telemetry-and-ground-truth-schema-v1.md)). Target có thể mở rộng nếu automation và thời gian đủ; không coi một số lượng run lớn là điều kiện thành công.
 

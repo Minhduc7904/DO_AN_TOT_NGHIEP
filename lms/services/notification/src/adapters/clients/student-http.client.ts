@@ -54,7 +54,8 @@ export class StudentHttpClient implements StudentDirectory {
   async find(studentId: string): Promise<(Recipient & { active: boolean }) | null> {
     const response = await this.client.request({
       method: 'GET',
-      path: `/${INTERNAL_PREFIX}/students/${encodeURIComponent(studentId)}`,
+      path: `/${INTERNAL_PREFIX}/students/:studentId`,
+      params: { studentId },
     });
     if (response.status === 404) return null;
     const parsed = oneSchema.safeParse(response.body);

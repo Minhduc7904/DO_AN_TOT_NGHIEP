@@ -1,5 +1,7 @@
 # Implementation backlog v1 — Tuần 3–22
 
+> **Đã được thay thế từ tuần 11** bởi [plan-v0.3-24-weeks.md](plan-v0.3-24-weeks.md): tuần 11–12 là giai đoạn tái cấu trúc, tuần 13–23 theo kế hoạch mới trên testbed v2. Phần tuần 3–10 giữ làm lịch sử; phân vai A = Đức, B = Bách vẫn áp dụng.
+
 > **Trạng thái:** Review-ready artifact cho `task-02_create-implementation-backlog`.
 >
 > **Vai trò:** Backlog triển khai có thứ tự dependency cho 20 tuần kỹ thuật chính, từ tuần 3 đến tuần 22.

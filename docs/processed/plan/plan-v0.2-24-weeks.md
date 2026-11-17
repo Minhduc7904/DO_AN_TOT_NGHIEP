@@ -1,5 +1,7 @@
 # Plan v0.2 — Lộ trình đồ án 24 tuần
 
+> **Đã được thay thế** bởi [plan-v0.3-24-weeks.md](plan-v0.3-24-weeks.md). Tuần 1–10 giữ nguyên trong v0.3; từ tuần 11 theo v0.3. File này giữ làm lịch sử.
+
 > **Trạng thái:** Sole canonical source of truth cho WHEN + WHO.
 >
 > **Backend scope, topology và implementation architecture:** [`../architecture/backend_microservice_testbed_blueprint.md`](../architecture/backend_microservice_testbed_blueprint.md)

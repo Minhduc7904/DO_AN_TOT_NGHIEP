@@ -2,6 +2,8 @@
 
 > **Task:** R-12 — [bảng task refactor](../plan/refactor/refactor-board-v1.md)
 >
+> **Cập nhật 17/11/2026 ([ADR-006](../adr/adr-006-trim-project-scope-v1.md)):** bộ case MVP còn C2 (viết lại bằng chèn trễ `course-postgres`), C3, C4, C6 với đề xuất `R = 5` (1 run validation, 4 run final test, 20 fault run) thay cho 7 × 3; C1, C5, C7 là Target; thử nghiệm người thật (mục 15) xuống Target, 2–3 người; `base-manual-auto` định nghĩa lại; đánh giá chất lượng báo cáo agent/MCP không còn áp dụng. Khi đoạn chi tiết mâu thuẫn, ADR-006 được ưu tiên.
+>
 > **Trạng thái:** Đề xuất — chờ Đức tự xác nhận (refactor do một mình Đức làm, không cần Bách review). Tài liệu thiết kế: chưa có dataset, RCA engine, fault injector hay workload k6 chạy theo protocol này; mọi con số đo ghi trong tài liệu đều lấy từ các artifact đã có (mục 1.3).
 >
 > **Thay thế:** [evaluation-protocol-v0](evaluation-protocol-v0.md) (giữ làm lịch sử, không dùng cho dataset mới). V0 gắn với topology v1 (6 business service, fault F1–F5); khung đánh giá (split theo `run_id`, freeze, Top-K/MRR, ablation, robustness, lineage) được giữ, phần gắn kiến trúc được viết lại theo topology v2.
@@ -245,7 +247,7 @@ ai-worker
 
 Quy tắc:
 
-- Đây là **10 trong 11 `service.name` canonical** của topology v2. `gateway` là điểm quan sát triệu chứng (symptom) mặc định và **không** nằm trong candidate set, vì không fault nào trong FA–FH có root cause ở `gateway` (catalogue mục 8: gateway chỉ là candidate khi evaluation protocol có gateway fault). Nếu về sau thêm gateway fault, phải bump `candidate_set_version` và thêm `gateway` cho cả campaign. **Đề xuất chờ Đức xác nhận:** brief ban đầu của task ghi "candidate = toàn bộ `service.name`"; tài liệu này dùng 10 (sau R-13: `auth` + `student` → `identity`) vì catalogue v2 mục 8 nói rõ gateway không phải candidate khi chưa có gateway fault. Nếu Đức muốn đưa gateway vào candidate universe, chỉ cần sửa tập này và tie-break ở mục 18.1.
+- Đây là **10 trong 11 `service.name` canonical** của topology v2. `gateway` là điểm quan sát triệu chứng (symptom) mặc định và **không** nằm trong candidate set, vì không fault nào trong FA–FH có root cause ở `gateway` (catalogue mục 8: gateway chỉ là candidate khi evaluation protocol có gateway fault). Nếu về sau thêm gateway fault, phải bump `candidate_set_version` và thêm `gateway` cho cả campaign. **Đã chốt** ở Gate R ([plan-v0.3](../plan/plan-v0.3-24-weeks.md)): candidate set 10 service/worker. Brief ban đầu của task ghi "candidate = toàn bộ `service.name`"; tài liệu này dùng 10 (sau R-13: `auth` + `student` → `identity`) vì catalogue v2 mục 8 nói rõ gateway không phải candidate khi chưa có gateway fault. Nếu sau này cần đưa gateway vào candidate universe, chỉ cần sửa tập này và tie-break ở mục 18.1.
 - Worker là candidate **riêng** với service cùng owner (`media` khác `media-worker`, `notification` khác `notification-worker`, `ai` khác `ai-worker`, `scheduler` khác `scheduler-worker`) vì có `service.name` riêng để Analysis phân biệt nguồn triệu chứng (catalogue mục 4, ownership rule 7).
 - PostgreSQL (6 identity `<service>-postgres`), RabbitMQ (`*-rabbitmq`), MinIO (`media-minio`), SMTP (`notification-smtp`), LLM provider (`ai-llm-provider`) và cạnh xác thực (`<caller>-identity-token`, `<caller>-identity-jwks`) là **evidence/component**, không nằm trong primary Top-K/MRR list.
 - Candidate không được drop chỉ vì modality của candidate bị missing. Missingness phải được xử lý bằng fallback/score semantics đã version hóa.
@@ -1614,7 +1616,7 @@ Không có requirement nào trong protocol này yêu cầu đổi service topolo
 | Topology | v1: 6 business service + gateway | v2: 7 service + 4 worker, 11 `service.name`, 16 dependency identity |
 | Fault | F1–F5 (Redis, Storage Mock, error, consumer, CPU) | FA–FH ([fault matrix v2](data-ownership-and-fault-matrix-v2.md)) và case C1–C7 ([catalogue](complex-case-catalogue-and-rca-result-v0.md)); FF không có case |
 | Trạng thái case | không có (mọi fault đều có cơ chế) | mỗi case ghi **đã chạy / đã đo tín hiệu / giả thuyết**; chỉ C6 đã chạy; điều kiện vào campaign theo từng case (mục 5.2) |
-| Candidate set | `service-candidates.v0`: 6 business service | `service-candidates.v1`: 10 service (worker riêng, hạ tầng là evidence, gateway là symptom); đề xuất chờ Đức |
+| Candidate set | `service-candidates.v0`: 6 business service | `service-candidates.v1`: 10 service (worker riêng, hạ tầng là evidence, gateway là symptom); đã chốt ở Gate R |
 | Tie-break | `auth < course < enrollment < submission < grading < notification` | thứ tự catalogue v2 mục 8 cho 10 service |
 | Floor | `5 × 3 = 15` fault run (5 validation, 10 test) | `K × R` với `R = 3` đề xuất; `K` là số case đủ điều kiện; ví dụ 21 chỉ khi đủ bảy case |
 | Top-3 saturation | 3 root cause trên 6 candidate, Top-3 có thể 100% | 5 root cause trên 10 candidate; ranking hằng tốt nhất ≈ 71% Top-3 nếu đủ bảy case (số học, không đo); phải đọc cùng `K` |

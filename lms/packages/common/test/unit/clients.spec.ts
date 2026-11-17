@@ -1,6 +1,10 @@
 import { createServer, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 
+import { startTelemetry } from '@aiops-lms/observability';
+import { InMemorySpanExporter, SimpleSpanProcessor } from '@aiops-lms/observability/testing';
+import { context, propagation, trace } from '@opentelemetry/api';
+
 import { CircuitBreaker } from '../../src/clients/circuit-breaker.js';
 import { HttpQueryClient } from '../../src/clients/http-query-client.js';
 import { runWithCorrelationId } from '../../src/http/correlation.js';
@@ -24,10 +28,25 @@ describe('HttpQueryClient', () => {
   let server: Server;
   let baseUrl: string;
   let lastHeaders: Record<string, string | string[] | undefined> = {};
+  let lastUrl: string | undefined;
+
+  const exporter = new InMemorySpanExporter();
+  let telemetry: ReturnType<typeof startTelemetry>;
 
   beforeAll(async () => {
+    telemetry = startTelemetry(
+      {
+        enabled: true,
+        otlpTracesEndpoint: 'http://127.0.0.1:1/v1/traces',
+        serviceName: 'course',
+        serviceVersion: '0.1.0',
+        serviceInstanceId: 'clients-test',
+      },
+      { spanProcessor: new SimpleSpanProcessor(exporter) },
+    );
     server = createServer((request, response) => {
       lastHeaders = request.headers;
+      lastUrl = request.url;
       if (request.url?.startsWith('/missing')) {
         response.writeHead(404).end(JSON.stringify({ code: 'NOT_FOUND' }));
       } else if (request.url?.startsWith('/slow')) {
@@ -53,7 +72,12 @@ describe('HttpQueryClient', () => {
   afterAll(async () => {
     server.closeAllConnections();
     await new Promise((resolve) => server.close(resolve));
+    await telemetry.shutdown();
+    context.disable();
+    propagation.disable();
+    trace.disable();
   });
+  beforeEach(() => exporter.reset());
 
   const options = (timeoutMs = 300): ConstructorParameters<typeof HttpQueryClient>[0] => ({
     dependency: 'test-http',
@@ -114,6 +138,31 @@ describe('HttpQueryClient', () => {
       code: 'DEPENDENCY_TIMEOUT',
       status: 504,
     });
+  });
+
+  it('path là route template: tham số được URL-encode, operation_name giữ nguyên template', async () => {
+    const client = new HttpQueryClient(options());
+
+    await client.request({
+      path: '/ok/students/:studentId/files/:fileId',
+      params: { studentId: 'a b/c', fileId: '42' },
+    });
+    expect(lastUrl).toBe('/ok/students/a%20b%2Fc/files/42');
+
+    const [span] = exporter.getFinishedSpans();
+    expect(span?.name).toBe('test-http GET /ok/students/:studentId/files/:fileId');
+    expect(span?.attributes['operation_name']).toBe('GET /ok/students/:studentId/files/:fileId');
+  });
+
+  it('dấu hai chấm giữa segment không phải tham số; thiếu tham số thì không gửi request', async () => {
+    const client = new HttpQueryClient(options());
+
+    await client.request({ method: 'POST', path: '/ok/usages/ids:query' });
+    expect(lastUrl).toBe('/ok/usages/ids:query');
+
+    lastUrl = undefined;
+    await expect(client.request({ path: '/ok/jobs/:jobId' })).rejects.toThrow('jobId');
+    expect(lastUrl).toBeUndefined();
   });
 
   it('5xx thành DEPENDENCY_UNAVAILABLE và breaker mở sau ngưỡng', async () => {

@@ -7,6 +7,8 @@
 | Người đề xuất | Đức                                                                                                                                                                   |
 | Thay thế      | Vai trò "AI hỗ trợ" trong [analysis-anomaly-rca-blueprint](../architecture/analysis-anomaly-rca-blueprint.md) và [project-scope-v1](../direction/project-scope-v1.md) |
 
+_Cập nhật 17/11/2026 ([ADR-006](adr-006-trim-project-scope-v1.md)): RCA engine vẫn là phần chính nhưng **hỗ trợ** người vận hành theo tên đề tài đã đăng ký, bỏ "kết luận không cần người can thiệp"; phần học máy là detector không giám sát và hiệu chỉnh trên validation, ranker học có giám sát là Stretch (thay quyết định 1). MCP/agent chuyển ra Out-of-scope (thay quyết định 2). `base-manual-auto` định nghĩa lại theo cách SRE làm thật, thử nghiệm người thật xuống Target (thay quyết định 3). Bộ case MVP còn C2 (viết lại), C3, C4, C6._
+
 ## Bối cảnh
 
 Blueprint hiện tại coi hệ thống AI là công cụ hỗ trợ: phát hiện bất thường và trả Top-K service nghi ngờ cho người đọc. Định hướng mới yêu cầu AI là bên **truy vết chính**, và phải demo được các case nghiệp vụ phức tạp mà truy vết thủ công không tìm ra nguyên nhân nhưng AI tìm được.
