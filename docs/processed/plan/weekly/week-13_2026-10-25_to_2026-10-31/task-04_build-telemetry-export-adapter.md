@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-04_build-telemetry-export-adapter` |
 | Tuần | `week-13_2026-10-25_to_2026-10-31` |
-| Trạng thái | Đã giao |
+| Trạng thái | Chờ review |
 | Người phụ trách | Bách |
 | Collaborator | Không có |
 | Ưu tiên | Cao |
@@ -45,21 +45,21 @@ Tạo gói Python đầu tiên của RCA engine (`aiops-platform/training/`, qu�
 
 ## Definition of Done
 
-- [ ] `uv run pytest` đạt; test không cần stack.
-- [ ] Export một run thử thật ra artifact có đủ ba modality và manifest; Tempo không bị khởi động lại trong lúc export.
-- [ ] Manifest ghi số trace bị cắt khi chạm giới hạn, không âm thầm bỏ.
-- [ ] PR mở vào `main`; URL PR ghi vào card.
+- [x] `uv run pytest` đạt; test không cần stack.
+- [x] Export một run thử thật ra artifact có đủ ba modality và manifest; Tempo không bị khởi động lại trong lúc export.
+- [x] Manifest ghi số trace bị cắt khi chạm giới hạn, không âm thầm bỏ.
+- [x] PR mở vào `main`; URL PR ghi vào card.
 
 ## Liên kết hồ sơ thực hiện
 
 - Input workspace: Không tạo (giai đoạn tự bắt kịp; bằng chứng nằm trong PR).
 - Output workspace: Không tạo.
-- Pull request: Chưa tạo.
-- Kết quả review: Chưa review.
+- Pull request: [#77](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/77).
+- Kết quả review: Chưa review (giai đoạn tự bắt kịp: review và merge theo ngoại lệ do Bách xác nhận).
 
 > URL/số PR và `Chờ review` phải được commit/push vào PR head trước review. Thành viên còn lại phải gửi `APPROVED` hợp lệ trên GitHub; sau đó người phụ trách finalization metadata, ghi `Hoàn thành` trên chính branch/PR và tự merge task của mình. Card chỉ canonically hoàn thành khi commit đó vào nhánh canonical; xem [vòng đời task canonical](../../../rules/git-and-pull-request-rules.md#vòng-đời-task-canonical).
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 17/11/2026 — lập card.
-- Ghi chú/tồn đọng: Không có.
+- Cập nhật gần nhất: 17/11/2026 — hoàn thành phần việc, mở PR #77, chuyển Chờ review.
+- Ghi chú/tồn đọng: Run thử là `k6-level1-evidence-20261117` (PR #76). 4 worker chỉ có log probe nên modality log của worker trống sau khi lọc; task-05 báo là `not_instrumented`. CI GitHub bị khóa thanh toán; kiểm tra chạy cục bộ.

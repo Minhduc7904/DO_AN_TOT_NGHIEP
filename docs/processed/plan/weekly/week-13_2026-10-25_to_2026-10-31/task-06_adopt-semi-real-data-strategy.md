@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-06_adopt-semi-real-data-strategy` |
 | Tuần | `week-13_2026-10-25_to_2026-10-31` |
-| Trạng thái | Chờ review |
+| Trạng thái | Hoàn thành |
 | Người phụ trách | Bách |
 | Collaborator | Không có |
 | Ưu tiên | Cao |
@@ -59,12 +59,12 @@ Task phát sinh sau khi xong phần việc tuần 13 (17/11/2026): Bách yêu c�
 
 - Input workspace: Không tạo (giai đoạn tự bắt kịp; bằng chứng nằm trong PR).
 - Output workspace: Không tạo.
-- Pull request: [#80](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/80) (merge sau #78, #75, #76, #77, #79).
-- Kết quả review: Chưa review (giai đoạn tự bắt kịp: review và merge theo ngoại lệ do Bách xác nhận).
+- Pull request: [#80](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/80) (merge sau #78, #75, #76, #77, #81; #81 thay #79 bị merge nhầm vào nhánh task-04).
+- Kết quả review: Không có GitHub `APPROVED` (giai đoạn tự bắt kịp). Finalization và merge theo ngoại lệ do Bách (người phụ trách) yêu cầu ngày 17/11/2026.
 
 > URL/số PR và `Chờ review` phải được commit/push vào PR head trước review. Thành viên còn lại phải gửi `APPROVED` hợp lệ trên GitHub; sau đó người phụ trách finalization metadata, ghi `Hoàn thành` trên chính branch/PR và tự merge task của mình. Card chỉ canonically hoàn thành khi commit đó vào nhánh canonical; xem [vòng đời task canonical](../../../rules/git-and-pull-request-rules.md#vòng-đời-task-canonical).
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 17/11/2026 — hoàn thành, mở PR #80, chuyển Chờ review.
+- Cập nhật gần nhất: 17/11/2026 — finalization, chuyển Hoàn thành theo yêu cầu merge của Bách.
 - Ghi chú/tồn đọng: Không có.
