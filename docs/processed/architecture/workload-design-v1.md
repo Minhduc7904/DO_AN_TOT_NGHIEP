@@ -1,22 +1,25 @@
 # Workload design v1 — workload theo hành vi người dùng
 
+> **Cập nhật 17/11/2026 ([ADR-007](../adr/adr-007-semi-real-workload-and-ai-evidence-v1.md)).** Traffic của học viên **không còn** sinh bằng mức 2 thuần giả định. Nguồn traffic nay là dải bốn mức: **mức 1** (đã cài ở [PR #76](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/76), giữ làm smoke test và mốc "giả lập đơn giản"); **mức 2** chỉ còn cho giảng viên, admin và job lịch; **mức 2+** phát lại phiên thật của học viên từ log Moodle Unistudium 2022 (mục 13, mới); **mức 3 offline** — LLM sinh persona giảng viên và nội dung **một lần**, đóng băng thành JSON có hash — là Stretch (mục 14, mới). Máy trạng thái học viên ở mục 3–5 được giữ lại làm khung ánh xạ cho mức 2+ và làm nguồn "mức 2 thuần" khi kiểm chứng độ thực (mục 10.4). Đường cong theo giờ và đỉnh ngày làm quiz của học viên lấy từ log Moodle (mục 7.7); OULAD giữ vai trò kiểm tra vĩ mô. Mục cũ "Giới hạn", "Đối chiếu DoD", "Nguồn tham khảo" đổi số thành 15, 16, 17. Đoạn chi tiết nào bên dưới còn mâu thuẫn với ADR-007 thì ADR-007 được ưu tiên.
+
 > **Task:** `task-01_design-user-behavior-workload` (tuần 13) — [card task](../plan/weekly/week-13_2026-10-25_to_2026-10-31/task-01_design-user-behavior-workload.md)
 >
-> **Trạng thái:** Đề xuất — v1, 17/11/2026. Thiết kế cho mức 2; k6 mức 1 đã cài song song ở task-02 tuần 13 ([PR #76](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/76), `aiops-platform/load/`). Mọi con số tải (số người dùng, tốc độ đến, thời lượng) là giá trị khởi đầu, **chốt sau pilot** ở tuần 14–15.
+> **Trạng thái:** Đề xuất — v1, 17/11/2026; bổ sung cùng ngày theo ADR-007 (mức 2+, mức 3 offline, kiểm chứng hold-out). Thiết kế cho mức 2 và 2+; k6 mức 1 đã cài song song ở task-02 tuần 13 ([PR #76](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/76), `aiops-platform/load/`). Mọi con số tải (số người dùng, tốc độ đến, thời lượng, hệ số chồng phiên) là giá trị khởi đầu, **chốt sau pilot** ở tuần 14–15.
 >
-> **Phạm vi:** workload mức 1 + 2 theo gợi ý của giảng viên hướng dẫn: người dùng ảo có profile, mục tiêu, máy trạng thái, thời gian nghỉ, phản ứng với lỗi của hệ thống, nhịp tải theo giờ trong ngày; hai profile healthy bắt buộc; cách kiểm chứng phân phối và cách tái lập. Không thuộc phạm vi: mức 3 (phát lại dữ liệu thật), fault injector, export telemetry, thêm thao tác LMS mới (LMS đóng băng theo ADR-006).
+> **Phạm vi:** workload mức 1, 2, 2+ theo gợi ý của giảng viên hướng dẫn: người dùng ảo có profile, mục tiêu, máy trạng thái, thời gian nghỉ, phản ứng với lỗi của hệ thống, nhịp tải theo giờ trong ngày; phát lại phiên học viên thật từ log Moodle; hai profile healthy bắt buộc; cách kiểm chứng phân phối, kiểm chứng độ thực và cách tái lập; mức 3 offline ở dạng thiết kế Stretch. Không thuộc phạm vi: LLM agent chạy online làm nguồn tải (ADR-007 đã loại), fault injector, export telemetry, thêm thao tác LMS mới (LMS đóng băng theo ADR-006).
 >
-> **Tài liệu liên quan:** [plan v0.3, tuần 13–14 và mục 8–9](../plan/plan-v0.3-24-weeks.md), [ADR-006](../adr/adr-006-trim-project-scope-v1.md), [evaluation-protocol-v1 mục 5.4–5.5](evaluation-protocol-v1.md), [analysis-anomaly-rca-blueprint-v1 mục 18](analysis-anomaly-rca-blueprint-v1.md), [service-catalogue-and-topology-v2 mục 7](service-catalogue-and-topology-v2.md), [telemetry-and-ground-truth-schema-v1 mục 4.1 và 8](telemetry-and-ground-truth-schema-v1.md), [dependency-resilience-policy-v2](dependency-resilience-policy-v2.md), [seed-data-guide](../guides/seed-data-guide.md).
+> **Tài liệu liên quan:** [ADR-007](../adr/adr-007-semi-real-workload-and-ai-evidence-v1.md), [plan v0.4](../plan/plan-v0.4-24-weeks.md) (thay plan v0.3 từ 17/11/2026), [plan v0.3, tuần 13–14 và mục 8–9](../plan/plan-v0.3-24-weeks.md), [ADR-006](../adr/adr-006-trim-project-scope-v1.md), [evaluation-protocol-v1 mục 5.4–5.5](evaluation-protocol-v1.md), [analysis-anomaly-rca-blueprint-v1 mục 18](analysis-anomaly-rca-blueprint-v1.md), [service-catalogue-and-topology-v2 mục 7](service-catalogue-and-topology-v2.md), [telemetry-and-ground-truth-schema-v1 mục 4.1 và 8](telemetry-and-ground-truth-schema-v1.md), [dependency-resilience-policy-v2](dependency-resilience-policy-v2.md), [seed-data-guide](../guides/seed-data-guide.md).
 >
 > **Nguồn sự thật về endpoint:** các file `lms/test/regression/*.regression.mjs` trên `main` ([thư mục regression](../../../lms/test/regression/)). Mọi request trong tài liệu này đi qua Gateway với tiền tố `/api/v1`, trừ bước POST thẳng lên MinIO bằng URL ký sẵn của luồng upload.
 
 ## 0. Đọc nhanh
 
+- **Sau ADR-007:** học viên dùng **mức 2+** — mỗi phiên là một phiên thật trong log Moodle Unistudium 2022 ([L-Unistudium]), giữ nguyên thứ tự thao tác và thời gian nghỉ, chỉ nén lịch bắt đầu phiên (một ngày → 48 phút). Tự tính trên log: 95,2% số dòng ánh xạ được sang trạng thái của mục 5.2; 34.248 phiên khi cắt ở 30 phút nghỉ; trung vị 3 thao tác và 46 s mỗi phiên (mục 2.3, 13). Giảng viên, admin, job lịch vẫn dùng mức 2 như các mục 3–8.
 - **Vì sao cần:** detector bất thường và RCA engine học "thế nào là bình thường" từ telemetry của run khỏe. Nếu tải là một vòng lặp gọi API đều đặn thì "bình thường" quá phẳng, detector dễ báo nhầm khi gặp tải thật có lên xuống. Workload theo hành vi tạo ra nhiễu nền giống người dùng: lúc đông lúc vắng, phiên dài phiên ngắn, có người bỏ dở, có người thử lại khi lỗi.
 - **Cách làm:** mỗi phiên làm việc (session) là một người dùng ảo (VU) có **profile** (kiểu người), **goal** (mục tiêu của phiên này), đi qua một **máy trạng thái** (mỗi trạng thái là một thao tác gọi endpoint thật), nghỉ giữa các thao tác theo phân phối **log-normal**, và phản ứng với lỗi (thử lại, đăng nhập lại, bỏ ngang). Số phiên bắt đầu mỗi phút đi theo **đường cong trong ngày** đã nén 24 giờ còn 48 phút.
-- **Căn cứ số liệu:** tỉ lệ profile học viên, mức tăng hoạt động trước hạn nộp bài, số thao tác mỗi phiên và xác suất hoạt động mỗi ngày được **tính lại trực tiếp từ bộ dữ liệu công khai OULAD** (32.593 lượt đăng ký học, 10.655.280 dòng log); thời gian nghỉ lấy tham số log-normal đã công bố của Wilson; mô hình máy trạng thái và mô hình "đến theo dòng" dựa trên van Hoorn và cs. (2008) và Schroeder và cs. (2006). Các xác suất chuyển trạng thái, mức kiên nhẫn, đường cong theo giờ là **giả định của đề tài**, ghi rõ lý do ở mục 9.
-- **Hai profile healthy bắt buộc:** `normal mixed traffic` (một ngày thường, khoảng 720 phiên học viên + 90 phiên giảng viên + sự kiện admin trong 48 phút) và `healthy high-load spike` (ngày sát hạn quiz, tải đỉnh gấp 2,4 lần ngày thường trong 8 phút buổi tối).
-- **Tuần 14** hiện thực bằng k6 (executor `ramping-arrival-rate`, mỗi phiên một iteration giữ trạng thái riêng), ghi nhật ký thao tác mỗi run và kiểm chứng phân phối theo mục 10.
+- **Căn cứ số liệu:** tỉ lệ profile học viên, mức tăng hoạt động trước hạn nộp bài, số thao tác mỗi phiên và xác suất hoạt động mỗi ngày được **tính lại trực tiếp từ bộ dữ liệu công khai OULAD** (32.593 lượt đăng ký học, 10.655.280 dòng log); thời gian nghỉ lấy tham số log-normal đã công bố của Wilson; mô hình máy trạng thái và mô hình "đến theo dòng" dựa trên van Hoorn và cs. (2008) và Schroeder và cs. (2006). Các xác suất chuyển trạng thái, mức kiên nhẫn, đường cong theo giờ là **giả định của đề tài**, ghi rõ lý do ở mục 9. Với học viên, các giả định này được **thay bằng số đo từ log Moodle** ở mức 2+ (đánh dấu trong bảng mục 9); mức kiên nhẫn và phản ứng với lỗi vẫn là giả định vì log không ghi lỗi của hệ thống.
+- **Hai profile healthy bắt buộc:** `normal mixed traffic` (một ngày thường, khoảng 720 phiên học viên + 90 phiên giảng viên + sự kiện admin trong 48 phút) và `healthy high-load spike` (ngày sát hạn quiz, tải đỉnh gấp 2,4 lần ngày thường trong 8 phút buổi tối). Ở mức 2+, phần học viên của hai profile là phát lại một ngày thường và ngày cao điểm thật của log (ngày làm quiz nhiều nhất: 1.376 phiên, gấp 3,66 lần ngày trung bình) — mục 13.5.
+- **Tuần 14** hiện thực bằng k6 (executor `ramping-arrival-rate`, mỗi phiên một iteration giữ trạng thái riêng), ghi nhật ký thao tác mỗi run, kiểm chứng phân phối theo mục 10 và kiểm chứng độ thực bằng hold-out của log Moodle, so ba nguồn tải (mục 10.4).
 
 ---
 
@@ -28,13 +31,16 @@
 2. Làm tải nền cho mọi fault run của bốn case MVP C2, C3, C4, C6 ([ADR-006](../adr/adr-006-trim-project-scope-v1.md) mục 4): mỗi case cần có traffic đi qua đúng thành phần bị lỗi trong cửa sổ fault (bảng ở mục 8.5).
 3. Tái lập được: cùng `workload_seed` và cùng cấu hình thì cùng chuỗi phiên dự kiến (mục 11).
 
-### 1.2. Mức 1, mức 2, mức 3
+### 1.2. Mức 1, mức 2, mức 2+, mức 3
 
-| Mức | Nội dung | Thuộc tài liệu này |
-| --- | --- | --- |
-| Mức 1 | Mỗi workflow W1–W7 một kịch bản thao tác cố định trên dữ liệu seed (giống regression, chạy lặp) | Có, mô tả ngắn ở mục 12.1; cài ở tuần 13 |
-| Mức 2 | Người dùng ảo có profile, goal, máy trạng thái xác suất, think time, phản ứng với lỗi, nhịp tải theo giờ | Phần chính; cài ở tuần 14 |
-| Mức 3 | Phát lại log/hành vi của người dùng thật | Không làm phần chính (plan v0.3 mục 8) |
+Bảng theo [ADR-007](../adr/adr-007-semi-real-workload-and-ai-evidence-v1.md) mục 1. Trước ADR-007, "mức 3" trong tài liệu này nghĩa là phát lại log người dùng thật và nằm ngoài phạm vi; nay phần phát lại được làm dưới tên **mức 2+**, còn "mức 3" chỉ dạng LLM sinh nội dung offline.
+
+| Mức | Nội dung | Phạm vi người dùng | Thuộc tài liệu này |
+| --- | --- | --- | --- |
+| Mức 1 | Mỗi workflow W1–W7 một kịch bản thao tác cố định trên dữ liệu seed (giống regression, chạy lặp) | Mọi vai trò; smoke test và **mốc giả lập đơn giản** khi kiểm chứng độ thực | Mục 12.1; **đã cài** ở tuần 13 (PR #76) |
+| Mức 2 | Người dùng ảo có profile, goal, máy trạng thái xác suất, think time, phản ứng với lỗi, nhịp tải theo giờ | **Chỉ** giảng viên (W2, W4 phía giảng viên, W6), admin (W5), job lịch (W7). Máy trạng thái học viên (mục 5.2–5.6) giữ làm nguồn "mức 2 thuần" khi so ba nguồn tải | Mục 3–8; MVP, tuần 14 |
+| **Mức 2+** | Phát lại phiên thật của học viên từ log Moodle: ánh xạ sự kiện → trạng thái mục 5.2, giữ thứ tự thao tác và think time, nén lịch bắt đầu phiên, phản ứng với lỗi theo mục 6 | Học viên (W1, W3, W4 phía đọc, W5 phía hộp thư) | Mục 13 (mới); MVP, tuần 14 |
+| Mức 3 (offline) | LLM sinh **một lần** persona giảng viên và nội dung (đề cương, bài, câu hỏi, tài liệu cho W6), lưu JSON có hash; k6 chỉ đọc. Không chạy agent online | Độ thực của **nội dung**, không phải nhịp tải | Mục 14 (mới); **Stretch** |
 
 ### 1.3. Thuật ngữ dùng trong tài liệu
 
@@ -94,6 +100,36 @@ Phần này gom các con số **đã kiểm chứng** mà các mục sau dùng. 
 | Google SRE Book, chương 22 "Addressing Cascading Failures" | "Luôn dùng randomized exponential backoff khi lên lịch retry"; giới hạn số retry cho mỗi request; cân nhắc ngân sách retry theo process. |
 | Tài liệu k6 (Grafana) | `ramping-arrival-rate` là executor mô hình mở; mô hình đóng gây "coordinated omission"; iteration bị bỏ (`dropped_iterations`) khi không còn VU rảnh; `exec.scenario.iterationInTest` là số thứ tự iteration duy nhất trong scenario; timeout mặc định của request là 60 s. |
 | NIST/SEMATECH e-Handbook, mục 1.3.5.15 và 1.3.5.16 | Kiểm định chi-bình phương dùng cho dữ liệu chia nhóm/rời rạc; kiểm định Kolmogorov–Smirnov (KS) chỉ hợp lệ với phân phối liên tục có tham số **cố định trước**, không ước lượng từ chính dữ liệu đang kiểm. |
+| Paxson, Floyd (1995), IEEE/ACM ToN [L-PaxsonFloyd] (thêm 17/11/2026, đã mở PDF) | Trên 24 trace TCP diện rộng: "user-initiated TCP session arrivals ... are well-modeled as Poisson processes with fixed hourly rates"; các tiến trình đến khác (gói tin trong phiên, kết nối dữ liệu FTP) burst hơn Poisson nhiều; kết nối do máy khởi tạo theo timer (SMTP, NNTP) không theo Poisson. Dùng cho mục 7.7. |
+| Vögele và cs. (2018), WESSBAS, SoSyM [L-WESSBAS] (thêm 17/11/2026) | Trích **mô hình hành vi** (chuỗi Markov) và **tỉ lệ trộn hành vi** từ log phiên thật (gom nhóm bằng X-means), sinh kịch bản tải tự động; kiểm chứng bằng thống kê mô tả (độ dài phiên, số request theo loại); ghi nhận chuỗi Markov bậc 1 có thể sinh phiên dài hơn thật. Dùng cho mục 13.8. |
+| Fang và cs. (2025), arXiv 2510.04711 [L-Fang2025] (thêm 17/11/2026) | Workload của các benchmark RCA cũ chỉ 0,14–4,35 QPS, phủ ít service; với workload theo máy trạng thái (16,47 QPS, phủ 84% service), Top-1 trung bình của 11 phương pháp RCA còn 0,21, Nezha từ 0,87 xuống 0,04. Lý do phải làm traffic giống thật (mục 13.1). |
+
+### 2.3. Log Moodle Unistudium 2022 — tính lại từ dữ liệu gốc (thêm theo ADR-007)
+
+**Nguồn:** Milani, Biondi, Franzoni, *Unistudium 2022: students groups logs on moodle*, Zenodo v1.2 (18/12/2022), DOI 10.5281/zenodo.13763175, giấy phép **CC BY 4.0** [L-Unistudium]. Tệp `Unistudium_students_groups_logs_2022.zip` tải ngày 17/11/2026, md5 khớp với trang Zenodo. README đi kèm: log của sinh viên 4 khóa học trên Unistudium (nền tảng e-learning dựa trên Moodle của Đại học Perugia, Ý), học kết hợp (blended learning), một học kỳ; id người dùng và tên khóa đã ẩn danh. Bốn cột: `userId`, `moodleAction` (tên sự kiện chuẩn của Moodle), `course` (A–D), `dateTime` (số nguyên, đơn vị giây).
+
+**Vì sao chọn:** trong các bộ đã tìm (mục 13.1), đây là log LMS công khai duy nhất vừa **tải tự do**, vừa có **timestamp tới giây**, vừa dùng **tên sự kiện chuẩn** của một LMS phổ biến, vừa có giấy phép cho phép dùng lại; nhờ vậy tái dựng được **phiên** (OULAD không làm được vì chỉ có ngày). So sánh các bộ khác ở mục 13.1.
+
+Mọi con số dưới đây **do người viết tự tính** từ tệp CSV (cách tính ở Phụ lục B). Phiên được cắt khi một người dùng nghỉ quá 30 phút (mục 13.3).
+
+| Kết quả tính lại | Giá trị | Dùng cho |
+| --- | --- | --- |
+| Quy mô | 208.109 dòng; 1.234 người dùng, **mỗi người chỉ thuộc một khóa** (A 503, B 142, C 384, D 205 người); 45 loại sự kiện; 91 ngày liên tiếp | Mục 13 |
+| Tỉ lệ dòng ánh xạ được sang trạng thái mục 5.2 | **95,2%** (198.095 dòng); bỏ 4,8% (10.014 dòng, riêng `access_prevented` 8.961) | Mục 13.2 |
+| Số phiên (cắt ở 30 phút nghỉ) | 34.248 (34.247 phiên có ít nhất một thao tác ánh xạ được); ngưỡng 15 phút: 38.419; ngưỡng 60 phút: 30.387 | Mục 13.3 |
+| Số sự kiện thô mỗi phiên | trung vị 3, phân vị 90 là 14, phân vị 99 là 41, trung bình 6,08; 17,9% phiên chỉ có 1 sự kiện | Mục 13.3 |
+| Số **thao tác** mỗi phiên (sau ánh xạ, gộp) | trung vị 3, tứ phân vị 2–6, phân vị 90 là 11, phân vị 99 là 30, trung bình 5,02, lớn nhất 148 | Thay `max_actions` (P09) |
+| Thời lượng phiên | trung vị 46 s, tứ phân vị 8–452 s, phân vị 90 là 1.433 s, phân vị 99 là 4.193 s, trung bình 431 s; 16,2% phiên dài hơn 15 phút; 2,6% dài hơn 48 phút | Thay `time_available` (P18) |
+| Think time trong phiên (137.645 khoảng nghỉ giữa hai thao tác) | tứ phân vị 7 s / **15 s** / 55 s; phân vị 90 là 308 s; trung bình 107 s; 10,2% dài hơn 300 s; fit log-normal trên các giá trị ≥ 1 s: μ = 3,093, σ = 1,636 (median 22,0 s) | Thay P11, P12 cho học viên |
+| Thời gian ở lại một trang (think time theo trạng thái **trước**, trung vị) | `OPEN_COURSE` 12 s · `READ_LESSON` 21 s (tứ phân vị trên 94 s) · `LIST_QUIZ` 15 s · `START_QUIZ` → lần lưu đáp án 406 s (thời gian làm bài) · `SUBMIT` 19 s · `NOTIF` 21 s | Mục 13.3, 13.8 |
+| Tỉ lệ thao tác | `READ_LESSON` 46,5% · `OPEN_COURSE` 42,2% · `START_QUIZ` 2,4% · `SUBMIT` 2,4% · `LIST_QUIZ` 2,3% · `ANSWER` 2,2% · `NOTIF` 1,5% · `ENROLL` 0,37% · `PROFILE` 0,08% · `VIEW_MEDIA` 0,03% · `BROWSE` 0,01% (chưa tính `LOGIN`, `DASH` chèn đầu phiên) | Mục 10.4, 13.3 |
+| Phiên bắt đầu theo giờ trong ngày | đáy 03:00 (14 phiên cả kỳ), đỉnh 10:00 (3.602) và 15:00 (3.248); chỉ 1,96% phiên bắt đầu trong 23:00–06:00; buổi tối 19:00–21:00 chỉ bằng 0,21–0,28 lần giờ đỉnh (bảng đầy đủ ở mục 7.7) | Thay `w(h)` (P24) |
+| Theo ngày | trung bình 376,4 phiên/ngày (trung vị 291; phân vị 10 là 132, phân vị 90 là 753); trung bình 2.286,9 sự kiện/ngày (độ lệch chuẩn 2.313,2); ngày trong tuần trung vị 362 phiên, cuối tuần 148,5 | Mục 13.5 |
+| Ngày cao điểm | ngày thứ 40 (đếm từ 0): 1.376 phiên = **3,66 lần** trung bình, 4,73 lần trung vị; 15.967 sự kiện = 6,98 lần trung bình; 698 lượt nộp quiz | Thay P27, P28 |
+| Quiz | chỉ khóa A có lượt nộp quiz (B, C, D bằng 0); 19 ngày khóa A có ≥ 50 lượt nộp | Mục 7.7, 10.4 |
+| Hoạt động quanh ngày làm quiz (số phiên của khóa A, so với trung bình các ngày cách đó 7–14 ngày, trung vị trên 19 ngày quiz) | đúng ngày ×1,31 (thấp nhất ×0,59, cao nhất ×6,23) · trước 1 ngày ×1,11 · trước 2 ngày ×0,94 · trước 3 ngày ×0,85 | Mục 7.7 |
+
+**Giới hạn:** README không nói múi giờ, và mốc thời gian đã bị dịch (giá trị nhỏ nhất 244.518.301 s ứng với năm 1977, trong khi dữ liệu là năm 2022). Giờ trong ngày được tính bằng `dateTime mod 86400`. Bằng chứng gián tiếp rằng phép dịch giữ nguyên giờ và thứ trong tuần: đáy hoạt động rơi vào 03:00, và hai ngày liên tiếp ít phiên nhất (trung bình 209,8 và 180,7 phiên) đúng là thứ Bảy, Chủ nhật nếu coi `dateTime` là giờ Unix. Nếu giá trị gốc là giờ UTC thì giờ địa phương ở Ý muộn hơn 1–2 giờ; tài liệu này chỉ dùng **hình dạng** đường cong nên chấp nhận độ lệch đó. Moodle ở đây là học kết hợp (sinh viên vẫn lên lớp), 4 khóa, một trường ở Ý; khác LMS của đề tài về quy mô và cách dùng (mục 15).
 
 ---
 
@@ -111,6 +147,8 @@ Phần này gom các con số **đã kiểm chứng** mà các mục sau dùng. 
 Dữ liệu seed dùng profile `small` (1.000 học viên, 10 giảng viên, 20 khóa học và 60 quiz, đều ở trạng thái `PUBLISHED`) và **cố định** cho mọi run trong cùng campaign ([evaluation-protocol-v1 mục 5.5](evaluation-protocol-v1.md)). Lý do chọn `small` thay vì `medium`: đợt thông báo hàng loạt gửi tới **tất cả** học viên (`target_scope = ALL_STUDENTS`), nên với `medium` mỗi đợt là 20.000 email, quá nặng cho một run healthy trên máy ~15 GB RAM. Chốt sau pilot.
 
 ### 3.2. Profile học viên
+
+> **Phạm vi sau ADR-007:** profile, goal và bảng chuyển của học viên (mục 3.2–3.3, 4.1, 5.4) **không** còn dùng để sinh traffic học viên trong run thí nghiệm; mỗi phiên học viên là một phiên thật phát lại ở mức 2+ (mục 13). Các bảng này được giữ để (1) chạy nguồn "mức 2 thuần" khi so ba nguồn tải (mục 10.4), (2) cung cấp danh sách trạng thái, endpoint, điều kiện chặn mà mức 2+ ánh xạ vào (mục 5.2, 5.5), (3) làm kiểm tra vĩ mô bằng OULAD.
 
 | Mã | Profile | Mô tả hành vi | Tỉ lệ tài khoản | Tài khoản seed |
 | --- | --- | --- | --- | --- |
@@ -315,6 +353,8 @@ stateDiagram-v2
 
 Đọc: dòng "từ trạng thái", cột "sang trạng thái (xác suất)". Mỗi dòng cộng bằng 1. Trạng thái không có dòng trong một goal nghĩa là goal đó không đi vào trạng thái này. Mọi giá trị là **giả định của đề tài**; cấu trúc (chuỗi Markov theo nhóm hành vi) theo van Hoorn và cs. (2008). Mục 5.9 nêu các phép kiểm tra hợp lý đã làm.
 
+Sau ADR-007, các bảng dưới chỉ dùng cho nguồn "mức 2 thuần" (mục 10.4). Khi cần **sinh thêm** phiên học viên, dùng ma trận chuyển **học từ log Moodle** (mục 13.8), không dùng các bảng giả định này. Đối chiếu nhanh với log: người thật quay về trang khóa sau khi đọc một bài với xác suất 0,40 (`READ_LESSON` → `OPEN_COURSE`), bảng G1 dưới đây chỉ đặt 0,05; người thật đọc tiếp bài khác 0,30, bảng G1 đặt 0,45 (Phụ lục B.4).
+
 **G1 — Học tiếp bài**
 
 | Từ | Sang (xác suất) |
@@ -496,6 +536,8 @@ Một phiên kết thúc khi gặp `EXIT`, hoặc khi chạm một trong hai gi�
 | Tỉ lệ thao tác lớn nhất | `LOGIN` 18,2% · `DASH` 18,1% · `READ_LESSON` 17,4% · `OPEN_COURSE` 13,3% · `LIST_QUIZ` 6,9% · `ANSWER` 4,9% | `LOGIN` 16,5% · `DASH` 16,4% · `OPEN_COURSE` 13,8% · `READ_LESSON` 13,0% · `LIST_QUIZ` 10,7% · `ANSWER` 8,6% | Ngày sát hạn dịch sang quiz như mong muốn |
 
 Mô phỏng này dùng script tạm của người viết, không nằm trong repo; tuần 14 viết lại thành công cụ `tools/simulate` (mục 12.4) và chính kết quả của công cụ đó là **phân phối mục tiêu** để kiểm chứng ở mục 10.
+
+**Đối chiếu với log Moodle (thêm 17/11/2026, mục 2.3):** trung vị số thao tác gần nhau (log 3, mô hình 4), nhưng thời lượng phiên lệch rõ: log có trung vị **46 s** (mô hình 66 s) và đuôi dài hơn nhiều — phân vị 90 là 1.433 s so với 327 s, 16,2% phiên thật dài hơn 15 phút trong khi mô hình kẹp `time_available` ≤ 15 phút. Đây là ví dụ cụ thể cho nhận xét của WESSBAS [L-WESSBAS] rằng tham số tự đặt khó khớp phân phối độ dài phiên thật, và là lý do học viên chuyển sang mức 2+.
 
 ---
 
@@ -685,6 +727,17 @@ Lưu ý thực tế: đợt thông báo `ALL_STUDENTS` gửi tới mọi học v
 - Tốc độ request tức thời gấp 30 lần so với một quần thể `N_pop` thật dùng cùng đường cong. Nói cách khác, run 48 phút dồn lưu lượng của **một ngày** vào 48 phút. Đây là chủ đích (đủ tín hiệu cho cửa sổ phân tích 60 s), nhưng phải ghi rõ khi báo cáo: mức tải tuyệt đối của testbed không đại diện cho quy mô người dùng thật nào cả.
 - Phiên đến **cách đều** trong mỗi stage: k6 giãn các lần bắt đầu iteration đều nhau (ví dụ 10/s thì cách nhau 100 ms). Workload v1 không mô phỏng dao động ngẫu nhiên kiểu Poisson của thời điểm đến; độ ngẫu nhiên đến từ nội dung phiên. Ghi ở mục 13.
 
+### 7.7. Đường cong của học viên lấy từ log Moodle (thêm theo ADR-007)
+
+Sau ADR-007, đường cong theo giờ và đỉnh trước hạn của **học viên** không dùng bảng `w(h)` giả định ở mục 7.3 nữa mà lấy từ log Moodle (mục 2.3, Phụ lục B):
+
+- **Hình dạng theo giờ:** tỉ lệ phiên bắt đầu theo giờ chuẩn hóa về đỉnh = 1 (`w_moodle`): 00h 0,027 · 03h 0,004 (đáy) · 07h 0,350 · 09h 0,937 · **10h 1,000** · 11h 0,600 · 13h 0,799 · 15h 0,902 · 18h 0,416 · 21h 0,208 · 23h 0,081. Tương quan Pearson với bảng giả định ở mục 7.3 là 0,728 — cùng dáng "ban ngày cao, đêm thấp" nhưng log thật dồn mạnh vào buổi sáng và gần như không có ai lúc 23h–06h (1,96% số phiên).
+- **Một ngày thường:** trung vị 291 phiên/ngày (trung bình 376,4; p10 132; p90 753) cho cả 4 khóa.
+- **Đỉnh trước hạn quiz:** ngày 40 có 1.376 phiên (gấp 3,66 lần trung bình phiên/ngày) và 15.967 sự kiện (gấp 6,98 lần trung bình sự kiện/ngày), kèm 698 lượt nộp bài. `healthy high-load spike` dùng đúng ngày này; `normal mixed traffic` dùng một ngày gần trung vị.
+- **Tốc độ bắt đầu phiên** trong run = số phiên của giờ đó × hệ số chồng phiên (mục 13.5) ÷ thời lượng một "giờ" sau nén (mục 7.2); thời điểm bắt đầu trong mỗi giờ theo Poisson (Paxson & Floyd 1995, [L-PaxsonFloyd], https://www.icir.org/vern/papers/poisson.TON.pdf), không chia đều như mục 7.6.
+- **OULAD** (mục 2.1) chỉ còn dùng để kiểm tra vĩ mô: tỉ số tải ngày sát hạn so với ngày thường (OULAD 1,60) phải cùng chiều với log Moodle.
+- Giảng viên, admin và job lịch vẫn theo mục 7.3–7.5.
+
 ---
 
 ## 8. Profile healthy
@@ -837,6 +890,16 @@ Cột "Nguồn" ghi nguồn đã mở và kiểm chứng, hoặc **giả định
 
 Chạy hai lần `normal mixed` cùng `workload_seed` trên stack reset sạch: **kế hoạch phiên** (với mỗi `iterationInTest`: vai trò, profile, goal, tài khoản, `max_actions`, `patience`) phải trùng 100% (so bằng hash). Chuỗi thao tác thực tế có thể khác ở các nhánh phụ thuộc phản hồi (thời gian phản hồi, `409` do tranh chấp); tỉ lệ phiên có chuỗi thao tác trùng hoàn toàn được báo cáo, kỳ vọng ≥ 90% với run healthy (giả định). Chạy với seed khác thì kế hoạch phiên phải khác.
 
+### 10.4. So ba nguồn tải với hold-out (thêm theo ADR-007)
+
+Theo [ADR-007](../adr/adr-007-semi-real-workload-and-ai-evidence-v1.md) mục 2:
+
+1. **Chia log Moodle:** 60 ngày đầu để xây (chọn ngày, tham số chồng phiên, ma trận chuyển ở mục 13.8), 31 ngày cuối làm **hold-out**; không dùng hold-out để chỉnh bất kỳ tham số nào. Phương án dự phòng nếu hai đoạn khác nhau quá nhiều về lịch thi: chia theo khóa (A, C, D xây; B hold-out).
+2. **Ba nguồn tải**, cùng thời lượng và cùng tổng số phiên học viên: (a) mức 1 tốc độ hằng (`scenarios/level-1.js`, PR #76); (b) "mức 2 thuần" — máy trạng thái học viên với bảng giả định mục 5.4 và think time mục 5.6; (c) bán thực — mức 2+ (mục 13).
+3. **Đo trên log gateway** của run (không đo trên kịch bản), quy request về thao tác bằng route mẫu, rồi so với hold-out: số thao tác/phiên và thời lượng phiên (KS, báo thống kê D), think time (KS), tỉ lệ loại thao tác (Jensen–Shannon), dáng theo giờ (Pearson), tỉ số đỉnh/trung bình theo ngày, index of dispersion và Hurst của số request mỗi phút (Feitelson 2015, [L-Feitelson], https://www.cs.huji.ac.il/~feit/wlmod/).
+4. **Ngưỡng chốt trước:** JSD < 0,05; KS D < 0,1; trung vị lệch < ±10%. Kết luận "giống thật" chỉ khi nguồn (c) đạt ngưỡng và gần hold-out hơn (a), (b). Không đạt thì báo cáo đúng số đo, không đổi ngưỡng sau khi xem kết quả.
+5. Mục 10.1–10.3 (so với phân phối mục tiêu của mức 2) vẫn áp dụng cho giảng viên và admin.
+
 ---
 
 ## 11. Tái lập: seed, nhật ký thao tác, `run_id`
@@ -949,7 +1012,87 @@ Bảng chuyển, think time và đường cong nằm trong **một file tham s�
 
 ---
 
-## 13. Giới hạn và giả định
+## 13. Mức 2+ — phát lại phiên thật của học viên từ log Moodle (thêm theo ADR-007)
+
+### 13.1. Chọn nguồn dữ liệu
+
+| Bộ dữ liệu | Có phiên tới giây? | Hợp với LMS? | Giấy phép | Kết luận |
+| --- | --- | --- | --- | --- |
+| **Unistudium 2022** (Moodle, Đại học Perugia) [L-Unistudium] https://zenodo.org/records/13763175 | Có (timestamp giây) | Là log của chính một LMS, tên sự kiện chuẩn Moodle | CC BY 4.0 | **Chọn** |
+| OULAD [L-OULAD] https://pmc.ncbi.nlm.nih.gov/articles/PMC5704676/ | Không (tổng click theo ngày) | Có | CC BY 4.0 | Chỉ dùng kiểm tra vĩ mô |
+| EdNet https://github.com/riiid/ednet | Có (ms) | App luyện đề, không có ghi danh/khóa học | CC BY-NC 4.0 | Loại |
+| KDD Cup 2015 / XuetangX | Có (giờ) | MOOC video | Chưa rõ, link tải không chắc | Loại |
+| MOOCCubeX https://github.com/THU-KEG/MOOCCubeX | Chưa rõ | MOOC | GPL-3.0, một tệp 21 GB | Loại |
+
+Nguồn khảo sát: báo cáo nghiên cứu ngày 17/11/2026, tổng hợp ở [literature-matrix-v1](../plan/literature-matrix-v1.md).
+
+### 13.2. Ánh xạ sự kiện Moodle → trạng thái của máy trạng thái (mục 5.2)
+
+| Sự kiện Moodle | Trạng thái | Endpoint chính |
+| --- | --- | --- |
+| `course_viewed`, `course_module_instance_list_viewed`, `course_resources_list_viewed`, `recent_activity_viewed`, `grade_report_viewed`, `course_user_report_viewed` | `OPEN_COURSE` | `GET /courses/:id`, `GET /courses/:id/lessons` |
+| `course_module_viewed` (nếu là trang quiz thì thành `LIST_QUIZ` theo ngữ cảnh), `course_module_completion_updated` | `READ_LESSON` (kèm `PUT /student/lessons/:id/progress` khi có completion) | `GET /courses/:id/lessons`, `PUT …/progress` |
+| `attempt_started` | `START_QUIZ` | `GET /student/quizzes/:id`, `POST /student/quizzes/:id/attempts` |
+| `attempt_updated` | `ANSWER` | `PUT /student/attempts/:id/answers` |
+| `user_graded`, `attempt_submitted` | `SUBMIT` | `POST /student/attempts/:id/submit` |
+| `user_enrolment_created` | `ENROLL` | `POST /student/courses/:id/enrollments` |
+| `discussion_viewed` | `NOTIF` (LMS không có diễn đàn; gần nhất là đọc thông báo) | `GET /notifications/me` |
+| `user_profile_viewed` | `PROFILE` | `GET /students/me` |
+| `course_searched` | `BROWSE` | `GET /courses?search=` |
+| `all_files_downloaded` | `VIEW_MEDIA` | `GET /media/:id/content` |
+| `role_assigned`, `attempt_viewed`, `attempt_summary_viewed`, `submission_status_viewed`, `feedback_viewed` | gộp vào thao tác đang có (sự kiện phụ, không tạo request riêng) | — |
+| Còn lại: `access_prevented` (8.961), nộp bài tập dạng tệp (`assessable_*`, `submission_*`), diễn đàn, chỉnh điểm… | **bỏ** | — |
+
+Tỉ lệ dòng được phủ: **95,2%** (198.095/208.109); riêng `access_prevented` chiếm 8.961/10.014 dòng bị bỏ. Ước tính sơ bộ 90,6% ghi trong ADR-007 dùng bảng ánh xạ thô hơn; số chính thức là số ở mục này. Mỗi phiên bắt đầu bằng đăng nhập (`LOGIN`, W1). Upload tệp của học viên (W4) không có tương ứng vì LMS chỉ cho giảng viên/admin upload; W4 thuộc mức 2 của giảng viên.
+
+### 13.3. Cắt phiên
+
+Một phiên = chuỗi sự kiện của một người dùng, cắt khi nghỉ quá **30 phút** (quy ước phổ biến trong phân tích log web). Kết quả: 34.248 phiên; độ nhạy: ngưỡng 15 phút cho 38.419 phiên (mục 2.3). Sự kiện trùng cùng trạng thái trong ≤ 1 s gộp làm một; sự kiện phụ trong ≤ 2 s gộp vào thao tác trước (Phụ lục B).
+
+### 13.4. Gán người dùng và khóa học sang dữ liệu seed
+
+- Mỗi người dùng Moodle được gán **cố định** một tài khoản `seed-student-N` (băm `userId` theo seed của run), nên một người có nhiều phiên vẫn là cùng một tài khoản.
+- Mỗi khóa Moodle (A–D) gán một khóa học seed đã xuất bản; bài học và quiz được chọn theo thứ tự xuất hiện trong phiên (không có id bài học thật trong log).
+- `ENROLL` vào khóa đã ghi danh trả 409 và được coi là bình thường (mục 6.2).
+
+### 13.5. Nén lịch và chồng phiên
+
+- Chỉ nén **lịch bắt đầu phiên** (một ngày → 48 phút, mục 7.2). **Không nén think time** trong phiên: khoảng nghỉ giữa hai thao tác giữ đúng như log (trung vị 15 s, mục 2.3), để hành vi từng người không bị méo.
+- Phiên dài hơn thời lượng run bị cắt ở cuối run và ghi `end_reason = run_end` (mục 11.2).
+- Một ngày trung vị (291 phiên) sau nén cho khoảng 291 × 8,9 request ước tính ÷ 2.880 s ≈ 0,9 request/s — quá thấp để có tín hiệu. Vì vậy **chồng phiên**: phát nhiều ngày cùng dáng (hoặc cả bốn khóa của nhiều ngày) trong cùng một run, đổi id để không trùng tài khoản. Hệ số chồng phiên `k` chốt sau pilot sao cho tải nền khoảng 5–20 request/s (dải "thực tế" của Fang et al. 2025 là 16,47 QPS, [L-Fang2025], https://arxiv.org/abs/2510.04711); `k` và danh sách ngày dùng ghi vào manifest. Báo cáo phải nói rõ tải đã được khuếch đại `k` lần.
+
+### 13.6. Khi một bước thất bại
+
+Phát lại theo kịch bản nhưng vẫn phản ứng như người thật ở mục 6: 5xx thì thử lại có backoff; 401 thì đăng nhập lại; chờ quá kiên nhẫn thì bỏ ngang phiên (ghi `end_reason`). Vì vậy khi có fault, phiên thật vẫn thay đổi theo phản hồi của hệ thống — đúng chuỗi "System Response → Update User State" của giảng viên gợi ý.
+
+### 13.7. Định dạng file phiên, script và quy tắc dữ liệu
+
+- Script ở `aiops-platform/load/tools/` (tuần 14): (1) tải zip từ Zenodo và kiểm sha256; (2) chuyển log thành `sessions-<phiên-bản>.json` gồm danh sách phiên `{session_id, user_key, course_key, day_index, start_offset_s, actions: [{state, think_s}]}`; (3) in báo cáo tỉ lệ phủ, số phiên, phân phối.
+- k6 nạp file phiên bằng `SharedArray`, executor arrival-rate theo đường cong mục 7.7, mỗi iteration phát một phiên bằng các hàm thao tác ở `aiops-platform/load/journeys/` (PR #76).
+- **Không commit** CSV gốc hay file phiên sinh ra (log không có thông tin cá nhân nhưng vẫn là dữ liệu của bên thứ ba); repo chỉ có script và sha256. Ghi nguồn đúng CC BY 4.0: Milani, Biondi, Franzoni, *Unistudium 2022: students groups logs on moodle*, Zenodo, DOI 10.5281/zenodo.13763175.
+
+### 13.8. Ma trận chuyển học từ log (khi cần sinh thêm phiên)
+
+Khi cần thêm phiên có cùng thống kê (ví dụ biến thể case), sinh từ chuỗi Markov **học từ các phiên đã ánh xạ** theo cách của WESSBAS (Vögele et al. 2018, [L-WESSBAS], https://pmc.ncbi.nlm.nih.gov/articles/PMC5910480/), không dùng bảng giả định mục 5.4. Một số xác suất chuyển học được (đoạn xây, Phụ lục B.4):
+
+| Từ | Sang (xác suất) |
+| --- | --- |
+| bắt đầu phiên | `OPEN_COURSE` 0,884 · `READ_LESSON` 0,083 · `ENROLL` 0,017 · `LIST_QUIZ` 0,010 |
+| `OPEN_COURSE` | `READ_LESSON` 0,716 · thoát 0,163 · `OPEN_COURSE` 0,090 · `LIST_QUIZ` 0,029 |
+| `READ_LESSON` | `OPEN_COURSE` 0,401 · `READ_LESSON` 0,299 · thoát 0,260 · `NOTIF` 0,020 · `LIST_QUIZ` 0,018 |
+| `START_QUIZ` | `ANSWER` 0,838 · `SUBMIT` 0,140 |
+| `ANSWER` | `SUBMIT` 0,913 · `ANSWER` 0,081 |
+| `SUBMIT` | `OPEN_COURSE` 0,520 · `READ_LESSON` 0,242 · thoát 0,188 · `START_QUIZ` 0,031 |
+
+WESSBAS ghi nhận Markov bậc 1 có xu hướng sinh phiên dài hơn thật; vì vậy phát lại phiên thật là nguồn chính, phiên sinh thêm chỉ dùng khi thiếu và phải qua kiểm chứng mục 10.4.
+
+## 14. Mức 3 offline — LLM sinh persona và nội dung một lần (Stretch, theo ADR-007)
+
+- **Làm gì:** dùng LLM sinh **một lần** 50–200 persona giảng viên kèm nội dung (đề cương khóa học, nội dung bài, câu hỏi quiz, tài liệu cho W6), lưu JSON có hash, đưa vào manifest; k6 mức 2 của giảng viên chỉ đọc file này. Đây là độ thực của **nội dung/payload**, không phải nhịp tải.
+- **Vì sao không chạy LLM agent trực tiếp làm nguồn tải:** chậm (UXAgent khoảng 8 giây mỗi bước, [L-UXAgent], https://arxiv.org/abs/2504.09407); hành vi lệch người thật (AgentA/B: agent 6,05 hành động/phiên so với 15,96 của người, [L-AgentAB], https://arxiv.org/abs/2504.09723); không tái lập được kể cả khi đặt temperature 0 ([L-LLMNondet], https://arxiv.org/abs/2408.04667). Gần nhất với hướng "LLM có căn cứ dữ liệu thật" là SimGym dựng persona từ clickstream thật ([L-SimGym], https://arxiv.org/abs/2602.01443).
+- **Trạng thái:** Stretch — chỉ làm khi E1–E5, E8 đã xong (plan v0.4 mục 9).
+
+## 15. Giới hạn và giả định
 
 1. **Phần lớn xác suất là giả định.** Không có nguồn công khai nào cho xác suất chuyển giữa các thao tác API của một LMS cụ thể. Những gì có nguồn: tỉ lệ profile, hệ số sát hạn, độ dài phiên tham chiếu (OULAD), think time (Wilson), mô hình mở và cấu trúc Markov (Schroeder và cs., van Hoorn và cs.). Bảng chuyển chỉ được kiểm tra hợp lý (mục 5.9), chưa được fit từ dữ liệu.
 2. **OULAD khác LMS của đề tài:** đại học từ xa ở Anh, 2013–2014, học viên đa phần đi làm; dữ liệu theo ngày, không theo giờ; click mịn hơn thao tác. Phép quy đổi "một ngày hoạt động ≈ một phiên" và "một click ≈ một thao tác" là giả định.
@@ -963,10 +1106,11 @@ Bảng chuyển, think time và đường cong nằm trong **một file tham s�
 10. **Mức tải và tiêu chí "khỏe" chưa đo:** mọi con số tải, `maxVUs`, ngưỡng mục 8.4 và 10.2 chốt sau pilot.
 11. **Chi tiết k6 chưa thử:** cách chuyển console ra file, tag cho mỗi request, cách khai báo mã mong đợi theo từng request — mới đối chiếu tài liệu k6, chưa chạy thử; cài ở tuần 14 có thể phải điều chỉnh.
 12. **Tài nguyên máy:** spike ở mức đỉnh cần khoảng 140 VU bận và tới 420 VU tối đa; RAM của k6 ở mức này chưa đo.
+13. **Sau ADR-007**, giới hạn 1, 4, 6 chỉ còn áp dụng cho mức 2 (giảng viên, admin) và nguồn "mức 2 thuần" dùng để so sánh. Giới hạn riêng của mức 2+: log Moodle là của một trường Ý, 4 khóa, 1 học kỳ năm 2022; múi giờ không ghi trong README và mốc thời gian đã bị dịch (chỉ dùng hình dạng theo giờ, không dùng giờ tuyệt đối); 4,8% dòng bị bỏ khi ánh xạ; tải phải khuếch đại bằng chồng phiên (mục 13.5); id bài học/quiz trong log không có nên bài học được chọn theo thứ tự.
 
 ---
 
-## 14. Đối chiếu Definition of Done của card
+## 16. Đối chiếu Definition of Done của card
 
 | DoD | Nằm ở |
 | --- | --- |
@@ -978,7 +1122,7 @@ Bảng chuyển, think time và đường cong nằm trong **một file tham s�
 
 ---
 
-## 15. Nguồn tham khảo
+## 17. Nguồn tham khảo
 
 Các nguồn dưới đây đã được **mở và đọc** ngày 17/11/2026 (trừ nhóm "chưa kiểm chứng" ở cuối).
 
@@ -1016,3 +1160,13 @@ Làm lại được với Python thuần (thư viện chuẩn `csv`, `statistics
 5. **Ngày còn tới hạn:** với mỗi ngày d của một lượt mở môn, `t(d)` = số ngày tới hạn `TMA`/`CMA` gần nhất phía sau (≥ 0). Tổng click của cả lớp theo `t` (0–14) chia cho trung bình của các ngày có `t` = 7–14 trong cùng lượt mở môn; lấy trung vị trên 22 lượt mở môn.
 6. **Phân loại học viên** (chỉ tính ngày 0 tới hết lượt mở môn; 28.500 học viên có hoạt động trong khoảng này): `Withdrawn` → nhóm Rút lui; còn lại, nếu có dưới 10 ngày hoạt động → Ít hoạt động; nếu không, tính tỉ lệ ngày hoạt động có `t` ≤ 2, chia cho tỉ lệ ngày có `t` ≤ 2 trong lịch của môn (trung vị 0,068) → nếu ≥ 2 là Nước rút, ngược lại là Đều đặn.
 7. **Ngày hoạt động trung bình** và **hệ số sát hạn theo nhóm:** với mỗi nhóm, số ngày hoạt động trung bình; và (số ngày hoạt động có `t` ≤ 2 chia số ngày lịch có `t` ≤ 2) so với (số ngày hoạt động có `t` = 7–14 chia số ngày lịch có `t` = 7–14), cộng dồn trên học viên của nhóm.
+
+## Phụ lục B. Cách tính số liệu log Moodle (thêm theo ADR-007)
+
+Tính bằng một script Python thuần (`csv`, `collections`, `math`), không commit (giữ ở máy người viết); tuần 14 đưa phiên bản chính thức vào `aiops-platform/load/tools/`.
+
+- **B.1. Đọc và cắt phiên:** nhóm dòng theo `userId`, sắp theo `dateTime`; cắt phiên khi khoảng cách giữa hai sự kiện > 1.800 s.
+- **B.2. Ánh xạ:** theo bảng mục 13.2; sự kiện phụ trong ≤ 2 s sau thao tác trước gộp vào thao tác đó; cùng trạng thái lặp lại trong ≤ 1 s coi là trùng. Đếm: 171.892 dòng thành thao tác riêng, 18.476 dòng phụ, 7.727 dòng trùng, 10.014 dòng bỏ.
+- **B.3. Thống kê:** số thao tác/phiên (trung vị 3, p90 11, trung bình 5,02), thời lượng phiên (trung vị 46 s, p90 1.433 s), think time giữa hai thao tác (137.645 khoảng; p25/p50/p75 = 7/15/55 s; p90 308 s; 10,2% > 300 s; khớp log-normal trên các khoảng ≥ 1 s: μ = 3,093, σ = 1,636, trung vị 22 s), số request ước tính mỗi phiên (trung vị 8,9; trung bình 11,3) theo số request của từng trạng thái ở mục 5.2.
+- **B.4. Ma trận chuyển:** đếm cặp (trạng thái hiện tại → trạng thái kế tiếp, kể cả "thoát" ở cuối phiên) trên các phiên đã ánh xạ rồi chuẩn hóa theo hàng; bảng mục 13.8 trích các hàng chính.
+- **B.5. Theo giờ, theo ngày:** đếm phiên bắt đầu theo giờ (chuẩn hóa về đỉnh = 1 cho `w_moodle`), sự kiện và phiên theo ngày (`day_index` từ ngày đầu tiên của log); ngày cao điểm là ngày có nhiều phiên nhất.
