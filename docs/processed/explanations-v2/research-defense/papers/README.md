@@ -16,6 +16,8 @@ Repo GitHub của đồ án là **public**, nên chỉ commit tài liệu có gi
 | `2025-pham-rcaeval-benchmark.pdf` | L-RCAEval | CC BY 4.0 |
 | `2026-castelo-simgym.pdf` | L-SimGym | CC BY 4.0 |
 
+> **Về `2022-milani-unistudium-readme.txt`:** đây là README nguyên bản của bộ dữ liệu. Link trang phòng lab trong đó (`https://www.dmi.unipg.it/kitlab/`) đã không còn truy cập được (kiểm 17/11/2026). Dữ liệu tải tại Zenodo: https://zenodo.org/records/13763175 — tệp `Unistudium_students_groups_logs_2022.zip` (991 KB, md5 `cdec50cd4a5fc3abf3204f06bf43ee25`, CC BY 4.0). Dữ liệu không commit vào repo (ADR-007); script tải kèm kiểm checksum làm ở tuần 14 (`aiops-platform/load/tools/`).
+
 ## Chỉ lưu cục bộ (`local-only/`, không commit)
 
 | Tệp | Khóa | Lý do |
