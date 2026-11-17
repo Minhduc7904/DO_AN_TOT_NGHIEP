@@ -5,7 +5,7 @@ Phần chính của đề tài: từ telemetry của một run thí nghiệm đi
 | Module | Trạng thái |
 | --- | --- |
 | `telemetry/adapters` — export Prometheus, Tempo, Loki theo run | **Có** (tuần 13) |
-| `telemetry/validation` — data-quality check | Tuần 13 (task-05) |
+| `telemetry/validation` — data-quality check (`TelemetryQualityReport`) | **Có** (tuần 13) |
 | `features`, `anomaly`, `incident`, `graph`, `rca`, `evaluation` | Tuần 14 trở đi |
 
 ## Cài đặt
@@ -41,7 +41,7 @@ Kết quả ở `artifacts/<run_id>/` (không commit):
 | `logs.parquet` | Mỗi dòng một log (trừ access log của probe `/ready`, `/health`) |
 | `manifest.json` | `run_id`, cửa sổ UTC, sha256 và số dòng từng tệp, truy vấn đã dùng, thống kê cắt bớt và lỗi |
 
-Cột của từng bảng khai báo ở `src/aiops_training/telemetry/schema.py` (`telemetry.v2`); ý nghĩa từng cột: data dictionary (task-05 tuần 13).
+Cột của từng bảng khai báo ở `src/aiops_training/telemetry/schema.py` (`telemetry.v2`); ý nghĩa từng cột: [telemetry data dictionary v2](../../docs/processed/architecture/telemetry-data-dictionary-v2.md).
 
 ### Tùy chọn
 
@@ -55,6 +55,14 @@ Cột của từng bảng khai báo ở `src/aiops_training/telemetry/schema.py`
 | `--include-noise-traces` | tắt | Giữ cả trace nhiễu (probe, thăm dò DB của `scheduler-worker`) |
 | `--include-probe-logs` | tắt | Giữ cả access log của probe |
 | `--timeout-seconds` | `15` | Timeout mỗi lời gọi HTTP |
+
+## Kiểm chất lượng artifact
+
+```bash
+uv run aiops-training quality artifacts/<run_id>      # ghi artifacts/<run_id>/quality-report.json
+```
+
+In bảng mỗi runtime một dòng (số metric, nhịp tim, gap, span, log, cờ) và trả `pass`/`partial`/`fail` (mã thoát 1 chỉ khi `fail`). Định nghĩa từng trường, cờ `telemetry_silent` và quy tắc trạng thái: [telemetry data dictionary v2](../../docs/processed/architecture/telemetry-data-dictionary-v2.md) mục 8.
 
 ## Cách export bảo vệ Tempo
 
@@ -83,5 +91,5 @@ Thời gian chạy 82 giây; Tempo không khởi động lại. Ở một lần 
 ## Giới hạn
 
 - Tải trace mất khoảng 0,1 s mỗi trace: run 30 phút với tải mức 1 (~6 trace/s không tính nhiễu) cần khoảng 15–20 phút export.
-- Chưa chuẩn hóa sang bảng feature, chưa kiểm chất lượng (task-05 và tuần 14).
+- Chưa chuẩn hóa sang bảng feature (tuần 14).
 - Bộ đếm lỗi mới xuất hiện giữa cửa sổ có điểm đầu không nằm trong `rate()` của Prometheus; artifact giữ giá trị thô nên feature stage tự xử lý.
