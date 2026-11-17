@@ -72,8 +72,8 @@ Rà soát thiết kế cho thấy thêm ba điểm:
 ## Việc tiếp theo (không thuộc quyết định này)
 
 - Chốt người làm fault injector và k6: [implementation-backlog-v1](../plan/implementation-backlog-v1.md) giao cho Đức, tài liệu refactor ghi "mảng AI".
-- Thiết kế workload theo hành vi người dùng (vai trò, chuỗi bước trong phiên, thời gian nghỉ, phân bố truy cập theo giờ) để trả lời góp ý giữa kỳ của giáo viên hướng dẫn.
-- Kế hoạch tuần 11–24: [plan-v0.3](../plan/plan-v0.3-24-weeks.md) (Gate R ở cuối tuần 12 là điều kiện để làm tiếp).
+- Thiết kế workload theo hành vi người dùng (vai trò, chuỗi bước trong phiên, thời gian nghỉ, phân bố truy cập theo giờ) để trả lời góp ý giữa kỳ của giáo viên hướng dẫn: đã thiết kế ở [workload-design-v1](../architecture/workload-design-v1.md) (PR #78); sau nghiên cứu ngày 17/11/2026 được nâng thành workload bán thực (mức 2+) và bộ bằng chứng E1–E8 ở [ADR-007](adr-007-semi-real-workload-and-ai-evidence-v1.md).
+- Kế hoạch tuần 11–24: [plan-v0.3](../plan/plan-v0.3-24-weeks.md) (Gate R ở cuối tuần 12 là điều kiện để làm tiếp); từ tuần 14 theo [plan-v0.4](../plan/plan-v0.4-24-weeks.md).
 - ~~Đóng hoặc phân loại lại issue #44 và #50 trên GitHub~~: đã đóng ngày 17/11/2026 (không còn áp dụng, code v1 đã bị xóa ở R-05), có comment phân loại từng mục.
 
 ## Phương án đã loại

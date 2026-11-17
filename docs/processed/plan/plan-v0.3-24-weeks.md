@@ -1,5 +1,7 @@
 # Plan v0.3 — Lộ trình đồ án 24 tuần
 
+> **Đã được thay thế** bởi [plan-v0.4-24-weeks.md](plan-v0.4-24-weeks.md) (17/11/2026, [ADR-007](../adr/adr-007-semi-real-workload-and-ai-evidence-v1.md)). Khung 24 tuần, Gate R và các mốc giữ nguyên trong v0.4; nội dung tuần 13–21 theo v0.4. File này giữ làm lịch sử.
+
 > **Trạng thái:** Sole canonical source of truth cho WHEN + WHO. Thay thế [plan-v0.2](plan-v0.2-24-weeks.md) (giữ làm lịch sử).
 >
 > **Backend scope, topology và implementation architecture:** tuần 3–10 theo [`backend_microservice_testbed_blueprint`](../architecture/backend_microservice_testbed_blueprint.md) (testbed v1); từ tuần 11 theo [`backend-microservice-testbed-blueprint-v2`](../architecture/backend-microservice-testbed-blueprint-v2.md) và [`service-catalogue-and-topology-v2`](../architecture/service-catalogue-and-topology-v2.md).

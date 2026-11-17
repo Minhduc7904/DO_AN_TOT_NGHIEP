@@ -22,6 +22,7 @@
 | [task-03_add-llm-stub-and-latency-proxies](task-03_add-llm-stub-and-latency-proxies.md) | LLM stub chỉnh được độ trễ/lỗi và proxy chèn trễ trước MinIO, `course-postgres` trong Compose | Bách | Không có | Cao | Đã giao |
 | [task-04_build-telemetry-export-adapter](task-04_build-telemetry-export-adapter.md) | Adapter export Prometheus, Tempo, Loki theo run và cửa sổ thời gian | Bách | Không có | Cao | Đã giao |
 | [task-05_define-data-dictionary-and-quality-check](task-05_define-data-dictionary-and-quality-check.md) | Data dictionary, schema chuẩn hóa v2 và data-quality check trên một run thử | Bách | Không có | Cao | Đã giao |
+| [task-06_adopt-semi-real-data-strategy](task-06_adopt-semi-real-data-strategy.md) | Chốt chiến lược dữ liệu bán thực và bằng chứng đóng góp của AI/RCA (ADR-007, plan v0.4), rà soát tài liệu và ghi reference | Bách | Không có | Cao | Đang thực hiện |
 
 > Khi đọc tiến độ project-wide, chỉ coi hàng có trạng thái `Hoàn thành` trên nhánh canonical là hoàn thành; trạng thái đã finalization trên task branch chưa thay thế nguồn này.
 
@@ -29,6 +30,7 @@
 
 - Phụ thuộc: task-03 cung cấp LLM stub cho hành trình W6 của task-02; task-04 cần traffic thật từ task-02 để export một run thử; task-05 chạy kiểm tra chất lượng trên artifact của task-04. Task-01 độc lập về code nhưng là nguồn tham số cho k6 mức 2 ở tuần 14.
 - Rủi ro: tuần canonical đã qua 17 ngày; Tempo giới hạn 512 MiB bị OOM khi truy vấn dồn dập nên adapter phải truy vấn tuần tự và giới hạn số trace; telemetry chỉ giữ 24 giờ nên export phải chạy ngay sau run; máy ~15 GB RAM nên không chạy k6 tải cao song song với build/test.
+- Bổ sung 17/11/2026 (task-06): sau khi xong phần việc tuần 13, Bách quyết định workload bán thực và bộ bằng chứng E1–E8 ([ADR-007](../../../adr/adr-007-semi-real-workload-and-ai-evidence-v1.md)); [plan-v0.4](../../plan-v0.4-24-weeks.md) thay plan-v0.3 cho tuần 14 trở đi. Nội dung task-01…task-05 giữ nguyên; tài liệu thiết kế workload (task-01) được bổ sung mục mức 2+.
 - Quyết định đã chốt: giai đoạn Bách tự bắt kịp tiến độ, mọi task do Bách phụ trách, không có collaborator; review và merge theo ngoại lệ do Bách xác nhận, ghi trung thực trong card. LMS đóng băng: proxy và LLM stub đặt trong `aiops-platform/faults/` bằng file Compose bổ sung, không sửa code LMS. Phân tích viết bằng Python (uv), workload viết bằng k6 theo [analysis blueprint v1](../../../architecture/analysis-anomaly-rca-blueprint-v1.md).
 
 ## Thứ tự thực hiện đề xuất

@@ -2,6 +2,8 @@
 
 > **Task:** R-12 — [bảng task refactor](../plan/refactor/refactor-board-v1.md)
 >
+> **Cập nhật 17/11/2026 ([ADR-007](../adr/adr-007-semi-real-workload-and-ai-evidence-v1.md)):** phần workload, fault và experiment của mảng AI đã có code ở các PR tuần 13 chưa merge: lớp fault `aiops-platform/faults/` (toxiproxy + `llm-stub`, [PR #75](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/75)), k6 mức 1 `aiops-platform/load/` ([PR #76](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/76)), export và data-quality `aiops-platform/training/` ([PR #77](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/77), [PR #79](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/79)) — mục 2.5, 3, 5, 6, 11.1, 12. Dữ liệu thí nghiệm dùng **workload bán thực** (học viên phát lại phiên thật từ log Moodle, giảng viên/admin/job lịch dùng mức 2); fault là lớp ghép thêm, LMS vẫn đóng băng. Lịch: [plan-v0.4](../plan/plan-v0.4-24-weeks.md).
+>
 > **Cập nhật 17/11/2026 ([ADR-006](../adr/adr-006-trim-project-scope-v1.md)):** LMS đóng băng: không thêm nghiệp vụ hoặc tính năng sản phẩm, chỉ nhận thay đổi phục vụ telemetry, fault, workload; R-18 (URL ký media) đã hủy và revert; MCP/agent ra Out-of-scope. Khi đoạn chi tiết mâu thuẫn, ADR-006 được ưu tiên.
 >
 > **Cập nhật R-13:** `auth` và `student` đã gộp thành service `identity` ([ADR-005](../adr/adr-005-merge-auth-student-into-identity-v1.md)); tài liệu được sửa tại chỗ theo topology 7 service + 4 worker (11 runtime). Các số đo chưa đo lại sau khi gộp được ghi rõ ở chỗ dùng.
@@ -16,7 +18,7 @@
 >
 > **Định hướng WHY/WHAT:** [`../direction/khung-dinh-huong-tong-the-lms-microservice-ai-rca-v1.md`](../direction/khung-dinh-huong-tong-the-lms-microservice-ai-rca-v1.md)
 >
-> **WHEN/WHO:** [`../plan/plan-v0.3-24-weeks.md`](../plan/plan-v0.3-24-weeks.md)
+> **WHEN/WHO:** [`../plan/plan-v0.4-24-weeks.md`](../plan/plan-v0.4-24-weeks.md)
 
 Tài liệu này là tổng quan kiến trúc backend testbed: nó chỉ nêu quyết định và quy ước, còn danh mục chi tiết (service, edge, route, command, bảng dữ liệu, fault) nằm ở các tài liệu v2 ở phần Phụ thuộc và được link tại chỗ, không chép lại. Thứ tự ưu tiên khi mâu thuẫn: ADR-001..004 → catalogue/contract/data-ownership v2 → tài liệu này → các tài liệu còn ở v0/v1. Khi tài liệu và code lệch nhau, **code là chuẩn**: phải sửa tài liệu cùng PR hoặc ghi rõ migration đang diễn ra. Tài liệu không định nghĩa lịch triển khai theo tuần.
 
@@ -114,12 +116,13 @@ W3 Ghi danh và học          W7 Dọn media không dùng (scheduler)
 W4 Upload media
 ```
 
-W1–W7 được tái hiện tự động bởi bảy file regression (mục 12).
+W1–W7 được tái hiện tự động bởi bảy file regression (mục 12) và, để tạo tải cho thí nghiệm, bởi k6 mức 1 (mỗi hành trình một scenario, PR #76; mục 6).
 
 ### 2.5. Phân tầng scope
 
 - **Đã có trong code:** topology 7 service + 4 worker, PostgreSQL/RabbitMQ/MinIO/Mailpit, hai bề mặt API và token EdDSA, outbox/inbox, seeder quy mô lớn, reset/seed có kiểm soát, regression, Postman, CI, telemetry đa nguồn có correlation (smoke observability).
-- **Chưa có (mảng AI, `aiops-platform/`):** dataset, huấn luyện và đánh giá RCA engine, workload k6, fault injector, experiment runner, MCP server và agent. README của `aiops-platform` ghi các thư mục này "Chưa tạo". Tài liệu này mô tả ranh giới và hợp đồng, không khẳng định chúng đã tồn tại.
+- **Có code ở PR tuần 13, chưa merge (mảng AI, `aiops-platform/`):** lớp fault (PR #75), k6 mức 1 cho W1–W7 (PR #76), export telemetry theo run và data-quality check (PR #77, #79). Trên `main`, README của `aiops-platform` vẫn ghi các thư mục này "Chưa tạo".
+- **Chưa có (mảng AI):** workload bán thực (mức 2+, mức 2) và kiểm chứng độ thực, fault manifest, experiment runner, dataset, feature, huấn luyện và đánh giá RCA engine. MCP server và agent ra Out-of-scope (ADR-006). Tài liệu này mô tả ranh giới và hợp đồng, không khẳng định chúng đã tồn tại.
 - **Ngoài scope:** Redis, frontend, kênh real-time, notification tự động theo sự kiện, Kubernetes/service mesh, multi-fault, RCA mức instance/component làm primary.
 
 Business scope được freeze khi topology, observability và các fault ở mục 10 đã tạo được experiment hợp lệ; sau mốc này ưu tiên chất lượng dữ liệu, tái lập, anomaly/RCA và đánh giá thay vì thêm LMS feature.
@@ -136,10 +139,10 @@ Business scope được freeze khi topology, observability và các fault ở m�
 | Messaging | RabbitMQ `4.1.4-management-alpine` (`amqplib`); exchange `lms.commands` |
 | Object storage | MinIO (client `minio` `8.0.7`; 5 bucket `images`, `videos`, `documents`, `audios`, `other` do `minio-init` tạo) |
 | Email | `nodemailer`; Mailpit `v1.31.6` cho dev/CI, SMTP thật khi production (đổi biến môi trường) |
-| LLM | Nhà cung cấp OpenAI-compatible bên ngoài; test dùng HTTP stub |
+| LLM | Nhà cung cấp OpenAI-compatible bên ngoài; regression/smoke dùng provider giả chạy trong container do script test dựng; thí nghiệm dùng `llm-stub` của lớp fault (PR #75), chỉnh độ trễ/lỗi lúc chạy |
 | Telemetry SDK | OpenTelemetry (`@aiops-lms/observability`, version pin trong package) |
 | Backend telemetry | Collector Contrib `0.163.1`, Prometheus `v3.15.0`, Tempo `3.1.0`, Loki `3.7.9`, Grafana `13.2.4` (trong `aiops-platform/observability/`) |
-| Analysis/RCA, workload | Python (analysis) và k6 (workload) là định hướng, **chưa có code** trong repo |
+| Analysis/RCA, workload, fault | Trên `main` **chưa có code**. Ở PR tuần 13: k6 chạy bằng image `grafana/k6:1.3.0` (PR #76); Python 3.12 + uv, httpx, pyarrow cho export/quality (PR #77, #79); `ghcr.io/shopify/toxiproxy:2.12.0` và `llm-stub` chạy trên `node:22.13.1-alpine` (PR #75) |
 | Kubernetes | Không thuộc phạm vi |
 
 Không dùng polyglot business service. Analysis có thể là modular monolith Python thay vì nhiều microservice vật lý.
@@ -174,7 +177,8 @@ DO_AN_TOT_NGHIEP/
 │                               #   postgres-init/, .env.example, README.md
 ├── aiops-platform/             # tách khỏi LMS
 │   ├── observability/          # Collector, Prometheus, Tempo, Loki, Grafana, dashboards, compose.yaml riêng
-│   └── README.md               # liệt kê training/, mcp/, agent/, load/, faults/, evaluation/ (chưa tạo)
+│   ├── faults/, load/, training/  # có ở PR #75–#77, #79 (tuần 13, chưa merge)
+│   └── README.md               # trên main: training/, load/, faults/, evaluation/ ghi "Chưa tạo"
 ├── postman/                    # lms-v2 collection + environment + fixtures
 ├── .github/workflows/          # ci.yml, regression.yml; actions/setup-lms
 ├── docs/{raw,processed}/       # processed: architecture, adr, direction, plan, rules, guides, ...
@@ -194,13 +198,14 @@ DO_AN_TOT_NGHIEP/
 
 ## 5. Runtime và triển khai
 
-`docker-compose/` có ba cách chạy:
+`docker-compose/` có ba cách chạy, cộng một lớp ghép thêm cho thí nghiệm:
 
 | File | Nội dung | Dùng cho |
 | --- | --- | --- |
 | `docker-compose/compose.yaml` | Chỉ LMS (11 runtime + PostgreSQL, MinIO, `minio-init`, Mailpit, RabbitMQ) | Regression, Postman, phát triển. Không có Collector nên không có telemetry (chưa kiểm chứng hành vi exporter khi thiếu Collector) |
 | `aiops-platform/observability/compose.yaml` | Chỉ Collector, Prometheus, Tempo, Loki, Grafana | Dựng riêng stack quan sát |
 | `docker-compose/compose.full.yaml` | Ghép hai bên bằng `include` trong một project: 21 thành phần | Reset/seed, smoke observability, CI |
+| `compose.full.yaml` + `aiops-platform/faults/compose.faults.yaml` (ghép **sau**, PR #75) | Thêm `toxiproxy` và `llm-stub`; đổi địa chỉ PostgreSQL của `course` và MinIO của `media`, `media-worker` sang proxy, không sửa code LMS: 23 container | Thí nghiệm (workload k6, fault). Cổng điều khiển chỉ trên loopback: `8474` (API toxiproxy), `18081` (LLM stub); xem [faults/README](../../../aiops-platform/faults/README.md) trên nhánh PR |
 
 Hai bên nối bằng network `aiops-net` (biến `AIOPS_NETWORK_NAME`); LMS chỉ gửi OTLP/HTTP tới `otel-collector:4318`, Collector scrape `rabbitmq:15692`. Cổng host mặc định: `gateway` 3000, `identity` 3001, `course` 3003, `media` 3004, `media-worker` 3005, `notification` 3006, `notification-worker` 3007, `scheduler` 3018 (host 3008 thuộc Grafana; trong network là `scheduler:3008`), `scheduler-worker` 3010, `ai` 3009, `ai-worker` 3011. Chi tiết lệnh: [docker-compose/README.md](../../../docker-compose/README.md).
 
@@ -211,24 +216,25 @@ Dữ liệu và trạng thái sạch:
 
 ## 6. Trách nhiệm workload, fault, experiment và evaluation
 
-Các module dưới đây là **ranh giới trách nhiệm** cho phần AI; theo `aiops-platform/README.md` hiện chưa có thư mục nào được tạo (`load/`, `faults/`, `evaluation/`, `training/`, `mcp/`, `agent/`). Vị trí cụ thể sẽ chốt khi mảng AI bắt đầu từng module; không tạo thư mục rỗng trước.
+Các module dưới đây là **ranh giới trách nhiệm** cho phần AI. Trên `main`, `aiops-platform/README.md` vẫn ghi `load/`, `faults/`, `evaluation/`, `training/` là "Chưa tạo"; ba module đầu bảng đã có code ở PR tuần 13 chưa merge (cột Trạng thái). MCP server và agent ra Out-of-scope (ADR-006). Không tạo thư mục rỗng trước.
 
-| Module | Chỉ làm | Không làm |
-| --- | --- | --- |
-| Workload | Tạo traffic (k6), profile ghi seed, tỷ lệ workflow, rate/stage, duration; có profile "tăng tải hợp lệ" làm negative control | Không inject fault, không tính metric đánh giá |
-| Fault | Cơ chế fault tái sử dụng: catalog, injector (chèn trễ MinIO/PostgreSQL/SMTP/LLM stub, giới hạn CPU), script start/stop/cleanup/verify; mặc định tắt, chỉ bật khi thí nghiệm | Không đổi business rule chỉ để cài fault |
-| Experiment | Orchestration: protocol, scenario tham chiếu workload + fault + timing, runner (reset, ledger), manifest/artifact theo run | Không copy workload/fault vào đây |
-| Evaluation | `prediction + ground truth -> evaluation metrics` | Không tạo workload, không inject fault, không điều khiển runtime |
+| Module | Chỉ làm | Không làm | Trạng thái (17/11/2026) |
+| --- | --- | --- | --- |
+| Workload (`load/`) | Tạo traffic (k6) qua Gateway: mức 1 (chuỗi request cố định W1–W7), mức 2 (máy trạng thái cho giảng viên/admin/job lịch), mức 2+ (phát lại phiên học viên thật từ log Moodle); profile healthy "ngày học thường" và "cao điểm trước hạn quiz" làm negative control; seed, rate/stage, duration, tóm tắt run có `started_at`/`finished_at` | Không inject fault, không tính metric đánh giá | Mức 1 có ở PR #76 (run 2 phút: 7/7 hành trình, 737 request, 0 lỗi ngoài mong đợi); mức 2, 2+ và kiểm chứng độ thực ở tuần 14 (ADR-007) |
+| Fault (`faults/`) | Cơ chế fault tái sử dụng: overlay Compose, toxiproxy chèn trễ/ngắt PostgreSQL của `course` (C2) và MinIO của `media`, `media-worker` (C4), `llm-stub` chỉnh độ trễ/lỗi (C3), CLI `fault-control` in dòng JSON có thời điểm; C6 dùng `docker pause identity`; proxy luôn trên đường đi, không bật toxic thì là run healthy | Không đổi business rule hay code LMS chỉ để cài fault | Có ở PR #75 (đã chạy smoke); fault manifest, lịch bật/tắt theo run và tùy chọn đặt fault trùng cao điểm tải ở tuần 14; chèn trễ SMTP, giới hạn CPU chưa có (không thuộc MVP) |
+| Training (`training/`) | Export telemetry theo run sang Parquet + manifest, data-quality report, rồi feature, detector, RCA | Không điều khiển runtime LMS | Export và quality có ở PR #77, #79; phần còn lại từ tuần 14 |
+| Experiment | Orchestration: protocol, scenario tham chiếu workload + fault + timing, runner (reset, ledger), manifest/artifact theo run | Không copy workload/fault vào đây | Chưa có (tuần 15) |
+| Evaluation | `prediction + ground truth -> evaluation metrics` | Không tạo workload, không inject fault, không điều khiển runtime | Chưa có |
 
 Quy ước của testbed đối với phần này:
 
-- Fault không được thêm vào code nghiệp vụ dưới dạng hook ngầm; cơ chế inject chi tiết do mảng AI chốt, yêu cầu bắt buộc là bật/tắt được, tái lập được, có ground truth và không đổi code nghiệp vụ ([data-ownership-and-fault-matrix-v2](data-ownership-and-fault-matrix-v2.md) mục 5).
+- Fault không được thêm vào code nghiệp vụ dưới dạng hook ngầm; cơ chế inject chi tiết do mảng AI chốt, yêu cầu bắt buộc là bật/tắt được, tái lập được, có ground truth và không đổi code nghiệp vụ ([data-ownership-and-fault-matrix-v2](data-ownership-and-fault-matrix-v2.md) mục 5). Lớp fault PR #75 chỉ đổi biến môi trường địa chỉ kết nối trong file overlay.
 - Ground truth không đi vào payload nghiệp vụ hay telemetry.
-- Thí nghiệm chạy workload song song (k6) để tạo nhiễu; đối chứng gồm baseline "thủ công" tự động (ngưỡng + trace lỗi/chậm nhất) và thử nghiệm người nhỏ (ADR-002).
+- Thí nghiệm chạy trên **workload bán thực** ([ADR-007](../adr/adr-007-semi-real-workload-and-ai-evidence-v1.md) mục 1) để triệu chứng lẫn trong tải hợp lệ; mỗi case MVP có ít nhất một run test đặt fault trùng cao điểm tải. Đối chứng gồm `base-manual-auto` (ngưỡng + trace lỗi/chậm nhất), SimpleRCA, BARO và thử nghiệm người (E7, Target) theo ADR-007 mục 3.
 
 ## 7. Experiment manifest và reproducibility
 
-Mỗi run phải truy vết được từ scenario tới code, config, telemetry, prediction và evaluation. Schema chính thức của `RunGroundTruth` và artifact nằm ở [telemetry-and-ground-truth-schema-v0](telemetry-and-ground-truth-schema-v1.md); tài liệu đó vẫn viết theo topology v1 và đang chờ cập nhật, nên ví dụ dưới đây chỉ **minh họa logic** bằng identity v2, không phải schema đã chốt:
+Mỗi run phải truy vết được từ scenario tới code, config, telemetry, prediction và evaluation. Schema logic của `RunGroundTruth` và artifact nằm ở [telemetry-and-ground-truth-schema-v1](telemetry-and-ground-truth-schema-v1.md) (theo topology v2, đề xuất chờ xác nhận); schema vật lý của artifact export ở [telemetry-data-dictionary-v2](telemetry-data-dictionary-v2.md) (PR #79). Ví dụ dưới đây chỉ **minh họa logic** bằng identity v2, không phải schema đã chốt; với workload bán thực, manifest còn phải ghi mức workload, phiên bản và hash của file phiên sinh từ log Moodle (ADR-007), và dòng JSON có `ts` của `fault-control` làm dấu vết thời điểm fault thật:
 
 ```yaml
 experiment_id: exp-media-minio-latency
@@ -363,6 +369,8 @@ JSON một dòng ra stdout và đồng thời gửi OTLP tới Loki: `timestamp`
 
 Pool kết nối PostgreSQL, tuổi message cũ nhất trong queue, độ trễ outbox, metric publish/consume RabbitMQ ở runtime (chỉ có span), log khi worker xử lý command, nối trace `scheduler → scheduler-worker` (worker thăm dò DB nên không cùng trace). Danh sách và hệ quả cho RCA: complex-case catalogue mục 1.5. Hệ quả thiết kế: các case cần tín hiệu này chỉ quan sát gián tiếp cho đến khi Đức quyết định bổ sung.
 
+Hai hành vi đo ở tuần 13 (complex-case catalogue mục 1.5 và mục 2): khi một runtime ngừng (chết, `docker pause`), Collector vẫn xuất giá trị cuối của mọi series thêm khoảng 5 phút, nên muốn biết runtime còn sống phải xem bộ đếm `process_cpu_time_seconds_total` có tăng; và relay outbox chạy trong `notification-worker` ghi span PRODUCER với identity `notification-rabbitmq` thay vì `notification-worker-rabbitmq` (lệch đã biết, chưa sửa vì LMS đóng băng; sửa được vì là telemetry).
+
 ### 10.6. Correlation
 
 Một fault test đạt yêu cầu khi đi được từ metric symptom tới trace/span liên quan và log evidence bằng `service.name` cùng khoảng thời gian; với log trong request context truy được bằng `trace_id`/`span_id`. Lưu ý đọc telemetry: span PRODUCER thuộc process relay, queue thuộc worker tiêu thụ, triệu chứng lỗi xác thực nằm ở cạnh `<caller>-identity-token` (complex-case catalogue mục 2).
@@ -384,14 +392,14 @@ Ma trận fault v0 (FA–FH) và case phức tạp C1–C7 nằm ở [data-owner
 | FG | Độ trễ/ngắt xác thực | `identity` | `identity` / `identity-postgres` |
 | FH | Lệch khóa ký | `identity` | JWKS / khóa ký |
 
-Trạng thái trung thực: tại thời điểm viết, chỉ case C6 (FG) đã được chạy thật (bởi `tracing-smoke`); các case còn lại mới ở mức "đã đo tín hiệu" hoặc giả thuyết và cần chạy thật trước khi dùng làm case đánh giá. Chưa có fault injector; không cần inject fault trên mọi service.
+Trạng thái trung thực (17/11/2026): case C6 (FG) đã chạy trọn chuỗi bởi `tracing-smoke`. Cơ chế gây lỗi của FC (C2: proxy `course-to-postgres`), FD (C3: `llm-stub`) và FA (C4: proxy `media-to-minio`, `media-worker-to-minio`) đã có ở lớp fault PR #75 (chưa merge) và đã chạy ở mức smoke, nhưng chuỗi nhân quả dưới workload chưa pilot; C1, C5, C7 (Target) mới ở mức "đã đo tín hiệu" hoặc giả thuyết. Mọi case phải chạy thật ở pilot trước khi dùng làm case đánh giá. Không cần inject fault trên mọi service.
 
 ### 11.2. RCA và evaluation
 
 - RCA engine (ML + dependency graph) là phần chính của đề tài; MCP và agent là thứ yếu, chỉ đọc kết quả của RCA engine ([ADR-002](../adr/adr-002-ai-primary-root-cause-analysis-v1.md)).
 - Primary evaluation là **service-level**. Candidate set mặc định: `identity`, `course`, `media`, `media-worker`, `notification`, `notification-worker`, `scheduler`, `scheduler-worker`, `ai`, `ai-worker`; `gateway` là symptom mặc định, chỉ là candidate khi protocol có gateway fault. Hạ tầng (PostgreSQL, RabbitMQ, MinIO, SMTP, LLM provider) là component/evidence, không trộn vào candidate set.
 - Component/dependency là evidence bổ sung; không trộn service và component trong cùng metric chính. Output dùng thuật ngữ root-cause candidate ranking, không tuyên bố causal proof chỉ từ telemetry quan sát.
-- Metric tối thiểu (Precision/Recall/F1/Detection Delay cho detection; Top-1/Top-3/MRR cho RCA; thời gian chẩn đoán thủ công so với AI) và quy tắc split theo run: [evaluation-protocol-v0](evaluation-protocol-v1.md), tài liệu này vẫn ở v0 và chưa cập nhật theo topology v2.
+- Metric tối thiểu (Precision/Recall/F1/Detection Delay cho detection; Top-1/Top-3/MRR cho RCA, chỉ số chính Top-1 và MRR; chi phí chẩn đoán thủ công so với AI) và quy tắc split theo run: [evaluation-protocol-v1](evaluation-protocol-v1.md) (theo topology v2, đề xuất chờ xác nhận). Bộ bằng chứng E1–E8 và baseline SimpleRCA, BARO: [ADR-007](../adr/adr-007-semi-real-workload-and-ai-evidence-v1.md) mục 3.
 - Schema kết quả RCA (`RcaIncidentResult`) và nơi lưu đề xuất: complex-case catalogue mục 5.
 
 ## 12. Testing và CI
@@ -411,7 +419,9 @@ Kiểm thử đang có (chạy từ `lms/`):
 
 CI ([`ci.yml`](../../../.github/workflows/ci.yml), chạy trên mọi PR và merge vào `main`): `static` (format, lint, build), `unit`, `e2e` (ma trận 7 service), `integration-db`, `compose-config` (validate ba file Compose bằng `.env.example`, bảo đảm không có `docker-compose/.env`), `compose-reset` (reset hai lần, fingerprint ổn định). [`regression.yml`](../../../.github/workflows/regression.yml) chạy regression và Postman (dựng cả 21 thành phần, 10–25 phút) khi PR gắn label `run-regression`, khi merge vào `main`, hằng đêm hoặc chạy tay. `pnpm run ci:verify` = `format:check` + `build` + `lint` + `test`.
 
-Mỗi service chỉ tạo loại test có ý nghĩa: unit cho domain/use case có logic; e2e cho HTTP + persistence thật; contract test cho command/route đã publish; telemetry assertion cho propagation và attribute quan trọng. Danh sách contract test tối thiểu: [http-and-event-contracts-v2](http-and-event-contracts-v2.md) mục 9. Chưa có fault test (chưa có injector).
+Mỗi service chỉ tạo loại test có ý nghĩa: unit cho domain/use case có logic; e2e cho HTTP + persistence thật; contract test cho command/route đã publish; telemetry assertion cho propagation và attribute quan trọng. Danh sách contract test tối thiểu: [http-and-event-contracts-v2](http-and-event-contracts-v2.md) mục 9.
+
+Ở các PR tuần 13 (chưa merge): PR #75 thêm unit test cho `llm-stub` và `fault-control` (`node --test 'aiops-platform/faults/**/*.test.mjs'`), job CI `aiops-platform` chạy các test này và bước validate `compose.full.yaml` + `compose.faults.yaml`; regression W1–W7 chạy qua proxy và `llm-stub` đạt 52/52 test. PR #76 có test helper của k6 (`node --test 'aiops-platform/load/**/*.test.mjs'`, chưa vào CI). PR #77 thêm job CI `aiops-training` (ruff, pytest). Chưa có test tự động kiểm chuỗi nhân quả của từng case (thuộc pilot).
 
 ## 13. Definition of Done kỹ thuật
 
@@ -437,19 +447,20 @@ reset (down --volumes) -> up --build --wait (21 thành phần healthy)
 -> smoke observability xác nhận tín hiệu -> reset -> lặp lại
 ```
 
-Phần còn thiếu để testbed đạt DoD đầy đủ, thuộc mảng AI: start workload tự động có profile/seed, inject fault đã biết, quan sát lan truyền, lưu manifest + ground truth, chạy prediction + evaluation. Một demo thủ công không thay thế DoD tái lập.
+Phần còn thiếu để testbed đạt DoD đầy đủ, thuộc mảng AI: start workload bán thực tự động có profile/seed, inject fault đã biết theo manifest, quan sát lan truyền, lưu manifest + ground truth, chạy prediction + evaluation. Đã có từng mảnh ở PR tuần 13 (k6 mức 1, lớp fault, export + quality) nhưng chưa có runner nối chúng thành một lệnh. Một demo thủ công không thay thế DoD tái lập.
 
 ## 14. Governance
 
 - Thay đổi service boundary, ownership dữ liệu, command hoặc producer/consumer, đồng bộ ↔ bất đồng bộ, `service.name`, telemetry schema, experiment manifest hoặc granularity của RCA cần ADR trong `docs/processed/adr/` và cập nhật catalogue, contract, ground truth, evaluation protocol, fault matrix ([catalogue v2](service-catalogue-and-topology-v2.md) mục 11).
 - Không tạo cây tài liệu hoặc source code cạnh tranh với blueprint.
-- Lịch triển khai, primary và collaborator chỉ cập nhật trong [`plan-v0.3-24-weeks.md`](../plan/plan-v0.3-24-weeks.md) và [bảng task refactor](../plan/refactor/refactor-board-v1.md).
+- Lịch triển khai, primary và collaborator chỉ cập nhật trong [`plan-v0.4-24-weeks.md`](../plan/plan-v0.4-24-weeks.md) và [bảng task refactor](../plan/refactor/refactor-board-v1.md).
 
 ## 15. Điểm chưa kiểm chứng
 
 - Hành vi OTel exporter khi chạy `compose.yaml` mà không có Collector.
 - Timeout và kích thước pool mặc định của driver PostgreSQL (`pg`/Prisma adapter) và của client MinIO; code không đặt giá trị riêng.
-- Cơ chế chèn lỗi (fault injector) và chuỗi nhân quả của các case C1–C5, C7: chưa chạy thật.
+- Chuỗi nhân quả của các case C1–C5, C7 dưới workload: chưa chạy thật. Cơ chế chèn lỗi cho C2, C3, C4 đã chạy ở mức smoke (PR #75); C1, C5, C7 chưa có cơ chế.
+- Hành vi timeout của PostgreSQL/MinIO khi trễ chèn qua toxiproxy lớn hơn mức đã đo (200 ms, 300 ms): code không đặt timeout ứng dụng nên truy vấn chậm mà không lỗi; giới hạn trên chưa đo.
 - Idempotency của mọi handler command: các handler dùng `runOnce` (inbox) đã đối chiếu (media, ai, `snapshot-batch` của notification); handler còn lại dựa vào lease/unique key và chưa rà đầy đủ.
 
 ## Khác biệt so với bản trước
@@ -467,7 +478,7 @@ Phần còn thiếu để testbed đạt DoD đầy đủ, thuộc mảng AI: st
 | Cấu trúc repo | Cây có `analysis/`, `load/`, `faults/`, `experiments/` ở root, `lms/packages/testing/`, `lms/infrastructure/{postgres,redis,rabbitmq,storage}`, observability ở `docker-compose/observability/` | Cây thực tế: không có các root trên (phần AI chuyển vào `aiops-platform/`, chưa tạo); không có `packages/testing`; observability ở `aiops-platform/observability/`; thêm `postman/`, `templates/`, `scripts/`, `test/` |
 | Tách `aiops-platform` | Không có | LMS không import mã từ đó; nối bằng OTLP/HTTP và network `aiops-net` |
 | Runtime | Một `compose.yaml` | `compose.yaml` (LMS), `aiops-platform/observability/compose.yaml`, `compose.full.yaml` (21 thành phần) |
-| Fault scope | 5 scenario F1–F5 (Redis, storage, service error, consumer, CPU); floor 5 × 3 = 15 run | FA–FH và case C1–C7, mỗi case ghi trạng thái kiểm chứng; chưa có injector; bỏ ngưỡng số run (thuộc evaluation protocol) |
+| Fault scope | 5 scenario F1–F5 (Redis, storage, service error, consumer, CPU); floor 5 × 3 = 15 run | FA–FH và case C1–C7, mỗi case ghi trạng thái kiểm chứng; lớp fault ghép thêm (toxiproxy, `llm-stub`) ở PR #75 cho FA, FC, FD; bỏ ngưỡng số run (thuộc evaluation protocol) |
 | RCA | AI hỗ trợ, service-level là primary | AI là bên truy vết chính, MCP/agent thứ yếu (ADR-002); service-level vẫn là primary; thêm đo thời gian chẩn đoán thủ công so với AI |
 | Metric/identity | Metric dependency cho Redis, storage; resource identity 3 field | `lms_dependency_*` với `dependency_identity`/`operation_name`/`status`; broker metric từ Collector; chỉ nêu tín hiệu có thật và liệt kê tín hiệu chưa có |
 | Testing | Danh sách loại test chung; E2E gồm `grade -> notification` | Kiến trúc, unit, e2e 7 service, integration, regression 7 workflow, Postman, smoke observability, reset/seed; mô tả CI thực tế (`ci.yml`, `regression.yml`) |

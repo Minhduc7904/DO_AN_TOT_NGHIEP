@@ -8,7 +8,7 @@ Thư mục này chứa manifest orchestration root cho LMS testbed. Baseline hi�
 > - `../aiops-platform/observability/compose.yaml`: chỉ stack observability.
 > - `compose.full.yaml`: ghép cả hai trong một project (dùng `include`), là file mặc định của script reset/seed, smoke observability và CI.
 >
-> Hai bên nối với nhau qua network `aiops-net` (biến `AIOPS_NETWORK_NAME`); service LMS chỉ gửi OTLP/HTTP tới `otel-collector:4318`. Các lệnh bên dưới dùng `compose.full.yaml` khi cần đủ 18 thành phần; mục observability ở dưới sẽ chuyển về `aiops-platform/` khi viết lại tài liệu ở R-12. Đường dẫn `observability/…` trong các mục đó nay là `../aiops-platform/observability/…`.
+> Hai bên nối với nhau qua network `aiops-net` (biến `AIOPS_NETWORK_NAME`); service LMS chỉ gửi OTLP/HTTP tới `otel-collector:4318`. Các lệnh bên dưới dùng `compose.full.yaml` khi cần đủ các thành phần (lúc tách là 18, nay 21 sau R-13); mục observability ở dưới sẽ chuyển về `aiops-platform/` khi viết lại tài liệu ở R-12. Đường dẫn `observability/…` trong các mục đó nay là `../aiops-platform/observability/…`.
 
 > **Hạ tầng topology v2 (R-03):** `compose.yaml` đã thêm `student` (service mẫu Prisma, sau này được gộp vào `identity`), `minio` + `minio-init` (5 bucket `images`, `videos`, `documents`, `audios`, `other`; API `9000`; cổng `9001` vẫn được map nhưng image `bitnamilegacy/minio` đang dùng không còn giao diện console, kiểm ngày 17/11/2026), `mailpit` (SMTP `1025`, UI `8025`) và các DB `media_db`, `notification_db`, `scheduler_db`, `ai_db` kèm role riêng (`postgres-init/02-create-v2-databases.sh`). Từ R-05 `enrollment`, `submission`, `grading`, `submission-storage-mock` và Redis đã bị gỡ; từ R-07 `notification` là service v2 (cổng `3006`) kèm `notification-worker` (cổng `3007`, gửi email qua Mailpit); từ R-08 `ai` (cổng `3009`, gateway LLM, sở hữu trích xuất tài liệu và job AI soạn bài; API key provider mã hóa bằng `AI_ENCRYPTION_KEY`) kèm `ai-worker` (cổng `3011`, nhận command trích xuất/chạy job, gọi `course` và `media`), `course` chỉ là facade; từ R-09 `scheduler` (cổng `3008` trong network, publish ra host `3018` vì `3008` thuộc Grafana) kèm `scheduler-worker` (cổng `3010`, job `MEDIA_UNUSED_CLEANUP` gọi `media`). Volume Postgres cũ còn `course_db` của v1 phải tạo lại (`down --volumes`) vì `course` v2 dùng Prisma và role riêng `course_user`. Container v2 chạy `prisma migrate deploy` trước khi khởi động.
 
@@ -18,7 +18,7 @@ Thư mục này chứa manifest orchestration root cho LMS testbed. Baseline hi�
 
 - Docker Engine đang chạy.
 - Docker Compose v2 hỗ trợ `docker compose up --wait`.
-- Các port mặc định chưa bị chiếm: LMS `3000`–`3007`, `3009`–`3011`, `3018`; hạ tầng `5432`, `5672`, `15672`, `9000`–`9001`, `1025`, `8025`; observability (khi dùng `compose.full.yaml`) `3008` (Grafana), `3100`, `3200`, `4317`, `4318`, `9090`. Nếu cổng nào bị chiếm thì đổi biến cổng tương ứng trong file `.env` local (hoặc biến shell như `LOKI_PORT` cho observability).
+- Các port mặc định chưa bị chiếm: LMS `3000`–`3007`, `3009`–`3011`, `3018`; hạ tầng `5432`, `5672`, `15672`, `9000`–`9001`, `1025`, `8025`; observability (khi dùng `compose.full.yaml`) `3008` (Grafana), `3100`, `3200`, `4317`, `4318`, `9090`; lớp fault của thí nghiệm (khi ghép `compose.faults.yaml`, mục [Thí nghiệm](#thí-nghiệm-lớp-fault-workload-k6-export-telemetry)) `8474`, `18081`. Nếu cổng nào bị chiếm thì đổi biến cổng tương ứng trong file `.env` local (hoặc biến shell như `LOKI_PORT` cho observability).
 - Docker được cấp khoảng 8 GB RAM khi bật cả observability. Với bộ nhớ hạn chế, build lại toàn bộ image không dùng cache bằng một lệnh `build --no-cache` có thể lỗi `cannot allocate memory` vì các image build song song; khi đó build tuần tự theo mục [Build lại image không dùng cache](#build-lại-image-không-dùng-cache).
 - Reset/seed và regression cần toolchain của `lms/` (Node.js `22.13.1`, pnpm `11.19.0`) và dependency đã cài theo [`../lms/README.md`](../lms/README.md#cài-đặt-và-kiểm-tra).
 
@@ -232,3 +232,46 @@ pnpm run test:testbed:reset:compose
 ```
 
 Test reset hai lần trên `aiops-lms-test-reset-seed`, so fingerprint, xác nhận 21 thành phần healthy, chạy smoke sau mỗi reset và xác nhận trace cũ trả 404 sau reset. Test tự dọn đúng project test cùng volume trong `finally`. **`down --volumes` và reset/seed xóa cả dữ liệu nghiệp vụ lẫn telemetry của project đã xác nhận**; không chạy reset project phát triển nếu cần giữ bằng chứng.
+
+## Thí nghiệm: lớp fault, workload k6, export telemetry
+
+Ba module của `aiops-platform/` dùng stack này để sinh dữ liệu thí nghiệm. Tại ngày 17/11/2026 chúng nằm ở các PR tuần 13 **chưa merge** (thứ tự merge dự kiến #75 → #76 → #77 → #79), nên trên `main` các thư mục dưới đây chưa có; hướng dẫn chi tiết nằm ở README của từng module trên nhánh PR. Kế hoạch: [plan-v0.4](../docs/processed/plan/plan-v0.4-24-weeks.md); quyết định dữ liệu: [ADR-007](../docs/processed/adr/adr-007-semi-real-workload-and-ai-evidence-v1.md).
+
+| Module | PR | README | Vai trò |
+| --- | --- | --- | --- |
+| Lớp fault | [#75](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/75) | [`aiops-platform/faults/README.md`](../aiops-platform/faults/README.md) | Overlay `compose.faults.yaml`: toxiproxy (`course-to-postgres`, `media-to-minio`, `media-worker-to-minio`), `llm-stub`, CLI `fault-control.mjs` |
+| Workload k6 | [#76](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/76) | [`aiops-platform/load/README.md`](../aiops-platform/load/README.md) | k6 mức 1 cho W1–W7 (`run-k6.sh level-1`, image `grafana/k6:1.3.0`); mức 2+ và mức 2 ở tuần 14 |
+| Export và data-quality | [#77](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/77), [#79](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/79) | [`aiops-platform/training/README.md`](../aiops-platform/training/README.md) | `uv run aiops-training export` (Parquet + manifest), `uv run aiops-training quality`; ý nghĩa cột: [telemetry-data-dictionary-v2](../docs/processed/architecture/telemetry-data-dictionary-v2.md) |
+
+Trình tự một lần chạy thử, từ repository root (sau khi các PR đã merge hoặc đang đứng trên nhánh PR tương ứng):
+
+```bash
+# 1. Stack đầy đủ + lớp fault: ghép compose.faults.yaml SAU compose.full.yaml (23 container)
+docker compose --env-file docker-compose/.env \
+  -f docker-compose/compose.full.yaml -f aiops-platform/faults/compose.faults.yaml up -d --wait
+
+# 2. Dữ liệu seed cho workload (profile small, tài khoản seed-student-N@seed.test)
+(cd lms && pnpm run seed:data -- --environment local --compose-env-file ../docker-compose/.env \
+  --non-interactive --yes --profile small --seed 42)
+
+# 3. Workload k6 mức 1 (mặc định 2 phút); kết quả ở aiops-platform/load/results/<RUN_ID>/k6-summary.json
+RUN_ID=healthy-normal-r1 SEED=7 aiops-platform/load/run-k6.sh level-1
+
+# 4. Bật/tắt fault trong lúc workload chạy; mỗi lệnh in một dòng JSON có ts (UTC)
+node aiops-platform/faults/fault-control.mjs latency course-to-postgres 200
+node aiops-platform/faults/fault-control.mjs clear
+
+# 5. Export telemetry ngay sau run (backend chỉ giữ 24 giờ) và kiểm chất lượng
+cd aiops-platform/training && uv sync
+uv run aiops-training export --k6-summary ../load/results/healthy-normal-r1/k6-summary.json
+uv run aiops-training quality artifacts/healthy-normal-r1
+```
+
+Lưu ý:
+
+- Đừng đổi thứ tự `-f`: Compose tính đường dẫn tương đối theo thư mục của file đầu tiên, nên bind mount trong `compose.faults.yaml` viết `../aiops-platform/faults/...`.
+- Lớp fault đổi địa chỉ PostgreSQL của `course` và MinIO của `media`, `media-worker` sang toxiproxy; proxy luôn nằm trên đường đi, kể cả run healthy. Cổng điều khiển chỉ mở trên loopback: `8474` (`TOXIPROXY_API_PORT`, API toxiproxy) và `18081` (`LLM_STUB_PORT`). Trong network, `ai`/`ai-worker` gọi stub tại `http://llm-stub:8080/v1`; workload k6 tự tạo provider AI trỏ tới đây ở `setup()`, còn regression cần `REGRESSION_AI_PROVIDER_URL=http://llm-stub:8080/v1`.
+- Upload trực tiếp từ client lên MinIO (URL presigned) không đi qua proxy; k6 chạy với `--network host` để gọi được `MINIO_PUBLIC_URL`.
+- Export tải trace từ Tempo tuần tự (khoảng 0,1 giây mỗi trace) để Tempo không bị OOM; run 30 phút tải mức 1 cần khoảng 15–20 phút export. Không chạy export song song với test, build hay một stack khác.
+- C6 không cần lớp fault: dùng `docker compose ... pause identity` như `tracing-smoke`. Khi một runtime bị pause, metric của nó vẫn có mẫu đứng yên khoảng 5 phút; xem cờ `telemetry_silent` trong `quality-report.json` thay vì tìm chỗ thiếu mẫu.
+- Dữ liệu do workload tạo không bị xóa sau run; reset bằng mục [Reset/seed Testbed có kiểm soát](#resetseed-testbed-có-kiểm-soát) khi cần trạng thái sạch (reset xóa cả dữ liệu seed và telemetry).
