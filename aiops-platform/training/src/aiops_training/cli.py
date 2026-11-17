@@ -2,6 +2,7 @@
 
 uv run aiops-training export --k6-summary ../load/results/<run_id>/k6-summary.json
 uv run aiops-training export --run-id r1 --start 2026-11-17T09:43:00Z --end 2026-11-17T09:45:40Z
+uv run aiops-training quality artifacts/<run_id>
 """
 
 from __future__ import annotations
@@ -17,6 +18,7 @@ from .telemetry.adapters.loki import LokiAdapter
 from .telemetry.adapters.prometheus import PrometheusAdapter
 from .telemetry.adapters.tempo import TempoAdapter, TempoExportOptions
 from .telemetry.export import ExportOptions, Sources, export_run
+from .telemetry.validation.quality import QualityConfig, evaluate, summary_table
 from .telemetry.window import ExportWindow, parse_utc
 
 
@@ -87,13 +89,33 @@ def _run_export(args: argparse.Namespace) -> int:
     return 1 if manifest["errors"] else 0
 
 
+def _quality_parser(sub: argparse._SubParsersAction) -> None:
+    parser = sub.add_parser("quality", help="Kiểm chất lượng artifact export của một run")
+    parser.add_argument("artifact_dir", type=Path, help="Thư mục artifact (có manifest.json)")
+    parser.add_argument("--silent-threshold-seconds", type=float, default=30.0)
+
+
+def _run_quality(args: argparse.Namespace) -> int:
+    report = evaluate(
+        args.artifact_dir, QualityConfig(silent_threshold_s=args.silent_threshold_seconds)
+    )
+    path = args.artifact_dir / "quality-report.json"
+    path.write_text(json.dumps(report, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    print(summary_table(report))
+    print(f"\nĐã ghi {path}")
+    return 1 if report["overall_status"] == "fail" else 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="aiops-training")
     sub = parser.add_subparsers(dest="command", required=True)
     _export_parser(sub)
+    _quality_parser(sub)
     args = parser.parse_args(argv)
     if args.command == "export":
         return _run_export(args)
+    if args.command == "quality":
+        return _run_quality(args)
     parser.error(f"Lệnh không hỗ trợ: {args.command}")
     return 2
 

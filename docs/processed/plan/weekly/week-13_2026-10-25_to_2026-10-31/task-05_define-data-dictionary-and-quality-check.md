@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-05_define-data-dictionary-and-quality-check` |
 | Tuần | `week-13_2026-10-25_to_2026-10-31` |
-| Trạng thái | Đã giao |
+| Trạng thái | Chờ review |
 | Người phụ trách | Bách |
 | Collaborator | Không có |
 | Ưu tiên | Cao |
@@ -42,21 +42,21 @@
 
 ## Definition of Done
 
-- [ ] Data dictionary phủ mọi cột của artifact export, khớp code.
-- [ ] Data-quality check có unit test cho đủ phủ, thiếu modality và `telemetry_silent`.
-- [ ] Chạy trên run thử từ task-04: báo cáo nêu độ phủ từng runtime và mọi cờ phát sinh.
-- [ ] PR mở vào `main`; URL PR ghi vào card.
+- [x] Data dictionary phủ mọi cột của artifact export, khớp code.
+- [x] Data-quality check có unit test cho đủ phủ, thiếu modality và `telemetry_silent`.
+- [x] Chạy trên run thử từ task-04: báo cáo nêu độ phủ từng runtime và mọi cờ phát sinh.
+- [x] PR mở vào `main`; URL PR ghi vào card.
 
 ## Liên kết hồ sơ thực hiện
 
 - Input workspace: Không tạo (giai đoạn tự bắt kịp; bằng chứng nằm trong PR).
 - Output workspace: Không tạo.
-- Pull request: Chưa tạo.
-- Kết quả review: Chưa review.
+- Pull request: [#81](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/81) (thay [#79](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/79): #79 lỡ merge vào nhánh task-04 sau khi #77 đã vào `main`, nên thay đổi chưa tới `main`).
+- Kết quả review: Chưa review (giai đoạn tự bắt kịp: review và merge theo ngoại lệ do Bách xác nhận).
 
 > URL/số PR và `Chờ review` phải được commit/push vào PR head trước review. Thành viên còn lại phải gửi `APPROVED` hợp lệ trên GitHub; sau đó người phụ trách finalization metadata, ghi `Hoàn thành` trên chính branch/PR và tự merge task của mình. Card chỉ canonically hoàn thành khi commit đó vào nhánh canonical; xem [vòng đời task canonical](../../../rules/git-and-pull-request-rules.md#vòng-đời-task-canonical).
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 17/11/2026 — lập card.
-- Ghi chú/tồn đọng: Không có.
+- Cập nhật gần nhất: 17/11/2026 — hoàn thành phần việc, mở PR #79, chuyển Chờ review.
+- Ghi chú/tồn đọng: #79 merge nhầm vào nhánh task-04 (không tới `main`); thay bằng #81. `phase_coverage` và độ phủ theo workflow cần nhật ký thao tác k6 mức 2 và fault manifest (tuần 14). CI GitHub bị khóa thanh toán; kiểm tra chạy cục bộ.
