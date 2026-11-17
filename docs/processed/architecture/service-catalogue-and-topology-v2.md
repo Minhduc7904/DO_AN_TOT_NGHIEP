@@ -12,6 +12,8 @@
 >
 > **Cập nhật 17/11/2026 ([ADR-006](../adr/adr-006-trim-project-scope-v1.md)):** bộ case MVP còn C2, C3, C4, C6 (`R = 5`), C1, C5, C7 là Target. C2/FC viết lại: cơ chế "export CSV giữ kết nối DB" không khớp code (export đọc từng khối 500 dòng), thay bằng chèn trễ có kiểm soát trên kết nối `course` → `course-postgres`. Khi đoạn chi tiết mâu thuẫn, ADR-006 được ưu tiên.
 >
+> **Cập nhật 17/11/2026 ([ADR-007](../adr/adr-007-semi-real-workload-and-ai-evidence-v1.md)):** topology không đổi. Lớp fault của thí nghiệm (`aiops-platform/faults/`, PR #75, chưa merge) đặt toxiproxy trên kết nối `course` → PostgreSQL và `media`/`media-worker` → MinIO và thay provider LLM bằng `llm-stub`; đây là hạ tầng thí nghiệm trong suốt, **không** thêm `service.name` hay dependency identity mới (mục 9). Workflow W1–W7 là đơn vị của workload k6 (mục 7).
+>
 > **Mục đích:** chốt bộ service, dependency graph và identity telemetry của LMS testbed sau tái cấu trúc, để export/query layer, workload và dataset về sau dùng cùng một topology.
 
 ## 1. Source of truth và ranh giới tài liệu
@@ -44,7 +46,7 @@ PostgreSQL 17 (mỗi service một logical DB, 6 DB)
 RabbitMQ
 MinIO (S3 tương thích)
 SMTP (Mailpit khi dev/CI, SMTP thật khi production)
-Nhà cung cấp LLM bên ngoài (OpenAI-compatible; giả lập bằng HTTP stub khi test)
+Nhà cung cấp LLM bên ngoài (OpenAI-compatible; regression dùng provider giả, thí nghiệm dùng llm-stub của lớp fault)
 ```
 
 Không còn: Redis, Storage Mock, event `grade.completed`, service `enrollment`/`submission`/`grading`.
@@ -314,6 +316,8 @@ Giữ nguyên quy tắc v1: mỗi boundary phải thu được identity caller/c
 | **W6** | AI soạn bài / sinh quiz | Instructor → gateway → course → ai ⇒ `ai-worker` (command) → `ai-llm-provider`; tài liệu: `ai-worker` → media (content); kết quả: `ai-worker` → course (ai-content/ai-quizzes); tệp có `extract_text`: media ⇒ `ai-worker` |
 | **W7** | Dọn media không dùng    | `scheduler-worker` → media (cleanup) → `media-minio` + `media-postgres`                                                      |
 
+Workload k6 dùng đúng bảy hành trình này: mức 1 chạy mỗi hành trình một scenario (`aiops-platform/load/`, PR #76); theo [ADR-007](../adr/adr-007-semi-real-workload-and-ai-evidence-v1.md), học viên (W1, W3, W4 phía học viên) dùng phiên phát lại từ log Moodle (mức 2+), giảng viên/admin/job lịch (W2, W4 phía giảng viên, W5, W6, W7) dùng mức 2. Thiết kế: [workload-design-v1](workload-design-v1.md) (PR #78).
+
 Chuỗi phụ thuộc dài nhất (phục vụ case RCA phức tạp): W5 chạm 5 service/worker (notification → notification-worker → identity; notification → media-worker → MinIO) và dùng chung RabbitMQ với W2/W4.
 
 ---
@@ -335,9 +339,11 @@ Chi tiết ở [data-ownership-and-fault-matrix-v2](data-ownership-and-fault-mat
 | FA Chậm MinIO          | `media` / `media-worker` | `media-minio`           | upload-complete timeout tại gateway, thumbnail kẹt    |
 | FB Backlog hàng đợi    | `notification-worker`    | `notification-worker-rabbitmq` | thumbnail của `media-worker` chậm, usage sync trễ     |
 | FC Chậm DB giữ kết nối | `course`                 | `course-postgres`       | enroll/quiz submit chậm không có span lỗi (ADR-006: C2 viết lại thành chèn trễ trên kết nối `course` → `course-postgres`) |
-| FD Provider AI chậm    | `ai`                     | `ai-llm-provider`       | lease job hết hạn, retry chồng, outbox backlog        |
+| FD Provider AI chậm    | `ai`                     | `ai-llm-provider`       | job AI `RUNNING` lâu rồi `FAILED`/`WORKER_INTERRUPTED`, tài liệu kẹt `EXTRACTING` (catalogue C3; job không tự enqueue lại) |
 | FE Identity chậm       | `identity`               | `identity-postgres`     | batch notification partial-failed, log không có error |
 | FF Quá tải CPU         | một service bất kỳ       | instance                | latency/error lan theo dependency                     |
+
+Cơ chế gây lỗi của FA, FC, FD ở lớp fault PR #75 không đổi identity: `course` nối PostgreSQL qua proxy `course-to-postgres` nhưng span/metric vẫn ghi `course-postgres`; `media`, `media-worker` qua `media-to-minio`, `media-worker-to-minio` vẫn ghi `media-minio`; `llm-stub` vẫn là `ai-llm-provider`. Proxy luôn nằm trên đường đi kể cả run healthy.
 
 ---
 

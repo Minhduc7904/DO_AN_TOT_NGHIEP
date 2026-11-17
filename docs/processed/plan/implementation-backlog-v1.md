@@ -1,6 +1,6 @@
 # Implementation backlog v1 — Tuần 3–22
 
-> **Đã được thay thế từ tuần 11** bởi [plan-v0.3-24-weeks.md](plan-v0.3-24-weeks.md): tuần 11–12 là giai đoạn tái cấu trúc, tuần 13–23 theo kế hoạch mới trên testbed v2. Phần tuần 3–10 giữ làm lịch sử; phân vai A = Đức, B = Bách vẫn áp dụng.
+> **Đã được thay thế từ tuần 11** bởi [plan-v0.3-24-weeks.md](plan-v0.3-24-weeks.md): tuần 11–12 là giai đoạn tái cấu trúc, tuần 13–23 theo kế hoạch mới trên testbed v2. Phần tuần 3–10 giữ làm lịch sử; phân vai A = Đức, B = Bách vẫn áp dụng. Từ tuần 14 theo [plan-v0.4-24-weeks.md](plan-v0.4-24-weeks.md) ([ADR-007](../adr/adr-007-semi-real-workload-and-ai-evidence-v1.md)); trong giai đoạn tự bắt kịp từ 17/11/2026 Bách làm cả hai vai.
 
 > **Trạng thái:** Review-ready artifact cho `task-02_create-implementation-backlog`.
 >

@@ -4,6 +4,8 @@
 
 > **Task:** R-12 — [bảng task refactor](../plan/refactor/refactor-board-v1.md)
 >
+> **Cập nhật 17/11/2026 ([ADR-007](../adr/adr-007-semi-real-workload-and-ai-evidence-v1.md)):** workload **bán thực** — học viên dùng phiên thật phát lại từ log Moodle Unistudium 2022 (mức 2+, `[L-Unistudium]` https://zenodo.org/records/13763175), giảng viên/admin/job lịch dùng mô hình hành vi (mức 2), mức 3 chỉ dạng offline (Stretch); độ thực được kiểm chứng với hold-out so với hai nguồn tải đơn giản. Giá trị của RCA engine được chứng minh bằng bộ bằng chứng E1–E8: MVP = E1 phát hiện dưới tải bán thực, E2 bảng chính có baseline đã công bố SimpleRCA (`[L-Fang2025]` https://arxiv.org/abs/2510.04711) và BARO (`[L-BARO]` https://arxiv.org/abs/2405.09330), E3 quan sát suy giảm, E4 chi phí chẩn đoán, E5 ablation, E8 case study C6; Target = E6 đối chứng ngoài trên RCAEval (`[L-RCAEval]` https://arxiv.org/abs/2412.17015), E7 thử nghiệm người; đăng ký trước ở tuần 19. Không hứa "AI thắng mọi case": nghiên cứu cho thấy baseline đơn giản thường ngang phương pháp phức tạp (`[L-Pham2024ASE]` https://arxiv.org/abs/2408.13729). Kế hoạch: [plan-v0.4](../plan/plan-v0.4-24-weeks.md); tài liệu tham khảo: [literature-matrix-v1](../plan/literature-matrix-v1.md). Đoạn chi tiết bên dưới mâu thuẫn với ADR-007 thì ADR-007 được ưu tiên.
+>
 > **Cập nhật 17/11/2026 ([ADR-006](../adr/adr-006-trim-project-scope-v1.md)):** giữ tên và vai trò theo đề tài đã đăng ký: hệ thống phát hiện bất thường và **hỗ trợ** phân tích nguyên nhân sự cố; RCA engine là phần chính nhưng không yêu cầu "kết luận không cần người"; MCP/agent ra Out-of-scope; bộ case MVP còn C2 (viết lại), C3, C4, C6. Khi đoạn chi tiết mâu thuẫn, ADR-006 được ưu tiên.
 >
 > **Cập nhật R-13:** `auth` và `student` đã gộp thành service `identity` ([ADR-005](../adr/adr-005-merge-auth-student-into-identity-v1.md)); tài liệu được sửa tại chỗ theo topology 7 service + 4 worker (11 runtime). Các số đo chưa đo lại sau khi gộp được ghi rõ ở chỗ dùng.
@@ -18,7 +20,7 @@
 > - Topology và fault: [service-catalogue-and-topology-v2](../architecture/service-catalogue-and-topology-v2.md), [data-ownership-and-fault-matrix-v2](../architecture/data-ownership-and-fault-matrix-v2.md), [complex-case-catalogue-and-rca-result-v0](../architecture/complex-case-catalogue-and-rca-result-v0.md).
 > - Phạm vi và đo lường: [project-scope-v2](project-scope-v2.md), [research-questions-and-metrics-v2](research-questions-and-metrics-v2.md).
 > - Tài liệu đang được viết lại song song (link theo tên đích): [telemetry-and-ground-truth-schema-v1](../architecture/telemetry-and-ground-truth-schema-v1.md), [evaluation-protocol-v1](../architecture/evaluation-protocol-v1.md), [analysis-anomaly-rca-blueprint-v1](../architecture/analysis-anomaly-rca-blueprint-v1.md).
-> - WHEN/WHO: [plan-v0.3-24-weeks](../plan/plan-v0.3-24-weeks.md).
+> - WHEN/WHO: [plan-v0.4-24-weeks](../plan/plan-v0.4-24-weeks.md).
 > - Backend: [backend-microservice-testbed-blueprint-v2](../architecture/backend-microservice-testbed-blueprint-v2.md) (thay [backend_microservice_testbed_blueprint](../architecture/backend_microservice_testbed_blueprint.md) còn mô tả topology v1); khi mâu thuẫn ưu tiên service-catalogue v2.
 >
 > **Vai trò canonical:** Source of truth cho WHY, WHAT, vấn đề nghiên cứu, research questions, research scope, high-level architecture, hướng anomaly detection/RCA và triết lý đánh giá. Khi mâu thuẫn, ưu tiên: ADR → service-catalogue v2 → tài liệu này.

@@ -8,6 +8,8 @@
 >
 > **Cập nhật R-13:** service `auth` và `student` đã gộp thành `identity` ([ADR-005](../adr/adr-005-merge-auth-student-into-identity-v1.md)); cạnh `auth-student` (và biến `AUTH_STUDENT_*`) không còn, các tham chiếu `auth`/`student` ở dưới đã đổi sang `identity`.
 >
+> **Cập nhật 17/11/2026 (tuần 13, [ADR-007](../adr/adr-007-semi-real-workload-and-ai-evidence-v1.md)):** chính sách resilience không đổi. Bổ sung hệ quả khi chèn lỗi bằng lớp fault của thí nghiệm (PR #75, mục 7, 9) và lệch identity của relay outbox trong `notification-worker` (mục 8, 10).
+>
 > **Phụ thuộc:** [service-catalogue-and-topology-v2](service-catalogue-and-topology-v2.md), [http-and-event-contracts-v2](http-and-event-contracts-v2.md), [data-ownership-and-fault-matrix-v2](data-ownership-and-fault-matrix-v2.md), [complex-case-catalogue-and-rca-result-v0](complex-case-catalogue-and-rca-result-v0.md), [ADR-004](../adr/adr-004-service-access-token-and-api-surfaces-v1.md).
 >
 > **Phạm vi:** mọi outbound dependency của 11 runtime LMS: HTTP đồng bộ giữa service (gồm Gateway → upstream), lấy service token và tải JWKS, RabbitMQ (outbox, consumer), và các dependency hạ tầng (PostgreSQL, MinIO, SMTP, LLM provider).
@@ -213,6 +215,8 @@ Timeout/network/5xx từ `identity` → `DEPENDENCY_TIMEOUT`/`DEPENDENCY_UNAVAIL
 | SMTP (`notification-smtp`) | Lỗi gửi thành lỗi item; retry theo mục 4.4 (retry nghiệp vụ, không phải retry HTTP) |
 | LLM provider (`ai-llm-provider`) | Timeout/mạng thành `DEPENDENCY_TIMEOUT`/`DEPENDENCY_UNAVAILABLE`; mã `AI_PROVIDER_*` do `ai` ánh xạ; không theo redirect để API key không sang host khác; không retry, không breaker |
 
+Hệ quả cho lớp fault của thí nghiệm (`aiops-platform/faults/`, PR #75, chưa merge; đo smoke 17/11/2026): vì PostgreSQL và MinIO không có timeout ứng dụng, trễ chèn qua toxiproxy làm truy vấn **chậm mà không thành lỗi** (trễ 200 ms trên `course-to-postgres` → `course-postgres` p50 khoảng 0,175 s; trễ 300 ms trên `media-to-minio` → đọc nội dung media chậm khoảng 0,6 s), đúng triệu chứng "chậm, không có span lỗi" của C2. Với `llm-stub`, trễ dưới `AI_COMPLETION_TIMEOUT_MS` chỉ làm job chậm (2000±500 ms → job vẫn `COMPLETED`), còn `error_rate=1` làm job `FAILED` với `AI_PROVIDER_ERROR` (lời gọi provider không retry). Trễ đủ lớn để chạm timeout của driver chưa đo (mục 10).
+
 ## 8. Dependency identity và telemetry
 
 Mỗi dependency call có client span và ba metric `lms_dependency_request_count`, `lms_dependency_error_count`, `lms_dependency_duration` (xem [observability README](../../../lms/packages/observability/README.md)). Identity canonical của các cạnh HTTP (danh mục đầy đủ gồm DB, MinIO, SMTP, LLM, RabbitMQ ở catalogue v2 mục 2.2 và complex-case catalogue mục 1.1):
@@ -234,7 +238,7 @@ Mỗi dependency call có client span và ba metric `lms_dependency_request_coun
 Lưu ý:
 
 - **`operation_name` của `HttpQueryClient` là `<METHOD> <route template>`** (sửa ngày 17/11/2026 cho Gate R của [plan-v0.3](../plan/plan-v0.3-24-weeks.md)). Caller truyền `path` dạng template và giá trị tham số qua `params`, ví dụ `{ path: '/internal/v1/students/:studentId', params: { studentId } }`; client URL-encode giá trị khi dựng URL. Các operation hiện có: `GET /internal/v1/students/:studentId` (`media-identity`, `notification-worker-identity`), `GET /internal/v1/ai/jobs/:jobId` (`course-ai`), `… /internal/v1/courses/:courseId/lessons/:lessonId/{ai-context,ai-content,ai-quizzes}` (`ai-worker-course`), `GET /internal/v1/media/:mediaId/content` (`ai-worker-media`). Số operation hữu hạn, đúng quy tắc của v1. Template thiếu tham số làm request thất bại trước khi gửi (lỗi lập trình, không tính là lỗi dependency).
-- Cạnh RabbitMQ chỉ có span (PRODUCER/CONSUMER mang `dependency_identity=<service.name>-rabbitmq`, `operation_name` là `publish`/`consume`); **không có** metric `lms_dependency_*` cho RabbitMQ, chỉ có metric broker. Lỗi publish ném `DEPENDENCY_*` với `details.dependency=<service.name>-rabbitmq`; span PRODUCER ghi lỗi gốc (`exception`), `error.type` (`timeout`/`unavailable`) và log `event=dependency.failure` như các dependency khác.
+- Cạnh RabbitMQ chỉ có span (PRODUCER/CONSUMER mang `dependency_identity=<service.name>-rabbitmq`, `operation_name` là `publish`/`consume`; ngoại lệ đã biết: relay outbox chạy trong `notification-worker` dùng `OutboxRelayService` chung với `notification` nên PRODUCER của nó ghi `notification-rabbitmq`, xem [telemetry-and-ground-truth-schema-v1](telemetry-and-ground-truth-schema-v1.md) mục 3.2.4); **không có** metric `lms_dependency_*` cho RabbitMQ, chỉ có metric broker. Lỗi publish ném `DEPENDENCY_*` với `details.dependency=<service.name>-rabbitmq`; span PRODUCER ghi lỗi gốc (`exception`), `error.type` (`timeout`/`unavailable`) và log `event=dependency.failure` như các dependency khác.
 - Metric label chỉ chứa identity/operation/status; không đưa principal ID, resource ID, `message_id`, credential, token, query string hoặc fault truth vào label. Span có thể giữ path để chẩn đoán nhưng không ghi query string, credential hay token.
 
 ## 9. Kiểm chứng
@@ -248,6 +252,8 @@ Test hiện có chứng minh các hành vi trên:
 - `tracing-smoke` trong `pnpm run test:observability`: kịch bản `identity` ngừng phản hồi (login lỗi ngay tại `gateway-identity`, token còn hạn vẫn dùng được, lỗi `gateway-identity-token` sau khi token dịch vụ hết hạn, phục hồi sau `unpause`); `metrics-smoke`: dừng một worker làm backlog tăng, command sai vào `.error`, drain khi phục hồi; mọi `operation_name` của `lms_dependency_*` không chứa UUID hay số ID (lần chạy ngày 17/11/2026: 186 tổ hợp, đạt).
 - `pnpm run ci:verify` (`format:check`, build, lint, test) và `docker compose config` phải pass trước khi chuyển `Chờ review`.
 
+- Lớp fault của thí nghiệm (PR #75, chưa merge): regression W1–W7 chạy qua toxiproxy và `llm-stub` (`REGRESSION_AI_PROVIDER_URL=http://llm-stub:8080/v1`) đạt 52/52 test; số đo trễ/lỗi khi bật fault ở mục 7 và [complex-case catalogue](complex-case-catalogue-and-rca-result-v0.md) C2, C3, C4.
+
 Chưa có test riêng cho: số lần gọi mạng bằng 1 ở từng client của v2, timeout/pool mặc định của PostgreSQL và MinIO.
 
 ## 10. Điểm chưa kiểm chứng và việc mở
@@ -256,6 +262,8 @@ Chưa có test riêng cho: số lần gọi mạng bằng 1 ở từng client c�
 - `AI_WORKER_LEASE_MS > AI_COMPLETION_TIMEOUT_MS` mới là quy ước, chưa ép bằng schema.
 - Metric `lms_dependency_*` cho publish/consume RabbitMQ và độ trễ outbox: chưa có; chỉ thêm nếu case C1 (Target) cần ([ADR-006](../adr/adr-006-trim-project-scope-v1.md)).
 - Giới hạn tốc độ cho `POST /internal/v1/auth/service-token` chưa có ([http-and-event-contracts-v2](http-and-event-contracts-v2.md) mục 10).
+- Hành vi khi trễ chèn qua toxiproxy lớn tới mức chạm timeout mặc định của driver PostgreSQL/MinIO, và khi `disconnect` proxy `course-to-postgres` (C2 chỉ dùng chèn trễ): chưa đo.
+- Identity `notification-rabbitmq` của relay trong `notification-worker` (mục 8): lệch đã biết, chưa quyết sửa.
 
 ## Khác biệt so với bản trước
 

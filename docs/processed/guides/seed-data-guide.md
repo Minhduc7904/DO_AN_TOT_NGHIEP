@@ -20,7 +20,7 @@ Chạy từ thư mục gốc repo:
 docker compose --env-file docker-compose/.env -f docker-compose/compose.yaml up --build -d --wait
 ```
 
-Lần đầu build mất vài phút. Mỗi service tự `prisma migrate deploy` khi khởi động, nên khi lệnh trả về thì cả 7 database đã có bảng. Seeder cần Postgres publish ra host (`POSTGRES_PORT`, mặc định `5432`).
+Lần đầu build mất vài phút. Mỗi service tự `prisma migrate deploy` khi khởi động, nên khi lệnh trả về thì cả 6 database (`identity_db`, `course_db`, `media_db`, `notification_db`, `scheduler_db`, `ai_db`) đã có bảng. Seeder cần Postgres publish ra host (`POSTGRES_PORT`, mặc định `5432`).
 
 ## Bước 2: chạy seeder bằng giao diện terminal
 
@@ -31,7 +31,7 @@ pnpm run seed:data -- --environment local --compose-env-file ../docker-compose/.
 
 | Bước | Bạn thấy | Thao tác |
 | --- | --- | --- |
-| 1. Chọn database | Danh sách 7 database kèm trạng thái và số dòng seed đang có. Database chưa migrate hoặc không kết nối được bị khóa kèm lý do | `Space` chọn/bỏ, `a` chọn hết, `Enter` tiếp tục |
+| 1. Chọn database | Danh sách 6 database kèm trạng thái và số dòng seed đang có. Database chưa migrate hoặc không kết nối được bị khóa kèm lý do | `Space` chọn/bỏ, `a` chọn hết, `Enter` tiếp tục |
 | 2. Nhập số lượng | Từng bảng một, kèm khoảng cho phép và số gợi ý theo profile `medium` | `Enter` nhận gợi ý hoặc gõ số khác. Bảng "tự tính" chỉ hiện số, không hỏi |
 | 3. Xác nhận | Bảng tóm tắt số dòng từng bảng và câu hỏi dọn rồi nạp | Gõ `y` để chạy, `n` để hủy (chưa ghi gì) |
 | 4. Tiến độ | Mỗi bảng một dòng có thanh tiến độ; bảng xong hiện `✔ ... thành công`, bảng lỗi hiện `✖` kèm thông điệp | Chờ |
@@ -137,6 +137,7 @@ Toàn bộ tùy chọn: `pnpm run seed:data -- --help`.
 - Mọi tài khoản seed dùng chung mật khẩu `seed-password`; chỉ dùng cho testbed local.
 - Seeder không đưa dòng nào vào trạng thái đang xử lý, nên worker không phát email, gọi AI hay dọn media từ dữ liệu seed.
 - Reset testbed (`pnpm run testbed:reset`) xóa volume Postgres nên xóa luôn dữ liệu seed; chạy seeder lại sau khi reset.
+- Workload k6 của thí nghiệm (`aiops-platform/load/`, PR #76 tuần 13, chưa merge) đăng nhập bằng tài khoản seed của profile `small` (`seed-student-N@seed.test`, `seed-instructor-N@seed.test`; README của k6 dùng `--seed 42` để dữ liệu lặp lại được); seed bằng profile khác thì đặt `SEED_STUDENTS`, `SEED_INSTRUCTORS` của k6 cho khớp. Dữ liệu seed không sinh telemetry, nên telemetry thí nghiệm chỉ đến từ workload.
 
 ## Dọn dẹp
 

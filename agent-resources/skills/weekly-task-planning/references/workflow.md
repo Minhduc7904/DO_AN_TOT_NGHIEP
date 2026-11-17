@@ -4,7 +4,7 @@
 
 ## Chọn nguồn và nơi lưu
 
-1. Tìm plan canonical hiện hành qua `README.md`; hiện tại là `docs/processed/plan/plan-v0.2-24-weeks.md`.
+1. Tìm plan canonical hiện hành qua `README.md`; hiện tại là `docs/processed/plan/plan-v0.4-24-weeks.md`.
 2. Chỉ cụ thể hóa một tuần khi người dùng chỉ rõ tuần hoặc có đủ ngày/mốc để xác định tuần. Không tự đổi milestone, scope hay primary/collaborator canonical.
 3. Dùng `docs/processed/plan/weekly/week-<nn>_<start>_to_<end>/`. Khởi tạo `weekly-overview.md` và mọi card từ đúng template được liệt kê tại [bảng template](../templates/canonical-templates.md).
 

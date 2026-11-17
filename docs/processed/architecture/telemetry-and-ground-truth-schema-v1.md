@@ -2,6 +2,8 @@
 
 > **Task:** R-12 — [bảng task refactor](../plan/refactor/refactor-board-v1.md)
 >
+> **Cập nhật 17/11/2026 ([ADR-007](../adr/adr-007-semi-real-workload-and-ai-evidence-v1.md)):** tài liệu này là **logical schema** (field nào phải có, ý nghĩa, invariant). **Schema vật lý** của artifact export (tên cột, kiểu, đơn vị, bảng Parquet, `manifest.json`, `quality-report.json`) là [telemetry-data-dictionary-v2](telemetry-data-dictionary-v2.md) (task-05 tuần 13, [PR #79](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/79), chưa merge), khớp code `aiops-platform/training/` (PR #77, #79); khi hai tài liệu khác nhau ở tên cột thì theo data dictionary, ý nghĩa logic vẫn theo tài liệu này. Thay đổi theo ADR-007 và số đo tuần 13: biến thể suy giảm của RQ4 nay là E3 (mục 6.1); `telemetry_silent` định nghĩa bằng counter vì Collector giữ series khoảng 5 phút sau khi runtime ngừng (mục 7.1); lệch identity của relay `notification-worker` (mục 3.2.4); C2/FC đổi `fault_type` theo ADR-006 và các cơ chế FA, FC, FD đã có ở lớp fault PR #75 (mục 9, 10).
+>
 > **Cập nhật 17/11/2026 ([ADR-006](../adr/adr-006-trim-project-scope-v1.md)):** MCP/agent ra Out-of-scope; trường chẩn đoán của người chỉ cần khi làm thử nghiệm người thật (đã xuống Target); bộ case MVP còn C2 (viết lại), C3, C4, C6. Khi đoạn chi tiết mâu thuẫn, ADR-006 được ưu tiên.
 >
 > **Trạng thái:** v1, đề xuất — chờ Đức tự xác nhận (không cần Bách review, theo chỉ thị trực tiếp của Đức). Phần "tín hiệu có thật" lấy từ [complex-case-catalogue-and-rca-result-v0](complex-case-catalogue-and-rca-result-v0.md) mục 1 (đo ngày 29/10/2026) và từ code `lms/packages/observability/src`, `lms/packages/common/src/messaging`, `lms/packages/common/src/telemetry`; chỗ chưa đối chiếu được ghi "chưa kiểm chứng".
@@ -164,6 +166,7 @@ Nguồn: mapping `HTTP_DEPENDENCY_PEERS` trong `lms/packages/observability/src/h
 - Span PRODUCER và span CONSUMER của một process dùng chung `dependency_identity = <service.name của process>-rabbitmq` (`RabbitMqCommandPublisher.dependencyIdentity`, consumer dùng lại giá trị này). Ví dụ `notification` phát với `notification-rabbitmq`, `notification-worker` phát lại và tiêu thụ với `notification-worker-rabbitmq`.
 - Metric broker `rabbitmq_detailed_queue_*` mang `service_name` là worker tiêu thụ (tiền tố trước `--` của tên queue) và `dependency_identity = <worker>-rabbitmq`, do `otel-collector.yaml` gắn sẵn. Queue thuộc worker tiêu thụ, **không** thuộc service phát command (catalogue mục 2, quy ước 2).
 - `grading-rabbitmq` không còn. `notification-rabbitmq` vẫn tồn tại nhưng đổi nghĩa: ở v1 nó là identity phía consumer của F4; ở v2 nó là identity của process `notification` khi phát command, còn phía consumer là `notification-worker-rabbitmq`.
+- **Lệch đã biết (đo 17/11/2026, chưa sửa):** relay outbox chạy trong **cả hai** process `notification` và `notification-worker` (cùng `OutboxRelayService`, cùng claim bảng `outbox_messages`), và service này gán cứng `dependencyIdentity: 'notification-rabbitmq'` (`lms/services/notification/src/adapters/messaging/outbox-relay.service.ts`). Vì vậy span PRODUCER do `notification-worker` phát lại từ outbox mang `service.name=notification-worker` nhưng `dependency_identity=notification-rabbitmq`, trái với quy tắc `<service.name của process>-rabbitmq` ở trên; consumer của worker vẫn dùng `notification-worker-rabbitmq`. Ảnh hưởng cột `dependency_identity` của span PRODUCER trong artifact ([telemetry-data-dictionary-v2](telemetry-data-dictionary-v2.md) mục 9); khi dựng cạnh async, quy về chủ sở hữu bằng queue đích (catalogue mục 2, quy ước 1), không bằng `dependency_identity`. Sửa code là thay đổi telemetry, được phép dù LMS đóng băng (ADR-006); chưa quyết sửa hay chỉ ghi chú.
 
 ---
 
@@ -595,6 +598,8 @@ controlled trace dropping/sampling simulation
 missing-modality transform
 ```
 
+Theo [ADR-007](../adr/adr-007-semi-real-workload-and-ai-evidence-v1.md) mục 3, bộ biến thể bắt buộc của MVP là **E3** (thay định nghĩa RQ4 cũ chỉ "bỏ 50% trace"): giữ 50% và giữ 10% trace (`transformation_type=trace-drop`, lấy mẫu theo cả trace), log mất `trace_id` (`transformation_type=log-trace-id-drop`, tên đề xuất), mất một modality (`transformation_type=missing-modality`). Tên `transformation_type` mới là đề xuất, chốt khi cài.
+
 Không overwrite baseline artifact. Full/degraded pair phải giữ lineage để RQ4 làm strict paired comparison; mỗi artifact có `artifact_id`, `run_id` và `TelemetryQualityReport` riêng.
 
 ---
@@ -621,6 +626,10 @@ unknown_missing
 Signal ở catalogue mục 1.5 (pool PostgreSQL, tuổi message cũ nhất, metric publish/consume RabbitMQ ở runtime, độ trễ outbox, log xử lý command của worker) có trạng thái `not_instrumented`, khác với `scrape_gap` hay `no_traffic`. Series broker thiếu gauge là `source_unavailable`, không phải queue rỗng.
 
 Raw artifact không cần tạo placeholder record cho mọi missing point. Quality report ghi segment/ratio; feature stage dùng flags như `missing_metrics`, `missing_traces`, `missing_logs` theo Analysis blueprint.
+
+**Runtime ngừng hoạt động (`telemetry_silent`) không biểu hiện bằng thiếu mẫu.** Đo 17/11/2026 (`docker pause` container `scheduler` 70 giây): OTel Collector vẫn xuất giá trị cuối của mọi series thêm khoảng 5 phút sau khi runtime ngừng gửi, nên Prometheus vẫn có mẫu mỗi 5 giây với giá trị đứng yên. Vì vậy `scrape_gap` không phát hiện được runtime chết; cờ `telemetry_silent` được định nghĩa bằng việc bộ đếm `process_cpu_time_seconds_total` của runtime **không tăng** lâu hơn ngưỡng (khởi đầu 30 giây), đã cài ở `aiops-training quality` (PR #79, [telemetry-data-dictionary-v2](telemetry-data-dictionary-v2.md) mục 8.2). Hệ quả cho feature: dùng mức tăng của counter, coi giá trị đứng yên trong khoảng im lặng là không quan sát được, không phải giá trị bình thường. Run fault C6 phải có `telemetry_silent` ở `identity`.
+
+Giá trị đo được khác: sau khi lọc access log của probe, cả 4 worker không còn log nào nên log của worker có trạng thái `not_instrumented`, không phải `source_unavailable`; bộ đếm lỗi xuất hiện lần đầu giữa cửa sổ là series mới mà `increase()` bỏ mẫu đầu, nên feature coi giá trị trước đó là 0.
 
 ## 7.2. `TelemetryQualityReport`
 
@@ -968,10 +977,10 @@ Nguồn: ma trận fault FA–FH ở [data-ownership-and-fault-matrix-v2](data-o
 
 | Fault | Case | `fault_type` | `fault_target` | `fault_target_kind` | `root_cause_service` | `root_cause_component` | Ground-truth parameter tối thiểu | Trạng thái kiểm chứng (catalogue) |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| **FA** Chậm/ngắt MinIO | C4 | `dependency_latency` | `media-minio` | `dependency` | `media` | `media-minio` | kiểu tác động (chèn trễ hoặc ngắt kết nối), delay, phạm vi operation (upload/promote), interval | Đã đo tín hiệu; cơ chế chèn trễ chưa chạy |
+| **FA** Chậm/ngắt MinIO | C4 | `dependency_latency` | `media-minio` | `dependency` | `media` | `media-minio` | kiểu tác động (chèn trễ hoặc ngắt kết nối), delay/jitter, proxy (`media-to-minio`, `media-worker-to-minio`), phạm vi operation (upload/promote), interval | Cơ chế đã chạy ở mức smoke (PR #75); chưa pilot |
 | **FB** Backlog hàng đợi | C1 | `queue_backlog` | `notification-worker` | `consumer` | `notification-worker` | `notification-worker-rabbitmq` | cỡ batch (seed R-10: 100000 recipient), cách làm chậm worker (giới hạn CPU hoặc `docker pause` theo chu kỳ), interval | Đã đo tín hiệu; chuỗi lan sang `media-worker` là giả thuyết |
-| **FC** Giữ kết nối DB | C2 | `db_connection_hold` | `course` | `service` | `course` | `course-postgres` | số và kích thước export CSV đồng thời, mức tải học chạy song song, interval | Đã đo tín hiệu; metric pool chưa có |
-| **FD** Provider AI chậm | C3 | `dependency_latency` | `ai-llm-provider` | `dependency` | `ai` | `ai-llm-provider` | delay hoặc tỷ lệ lỗi ngắt quãng của stub LLM, interval | Đã đo tín hiệu; stub chậm chưa chạy |
+| **FC** Độ trễ kết nối DB (viết lại theo ADR-006) | C2 | `dependency_latency` (ADR-006; bản trước `db_connection_hold`) | `course-postgres` | `dependency` | `course` | `course-postgres` | delay/jitter chèn trên proxy `course-to-postgres`, mức tải học chạy song song, interval | Cơ chế đã chạy ở mức smoke (PR #75); chưa pilot; metric pool chưa có |
+| **FD** Provider AI chậm | C3 | `dependency_latency` | `ai-llm-provider` | `dependency` | `ai` | `ai-llm-provider` | `latency_ms`, `jitter_ms`, `error_rate`, `error_status`/`error_mode`, seed của `llm-stub`, interval | Cơ chế đã chạy ở mức smoke (PR #75); chưa pilot |
 | **FE** Identity chậm | C5 | `dependency_latency` | `identity-postgres` | `dependency` | `identity` | `identity-postgres` | delay chèn vào truy vấn snapshot recipient, interval | Đã đo tín hiệu; chèn trễ chưa chạy |
 | **FF** Quá tải tài nguyên | không có case riêng | `resource_pressure` (đề xuất) | `<service>-instance` | `resource` | một service bất kỳ, ghi đúng một giá trị mỗi run | `<service>-instance` | tài nguyên (CPU hoặc bộ nhớ), giới hạn container, interval | CPU/RSS có thật, dùng làm bằng chứng phụ cho C1–C2 |
 | **FG** Độ trễ/ngắt xác thực | C6 | `dependency_unavailable` | `identity` | `service` | `identity` | `identity` | kiểu tác động (`pause`/dừng), `IDENTITY_SERVICE_TOKEN_TTL_SECONDS`, TTL cache JWKS, interval | **Đã chạy** bởi `tracing-smoke` |
@@ -979,6 +988,8 @@ Nguồn: ma trận fault FA–FH ở [data-ownership-and-fault-matrix-v2](data-o
 
 Ghi chú:
 
+- Lớp fault PR #75 đặt tên proxy theo đường kết nối (`course-to-postgres`, `media-to-minio`, `media-worker-to-minio`); đề xuất giữ `fault_target` theo dependency identity như bảng trên và ghi tên proxy trong `fault_parameters`. `fault_start`/`fault_end` lấy từ dòng JSON có `ts` mà CLI `fault-control` in ra. Chưa kiểm chứng (fault manifest làm ở tuần 14).
+- FC: theo [ADR-006](../adr/adr-006-trim-project-scope-v1.md), cơ chế "export CSV giữ kết nối DB" không khớp code (export đọc từng khối 500 dòng) nên C2 viết lại thành chèn trễ trên kết nối `course` → `course-postgres`, `fault_type=dependency_latency`; `fault_target` đổi từ `course`/`service` sang `course-postgres`/`dependency` cho khớp (đề xuất của tài liệu này). Giá trị `db_connection_hold` giữ trong vocabulary nhưng không còn case MVP dùng.
 - `fault_type` của FF không có trong catalogue (không có case riêng); `resource_pressure` là giá trị đề xuất thay `cpu_pressure` của v0 vì ma trận v2 mục 5 ghi cả CPU lẫn bộ nhớ. Chưa kiểm chứng.
 - FA: ma trận ghi root-cause `media` / `media-worker`, catalogue C4 chốt `media`. Mỗi run chỉ ghi một `root_cause_service`; nếu sau này có run nhắm riêng process `media-worker`, quy tắc chọn giá trị chưa được catalogue nêu.
 - FD: chủ sở hữu root cause là `ai`; process chạm provider là `ai-worker` (catalogue C3). Evidence nằm ở span/metric của cả `ai` và `ai-worker`.
@@ -1058,7 +1069,7 @@ Schema phải cho phép tình huống: `upload-complete` của `media` chậm ho
 
 Chưa có: tuổi message cũ nhất (chỉ theo độ sâu; suy từ span), `consumer_processing_duration` dạng metric, độ trễ outbox, log xử lý command của worker. Chuỗi lan từ `notification-worker` sang `media-worker` là **giả thuyết** (mỗi worker có queue riêng; chỉ xảy ra khi broker hoặc PostgreSQL dùng chung bị tranh chấp), cần chạy thật trước khi đặt `expected_propagation_path` dài hơn `notification-worker` → `notification-worker-rabbitmq`.
 
-## 10.3. FC — Giữ kết nối DB (C2)
+## 10.3. FC — Độ trễ kết nối DB của `course` (C2, viết lại theo ADR-006)
 
 ```text
 dependency evidence:
@@ -1070,8 +1081,10 @@ resource (bằng chứng phụ):
 trace:
   mọi span chậm thuộc course, không có span lỗi
 ground truth:
-  FC interval + tải export/học song song + course/course-postgres
+  FC interval + delay/jitter của proxy course-to-postgres + mức tải học + course/course-postgres
 ```
+
+Số đo smoke (PR #75, 17/11/2026, `GET /api/v1/courses`): trễ 200 ms → `course-postgres` p50 khoảng 0,175 s (từ 0,0025 s), client p50 204 ms; không có span lỗi.
 
 Chưa có: độ sử dụng pool kết nối PostgreSQL và thời gian chờ pool. Hệ quả: không phân biệt được "pool cạn" với "DB chậm" (catalogue C2). Ma trận v2 mục 5 liệt kê pool utilization là tín hiệu quan sát, nhưng tín hiệu này chưa tồn tại nên không được đặt `required=true`.
 
@@ -1089,7 +1102,7 @@ ground truth:
   FD interval + delay/tỷ lệ lỗi của stub + ai/ai-llm-provider
 ```
 
-Schema phải cho phép: triệu chứng ở hai service (job AI mãi `RUNNING` rồi `WORKER_INTERRUPTED`; tài liệu mãi `EXTRACTING`), nguyên nhân gián tiếp ở provider qua `ai-worker` giữ lease. Chưa có: telemetry riêng cho lease hết hạn hoặc job/tài liệu `FAILED` (trạng thái này ở DB `ai`), log xử lý command trong worker.
+Schema phải cho phép: triệu chứng ở hai service (job AI mãi `RUNNING` rồi `WORKER_INTERRUPTED`; tài liệu mãi `EXTRACTING`), nguyên nhân gián tiếp ở provider qua `ai-worker` giữ lease. Số đo smoke với `llm-stub` (PR #75, 17/11/2026): trễ 2000±500 ms → lời gọi provider trung bình 2,36 s, job vẫn `COMPLETED`; `error_rate=1` → job `FAILED` với `AI_PROVIDER_ERROR` và `lms_dependency_request_count_total{status="unavailable"}` của `ai-worker`/`ai-llm-provider` tăng (bộ đếm này là series mới, mục 7.1). Chưa có: telemetry riêng cho lease hết hạn hoặc job/tài liệu `FAILED` (trạng thái này ở DB `ai`), log xử lý command trong worker.
 
 ## 10.5. FE — Identity chậm khi snapshot (C5)
 
@@ -1122,6 +1135,9 @@ trace:
   trace của request lỗi không có span của service đích
 log:
   `dependency.failure` có span_id khớp span CLIENT lỗi
+runtime:
+  process_cpu_time_seconds_total{service_name="identity"} ngừng tăng -> telemetry_silent (mục 7.1)
+  metric khác của identity vẫn có mẫu đứng yên khoảng 5 phút, không phải thiếu mẫu
 ground truth:
   FG interval + kiểu tác động + TTL + identity/identity ; expected_symptom_lag, expected_symptom_services (mục 9.1)
 ```
@@ -1339,6 +1355,7 @@ Bảng này ghi **hiện trạng đã đo và đã đối chiếu code**, không
 - Backend retention 24 giờ và giới hạn RAM theo [observability README](../../../aiops-platform/observability/README.md); khi vượt, telemetry có thể mất dù request vẫn chạy. Mất này phải vào quality report (`scrape_gap`, `source_unavailable`), không bù bằng `0`.
 - Tempo từng bị OOM-kill (giới hạn 512 MiB) khi truy vấn hàng nghìn trace song song (catalogue mục 4.2); ingestion không nên kéo trace hàng loạt từ Tempo của testbed, nên truy vấn tuần tự và giới hạn số trace.
 - Trace nhiễu (thăm dò DB của `scheduler-worker`, `/ready`) phải lọc ở ingestion (mục 5.3).
+- Hiện trạng (PR #77, chưa merge): `aiops-training export` lọc trace nhiễu theo tên span gốc ngay ở bước tìm, tìm theo lát 30 giây, tải từng trace tuần tự (khoảng 0,1 giây mỗi trace), tải lại trace lỗi ở cuối vì Tempo thỉnh thoảng khựng gây `ReadTimeout`, và từ chối cửa sổ đã quá 24 giờ; mọi cắt bớt ghi trong `manifest.json` ([telemetry-data-dictionary-v2](telemetry-data-dictionary-v2.md) mục 6).
 - Runtime không tắt khi Collector không truy cập được; export chạy nền nên có thể mất dữ liệu khi buffer và retry hết.
 
 ---
@@ -1591,6 +1608,7 @@ Catalogue (R-12, đo thực tế) mới hơn bản đề xuất ban đầu của
 | --- | --- | --- | --- |
 | Component của FG | ma trận ghi `identity` / `identity-postgres` | catalogue chỉ chốt `identity` | Theo catalogue; `identity-postgres` chưa có kịch bản (mục 9) |
 | Tín hiệu pool utilization (FC), tuổi message cũ nhất (FB), breaker mở (FG) | ma trận mục 5 liệt kê là tín hiệu quan sát | chưa có (catalogue mục 1.5) hoặc không có trong mục 1 | Không đặt `required=true` (mục 10) |
+| `dependency_identity` của PRODUCER do `notification-worker` phát lại từ outbox | quy tắc `<service.name>-rabbitmq` (mục 3.2.4) | code ghi `notification-rabbitmq` | Ghi là lệch đã biết; cạnh async quy theo queue đích (mục 3.2.4) |
 | Attribute `command_name`, attempt, metric retry count | contract v2 mục 8 yêu cầu | code chỉ phát một phần (mục 4.3) | Ingestion trích từ tên span/queue; phần chưa phát ghi "chưa có" |
 
 ---
@@ -1610,7 +1628,7 @@ Khác với v0, các mục dưới đây không ghi "Đạt" chỉ dựa vào th
 | Không leak truth label vào feature telemetry | Đề xuất | Mục 12 |
 | Field/resource signal có đường instrument/export; signal chưa có được ghi rõ | Đã đối chiếu code và catalogue mục 1 | Mục 13 |
 | Không phá topology/contract/fault semantics v2 | Đề xuất; điểm lệch còn lại ghi ở 17.1 | Mục 1–4, 17 |
-| Chạy thật chuỗi nhân quả FA–FF, FH trước khi dùng làm case đánh giá | **Chưa làm** (thuộc mảng AI) | Catalogue mục 3, 6 |
+| Chạy thật chuỗi nhân quả FA–FF, FH trước khi dùng làm case đánh giá | **Chưa làm** (thuộc mảng AI); cơ chế FA, FC, FD đã chạy ở mức smoke (PR #75), pilot ở tuần 15 của [plan-v0.4](../plan/plan-v0.4-24-weeks.md) | Catalogue mục 3, 6 |
 
 ## 18.1. RQ compatibility checklist
 
@@ -1619,7 +1637,7 @@ Khác với v0, các mục dưới đây không ghi "Đạt" chỉ dựa vào th
 | RQ1 | Một `RunGroundTruth` immutable có thể được T5 reuse cho M, M+T và M+T+L; modality/feature selection nằm ngoài truth record. |
 | RQ2 | Cùng telemetry artifact + ground truth pair có thể được severity-only và graph-aware RCA reuse; algorithm/config/output không mutate truth. |
 | RQ3 | FA–FH có reproducible run/workload/fault truth, expected propagation/evidence và telemetry artifact lineage để so sánh detection/RCA. |
-| RQ4 | Full và degraded giữ cùng `run_id` + `RunGroundTruth`; derived artifact trỏ `source_artifact_id`, lưu transform config/seed, có quality riêng và không đổi `run_status`. |
+| RQ4 (E3 theo ADR-007) | Full và degraded giữ cùng `run_id` + `RunGroundTruth`; derived artifact trỏ `source_artifact_id`, lưu transform config/seed, có quality riêng và không đổi `run_status`. Áp cho cả bốn biến thể E3 (50%, 10% trace, log mất `trace_id`, mất một modality). |
 
 ## 18.2. Những giá trị cố ý chưa freeze ở T4
 

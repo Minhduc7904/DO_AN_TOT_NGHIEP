@@ -1,5 +1,7 @@
 # Project scope v2 — MVP, Target, Stretch và Out-of-scope
 
+> **Cập nhật 17/11/2026 ([ADR-007](../adr/adr-007-semi-real-workload-and-ai-evidence-v1.md)):** workload **bán thực** — học viên dùng phiên thật phát lại từ log Moodle Unistudium 2022 (mức 2+, `[L-Unistudium]` https://zenodo.org/records/13763175), giảng viên/admin/job lịch dùng mô hình hành vi (mức 2), mức 3 chỉ dạng offline (Stretch); độ thực được kiểm chứng với hold-out so với hai nguồn tải đơn giản. Giá trị của RCA engine được chứng minh bằng bộ bằng chứng E1–E8: MVP = E1 phát hiện dưới tải bán thực, E2 bảng chính có baseline đã công bố SimpleRCA (`[L-Fang2025]` https://arxiv.org/abs/2510.04711) và BARO (`[L-BARO]` https://arxiv.org/abs/2405.09330), E3 quan sát suy giảm, E4 chi phí chẩn đoán, E5 ablation, E8 case study C6; Target = E6 đối chứng ngoài trên RCAEval (`[L-RCAEval]` https://arxiv.org/abs/2412.17015), E7 thử nghiệm người; đăng ký trước ở tuần 19. Không hứa "AI thắng mọi case": nghiên cứu cho thấy baseline đơn giản thường ngang phương pháp phức tạp (`[L-Pham2024ASE]` https://arxiv.org/abs/2408.13729). Kế hoạch: [plan-v0.4](../plan/plan-v0.4-24-weeks.md); tài liệu tham khảo: [literature-matrix-v1](../plan/literature-matrix-v1.md). Đoạn chi tiết bên dưới mâu thuẫn với ADR-007 thì ADR-007 được ưu tiên.
+>
 > **Cập nhật 17/11/2026 ([ADR-006](../adr/adr-006-trim-project-scope-v1.md)):** LMS đóng băng, R-18 hủy; RCA engine **hỗ trợ** người vận hành theo tên đề tài đã đăng ký, bỏ yêu cầu "kết luận không cần người"; ranker học có giám sát xuống Stretch; thử nghiệm người thật xuống Target; MCP/agent ra Out-of-scope; bộ case MVP còn C2 (viết lại), C3, C4, C6 với `R = 5`. Khi đoạn chi tiết dưới đây mâu thuẫn, ADR-006 được ưu tiên.
 
 > **Task:** R-12 — [bảng task refactor](../plan/refactor/refactor-board-v1.md)
@@ -14,7 +16,7 @@
 > - Topology và dữ liệu: [service-catalogue-and-topology-v2](../architecture/service-catalogue-and-topology-v2.md), [data-ownership-and-fault-matrix-v2](../architecture/data-ownership-and-fault-matrix-v2.md), [complex-case-catalogue-and-rca-result-v0](../architecture/complex-case-catalogue-and-rca-result-v0.md), [`aiops-platform/README.md`](../../../aiops-platform/README.md).
 > - Định hướng và đo lường: [khung-dinh-huong-tong-the-lms-microservice-ai-rca-v1](khung-dinh-huong-tong-the-lms-microservice-ai-rca-v1.md), [research-questions-and-metrics-v2](research-questions-and-metrics-v2.md).
 > - Tài liệu đang được viết lại song song (link theo tên đích): [telemetry-and-ground-truth-schema-v1](../architecture/telemetry-and-ground-truth-schema-v1.md), [evaluation-protocol-v1](../architecture/evaluation-protocol-v1.md), [analysis-anomaly-rca-blueprint-v1](../architecture/analysis-anomaly-rca-blueprint-v1.md).
-> - WHEN/WHO: [plan-v0.3-24-weeks](../plan/plan-v0.3-24-weeks.md).
+> - WHEN/WHO: [plan-v0.4-24-weeks](../plan/plan-v0.4-24-weeks.md).
 > - Backend: [backend-microservice-testbed-blueprint-v2](../architecture/backend-microservice-testbed-blueprint-v2.md) (thay [backend_microservice_testbed_blueprint](../architecture/backend_microservice_testbed_blueprint.md) còn mô tả topology v1). Khi mâu thuẫn, ưu tiên theo thứ tự ADR → service-catalogue v2 → http-and-event-contracts v2 và data-ownership v2 → blueprint.
 
 ## 1. Mục tiêu của scope v2
@@ -178,7 +180,8 @@ Tối thiểu phải có:
 - healthy high-load spike để đo false positive/workload shift;
 - workflow traffic đủ kích hoạt W1–W7;
 - workload chạy song song với mọi case phức tạp để tạo nhiễu nền (ma trận fault v2, mục 6);
-- workload profile, seed, rate/stage và duration có thể truy vết.
+- workload profile, seed, rate/stage và duration có thể truy vết;
+- **workload bán thực** ([ADR-007](../adr/adr-007-semi-real-workload-and-ai-evidence-v1.md)): học viên dùng phiên thật phát lại từ log Moodle Unistudium 2022 (mức 2+), giảng viên/admin/job lịch dùng mô hình hành vi (mức 2); kiểm chứng độ thực với hold-out so với hai nguồn tải đơn giản (mức 1 tốc độ hằng, mức 2 thuần). Thiết kế: [workload-design-v1](../architecture/workload-design-v1.md); k6 mức 1 đã có ở PR #76.
 
 `load/` chỉ tạo traffic; không inject fault và không tính evaluation metric. Tên profile cụ thể chốt ở [evaluation-protocol-v1](../architecture/evaluation-protocol-v1.md). Dữ liệu seed quy mô lớn (R-10) ghi trực tiếp bằng SQL nên không có trace, log hay outbox cho các dòng seed; seed có kiểm soát là điều kiện nền cho case C1 (batch thông báo lớn).
 
@@ -325,7 +328,8 @@ Output là `RcaIncidentResult` ([schema ở complex-case-catalogue mục 5](../a
 Để trả lời RQ6 ([ADR-006](../adr/adr-006-trim-project-scope-v1.md) mục 3):
 
 1. **Baseline "thủ công" tự động** (MVP): mô phỏng cách SRE làm thật. Từ triệu chứng, lấy trace lỗi/chậm nhất trong cửa sổ incident, đi theo span CLIENT lỗi hoặc chậm sâu nhất (kể cả qua cạnh async/auth sang service khác) và kết luận service sở hữu span đó; chạy lặp được trên cùng telemetry và cùng case. So sánh bằng độ chính xác Top-K, thời gian tới kết luận đúng và số artifact phải mở, không bằng lập luận "người không tìm ra".
-2. **Thử nghiệm người thật nhỏ** (Target, 2–3 người, minh họa định tính, không phải tiêu chí hoàn thành): vài người dùng Grafana/Tempo/Loki để chẩn đoán case, đo thời gian chẩn đoán. Cấu trúc protocol (người tham gia không biết ground truth, brief chỉ nêu triệu chứng, dùng run của final test split) ở [evaluation-protocol-v1 mục 15](../architecture/evaluation-protocol-v1.md); số người và time cap chưa chốt, chờ Đức xác nhận.
+2. **Baseline đã công bố** (MVP, [ADR-007](../adr/adr-007-semi-real-workload-and-ai-evidence-v1.md)): SimpleRCA (`[L-Fang2025]` https://arxiv.org/abs/2510.04711) và BARO (`[L-BARO]` https://arxiv.org/abs/2405.09330) cùng bảng với `base-manual-auto`; đo thêm chi phí chẩn đoán (E4).
+3. **Thử nghiệm người thật** (Target E7, ADR-007: 6–10 người within-subject nếu có, không thì 2–3 người minh họa định tính; không phải tiêu chí hoàn thành; chốt người trước tuần 15 của plan v0.4): vài người dùng Grafana/Tempo/Loki để chẩn đoán case, đo thời gian chẩn đoán. Cấu trúc protocol (người tham gia không biết ground truth, brief chỉ nêu triệu chứng, dùng run của final test split) ở [evaluation-protocol-v1 mục 15](../architecture/evaluation-protocol-v1.md); số người và time cap chưa chốt, chờ Đức xác nhận.
 
 ---
 
@@ -366,7 +370,7 @@ vs
 one controlled degraded-telemetry condition
 ```
 
-Chọn một trong hai: controlled trace dropping/sampling simulation trên **cùng baseline telemetry artifact**, hoặc missing-modality evaluation. Full/degraded condition là strict paired comparison trên cùng baseline run/artifact và cùng ground truth. Điều kiện cụ thể chốt ở evaluation-protocol-v1 (v0 chọn trace dropping 50% theo whole-trace).
+Theo [ADR-007](../adr/adr-007-semi-real-workload-and-ai-evidence-v1.md) (E3), MVP gồm cả hai: giữ 50% và 10% trace (lấy mẫu cả trace) và log mất `trace_id`, mất một modality — trên **cùng baseline telemetry artifact**. Full/degraded condition là strict paired comparison trên cùng baseline run/artifact và cùng ground truth. Điều kiện cụ thể chốt ở evaluation-protocol-v1 (v0 chọn trace dropping 50% theo whole-trace).
 
 ### System/trade-off metrics
 
@@ -438,9 +442,10 @@ Ràng buộc an toàn: nội dung log/trace là dữ liệu không tin cậy (c�
 | Change-point detection | Baseline detector + incident pipeline ổn | Ước lượng onset tốt hơn |
 | Thêm fault intensity/target/repetition | Automation và ground truth ổn | Mở rộng coverage |
 | Expanded robustness | Focused MVP robustness đã chạy | Nhiều sampling level/missing-modality combination/live sampling |
-| External benchmark subset | Evaluation trên testbed chính không bị chậm | Validation bổ sung |
+| External benchmark subset — **E6 RCAEval RE2** (OB, TT; [ADR-007](../adr/adr-007-semi-real-workload-and-ai-evidence-v1.md), `[L-RCAEval]` https://arxiv.org/abs/2412.17015) | Evaluation trên testbed chính không bị chậm; M4 đúng hạn | Đối chứng ngoài: engine không chỉ khớp lỗi do nhóm tự thiết kế |
+| Biến thể case để có 32–40 incident test | Bốn case MVP đã có dataset | CI hẹp hơn |
 | Component-level evidence chi tiết hơn | Service-level RCA ổn định | Tăng explainability, không đổi primary metric |
-| Thử nghiệm người thật nhỏ (2–3 người) | Campaign MVP đã freeze ([ADR-006](../adr/adr-006-trim-project-scope-v1.md)) | Minh họa định tính cho RQ6 |
+| Thử nghiệm người — E7 (6–10 người within-subject nếu có, không thì 2–3 người) | Campaign MVP đã freeze ([ADR-006](../adr/adr-006-trim-project-scope-v1.md), [ADR-007](../adr/adr-007-semi-real-workload-and-ai-evidence-v1.md)) | Đo thời gian, độ đúng, công sức với người thật cho RQ6 (mẫu `[L-LogAssist]`) |
 | Case C1, C5, C7 | Chuỗi nhân quả đã chạy thật; bốn case MVP đã có dataset ([ADR-006](../adr/adr-006-trim-project-scope-v1.md)) | Thêm case async/dùng chung; C5, C7 cùng dồn về `identity` |
 | Graph tách loại cạnh (async/auth/shared) trong ablation; cạnh shared-resource | C1 chạy được ([ADR-006](../adr/adr-006-trim-project-scope-v1.md)) | Ablation chi tiết theo loại cạnh |
 
@@ -450,6 +455,7 @@ Các Target trên **không nằm trong critical path** và có thể bỏ hoàn 
 
 # 6. Stretch — không phải điều kiện hoàn thành
 
+- workload mức 3 offline: LLM sinh persona giảng viên và nội dung một lần, đóng băng JSON có hash ([ADR-007](../adr/adr-007-semi-real-workload-and-ai-evidence-v1.md)); LLM agent chạy online làm nguồn tải không làm (`[L-UXAgent]`, `[L-AgentAB]`, `[L-LLMNondet]`);
 - Kubernetes / Chaos Mesh;
 - component-level RCA như primary metric;
 - instance-level RCA;

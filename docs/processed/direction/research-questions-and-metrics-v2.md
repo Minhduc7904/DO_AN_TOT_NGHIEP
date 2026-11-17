@@ -4,9 +4,11 @@
 >
 > **Cập nhật 17/11/2026 ([ADR-006](../adr/adr-006-trim-project-scope-v1.md)):** RQ6 vẫn thuộc MVP nhưng đo bằng độ chính xác Top-K, thời gian tới kết luận đúng và số artifact phải mở của RCA engine so với `base-manual-auto` (định nghĩa lại theo cách SRE làm thật); thử nghiệm người thật xuống Target; bộ case MVP còn C2 (viết lại), C3, C4, C6. Khi đoạn chi tiết mâu thuẫn, ADR-006 được ưu tiên.
 >
+> **Cập nhật 17/11/2026 ([ADR-007](../adr/adr-007-semi-real-workload-and-ai-evidence-v1.md)):** RQ1–RQ6 giữ nguyên, nhưng được trả lời qua bộ bằng chứng **E1–E8** (bảng ánh xạ ở mục 1.1). RQ4 đổi sang **quan sát suy giảm** (giữ 50% và 10% trace, log mất `trace_id`, mất một modality) thay cho "bỏ 50% trace"; RQ6 thêm hai baseline đã công bố (**SimpleRCA**, **BARO**), **chi phí chẩn đoán** (số artifact phải mở), đối chứng ngoài RCAEval và thử nghiệm người within-subject (hai mục sau là Target); chỉ số chính Top-1 và MRR kèm random/xếp hạng hằng, bootstrap CI 95%, McNemar exact. Độ thực của workload là **điều kiện tiên quyết** của mọi RQ (mục 2.6), không phải RQ mới. Nguồn tham khảo dùng mã khóa của [literature-matrix-v1](../plan/literature-matrix-v1.md). Khi đoạn chi tiết mâu thuẫn, ADR-007 được ưu tiên, sau đó tới ADR-006.
+>
 > **Cập nhật R-13:** `auth` và `student` đã gộp thành service `identity` ([ADR-005](../adr/adr-005-merge-auth-student-into-identity-v1.md)); tài liệu được sửa tại chỗ theo topology 7 service + 4 worker (11 runtime). Các số đo chưa đo lại sau khi gộp được ghi rõ ở chỗ dùng.
 >
-> **Trạng thái:** Đề xuất — chờ Đức tự xác nhận (refactor do một mình Đức làm, không cần Bách review). Chỗ nào là lựa chọn chưa có nguồn xác nhận được ghi "đề xuất chờ Đức xác nhận".
+> **Trạng thái:** Đề xuất. Bản đầu ghi "chờ Đức tự xác nhận (refactor do một mình Đức làm, không cần Bách review)" và đánh dấu lựa chọn chưa có nguồn là "đề xuất chờ Đức xác nhận"; từ 17/11/2026, trong giai đoạn tự bắt kịp (ADR-006, ADR-007), Bách tự quyết các điểm đó và chốt trong bản đăng ký trước ở mốc freeze tuần 19 của [plan-v0.4](../plan/plan-v0.4-24-weeks.md); Đức xác nhận khi repo ổn định tới phase RCA.
 >
 > **Thay thế:** [research-questions-and-metrics-v1](research-questions-and-metrics-v1.md) (giữ làm lịch sử, không dùng cho đánh giá trên topology v2). Bản v1 gắn với năm fault F1–F5, topology 6 business service + Gateway và vai trò "AI hỗ trợ".
 >
@@ -30,7 +32,22 @@ Tài liệu này chuyển RQ1–RQ5 của định hướng tổng thể và RQ6 
 
 Không chọn model cuối cùng tại đây. Các lựa chọn threshold, weight, hyperparameter, window size và cấu hình campaign phải được chọn trên training/validation rồi freeze trước final test campaign.
 
-Thuật ngữ: **RCA engine** là hệ thống truy vết nguyên nhân của đề tài (ML + dependency graph), là bên truy vết chính; không nhầm với service `ai` của LMS (gateway LLM soạn bài, chỉ là thành phần của SUT). "AI" trong RQ6 chỉ RCA engine.
+Thuật ngữ: **RCA engine** là hệ thống truy vết nguyên nhân của đề tài (ML + dependency graph); theo ADR-006, engine **tự động** phát hiện và xếp hạng ứng viên nguyên nhân kèm bằng chứng để **hỗ trợ** người vận hành (bản đầu ghi "bên truy vết chính"). Không nhầm với service `ai` của LMS (gateway LLM soạn bài, chỉ là thành phần của SUT). "AI" trong RQ6 chỉ RCA engine.
+
+### 1.1. Ánh xạ RQ1–RQ6 sang bộ bằng chứng E1–E8 (ADR-007)
+
+Lập luận của ADR-007: khi quan sát đầy đủ và tải đơn giản, luật đơn giản hoặc người đã đủ tìm ra nguyên nhân. Nghiên cứu ủng hộ điều này: đánh giá 21 phương pháp RCA không thấy phương pháp nào nổi trội ở mọi tình huống, nhiều phương pháp causal gần như chọn ngẫu nhiên (Pham, Ha, Zhang, ASE 2024, [arXiv 2408.13729](https://arxiv.org/abs/2408.13729), `[L-Pham2024ASE]`); SimpleRCA (đếm cảnh báo theo service) ngang hoặc vượt SOTA trên nhiều bộ dữ liệu công khai, và workload đơn giản làm kết quả RCA bị thổi phồng (Fang et al. 2025, FSE 2026, [arXiv 2510.04711](https://arxiv.org/abs/2510.04711), `[L-Fang2025]`). Vì vậy các RQ được trả lời bằng bằng chứng đặt đúng chỗ engine có thể khác baseline: phát hiện trong nhiễu của tải thật, giữ độ chính xác khi quan sát thiếu, giảm công sức chẩn đoán, chạy tự động và ổn định.
+
+| Bằng chứng | Nội dung | Mức | RQ chính | Chi tiết protocol |
+| --- | --- | --- | --- | --- |
+| E1 | Phát hiện dưới tải bán thực: detector học máy so với ngưỡng cố định (báo động giả/giờ, độ trễ phát hiện, recall) | MVP | RQ1, RQ5 | [evaluation-protocol-v1](../architecture/evaluation-protocol-v1.md) mục 17.8 |
+| E2 | Bảng chính: engine so với random, xếp hạng hằng, ngưỡng tĩnh, `base-manual-auto`, SimpleRCA, BARO; Top-1, MRR chính, kèm Top-3; bootstrap CI; McNemar exact | MVP | RQ2, RQ3, RQ6 | mục 15.2–15.5, 20.7 |
+| E3 | Quan sát suy giảm: giữ 50% và 10% trace, log mất `trace_id`, mất một modality | MVP | RQ4 | mục 13 |
+| E4 | Chi phí chẩn đoán: số artifact `base-manual-auto` phải mở và thời gian, so với bằng chứng engine trả sẵn | MVP | RQ6, RQ5 | mục 15.4 |
+| E5 | Ablation: bỏ từng modality, bỏ graph, bỏ temporal, thay detector học máy bằng z-score | MVP | RQ1, RQ2, RQ3 | mục 10–12 |
+| E6 | Đối chứng ngoài trên RCAEval RE2 (Online Boutique, Train Ticket) | Target | RQ6 (tổng quát) | mục 15.7 |
+| E7 | Thử nghiệm người within-subject | Target | RQ6 | mục 15.3 |
+| E8 | Case study C6: chuỗi bằng chứng của engine cạnh đường truy vết thủ công | MVP | RQ6 (diễn giải), RQ5 | mục 15.8 |
 
 ## 2. Quy ước đánh giá chung
 
@@ -58,22 +75,22 @@ Thử nghiệm người thật (RQ6) dùng run thuộc final test split (cùng r
 
 ### 2.3. Testbed, ground truth và provenance tối thiểu
 
-MVP dùng tám fault canonical FA–FH và bảy case phức tạp C1–C7 (chi tiết kịch bản và tín hiệu ở complex-case-catalogue; tóm tắt ở [project-scope-v2 mục 3.4](project-scope-v2.md)):
+Danh mục canonical có tám fault FA–FH và bảy case phức tạp C1–C7 (chi tiết kịch bản và tín hiệu ở complex-case-catalogue; tóm tắt ở [project-scope-v2 mục 3.4](project-scope-v2.md)). Theo ADR-006, **bộ case MVP là C2, C3, C4, C6**; C1, C5, C7 là Target:
 
 | Fault | Case | Loại | `root_cause_service` | Component/evidence |
 | --- | --- | --- | --- | --- |
-| FA | C4 | Độ trễ dependency (MinIO) | `media` / `media-worker` | `media-minio` |
-| FB | C1 | Backlog hàng đợi | `notification-worker` | queue của `notification-worker` |
-| FC | C2 | Giữ kết nối DB | `course` | `course-postgres` |
-| FD | C3 | Độ trễ nhà cung cấp LLM | `ai` (process chạm provider là `ai-worker`) | `ai-llm-provider` |
-| FE | C5 | Độ trễ dependency nhỏ | `identity` | `identity-postgres` |
+| FA | C4 (MVP) | Độ trễ dependency (MinIO) | `media` / `media-worker` | `media-minio` |
+| FB | C1 (Target) | Backlog hàng đợi | `notification-worker` | queue của `notification-worker` |
+| FC | C2 (MVP) | Độ trễ DB, chèn trễ trên kết nối `course` → `course-postgres` (ADR-006 viết lại; bản đầu là "giữ kết nối DB" do export CSV, không khớp code) | `course` | `course-postgres` |
+| FD | C3 (MVP) | Độ trễ nhà cung cấp LLM | `ai` (process chạm provider là `ai-worker`) | `ai-llm-provider` |
+| FE | C5 (Target) | Độ trễ dependency nhỏ | `identity` | `identity-postgres` |
 | FF | không có case riêng | Quá tải tài nguyên | bất kỳ service | instance (CPU/RSS); bằng chứng phụ cho C1–C2 |
-| FG | C6 | Độ trễ/ngắt xác thực | `identity` | `identity` |
-| FH | C7 | Lệch khóa ký | `identity` | `identity-jwks` |
+| FG | C6 (MVP) | Độ trễ/ngắt xác thực | `identity` | `identity` |
+| FH | C7 (Target) | Lệch khóa ký | `identity` | `identity-jwks` |
 
-Trạng thái kiểm chứng (29/10/2026, theo complex-case-catalogue): chỉ C6 đã chạy thật; C1–C5, C7 mới đo tín hiệu, chuỗi nhân quả của C1 sang `media-worker` là giả thuyết; C2 thiếu metric pool DB. Một case chỉ vào tập đánh giá khi chuỗi nhân quả đã chạy thật và có ground truth; case không tái lập được phải ghi lý do vào ledger, không âm thầm loại.
+Trạng thái kiểm chứng (cập nhật 17/11/2026): chỉ C6 đã chạy thật (smoke); C2, C3, C4 đã có cơ chế gây lỗi ([PR #75](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/75), tuần 13, chưa merge: proxy toxiproxy cho `course-postgres` và MinIO, `llm-stub` cho provider LLM) và đã đo đáp ứng cơ bản nhưng chưa pilot; C1, C5, C7 mới đo tín hiệu (theo complex-case-catalogue ngày 29/10/2026), chuỗi nhân quả của C1 sang `media-worker` là giả thuyết. Một case chỉ vào tập đánh giá khi chuỗi nhân quả đã chạy thật và có ground truth; case không tái lập được phải ghi lý do vào ledger, không âm thầm loại.
 
-**Evaluation floor (đề xuất chờ Đức xác nhận).** v1 dùng `5 scenarios × 3 repetitions = 15`. Theo evaluation-protocol-v1 mục 5.3, v2 dùng `K × R` với `K` là số case đủ điều kiện vào campaign và `R` là số repetition mỗi case; đề xuất `R = 3` thừa kế v1, tức 21 controlled fault runs nếu đủ bảy case (hiện trạng chỉ C6 chạy thật nên chưa có con số cố định), cộng healthy runs gồm normal traffic và healthy high-load spike để đo false positive/workload shift. Split validation/test và số healthy run chốt ở evaluation-protocol-v1; mọi báo cáo ghi rõ `K`, danh sách case và `R` thực tế.
+**Evaluation floor.** v1 dùng `5 scenarios × 3 repetitions = 15`. Theo evaluation-protocol-v1 mục 5.3, v2 dùng `K × R` với `K` là số case đủ điều kiện vào campaign và `R` là số repetition mỗi case. Bản đầu đề xuất `R = 3` (21 run nếu đủ bảy case); **ADR-006 chốt `4 × 5 = 20`** (C2, C3, C4, C6; 1 validation + 4 final test mỗi case), ADR-007 giữ làm sàn và thêm: mỗi case có ít nhất một run test đặt fault **trùng cao điểm tải** bán thực; biến thể cường độ/thời điểm để có 32–40 incident test là Target. Cộng healthy runs trên workload bán thực (ngày thường và cao điểm trước hạn quiz, mục 2.6) để đo false positive/workload shift. Split validation/test và số healthy run chốt ở evaluation-protocol-v1; mọi báo cáo ghi rõ `K`, danh sách case và `R` thực tế.
 
 Mỗi experiment run cần có provenance tối thiểu sau để tái lập và truy ngược kết quả:
 
@@ -129,6 +146,19 @@ Missing telemetry phải được biểu diễn rõ; không mặc định điề
 
 Mọi so sánh AI so với thủ công (RQ6) dùng cùng case, cùng `run_id`, cùng telemetry artifact và cùng thông tin triệu chứng khởi đầu; ground truth chỉ dùng chấm sau khi đã có kết luận.
 
+### 2.6. Điều kiện tiên quyết: độ thực của dữ liệu (ADR-007)
+
+Góp ý giữa kỳ yêu cầu traffic giả lập gần hành vi người dùng thật ([plan-v0.3 mục 0](../plan/plan-v0.3-24-weeks.md)). Nhóm **không** thêm RQ7 cho việc này: độ thực của workload là **điều kiện tiên quyết** để kết quả RQ1–RQ6 có giá trị, nên được kiểm chứng trước campaign và báo cáo cạnh mọi RQ. Lý do: Fang et al. đo được workload của các benchmark RCA cũ chỉ 0,14–4,35 (ví dụ trên Train-Ticket) QPS (Nezha-TT, Eadro-TT, RE2-TT, RE3-TT) và phủ ít service; với workload theo máy trạng thái (trung bình 16,47 QPS, phủ 42/50 service), Top-1 trung bình của 11 phương pháp chỉ còn 0,21 (FSE 2026, [arXiv 2510.04711](https://arxiv.org/abs/2510.04711), `[L-Fang2025]`). Tải càng đơn giản thì RCA càng trông giỏi hơn thực tế.
+
+**Nguồn tải** (chi tiết ở [workload-design-v1](../architecture/workload-design-v1.md)):
+
+- Học viên: **mức 2+**, phát lại phiên thật từ log Moodle Unistudium 2022 (Milani, Biondi, Franzoni, Đại học Perugia, [Zenodo 13763175](https://zenodo.org/records/13763175), CC BY 4.0, `[L-Unistudium]`; nhóm đã kiểm: 1 234 user, 208 109 sự kiện, 45 loại, 4 khóa, 91 ngày, timestamp tới giây). OULAD chỉ có tổng click theo ngày nên không phát lại được phiên (Kuzilek, Hlosta, Zdrahal, Scientific Data 2017, DOI [10.1038/sdata.2017.171](https://doi.org/10.1038/sdata.2017.171), `[L-OULAD]`); OULAD giữ vai trò kiểm tra vĩ mô và nguồn tham số mức 2.
+- Giảng viên, admin, job lịch: **mức 2** (máy trạng thái theo profile/goal), vì không có dữ liệu công khai.
+- Phần cần sinh thêm dùng ma trận chuyển học từ log theo cách của WESSBAS (Vögele et al., SoSyM 2018, DOI [10.1007/s10270-016-0566-5](https://doi.org/10.1007/s10270-016-0566-5), `[L-WESSBAS]`); thời điểm bắt đầu phiên theo Poisson không thuần nhất (Paxson & Floyd, IEEE/ACM ToN 1995, [PDF](https://www.icir.org/vern/papers/poisson.TON.pdf), `[L-PaxsonFloyd]`).
+- LLM agent chạy online **không** làm nguồn tải: UXAgent mất khoảng 8 giây mỗi bước (bản v2 của bài) (Lu et al. 2025, [arXiv 2504.09407](https://arxiv.org/abs/2504.09407), `[L-UXAgent]`); agent của AgentA/B chỉ 6,05 hành động/phiên so với 15,96 của người thật (Lu et al., CHI EA 2026, [arXiv 2504.09723](https://arxiv.org/abs/2504.09723), `[L-AgentAB]`); cấu hình "deterministic" vẫn cho kết quả khác nhau giữa các lần chạy (Atil et al. 2024, [arXiv 2408.04667](https://arxiv.org/abs/2408.04667), `[L-LLMNondet]`). Mức 3 offline (LLM sinh persona/nội dung một lần rồi đóng băng) là Stretch.
+
+**Tiêu chí** (ADR-007 mục 2, chốt trước khi đo): chia log thành phần xây và phần **hold-out**; ghi log gateway khi k6 chạy và so với hold-out về phân phối số thao tác/phiên và độ dài phiên (KS, ngưỡng D < 0,1), think time, tỉ lệ loại thao tác (Jensen–Shannon, ngưỡng < 0,05), hình dạng theo giờ, tỉ số đỉnh/trung bình, độ burst; trung vị lệch < ±10%. Chạy **cùng bộ đo cho ba nguồn tải** (mức 1 tốc độ hằng, mức 2 thuần giả định, bán thực); chỉ kết luận "giống thật" khi bán thực gần hold-out nhất. Các ngưỡng này là đề xuất của nhóm, chưa có chuẩn công bố; không đạt thì báo đúng số đo, không đổi ngưỡng sau khi xem kết quả.
+
 ## 3. RQ1 — Giá trị của telemetry đa nguồn
 
 ### 3.1. Câu hỏi
@@ -168,9 +198,14 @@ Detection candidates tối thiểu theo blueprint:
 
 RCA sử dụng cùng candidate set và cùng logic ranking cho các variant modality; chỉ thay phần evidence khả dụng tương ứng `M`, `M+T`, `M+T+L` để tránh confound không cần thiết.
 
+Theo ADR-007, RQ1 được đọc qua hai bằng chứng:
+
+- **E1** (phát hiện dưới tải bán thực): detector học máy fit trên run khỏe (robust z-score, Isolation Forest, điểm hợp nhất đa nguồn) so với **ngưỡng cố định**, đo báo động giả/giờ trên run khỏe có cao điểm trước hạn quiz, độ trễ phát hiện và recall trên run có lỗi (gồm run fault trùng cao điểm). Giả thuyết đăng ký trước: ngưỡng cố định báo động giả nhiều hơn ở cao điểm hợp lệ.
+- **E5** (ablation): bỏ từng modality khỏi engine đầy đủ và thay detector học máy bằng z-score, cùng feature và incident rule. Cách bỏ từng modality theo mẫu của Nezha (Yu et al., ESEC/FSE 2023, `[L-Nezha]`) và Eadro (Lee et al., ICSE 2023, `[L-Eadro]`).
+
 ### 3.5. Metrics
 
-**Detection/incident:** Precision, Recall, F1, False Positive Rate, Detection Delay.
+**Detection/incident:** Precision, Recall, F1, False Positive Rate, Detection Delay; với E1 thêm **báo động giả/giờ** (FP incident trên mỗi giờ run khỏe), báo riêng đoạn cao điểm.
 
 **RCA service-level:** Top-1 Accuracy, Top-3 Accuracy, Mean Reciprocal Rank; Average Rank dùng bổ sung.
 
@@ -215,6 +250,7 @@ Các thành phần không liên quan đến graph phải giữ cố định tron
 
 - Baseline chính: rank by anomaly severity.
 - Baseline/variant graph-aware đơn giản theo blueprint.
+- Bảng chính E2 đặt engine cạnh `base-manual-auto`, SimpleRCA, BARO, ngưỡng tĩnh, random và xếp hạng hằng (mục 8.4) trên cùng incident, để kết luận về graph không chỉ dựa trên so sánh nội bộ.
 - Proposed graph-aware hoặc graph-temporal-evidence ranker chỉ được đánh giá bằng cùng candidate set và cùng test runs.
 
 ### 4.5. Metrics
@@ -277,24 +313,19 @@ Detection Delay vẫn được báo cáo ở campaign chung nhưng không phải
 
 ### 6.2. Giả thuyết và phép so sánh
 
-Giả thuyết H4: performance sẽ suy giảm khi telemetry bị thiếu, trong đó graph-dependent RCA nhạy với trace loss hơn metrics-only detection; pipeline vẫn cần fallback có kiểm soát thay vì coi missing telemetry là giá trị `0`.
+Giả thuyết H4: performance sẽ suy giảm khi telemetry bị thiếu, trong đó graph-dependent RCA nhạy với trace loss hơn metrics-only detection; pipeline vẫn cần fallback có kiểm soát thay vì coi missing telemetry là giá trị `0`. Theo ADR-007 bổ sung H4b (đăng ký trước): khi trace bị lấy mẫu hoặc log mất liên kết, `base-manual-auto` (đi theo trace) suy giảm mạnh hơn RCA engine đa nguồn. Đây là tình huống thường gặp ở production vì trace thường được lấy mẫu để giữ overhead thấp (Sigelman et al., Dapper, Google TR 2010, [link](https://research.google/pubs/dapper-a-large-scale-distributed-systems-tracing-infrastructure/), `[L-Dapper2010]`).
 
-MVP chỉ cần **một robustness comparison focused**:
+**Thay đổi theo ADR-007 (E3).** Bản đầu yêu cầu MVP chỉ cần **một** robustness comparison focused (full so với một điều kiện suy giảm, chọn giữa trace dropping/sampling hoặc missing-modality; evaluation-protocol-v1 bản đầu chọn bỏ 50% trace theo whole-trace) và không mở rộng thành matrix. ADR-007 thay bằng bộ điều kiện **offline trên cùng run**:
 
 ```text
-full/baseline telemetry
-vs
-one controlled degraded-telemetry condition
+full telemetry (100% trace sampling)
+vs  giữ 50% trace (lấy mẫu cả trace, seed cố định)
+vs  giữ 10% trace (lấy mẫu cả trace, cùng seed; tập 10% nằm trong tập 50%)
+vs  log mất trace_id/span_id (log không còn nối sang trace)
+vs  mất một modality (bỏ M, hoặc T, hoặc L)
 ```
 
-Đây là **strict paired comparison** bắt buộc: full và degraded condition của mỗi pair phải được tạo từ cùng một baseline experiment run/raw telemetry artifact và dùng cùng ground truth. Không được dùng hai workload/fault run độc lập làm hai nhánh của cùng comparison.
-
-Điều kiện degraded được chốt ở evaluation-protocol-v1 theo một trong hai hướng canonical:
-
-1. controlled trace dropping/sampling simulation trên telemetry artifact; hoặc
-2. missing-modality evaluation.
-
-Không mở rộng thành matrix nhiều sampling level × nhiều modality combination trong MVP nếu chưa có nguồn lực.
+Mỗi điều kiện so với full là một **strict paired comparison**: full và degraded được tạo từ cùng một baseline experiment run/raw telemetry artifact và dùng cùng ground truth. Không được dùng hai workload/fault run độc lập làm hai nhánh của cùng comparison. Mỗi điều kiện chạy cho RCA engine và các baseline của bảng chính (`base-manual-auto`, SimpleRCA, BARO) để so mức suy giảm. Không mở rộng thêm nhiều mức sampling khác hay live sampling trong MVP (Target).
 
 Với topology v2, khi trace bị drop thì các async edge (RabbitMQ) và cạnh xác thực phải dùng fallback theo `message_id`/thời gian với confidence giảm (service-catalogue v2 mục 8); không synthesize trace link giả.
 
@@ -304,7 +335,7 @@ Với topology v2, khi trace bị drop thì các async edge (RabbitMQ) và cạn
 - Cùng baseline `run_id`, scenario, `repeat_index`, workload, fault, fault timing và ground truth cho cả full/degraded condition của mỗi pair.
 - Missingness flags/coverage metadata.
 - Cùng prediction/evaluation config version cho từng pair so sánh, trừ phần cấu hình degradation được ghi rõ.
-- `degradation_type`, `degradation_config_version`, `degradation_parameters` và `degradation_seed` nếu transformation có randomness.
+- `degradation_type` (`trace_keep`, `log_trace_context_drop`, `modality_drop`), `degradation_config_version`, `degradation_parameters` và `degradation_seed` nếu transformation có randomness.
 
 ### 6.4. Baseline/phương pháp
 
@@ -321,7 +352,7 @@ Với topology v2, khi trace bị drop thì các async edge (RabbitMQ) và cạn
 
 **System bổ sung:** runtime/artifact size nếu degradation mode làm thay đổi chi phí xử lý đáng kể.
 
-Kết quả cần báo cáo cả absolute metric của từng condition và mức suy giảm so với baseline; không tạo một robustness score tổng hợp duy nhất.
+Kết quả cần báo cáo cả absolute metric của từng condition và mức suy giảm so với baseline, theo từng phương pháp (engine và các baseline), kèm bootstrap CI 95% của delta; không tạo một robustness score tổng hợp duy nhất.
 
 ## 7. RQ5 — Trade-off kỹ thuật
 

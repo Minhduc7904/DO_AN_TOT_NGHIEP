@@ -2,6 +2,8 @@
 
 > **Task:** R-12 — [bảng task refactor](../plan/refactor/refactor-board-v1.md)
 >
+> **Cập nhật 17/11/2026 ([ADR-007](../adr/adr-007-semi-real-workload-and-ai-evidence-v1.md)):** dữ liệu healthy và fault lấy từ **workload bán thực**: học viên phát lại phiên thật từ log Moodle Unistudium 2022 (mức 2+), giảng viên/admin/job lịch dùng mức 2, mức 1 chỉ làm smoke và mốc giả lập đơn giản (mục 18.1); mỗi case MVP có ít nhất một run test đặt fault trùng cao điểm tải (mục 18.2). Đóng góp của engine được chứng minh bằng bộ bằng chứng E1–E8 (mục 1.1, 19): baseline RCA thêm **SimpleRCA** và **BARO** (mục 12.6); RQ4 cũ được thay bằng E3 quan sát suy giảm (mục 20); đối chứng ngoài trên RCAEval RE2 là E6, mức Target (mục 4.2, 18.4). Phát hiện kỹ thuật tuần 13 (Collector giữ series khoảng 5 phút sau khi runtime ngừng, nên `telemetry_silent` tính bằng counter) ghi ở mục 5.8 và 7.3. Code tuần 13 nằm ở các PR chưa merge: `aiops-platform/faults/` (PR #75), `load/` (PR #76), `training/` (PR #77, #79) — mục 3. Khi đoạn chi tiết mâu thuẫn, ADR-007 được ưu tiên.
+>
 > **Cập nhật 17/11/2026 ([ADR-006](../adr/adr-006-trim-project-scope-v1.md)):** RCA engine **hỗ trợ** người vận hành theo tên đề tài đã đăng ký; proposed ranker của MVP là "Hướng 1", "Hướng 2" (mục 12.4) là Stretch; `base-manual-auto` (mục 12.6) định nghĩa lại theo cách SRE làm thật; MCP/agent (mục 16) ra Out-of-scope; cạnh shared-resource và ablation tách theo loại cạnh xuống Target; bộ case MVP còn C2 (viết lại), C3, C4, C6. Khi đoạn chi tiết mâu thuẫn, ADR-006 được ưu tiên.
 >
 > **Cập nhật R-13:** `auth` và `student` đã gộp thành service `identity` ([ADR-005](../adr/adr-005-merge-auth-student-into-identity-v1.md)); tài liệu được sửa tại chỗ theo topology 7 service + 4 worker (11 runtime). Các số đo chưa đo lại sau khi gộp được ghi rõ ở chỗ dùng.
@@ -14,6 +16,9 @@
 >
 > - [ADR-002](../adr/adr-002-ai-primary-root-cause-analysis-v1.md): AI là bên truy vết nguyên nhân lỗi chính (quyết định nền của tài liệu này).
 > - [ADR-004](../adr/adr-004-service-access-token-and-api-surfaces-v1.md): service access token, nguồn của các cạnh xác thực.
+> - [ADR-006](../adr/adr-006-trim-project-scope-v1.md) và [ADR-007](../adr/adr-007-semi-real-workload-and-ai-evidence-v1.md): phạm vi MVP, workload bán thực, bộ bằng chứng E1–E8.
+> - [workload-design-v1](workload-design-v1.md) (PR #78, chưa merge): thiết kế workload mức 1, 2, 2+.
+> - [telemetry-data-dictionary-v2](telemetry-data-dictionary-v2.md) (PR #79, chưa merge): schema vật lý của artifact export và data-quality report.
 > - [service-catalogue-and-topology-v2](service-catalogue-and-topology-v2.md): 11 `service.name`, dependency graph, edge `e01–e29`, candidate set.
 > - [data-ownership-and-fault-matrix-v2](data-ownership-and-fault-matrix-v2.md): ownership dữ liệu, fault FA–FH.
 > - [http-and-event-contracts-v2](http-and-event-contracts-v2.md): command qua RabbitMQ, envelope, yêu cầu telemetry ở boundary.
@@ -25,7 +30,9 @@
 >
 > **Backend SUT scope, topology và implementation architecture:** [`backend-microservice-testbed-blueprint-v2.md`](backend-microservice-testbed-blueprint-v2.md) cùng [service-catalogue-and-topology-v2](service-catalogue-and-topology-v2.md) (bản cũ [`backend_microservice_testbed_blueprint.md`](backend_microservice_testbed_blueprint.md) còn nội dung v1).
 >
-> **WHEN/WHO:** [`../plan/plan-v0.3-24-weeks.md`](../plan/plan-v0.3-24-weeks.md).
+> **WHEN/WHO:** [`../plan/plan-v0.4-24-weeks.md`](../plan/plan-v0.4-24-weeks.md) (thay plan-v0.3 theo ADR-007).
+>
+> **Tài liệu tham khảo:** mã `[L-...]` trong tài liệu này trỏ tới [literature-matrix-v1](../plan/literature-matrix-v1.md); mỗi chỗ trích đều kèm link trực tiếp.
 
 Tài liệu này mô tả **mục tiêu, phạm vi và cách triển khai RCA engine**: ranh giới module, telemetry contract theo tín hiệu có thật của LMS testbed v2, data model, feature pipeline, phát hiện bất thường, incident, dependency graph v2, xếp hạng nguyên nhân gốc, bằng chứng, đầu ra `RcaIncidentResult`, xử lý case phức tạp, đánh giá, kiểm thử và Definition of Done. Phần MCP và agent là thành phần thứ yếu, mô tả ở mục 16.
 
@@ -58,7 +65,7 @@ telemetry ingestion
 
 Vai trò AI là **chính** (ADR-002): từ phát hiện bất thường tới kết luận, không bước nào cần người can thiệp. Người đọc (developer/SRE, người chấm đồ án) nhận kết quả đã có xếp hạng và bằng chứng, không phải bên chọn nguyên nhân. Hai khẳng định đi kèm:
 
-- Mục tiêu đo được là engine tìm được nguyên nhân gốc ở những case mà truy vết thủ công theo đường request không tìm ra (mục 15), không chỉ ở case dễ.
+- Mục tiêu đo được là engine tìm được nguyên nhân gốc ở những case mà truy vết thủ công theo đường request không tìm ra (mục 15), không chỉ ở case dễ. Theo [ADR-007](../adr/adr-007-semi-real-workload-and-ai-evidence-v1.md) mục 3, khi quan sát đầy đủ và tải đơn giản thì luật đơn giản hoặc người có thể đã đủ — nghiên cứu gần đây cho thấy baseline đơn giản thường ngang hoặc thắng phương pháp phức tạp (`[L-Pham2024ASE]` [Pham et al., ASE 2024](https://arxiv.org/abs/2408.13729); SimpleRCA thắng SOTA trên 7/11 bộ dữ liệu (Top@1), `[L-Fang2025]` [Fang et al. 2025](https://arxiv.org/abs/2510.04711)). Vì vậy giá trị của engine được đo ở bốn chỗ: **phát hiện** sự cố trong nhiễu của tải bán thực (E1), **giữ độ chính xác khi quan sát bị thiếu** (E3), **giảm công sức và thời gian** chẩn đoán (E4, E7), và chạy **tự động, ổn định** trên mọi incident (E2, E8); case engine chỉ hòa hoặc thua baseline được báo cáo đầy đủ.
 - Đầu ra vẫn là xếp hạng ứng viên có bằng chứng, không tuyên bố causal proof chỉ từ telemetry quan sát.
 
 RCA engine chạy ngoài luồng (out-of-band), không tham gia business request path của LMS.
@@ -105,7 +112,7 @@ Khi chạy suy luận hoặc giám sát, engine không có quyền đọc ground
 
 ### 2.3. Ngoài phạm vi module
 
-- Workload k6 (`aiops-platform/load/`) và fault injector (`aiops-platform/faults/`): thuộc mảng AI nhưng là module riêng, không nằm trong RCA engine; chưa có trong repository.
+- Workload k6 (`aiops-platform/load/`) và fault injector (`aiops-platform/faults/`): thuộc mảng AI nhưng là module riêng, không nằm trong RCA engine. Đã có code ở PR tuần 13 chưa merge: lớp fault (toxiproxy, `llm-stub`, CLI `fault-control`, [PR #75](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/75)) và k6 mức 1 ([PR #76](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/76)); workload bán thực mức 2+ và fault manifest làm ở tuần 14 của [plan-v0.4](../plan/plan-v0.4-24-weeks.md).
 - Orchestration thí nghiệm và lưu run ledger.
 - Bộ đánh giá chỉ nhận prediction + ground truth để tính metric, không tham gia suy luận.
 - Grafana quan sát telemetry gốc, không thay thế pipeline.
@@ -114,14 +121,14 @@ Khi chạy suy luận hoặc giám sát, engine không có quyền đọc ground
 
 ## 3. Cấu trúc source code
 
-Repository hiện chỉ có `aiops-platform/observability/`. ADR-002 đặt mã huấn luyện, MCP và agent trong `aiops-platform/`; catalogue v0 dùng `aiops-platform/training/` cho nơi lưu kết quả và `aiops-platform/mcp/`, `aiops-platform/agent/` cho phần thứ yếu. Cấu trúc dưới đây là **đề xuất chờ xác nhận**; chỉ tạo thư mục khi có implementation thật.
+Trên `main`, repository chỉ có `aiops-platform/observability/`; ba module dưới đây đã có code ở các PR tuần 13 chưa merge (thứ tự merge dự kiến #75 → #76 → #77 → #79). ADR-002 đặt mã huấn luyện, MCP và agent trong `aiops-platform/`; catalogue v0 dùng `aiops-platform/training/` cho nơi lưu kết quả và `aiops-platform/mcp/`, `aiops-platform/agent/` cho phần thứ yếu (MCP/agent đã ra Out-of-scope theo ADR-006). Các thư mục con chưa có code vẫn là **đề xuất chờ xác nhận**; chỉ tạo khi có implementation thật.
 
 ```text
 aiops-platform/
 ├── observability/          # đã có: Collector, Prometheus, Tempo, Loki, Grafana
-├── faults/                 # chưa có: fault injector (mảng AI)
-├── load/                   # chưa có: workload k6 (mảng AI)
-├── training/               # chưa có: RCA engine, huấn luyện, đánh giá; tên thư mục chờ xác nhận
+├── faults/                 # PR #75: overlay compose.faults.yaml, toxiproxy (3 proxy), llm-stub, fault-control.mjs
+├── load/                   # PR #76: k6 mức 1 (scenarios/level-1.js, journeys/w1–w7, run-k6.sh); mức 2+, mức 2 ở tuần 14
+├── training/               # PR #77, #79: gói Python `aiops-training`; hiện có telemetry/adapters và telemetry/validation
 │   ├── telemetry/
 │   ├── features/
 │   ├── anomaly/
@@ -136,6 +143,8 @@ aiops-platform/
 ```
 
 Gói `training/` dùng chung cho huấn luyện và suy luận (cùng code feature, graph, rca). Việc huấn luyện đọc dataset trực tiếp, không qua MCP (ADR-002).
+
+Hiện trạng code của `training/` (PR #77, #79; chi tiết ở [README của training](../../../aiops-platform/training/README.md) trên nhánh PR): package nằm ở `src/aiops_training/`, CLI `uv run aiops-training export` (ghi `artifacts/<run_id>/{metrics,spans,logs}.parquet` + `manifest.json`, schema `telemetry.v2`) và `uv run aiops-training quality` (ghi `quality-report.json`). Đã có `telemetry/adapters/` (`prometheus.py`, `tempo.py`, `loki.py`), `telemetry/validation/quality.py`, cùng `telemetry/schema.py` (cột của ba bảng), `telemetry/export.py`, `telemetry/window.py`, `telemetry/identity.py` — tức `schemas/` và `alignment/` của cây đề xuất dưới đây hiện là file đơn, chưa tách thư mục. Ý nghĩa từng cột và data-quality report: [telemetry-data-dictionary-v2](telemetry-data-dictionary-v2.md) (PR #79). Các module `features`, `anomaly`, `incident`, `graph`, `rca`, `evidence`, `evaluation` chưa có (tuần 14 trở đi).
 
 Mỗi module có thể tổ chức nội bộ như sau:
 
@@ -167,7 +176,7 @@ training/
 │   ├── validation/
 │   └── schemas/
 ├── rca/
-│   ├── baselines/         # gồm baseline "thủ công" tự động
+│   ├── baselines/         # baseline "thủ công" tự động, SimpleRCA, BARO, random/constant (mục 12.6)
 │   ├── ranking/
 │   ├── verdict/
 │   └── configs/
@@ -181,7 +190,8 @@ training/
     ├── rca/
     ├── manual-baseline/
     ├── ablation/
-    ├── robustness/
+    ├── robustness/         # E3: biến thể quan sát suy giảm (mục 20)
+    ├── external/           # E6 (Target): adapter RCAEval RE2 (mục 18.4)
     └── reports/
 ```
 
@@ -193,13 +203,15 @@ Không tạo root `backend/`, `models/`, `notebooks/` hoặc `dashboard/` cạnh
 
 | Nhu cầu | Công nghệ định hướng |
 | --- | --- |
-| Ngôn ngữ | Python |
-| Tabular/dataframe | pandas hoặc Polars; chốt một lựa chọn sau pilot |
+| Ngôn ngữ | Python 3.12 (đã dùng ở PR #77) |
+| Môi trường, đóng gói | uv (`pyproject.toml` + `uv.lock`), lint/format bằng ruff, test bằng pytest (đã dùng ở PR #77) |
+| Gọi API backend | httpx (adapter Prometheus/Tempo/Loki, PR #77) |
+| Tabular/dataframe | Export và quality check đọc/ghi bảng bằng pyarrow trực tiếp; pandas hoặc Polars cho feature **chưa chọn**, chốt khi viết feature pipeline (tuần 14) |
 | Numerical/statistics | NumPy, SciPy |
 | Machine learning | scikit-learn |
 | Graph | NetworkX hoặc cấu trúc graph nội bộ tương đương |
 | Schema/validation | Pydantic hoặc dataclass + validator |
-| Artifact table | Parquet ưu tiên; CSV chỉ cho export đơn giản |
+| Artifact table | Parquet (nén zstd, đã dùng cho artifact export); CSV chỉ cho export đơn giản |
 | Kết quả RCA | JSON bất biến theo schema catalogue v0 mục 5 |
 | Prediction/config | JSON hoặc YAML có version |
 | CLI | Python CLI tối giản |
@@ -212,7 +224,7 @@ Không thêm Celery, Kafka hoặc distributed compute nếu CLI/background worke
 
 - online change-point detector;
 - log-template parser nâng cao;
-- external benchmark adapter;
+- external benchmark adapter cho RCAEval RE2 — bằng chứng **E6**, mức Target theo ADR-007 (mục 18.4);
 - causal/statistical analysis trên top-N candidate;
 - job queue bất đồng bộ nếu thời lượng xử lý thực tế chứng minh cần thiết;
 - RCA mức component hoặc instance chỉ sau service-level MVP;
@@ -269,10 +281,10 @@ Ghi chú sử dụng:
 Mọi runtime xuất span OTLP, 100% sampling. Span có các kind `SERVER`, `CLIENT`, `PRODUCER`, `CONSUMER`:
 
 - Luồng bất đồng bộ qua outbox **nối vào trace của request gây ra nó**: command ghi `traceparent` vào envelope lúc enqueue, relay phát lại với đúng context đó. Span `PRODUCER` và `CONSUMER` cùng `trace_id` với span HTTP gốc. Ma trận 9 luồng và tập service trong mỗi trace nằm ở catalogue v0 mục 1.2 và được kiểm tự động bởi `tracing-smoke`.
-- Span `PRODUCER` thuộc **tiến trình relay**, không nhất thiết thuộc service sở hữu command (ví dụ outbox của `notification` có thể được phát bởi `notification` hoặc `notification-worker`). Quy về chủ sở hữu bằng queue đích hoặc command catalogue ([contract v2 mục 6.3](http-and-event-contracts-v2.md)), không bằng `service.name` của span PRODUCER.
+- Span `PRODUCER` thuộc **tiến trình relay**, không nhất thiết thuộc service sở hữu command (ví dụ outbox của `notification` có thể được phát bởi `notification` hoặc `notification-worker`). Quy về chủ sở hữu bằng queue đích hoặc command catalogue ([contract v2 mục 6.3](http-and-event-contracts-v2.md)), không bằng `service.name` của span PRODUCER. Lệch đã biết (17/11/2026): relay outbox chạy trong `notification-worker` vẫn ghi `dependency_identity = notification-rabbitmq` thay vì `notification-worker-rabbitmq` ([telemetry-and-ground-truth-schema-v1](telemetry-and-ground-truth-schema-v1.md) mục 3.2.4), nên cũng không quy cạnh async theo `dependency_identity` của span PRODUCER.
 - Các span chủ chốt có tên theo `dependency_identity` (ví dụ `identity-postgres *`, `ai-llm-provider POST chat/completions`, `media-minio *`) và CONSUMER theo tên queue (ví dụ `media-worker--generate-media-thumbnail-v1`).
-- Trace gây nhiễu cần lọc: `scheduler-worker` tạo trace gốc cho mỗi lần thăm dò DB (mỗi giây) và mọi runtime tạo trace cho `/ready`. Engine lọc theo `http_route_template`/`operation_name` ở tầng adapter.
-- Tempo của testbed bị OOM-kill khi truy vấn hàng nghìn trace song song (giới hạn 512 MiB). Adapter phải truy vấn tuần tự, giới hạn khoảng thời gian và số trace; không kéo trace hàng loạt.
+- Trace gây nhiễu cần lọc: `scheduler-worker` tạo trace gốc cho mỗi lần thăm dò DB (mỗi giây) và mọi runtime tạo trace cho `/ready`. Engine lọc theo `http_route_template`/`operation_name` ở tầng adapter. Đã cài ở adapter Tempo (PR #77): loại theo tên span gốc `GET /ready`, `GET /health` và `scheduler-postgres run.claim-next|run.fail-exhausted|job.lock-due-cron` ngay ở bước tìm, số bị loại ghi vào manifest (run thử k6 mức 1 2 phút: 1 004 trace nhiễu bị loại, 721 trace giữ lại).
+- Tempo của testbed bị OOM-kill khi truy vấn hàng nghìn trace song song (giới hạn 512 MiB). Adapter phải truy vấn tuần tự, giới hạn khoảng thời gian và số trace; không kéo trace hàng loạt. Adapter PR #77 tìm theo lát 30 giây, tải từng trace tuần tự (khoảng 0,1 giây mỗi trace), dời trace lỗi xuống cuối và tải lại vì Tempo thỉnh thoảng khựng gây `ReadTimeout`; run 30 phút tải mức 1 cần khoảng 15–20 phút export (đo 17/11/2026).
 
 Mỗi span cần các field logic:
 
@@ -294,7 +306,7 @@ dependency_identity
 command_name, queue, attempt   # span PRODUCER/CONSUMER
 ```
 
-Controlled baseline dùng 100% trace sampling. MVP robustness có thể mô phỏng trace dropping/sampling trên telemetry artifact; live sampling thấp hơn baseline chỉ thuộc expanded Target.
+Controlled baseline dùng 100% trace sampling. Robustness MVP (E3, mục 20) mô phỏng giữ 50% và 10% trace trên telemetry artifact; live sampling thấp hơn baseline chỉ thuộc expanded Target.
 
 ### 5.4. Log có thật (Loki)
 
@@ -303,7 +315,7 @@ Controlled baseline dùng 100% trace sampling. MVP robustness có thể mô ph�
 - access log `http.server.request` cho mỗi request HTTP (trừ `/health`);
 - log lỗi dependency `dependency.failure` kèm `dependency_identity`, `error_type`, `trace_id`, `span_id` (đã kiểm `span_id` trỏ đúng span CLIENT lỗi).
 
-Worker chỉ có access log `/ready`; **không có log khi xử lý command** (mục 5.5). Do đó log là modality yếu hơn metric và trace ở phía worker; feature log chỉ nên dựa vào `dependency.failure` và access log.
+Worker chỉ có access log `/ready`; **không có log khi xử lý command** (mục 5.5). Do đó log là modality yếu hơn metric và trace ở phía worker; feature log chỉ nên dựa vào `dependency.failure` và access log. Đo 17/11/2026 (export PR #77): sau khi lọc access log của probe, cả 4 worker không còn dòng log nào, nên quality report ghi log của worker là `not_instrumented` (không phải `missing_logs`); chỉ 7 runtime có log nghiệp vụ.
 
 Log tối thiểu:
 
@@ -368,6 +380,8 @@ Mỗi run (và mỗi cửa sổ giám sát thật) có báo cáo kiểm tra theo
 
 Run vi phạm ngưỡng data quality phải được đánh dấu `invalid` hoặc `partial`, không âm thầm đưa vào evaluation chính. Cổng chất lượng theo run/artifact (`pass | partial | fail`) và luật lọc nhiễu được protocol quy định ở [evaluation-protocol-v1](evaluation-protocol-v1.md) mục 8.
 
+Hiện trạng (PR #79): lệnh `uv run aiops-training quality artifacts/<run_id>` đã cài phần lớn các kiểm tra trên và ghi `quality-report.json` với trạng thái từng runtime theo từng modality, cờ `telemetry_silent`, `not_instrumented` và `overall_status`; định nghĩa từng trường ở [telemetry-data-dictionary-v2](telemetry-data-dictionary-v2.md) mục 8. Phát hiện quan trọng khi cài: **khi một runtime ngừng (chết, `docker pause`), OTel Collector vẫn xuất giá trị cuối của mọi series thêm khoảng 5 phút**, nên Prometheus vẫn có mẫu mỗi 5 giây với giá trị đứng yên (đo: pause `scheduler` 70 giây). "Có mẫu hay không" vì thế không cho biết runtime còn sống; quality check và feature phải xem bộ đếm `process_cpu_time_seconds_total` có tăng hay không (mục 7.3).
+
 ## 6. Mô hình dữ liệu phân tích
 
 Schema thực tế có thể dùng Pydantic/Parquet/JSON nhưng phải giữ các field logic dưới đây. Schema của telemetry chuẩn hóa, `RunGroundTruth` và `TelemetryQualityReport` nằm ở [telemetry-and-ground-truth-schema-v1](telemetry-and-ground-truth-schema-v1.md); schema `RcaIncidentResult` nằm ở catalogue v0 mục 5 (xem mục 14).
@@ -382,8 +396,9 @@ AnalysisContext
 - window: { start, end }
 - code_commit
 - service_versions
-- telemetry_schema_version
+- telemetry_schema_version        # artifact export hiện ghi `telemetry.v2` (PR #77)
 - telemetry_artifact              # tham chiếu TelemetryArtifactManifest
+- workload_level                  # 1 | 2 | 2+ (ADR-007); kèm phiên bản/hash file phiên khi là 2+
 - feature_schema_version
 - feature_config_version
 - detector_config_version
@@ -394,7 +409,7 @@ AnalysisContext
 - environment_profile
 ```
 
-`RunGroundTruth` (fault_type, root_cause_service, root_cause_component, fault_start, fault_end, cường độ) chỉ được nạp ở bước dựng nhãn huấn luyện và bước đánh giá offline. Các giá trị `fault_type` đang dùng trong catalogue v0 gồm `queue_backlog`, `dependency_latency`, `db_connection_hold`, `dependency_unavailable`, `config_drift`.
+`RunGroundTruth` (fault_type, root_cause_service, root_cause_component, fault_start, fault_end, cường độ) chỉ được nạp ở bước dựng nhãn huấn luyện và bước đánh giá offline. Các giá trị `fault_type` đang dùng trong catalogue v0 gồm `queue_backlog`, `dependency_latency`, `dependency_unavailable`, `config_drift` (C2 đổi từ `db_connection_hold` sang `dependency_latency` theo ADR-006). `workload_level` là ngữ cảnh, không phải nhãn: engine được biết loại tải để báo cáo, nhưng không dùng nó làm feature.
 
 ### 6.2. ServiceWindowFeature
 
@@ -617,7 +632,13 @@ log source không khả dụng
 
 Mỗi feature cần cờ missing tương ứng. Imputation phải fit từ training data và được version hóa. Không điền `0` máy móc.
 
-Service **im lặng** (không có metric lẫn span trong window dù trước đó có) là một trạng thái riêng, cờ `telemetry_silent`. Trường hợp điển hình là C6: `docker pause` `identity` làm `identity` ngừng xuất telemetry, nên bằng chứng trực tiếp về `identity` là sự vắng mặt. Việc dùng `telemetry_silent` làm feature là **đề xuất chưa kiểm chứng**; cần phân biệt với service ít traffic bình thường (ví dụ `scheduler`, `scheduler-worker`).
+Service **im lặng** (runtime ngừng hoạt động dù trước đó vẫn sống) là một trạng thái riêng, cờ `telemetry_silent`. Trường hợp điển hình là C6: `docker pause` `identity` làm `identity` ngừng xuất telemetry, nên bằng chứng trực tiếp về `identity` là sự vắng mặt.
+
+Định nghĩa đã sửa theo số đo tuần 13 ([telemetry-data-dictionary-v2](telemetry-data-dictionary-v2.md) mục 8.2, PR #79): **im lặng không có nghĩa là thiếu mẫu**. Collector giữ và tiếp tục xuất giá trị cuối của mọi series khoảng 5 phút sau khi runtime ngừng gửi, nên trong khoảng đó latency, request count, CPU của runtime đã chết vẫn có mẫu mỗi 5 giây nhưng "phẳng". Runtime bị gắn `telemetry_silent` khi bộ đếm `process_cpu_time_seconds_total` **không tăng** lâu hơn `silent_threshold_s` (khởi đầu 30 giây = 6 chu kỳ; một process Node đang sống luôn tiêu khoảng 0,004 giây CPU mỗi 5 giây). Hệ quả cho feature:
+
+- feature dựa trên **mức tăng của counter** (rate = 0 khi đứng yên) và cờ `telemetry_silent`, không dựa trên "có mẫu hay không"; gauge và giá trị đứng yên trong khoảng im lặng không được coi là quan sát bình thường;
+- bộ đếm lỗi xuất hiện lần đầu giữa cửa sổ (ví dụ `lms_dependency_request_count_total{status="unavailable"}`) là **series mới**: `increase()`/`rate()` của Prometheus bỏ mẫu đầu nên có thể trả 0 cho đợt lỗi đầu tiên; artifact giữ giá trị thô và feature stage coi giá trị trước đó là 0;
+- cờ đã chạy đúng trên một lần đo (pause `scheduler` 70 giây → `telemetry_silent:scheduler`, 10 runtime còn lại không bị gắn cờ); việc dùng `telemetry_silent` làm **feature** cho RCA vẫn là đề xuất chưa kiểm chứng; cần phân biệt với service ít traffic bình thường (ví dụ `scheduler`, `scheduler-worker`), vốn vẫn có CPU tăng.
 
 ### 7.4. Normalization
 
@@ -748,6 +769,8 @@ Feature schema thay đổi phải tăng version; model/config phải ghi feature
 ## 9. Anomaly detection
 
 Bước này là phần đầu của chuỗi kết luận tự động: không có người lọc cảnh báo trước khi incident được mở. Vì vậy đo false positive trên healthy (kể cả tải cao khỏe) là bắt buộc.
+
+Bằng chứng **E1** của [ADR-007](../adr/adr-007-semi-real-workload-and-ai-evidence-v1.md) đặt ở bước này: detector học máy (fit trên run khỏe) so với cảnh báo ngưỡng cố định (Baseline A, mô phỏng cách vận hành thủ công) trên **workload bán thực** — báo động giả mỗi giờ trên run khỏe có cao điểm trước hạn quiz, độ trễ phát hiện và recall trên run có lỗi. Lý do: tải thật có đỉnh và độ burst lớn hơn nhiều tải tốc độ hằng (tính sơ bộ trên log Unistudium ngày 17/11/2026: ngày cao điểm có khoảng 7 lần số sự kiện của ngày trung bình, kèm 693 lượt nộp quiz, `[L-Unistudium]` [Franzoni et al., Zenodo 13763175](https://zenodo.org/records/13763175)), nên ngưỡng cố định dễ báo giả; benchmark có workload đơn giản làm phương pháp trông tốt hơn thực tế (`[L-Fang2025]` [Fang et al. 2025](https://arxiv.org/abs/2510.04711)).
 
 ### 9.1. Baseline A — Static threshold
 
@@ -1121,7 +1144,7 @@ w5 = 0.10
 
 **Hướng 2 — ranker học từ dữ liệu fault injection** (đề xuất chờ xác nhận): mỗi cặp (incident, candidate) là một dòng đặc trưng gồm năm component score, đặc trưng đồ thị (khoảng cách tới symptom theo từng loại cạnh, có hay không cạnh async/auth/shared tới symptom, số service symptom ở hạ lưu, độ rộng của bằng chứng) và nhãn "trùng ground truth". Mô hình xếp theo xác suất (ví dụ hồi quy logistic hoặc gradient boosting của scikit-learn) hoặc learning-to-rank; loại mô hình chưa chọn. Ràng buộc:
 
-- cần dữ liệu fault có nhãn dành cho huấn luyện: evaluation-protocol-v1 mục 5.3 coi đây là protocol extension riêng và cấm dùng lại run fault của validation/test; với số run `K × R` ở hiện trạng (chỉ C6 đã chạy), dữ liệu có thể không đủ để học, nên Hướng 1 là phương án thực tế;
+- cần dữ liệu fault có nhãn dành cho huấn luyện: evaluation-protocol-v1 mục 5.3 coi đây là protocol extension riêng và cấm dùng lại run fault của validation/test; với số run `K × R` ở hiện trạng (4 case MVP × `R = 5`, chưa có run fault nào ngoài smoke), dữ liệu có thể không đủ để học, nên Hướng 1 là phương án thực tế;
 - đo khái quát hóa theo case/target chưa thấy nếu đủ số case (leave-one-case-out là đề xuất);
 - số run fault có thể quá ít để học ổn định; nếu ranker học không vượt Hướng 1 và các baseline, báo cáo trung thực thay vì giữ ranker phức tạp;
 - đặc trưng không được chứa trực tiếp tên fault hoặc nhãn.
@@ -1161,10 +1184,14 @@ Phải có tối thiểu:
 1. **Max anomaly:** rank theo anomaly score.
 2. **Earliest anomaly:** rank theo estimated onset.
 3. **Graph-aware simple:** anomaly + graph relation/centrality hoặc propagation rule đơn giản (chỉ cạnh sync).
-4. **Baseline thủ công tự động** (đối chứng theo ADR-002, định nghĩa lại ở [ADR-006](../adr/adr-006-trim-project-scope-v1.md)): từ symptom, lấy trace lỗi/chậm nhất trong cửa sổ incident, đi theo span CLIENT lỗi hoặc chậm sâu nhất (kể cả qua cạnh async/auth) và kết luận service sở hữu span đó; đo lặp được. Baseline không bị cố ý giới hạn trong đường request; tên `base-manual-auto`, chạy trên cùng run, cùng candidate set và xuất cùng schema `RcaIncidentResult` (evaluation-protocol-v1 mục 15.2). Luật chi tiết (ngưỡng nào, tìm trace thế nào, đổi trace thành ranking ra sao) là đề xuất chưa viết; version hóa, chọn trên validation, freeze trước final test. Protocol còn đưa constant ranking và random ranking làm mốc diagnostic.
-5. **Proposed method:** Hướng 1 hoặc Hướng 2 (mục 12.4).
+4. **Baseline thủ công tự động** (đối chứng theo ADR-002, định nghĩa lại ở [ADR-006](../adr/adr-006-trim-project-scope-v1.md)): từ symptom, lấy trace lỗi/chậm nhất trong cửa sổ incident, đi theo span CLIENT lỗi hoặc chậm sâu nhất (kể cả qua cạnh async/auth) và kết luận service sở hữu span đó; đo lặp được. Baseline không bị cố ý giới hạn trong đường request; tên `base-manual-auto`, chạy trên cùng run, cùng candidate set và xuất cùng schema `RcaIncidentResult` (evaluation-protocol-v1 mục 15.2). Luật chi tiết (ngưỡng nào, tìm trace thế nào, đổi trace thành ranking ra sao) là đề xuất chưa viết; version hóa, chọn trên validation, freeze trước final test. Protocol còn đưa constant ranking và random ranking làm mốc diagnostic. Về bản chất `base-manual-auto` gần TraceRCA (service có nhiều trace bất thường đi qua được nghi cao, `[L-TraceRCA]` [Li et al., IWQoS 2021](https://github.com/NetManAIOps/TraceRCA)); ở C2, C3, C4 span lỗi/chậm nằm ngay trong trace nên baseline này có thể đã đủ khi quan sát đầy đủ (ADR-007, phần Bối cảnh).
+5. **SimpleRCA** (thêm theo [ADR-007](../adr/adr-007-semi-real-workload-and-ai-evidence-v1.md), bảng chính E2): mỗi modality bật cảnh báo bằng luật đơn giản — metric vượt 3-sigma hoặc P95 so với baseline khỏe, trace có P95 ≥ 3 lần baseline, log có từ khóa lỗi — rồi xếp service theo **số cảnh báo**, nhiều nhất đứng đầu. Fang et al. cho thấy luật này thắng các phương pháp SOTA trên 7/11 bộ dữ liệu (Top@1) công khai (ví dụ RE2-OB Top-1 0,47 so với BARO 0,14) nhưng thua ở một số bộ (Eadro-TT 0,81 so với 0,99), và cảnh báo benchmark hiện tại "may overstate progress" (`[L-Fang2025]` [Fang et al. 2025, arXiv 2510.04711](https://arxiv.org/abs/2510.04711)). Ngưỡng của luật chọn trên validation như mọi baseline khác.
+6. **BARO** (thêm theo ADR-007, bảng chính E2): phát hiện điểm thay đổi đa biến bằng Bayesian online change point detection trên metric, rồi xếp hạng chuỗi theo kiểm định phi tham số (độ lệch median, chuẩn hóa bằng IQR) giữa đoạn trước và sau thời điểm thay đổi (`[L-BARO]` [Pham et al., FSE 2024, arXiv 2405.09330](https://arxiv.org/abs/2405.09330)). Có cài đặt sẵn trong RCAEval (giấy phép MIT, `[L-RCAEval]` [Pham et al., WWW 2025 Companion](https://github.com/phamquiluan/RCAEval)), chạy khoảng 0,01 giây mỗi case và bền khi thời điểm lỗi ước lượng lệch (`[L-Pham2024ASE]` [Pham et al., ASE 2024](https://arxiv.org/abs/2408.13729)). Engine chỉ dùng BARO làm baseline; chuỗi metric đưa vào lấy từ artifact export của cùng run, quy về service bằng `service_name` (cách quy đổi chốt khi cài, chưa kiểm chứng).
+7. **Proposed method:** Hướng 1 hoặc Hướng 2 (mục 12.4).
 
-PageRank-like ranking có thể là baseline bổ sung. Causal/statistical analysis trên top-N là Stretch. Thử nghiệm với người thật dùng Grafana/Tempo/Loki để đo thời gian chẩn đoán (ADR-002) bổ sung cho baseline tự động, không thay thế.
+Bảng chính E2 (ADR-007 mục 3) đặt engine cạnh random, xếp hạng hằng, ngưỡng tĩnh, `base-manual-auto`, SimpleRCA và BARO; chỉ số chính Top-1 và MRR, kèm Top-3; báo cáo theo từng case, kèm bootstrap CI 95% và kiểm định ghép cặp McNemar exact (mục 19.3). Max anomaly, Earliest anomaly và Graph-aware simple vẫn chạy làm baseline nội bộ của engine.
+
+PageRank-like ranking có thể là baseline bổ sung. Causal/statistical analysis trên top-N là Stretch. Thử nghiệm với người thật dùng Grafana/Tempo/Loki để đo thời gian chẩn đoán (ADR-002) là E7, mức Target theo ADR-007 (mục 19.4); nó bổ sung cho baseline tự động, không thay thế.
 
 ### 12.7. Tie-breaking và determinism
 
@@ -1300,9 +1327,9 @@ Danh mục đầy đủ (kịch bản gây lỗi, triệu chứng, ground truth,
 | Case | Gốc → triệu chứng | Cạnh/cơ chế engine cần | Tín hiệu chính và giới hạn | Trạng thái (catalogue v0) |
 | --- | --- | --- | --- | --- |
 | C1 | `notification-worker` → `media` (`upload-complete` timeout) | `async` + `shared-resource` (broker, PostgreSQL); queue của worker tiêu thụ | `rabbitmq_detailed_queue_messages_ready{service_name="notification-worker"}` tăng; CONSUMER của `media-worker` bắt đầu muộn so với PRODUCER. Không có cạnh gọi giữa hai bên | Đã đo tín hiệu; chuỗi lan sang `media-worker` là **giả thuyết**, cần chạy thật |
-| C2 | `course` (export CSV giữ kết nối DB) → `gateway-course` p95 tăng | `dependency` (`course-postgres`) | `lms_dependency_duration_seconds` của `course-postgres` tăng đồng loạt theo mọi `operation_name`; CPU/RSS của `course`. Thiếu metric pool, không phân biệt "pool cạn" và "DB chậm" | Đã đo tín hiệu |
-| C3 | `ai` (`ai-llm-provider` chậm) → job AI kẹt, `course` lỗi muộn | `dependency` + vòng `course → ai → course`; quy về owner `ai` cho process `ai-worker` | Span CLIENT `ai-llm-provider POST chat/completions` dài hoặc lỗi; CONSUMER `run-ai-job` kéo dài; lỗi muộn ở `ai-worker-course` | Đã đo tín hiệu; stub chậm chưa chạy |
-| C4 | `media` (`media-minio` chậm) → thumbnail kẹt → `scheduler-worker` xóa media | `dependency` (`media-minio`) + `async` + bàn giao qua DB tới `scheduler-worker` | Span `media-minio *` chậm/lỗi; trace "Dọn media theo lịch" có số `remove-object` bất thường. `scheduler` và `scheduler-worker` không cùng trace; lỗi lộ muộn nhiều phút | Đã đo tín hiệu; cơ chế chèn trễ chưa chạy |
+| C2 | `course` (chèn trễ trên kết nối `course` → `course-postgres`, viết lại theo ADR-006) → `gateway-course` p95 tăng | `dependency` (`course-postgres`) | `lms_dependency_duration_seconds` của `course-postgres` tăng đồng loạt theo mọi `operation_name`; CPU/RSS của `course`. Thiếu metric pool, không phân biệt "pool cạn" và "DB chậm" | Cơ chế gây lỗi đã chạy ở mức smoke (proxy `course-to-postgres`, PR #75: trễ 200 ms → p50 `course-postgres` khoảng 0,175 s); chưa pilot đầy đủ |
+| C3 | `ai` (`ai-llm-provider` chậm) → job AI kẹt, `course` lỗi muộn | `dependency` + vòng `course → ai → course`; quy về owner `ai` cho process `ai-worker` | Span CLIENT `ai-llm-provider POST chat/completions` dài hoặc lỗi; CONSUMER `run-ai-job` kéo dài; lỗi muộn ở `ai-worker-course` | Cơ chế gây lỗi đã chạy ở mức smoke (`llm-stub`, PR #75: trễ 2000±500 ms → lời gọi provider trung bình 2,36 s; `error_rate` 1 → job `FAILED` `AI_PROVIDER_ERROR`); chưa pilot đầy đủ |
+| C4 | `media` (`media-minio` chậm) → thumbnail kẹt → `scheduler-worker` xóa media | `dependency` (`media-minio`) + `async` + bàn giao qua DB tới `scheduler-worker` | Span `media-minio *` chậm/lỗi; trace "Dọn media theo lịch" có số `remove-object` bất thường. `scheduler` và `scheduler-worker` không cùng trace; lỗi lộ muộn nhiều phút | Cơ chế gây lỗi đã chạy ở mức smoke (proxy `media-to-minio`, `media-worker-to-minio`, PR #75: trễ 300 ms → đọc nội dung chậm khoảng 0,6 s); chưa pilot đầy đủ, chưa chạy tới bước cleanup xóa media |
 | C5 | `identity` (`identity-postgres` chậm) → batch notification `PARTIAL_FAILED` | `sync` (`notification-worker-identity`) + `dependency` (`identity-postgres`) | Span `notification-worker-identity GET /internal/v1/students` và `identity-postgres student.list` chậm; **log không có lỗi**, triệu chứng nghiệp vụ không có trong telemetry | Đã đo tín hiệu; chèn trễ chưa chạy |
 | C6 | `identity` dừng → `gateway` lỗi 504 hàng loạt sau khoảng yên lặng | `identity` (cạnh `gateway-identity-token`); `identity` im lặng | Span CLIENT lỗi `gateway-identity-token`; trace gốc không có span của service đích; `lms_dependency_error_count_total{dependency_identity="gateway-identity-token"}` tăng | **Đã chạy** bởi `tracing-smoke`: login 504 ngay, lỗi token xuất hiện 70–74 giây sau khi dừng (TTL 60 giây), phục hồi sau `unpause` |
 | C7 | `identity` đổi khóa ký → 401 đồng loạt | `identity` (cạnh `*-identity-jwks`), độ rộng nhiều service | Tăng 4xx/`SERVICE_TOKEN_INVALID` ở nhiều service cùng lúc; span `*-identity-jwks` refetch; `identity` vẫn chạy nên không im lặng | Đã đo tín hiệu; cơ chế đổi khóa chưa chạy |
@@ -1311,7 +1338,7 @@ Ba điểm rút ra cho thiết kế engine:
 
 1. **Triệu chứng và nguyên nhân khác service, khác đường request** (C1, C4, C6): hạng 1 không được là service có anomaly cao nhất; cần cạnh async, auth và shared (mục 11.5).
 2. **Bằng chứng gián tiếp** (C2 thiếu metric pool, C5 không có log lỗi, C6 `identity` im lặng): engine ghi rõ tín hiệu thiếu trong `telemetry_quality` và có thể trả `insufficient_evidence` thay vì ép đáp án (mục 12.8).
-3. **Chỉ C6 đã được chạy thật.** Các case còn lại chỉ mới đo được sự tồn tại của tín hiệu; chúng không được dùng làm case đánh giá cho tới khi chuỗi nhân quả được chạy thật (việc của mảng AI, catalogue v0 mục 6). Kết quả đánh giá phải ghi riêng trạng thái này.
+3. **Chỉ C6 đã chạy trọn chuỗi nhân quả** (smoke). Với C2, C3, C4, cơ chế gây lỗi đã chạy ở mức smoke (PR #75, chưa merge) nhưng chuỗi nhân quả đầy đủ dưới workload chưa chạy; C1, C5, C7 (Target) mới đo được sự tồn tại của tín hiệu. Case chỉ được dùng làm case đánh giá khi pilot tuần 15 của [plan-v0.4](../plan/plan-v0.4-24-weeks.md) chạy thật chuỗi nhân quả (catalogue v0 mục 3). Kết quả đánh giá phải ghi riêng trạng thái này.
 
 Fault FF (quá tải tài nguyên bất kỳ) không có case riêng; `process_cpu_time_seconds_total` và `process_memory_usage_bytes` là bằng chứng phụ cho C1–C2.
 
@@ -1449,6 +1476,10 @@ top_k: [1, 3]
 detection_tolerance_seconds: <protocol-value>
 exclude_invalid_runs: true
 manual_baseline: automatic_threshold_plus_slowest_trace
+rca_baselines: [random, constant, static_threshold, base-manual-auto, simple_rca, baro]   # E2, ADR-007
+primary_rca_metrics: [top1, mrr]          # kèm top3
+confidence_interval: bootstrap_95
+paired_test: mcnemar_exact
 ```
 
 Mọi placeholder phải được chốt trong protocol trước campaign chính.
@@ -1457,16 +1488,30 @@ Mọi placeholder phải được chốt trong protocol trước campaign chính
 
 ### 18.1. Healthy baseline dataset
 
-Workload k6 (`aiops-platform/load/`, chưa có) tạo traffic qua Gateway theo các workflow W1–W7 của catalogue v2 mục 7. Bao gồm:
+Workload k6 (`aiops-platform/load/`) tạo traffic qua Gateway theo các workflow W1–W7 của catalogue v2 mục 7. Theo [ADR-007](../adr/adr-007-semi-real-workload-and-ai-evidence-v1.md) mục 1, dữ liệu healthy dùng cho fit và đánh giá lấy từ **workload bán thực**, không từ chuỗi request cố định:
 
-- normal mixed traffic;
+| Nguồn | Dùng cho | Trạng thái |
+| --- | --- | --- |
+| Mức 2+: **phát lại phiên thật** của học viên từ log Moodle Unistudium 2022 (1 234 người dùng, 208 109 sự kiện, 91 ngày, timestamp tới giây; CC BY 4.0, `[L-Unistudium]` [Franzoni, Biondi, Milani, Zenodo 13763175](https://zenodo.org/records/13763175)); ánh xạ sự kiện Moodle → endpoint LMS (ước tính sơ bộ ~90,6% số dòng ánh xạ được), giữ thứ tự thao tác và think time trong phiên, chỉ nén lịch bắt đầu phiên | Học viên (W1, W3, W4 phía học viên) — nguồn chính | Tuần 14 của plan-v0.4 |
+| Mức 2: máy trạng thái theo profile/goal, think time, phản ứng lỗi, nhịp theo giờ; tham số vĩ mô kiểm bằng OULAD (`[L-OULAD]` [Kuzilek et al., Scientific Data 2017](https://pmc.ncbi.nlm.nih.gov/articles/PMC5704676/)) | Giảng viên (W2, W4 phía giảng viên, W6), admin (W5), job lịch (W7) — các vai không có dữ liệu công khai | Tuần 14 |
+| Mức 1: mỗi hành trình W1–W7 một scenario `constant-vus`, nghỉ đều | Smoke test và **mốc giả lập đơn giản** khi kiểm chứng độ thực; không dùng làm dữ liệu healthy chính | Đã cài (PR #76, chưa merge) |
+
+Thời điểm bắt đầu phiên theo Poisson không thuần nhất (tốc độ đổi theo giờ, đỉnh trước hạn quiz lấy từ cùng log; `[L-PaxsonFloyd]` [Paxson & Floyd, ToN 1995](https://www.icir.org/vern/papers/poisson.TON.pdf)); phần cần sinh thêm dùng ma trận chuyển học từ log theo cách WESSBAS (`[L-WESSBAS]` [Vögele et al., SoSyM 2018](https://pmc.ncbi.nlm.nih.gov/articles/PMC5910480/)). Khi quy mô một ngày chưa đủ tải thì chồng nhiều ngày/khóa (đổi id) và ghi rõ hệ số khuếch đại. Chi tiết thiết kế: [workload-design-v1](workload-design-v1.md) (PR #78).
+
+Vì sao không dùng tải đơn giản: Fang et al. đo QPS của các benchmark RCA cũ chỉ 0,14–4,35 (ví dụ trên Train-Ticket) và phủ ít service; với workload theo máy trạng thái (16,47 QPS, phủ 84% service), Top-1 trung bình của 11 phương pháp còn 0,21 và Nezha giảm từ 0,87 xuống 0,04 khi đánh giá trên bộ khó và thực tế hơn (bộ mới đổi nhiều yếu tố cùng lúc, không chỉ workload) — tải càng thật thì đánh giá càng trung thực (`[L-Fang2025]` [Fang et al. 2025](https://arxiv.org/abs/2510.04711)).
+
+Healthy dataset gồm:
+
+- normal mixed traffic (một ngày học thường của workload bán thực);
+- healthy high-load spike (ngày cao điểm trước hạn quiz) — profile bắt buộc cho E1;
 - đợt upload media khỏe (W4);
 - batch thông báo lớn nhưng khỏe (W5), vì batch lớn tự nó làm tăng backlog queue và có thể bị nhầm là fault (cơ sở của C1);
-- job AI soạn bài khỏe (W6);
-- healthy high-load spike;
+- job AI soạn bài khỏe (W6, provider là `llm-stub` không bật fault);
 - nhiều seed/repetition khi tài nguyên cho phép.
 
 Mục đích: fit normal distribution/scaler/detector, đo false positive, kiểm tra workload shift, tránh model học rằng "tải cao = fault".
+
+Kiểm chứng độ thực trước khi thu dataset (ADR-007 mục 2): chia log Moodle thành phần xây và phần hold-out; so log gateway khi k6 chạy với hold-out (KS cho số thao tác/phiên và độ dài phiên, Jensen–Shannon cho tỉ lệ loại thao tác, tương quan hình dạng theo giờ, tỉ số đỉnh/trung bình, độ burst); chạy cùng bộ đo cho ba nguồn (mức 1, mức 2 thuần, bán thực). Ngưỡng chốt trước: JSD < 0,05, KS D < 0,1, trung vị lệch < ±10%; không đạt thì báo cáo đúng số đo. Dữ liệu healthy/fault thu sau khi bước kiểm chứng này xong.
 
 Dữ liệu seed quy mô lớn (R-10) ghi trực tiếp bằng SQL nên **không tạo trace, log hay command** cho các dòng đó (data-ownership v2 mục 2.9). Seed dùng để có quy mô dữ liệu; telemetry healthy phải đến từ workload gọi API thật.
 
@@ -1483,7 +1528,9 @@ fault active
 recovery
 ```
 
-Thời lượng từng phase phải đủ cho window/persistence rule và đủ cho độ trễ nhân quả của từng case (ví dụ C6 cần vượt TTL token), nhưng được rút gọn sau pilot nếu vẫn tạo telemetry ổn định. Mọi run fault chạy song song workload k6 để tạo nhiễu (catalogue v0 mục 3).
+Thời lượng từng phase phải đủ cho window/persistence rule và đủ cho độ trễ nhân quả của từng case (ví dụ C6 cần vượt TTL token), nhưng được rút gọn sau pilot nếu vẫn tạo telemetry ổn định. Mọi run fault chạy trên **workload bán thực** (mục 18.1) để triệu chứng lẫn trong tải hợp lệ (catalogue v0 mục 3). Theo ADR-007 mục 3, mỗi case MVP có ít nhất một run test đặt fault **trùng cao điểm tải** (nhiều triệu chứng, tải cao hợp lệ lẫn với sự cố); vị trí fault trong lịch tải do fault manifest khai báo (tuần 14).
+
+Cơ chế bật/tắt fault dùng lớp fault PR #75: `fault-control.mjs latency|disconnect|clear` trên proxy `course-to-postgres` (C2), `media-to-minio`/`media-worker-to-minio` (C4), `fault-control.mjs llm set|reset` cho `llm-stub` (C3), `docker pause` `identity` cho C6. Mỗi lệnh in một dòng JSON có `ts` (UTC); runner ghi các dòng này làm execution truth cho `fault_start`/`fault_end` của `RunGroundTruth`. Proxy luôn nằm trên đường đi, kể cả run healthy, để healthy và fault có cùng topology mạng (chênh khoảng 0,02 ms mỗi truy vấn PostgreSQL).
 
 ### 18.3. Tập scenario và mức tối thiểu
 
@@ -1491,17 +1538,23 @@ Bản trước dùng 5 scenario × 3 repetition = 15 run cho fault F1–F5 của
 
 | Nhóm | Scenario | Ghi chú |
 | --- | --- | --- |
-| Case phức tạp | C1–C7 (fault FB, FC, FD, FA, FE, FG, FH) | Chỉ C6 đã chạy thật; còn lại phải chạy thật trước khi vào evaluation (mục 15) |
+| Case phức tạp | C1–C7 (fault FB, FC, FD, FA, FE, FG, FH) | MVP: C2, C3, C4, C6 (ADR-006). C6 đã chạy trọn chuỗi ở smoke; cơ chế của C2, C3, C4 đã chạy ở smoke (PR #75); mọi case phải chạy thật chuỗi nhân quả ở pilot trước khi vào evaluation (mục 15) |
 | Fault đơn | FF (quá tải CPU/bộ nhớ) | Bằng chứng phụ; có thể dùng làm scenario đơn giản đối chiếu |
 | Healthy | Các workload ở mục 18.1 | Đo false positive và workload shift |
 
-Theo evaluation-protocol-v1 mục 5.2–5.3, một case C1–C7 chỉ vào campaign khi injector chạy tái lập được, triệu chứng ngoài đường request quan sát được thật trong pilot, có tín hiệu bắt buộc và có ground truth; số repetition là `R = 5` mỗi case (1 validation + 4 final test) và bộ case MVP là C2, C3, C4, C6 theo [ADR-006](../adr/adr-006-trim-project-scope-v1.md). Hiện trạng chỉ C6 đã chạy (mức smoke). Cơ chế gây lỗi (chèn trễ MinIO/PostgreSQL/SMTP/LLM stub, giới hạn CPU, dừng `identity`) thuộc fault injector, lịch làm ở tuần 13–15 của [plan-v0.3](../plan/plan-v0.3-24-weeks.md).
+Theo evaluation-protocol-v1 mục 5.2–5.3, một case C1–C7 chỉ vào campaign khi injector chạy tái lập được, triệu chứng ngoài đường request quan sát được thật trong pilot, có tín hiệu bắt buộc và có ground truth; số repetition là `R = 5` mỗi case (1 validation + 4 final test) và bộ case MVP là C2, C3, C4, C6 theo [ADR-006](../adr/adr-006-trim-project-scope-v1.md). Hiện trạng: C6 đã chạy trọn chuỗi ở mức smoke (`tracing-smoke`); cơ chế gây lỗi của C2 (trễ `course-postgres`), C3 (`llm-stub` chậm/lỗi), C4 (trễ/ngắt MinIO) đã có và đã chạy ở mức smoke trong PR #75 (chưa merge). Fault manifest, runner và pilot đầy đủ ở tuần 14–15 của [plan-v0.4](../plan/plan-v0.4-24-weeks.md). Chèn trễ SMTP và giới hạn CPU (C1, FF) chưa có cơ chế vì không thuộc MVP.
 
-Ground truth mỗi run theo `RunGroundTruth` ([telemetry-and-ground-truth-schema-v1](telemetry-and-ground-truth-schema-v1.md)). Target có thể mở rộng nếu automation và thời gian đủ; không coi một số lượng run lớn là điều kiện thành công.
+Ground truth mỗi run theo `RunGroundTruth` ([telemetry-and-ground-truth-schema-v1](telemetry-and-ground-truth-schema-v1.md)). `R = 5` mỗi case là sàn (ADR-006); biến thể cường độ/thời điểm để tăng số incident test lên khoảng 32–40 là **Target** (ADR-007 mục 3). Không coi một số lượng run lớn là điều kiện thành công.
 
 ### 18.4. External dataset
 
-RCAEval hoặc AnoMod subset là validation bổ sung, không được làm chậm evaluation trên testbed chính. Adapter external dataset phải map rõ service/entity/metric semantics; không trộn kết quả nếu granularity khác mà không giải thích.
+Theo ADR-007, đối chứng ngoài là bằng chứng **E6**, mức **Target**: chạy engine trên benchmark công khai **RCAEval RE2**, hệ Online Boutique (OB) và Train Ticket (TT) (giấy phép MIT; metric, log, trace; `[L-RCAEval]` [Pham et al., WWW 2025 Companion, arXiv 2412.17015](https://arxiv.org/abs/2412.17015), code [phamquiluan/RCAEval](https://github.com/phamquiluan/RCAEval)). Lý do chọn: chạy được trên máy 16 GB RAM (khuyến nghị của bộ dữ liệu: 8 core, 16 GB RAM, 50 GB đĩa), tải theo từng case, có sẵn cài đặt BARO và các baseline. Trình tự:
+
+1. tái lập BARO trên RE2 trước để kiểm pipeline (lệnh của repo, ví dụ `python main.py --method baro --dataset re2-tt`);
+2. adapter đổi dữ liệu RE2 (`metrics.json` → chuỗi thời gian, `traces.csv` → span, `logs.csv` → đếm log lỗi) sang schema đầu vào của engine; fit detector trên đoạn trước `inject_time`; tắt cạnh async/auth không có ở hệ đó;
+3. đặt kết quả engine cạnh số đã công bố, ví dụ trên RE2-TT (AC@1): BARO 0,67, TraceRCA 0,66, PDiagnose 0,48, CIRCA 0,32, MicroRank 0,16, RCD 0,09 (theo bảng của paper; phần chữ của paper có chỗ mâu thuẫn với bảng).
+
+Kết quả trên RCAEval là kiểm tra khả năng tổng quát, không phải bảng xếp hạng; không làm chậm evaluation trên testbed chính và bị cắt khi nén lịch, sau Stretch và E7 (plan-v0.4 mục 9). Adapter phải map rõ service/entity/metric semantics; không trộn kết quả với testbed nếu granularity khác mà không giải thích. AnoMod không còn trong kế hoạch hiện hành.
 
 ## 19. Evaluation protocol
 
@@ -1554,6 +1607,8 @@ Protocol phải quy định cách xử lý detection trước fault, sau fault e
 
 ### 19.3. RCA metrics — service-level
 
+Theo ADR-007 mục 3 và 5: chỉ số chính là **Top-1** và **MRR**, kèm Top-3; luôn báo cạnh mốc random và xếp hạng hằng; báo theo từng case, kèm bootstrap CI 95%; so engine với từng baseline bằng kiểm định ghép cặp McNemar exact trên cùng tập incident. Mẫu nhỏ nên không tuyên bố có ý nghĩa thống kê khi kiểm định không đạt. Giả thuyết, cấu hình engine/baseline và cách tính CI được **đăng ký trước** (commit vào repo) ở mốc freeze protocol tuần 19 của plan-v0.4, trước khi chạy run test.
+
 #### Top-1 Accuracy
 
 `root_cause_service` đứng rank 1.
@@ -1580,10 +1635,11 @@ Không tính `root_cause_component` trong metric chính. Component evidence đư
 
 ### 19.4. Thời gian chẩn đoán và đối chứng thủ công
 
-ADR-002 thêm thời gian chẩn đoán (thủ công so với AI) bên cạnh Top-1/Top-3/MRR và ablation:
+ADR-002 thêm thời gian chẩn đoán (thủ công so với AI) bên cạnh Top-1/Top-3/MRR và ablation; ADR-007 tách thành hai bằng chứng:
 
-- **Baseline thủ công tự động** (ngưỡng + trace lỗi/chậm nhất): đo lặp được, so sánh Top-K và thời gian trên cùng run (mục 12.6).
-- **Thử nghiệm vài người thật** dùng Grafana/Tempo/Loki: đo thời gian chẩn đoán. Thiết kế thử nghiệm người ở evaluation-protocol-v1 mục 15.3; chưa có lần chạy nào, chưa có thời gian chẩn đoán đo được.
+- **E4 — chi phí chẩn đoán (MVP):** `base-manual-auto` (ngưỡng + trace lỗi/chậm nhất, mục 12.6) chạy trên cùng run, đếm số artifact phải mở (trace, panel, truy vấn log) và thời gian, so với bằng chứng engine trả sẵn trong `RcaIncidentResult`; đo lặp được.
+- **E7 — thử nghiệm người (Target):** within-subject, mỗi người 4 incident, nửa dùng Grafana/Tempo/Loki thủ công, nửa có báo cáo engine, cân bằng thứ tự; đo thời gian, đúng/sai, số thứ đã mở, NASA-TLX rút gọn ([NASA-TLX](https://en.wikipedia.org/wiki/NASA-TLX)), SUS ([SUS](https://measuringu.com/sus/)). Mẫu tham khảo là user study của LogAssist: 19 người, within-subject, tổng thời gian giảm 42,49% nhưng hai task đơn giản nhất lại chậm hơn khi có công cụ (`[L-LogAssist]` [IEEE TSE 2022 (online 2021)](https://ece.uwaterloo.ca/~wshang/pubs/TSE2021_LogAssist.pdf)). Số người 6–10 nếu tìm được, nếu không thì 2–3 người, chỉ minh họa định tính; chốt người tham gia trước tuần 15 của plan-v0.4. Thiết kế chi tiết ở evaluation-protocol-v1 mục 15.3; chưa có lần chạy nào, chưa có thời gian chẩn đoán đo được.
+- **E8 — case study C6 (MVP):** chuỗi bằng chứng của engine (lỗi ở `gateway`, nguyên nhân ở `identity` im lặng, cờ `telemetry_silent`) đặt cạnh đường truy vết thủ công.
 
 Kết quả báo cáo tách theo nhóm: case có nguyên nhân trên đường request và case nguyên nhân ngoài đường request (mục 15). Luận điểm của đề tài chỉ được khẳng định ở nhóm sau nếu engine vượt baseline thủ công ở đó trên các case đã chạy thật.
 
@@ -1613,7 +1669,16 @@ Chất lượng báo cáo của agent không thuộc mục này (mục 16.3).
 
 ## 20. Ablation và robustness
 
-MVP phải có ít nhất một robustness evaluation focused để trả lời RQ4: controlled trace dropping/sampling simulation trên telemetry artifact **hoặc** missing-modality evaluation. Kiểm tra này tái sử dụng baseline experiment thu với 100% trace sampling và không yêu cầu mở rộng controlled-fault campaign. Expanded matrix thuộc Target.
+Theo [ADR-007](../adr/adr-007-semi-real-workload-and-ai-evidence-v1.md), định nghĩa RQ4 cũ ("một robustness evaluation: bỏ 50% trace **hoặc** missing-modality") được thay bằng **E3 — quan sát suy giảm (MVP)**, chạy offline trên cùng run test thu với 100% trace sampling, không mở rộng controlled-fault campaign:
+
+```text
+giữ 50% trace (lấy mẫu cả trace, không bỏ span lẻ)
+giữ 10% trace
+log mất trace_id
+mất một modality (metric, trace hoặc log)
+```
+
+Mỗi biến thể là derived artifact theo [telemetry-and-ground-truth-schema-v1](telemetry-and-ground-truth-schema-v1.md) mục 6.1 (cùng `run_id`, cùng ground truth, có seed và lineage). Lập luận: khi quan sát đầy đủ, luật đơn giản hoặc người đọc trace đã đủ; giá trị của engine phải thấy ở chỗ quan sát bị thiếu (ADR-007 mục 3). Ablation (mục 20.1–20.5) là **E5 (MVP)**: bỏ từng modality, bỏ graph, bỏ temporal, thay detector học máy bằng z-score.
 
 ### 20.1. Modality ablation
 
@@ -1662,15 +1727,7 @@ Nếu dùng Hướng 2 (mục 12.4): so sánh ranker học với điểm tuyến
 
 ### 20.6. Missing trace
 
-MVP có thể chọn một mức trace dropping/sampling simulation có kiểm soát trên telemetry artifact. Expanded Target có thể so sánh nhiều mức, ví dụ:
-
-```text
-20%
-50%
-80%
-```
-
-traces/spans sau khi đã có 100% sampling baseline. Cần cố định random seed và không thay ground truth; ba mức trên không phải matrix bắt buộc của MVP. Với v2, mất span PRODUCER/CONSUMER làm đứt cạnh async, nên đánh giá cần có fallback theo queue đích (mục 11.5).
+MVP (E3) dùng hai mức **giữ 50% và giữ 10% trace**, lấy mẫu theo cả trace (giống head sampling thật), sau khi đã có 100% sampling baseline; thêm biến thể log mất `trace_id`. Nhiều mức hơn (ví dụ giữ 80%, 20%) và live sampling thấp hơn baseline thuộc Target. Cần cố định random seed và không thay ground truth. Với v2, mất span PRODUCER/CONSUMER làm đứt cạnh async, nên đánh giá cần có fallback theo queue đích (mục 11.5).
 
 Đánh giá:
 
@@ -1682,11 +1739,11 @@ traces/spans sau khi đã có 100% sampling baseline. Cần cố định random 
 
 ### 20.7. Missing modality
 
-MVP có thể chọn một missing-modality evaluation thay cho trace dropping/sampling simulation. Pipeline phải ghi rõ modality bị thiếu thay vì coi score bằng 0 không điều kiện. Worker đã thiếu log trong thực tế (mục 5.4), nên đây là kịch bản gần thực tế. Nhiều tổ hợp thuộc expanded Target.
+MVP (E3) gồm biến thể mất một modality (lần lượt metric, trace, log), cùng với các mức trace ở mục 20.6 — không còn là lựa chọn "hoặc". Pipeline phải ghi rõ modality bị thiếu thay vì coi score bằng 0 không điều kiện. Worker đã thiếu log trong thực tế (mục 5.4), nên đây là kịch bản gần thực tế. Mất đồng thời nhiều modality thuộc expanded Target.
 
 ### 20.8. Workload shift
 
-Fit healthy baseline ở profile/rate A và test healthy profile/rate B. Mục tiêu là kiểm tra detector có nhầm traffic increase hợp lệ (kể cả batch thông báo lớn khỏe) thành fault hay không.
+Fit healthy baseline ở profile/rate A và test healthy profile/rate B. Mục tiêu là kiểm tra detector có nhầm traffic increase hợp lệ (kể cả batch thông báo lớn khỏe) thành fault hay không. Với workload bán thực, cặp tự nhiên là "ngày học thường" và "ngày cao điểm trước hạn quiz" (mục 18.1); phép đo này là một phần của E1 (mục 9).
 
 ### 20.9. Sensitivity
 
@@ -1838,7 +1895,7 @@ known experiment artifact
 -> evaluate against ground truth
 ```
 
-E2E fixture phải chứa ít nhất một healthy run và một fault run canonical. Fault run đã có thật hiện chỉ là C6; fixture khác phải chờ case được chạy thật.
+E2E fixture phải chứa ít nhất một healthy run và một fault run canonical. Hiện có artifact export của một run k6 mức 1 (2 phút, `k6-level1-evidence-20261117`, PR #77) và cửa sổ pause `scheduler` (PR #79), chưa phải fixture canonical vì artifact không commit và chưa có ground truth; fault run chạy trọn chuỗi mới có C6 (smoke). Fixture khác chờ pilot tuần 15.
 
 ### 23.5. Regression tests
 
@@ -1864,29 +1921,30 @@ Cùng input, code, seed và config phải tạo:
 Đây là dependency order, không phải roadmap theo tuần:
 
 1. Chốt telemetry, ground-truth và feature schema ([telemetry-and-ground-truth-schema-v1](telemetry-and-ground-truth-schema-v1.md)); quyết định bổ sung metric thiếu ở mục 5.5 trước khi thu dataset.
-2. Tạo telemetry adapters + data-quality report (gồm lọc trace nhiễu, truy vấn Tempo có giới hạn).
+2. Tạo telemetry adapters + data-quality report (gồm lọc trace nhiễu, truy vấn Tempo có giới hạn). **Đã có** ở PR #77, #79 (chưa merge): `aiops-training export`, `aiops-training quality`, `telemetry_silent` theo counter.
+   - Song song (mảng workload): workload bán thực (mức 2+ cho học viên, mức 2 cho giảng viên/admin/job lịch) đạt kiểm chứng độ thực trước khi thu dataset (mục 18.1, ADR-007 mục 2).
 3. Implement windowing/alignment + service/edge/queue feature.
 4. Implement static threshold và robust z-score.
 5. Implement Isolation Forest + artifact/versioning.
 6. Implement incident lifecycle/correlation.
 7. Implement dynamic graph v2 (sync, async, dependency, auth, shared-resource) + validation.
-8. Implement RCA baselines, gồm baseline thủ công tự động.
+8. Implement RCA baselines, gồm baseline thủ công tự động, SimpleRCA và BARO (mục 12.6).
 9. Implement proposed ranker (Hướng 1, rồi Hướng 2 nếu dữ liệu đủ).
 10. Implement evidence, verdict và ghi `RcaIncidentResult`.
 11. Implement evaluation harness (Top-K/MRR, thời gian chẩn đoán).
-12. Chạy thật các case C1–C5, C7 bằng fault injector; chạy pilot, freeze protocol/config.
-13. Chạy ablation, robustness và final campaign.
+12. Chạy thật các case MVP C2, C3, C4, C6 (C1, C5, C7 là Target) bằng lớp fault, kể cả run đặt fault trùng cao điểm tải; chạy pilot, đăng ký trước và freeze protocol/config (tuần 19 của plan-v0.4).
+13. Chạy final campaign, E1–E5, E8 (ablation, robustness E3) và nếu còn thời gian E6, E7.
 14. Chỉ sau khi 1–13 đạt: MCP server chỉ đọc và agent (mục 16).
 15. Implement API/visualization tối thiểu nếu cần (có thể làm song song từ bước 10).
 
-Không bắt đầu deep model, Kubernetes hoặc component-level RCA trước khi các bước MVP trên có artifact kiểm chứng.
+Không bắt đầu deep model, Kubernetes hoặc component-level RCA trước khi các bước MVP trên có artifact kiểm chứng. Bước 14 (MCP/agent) đã ra Out-of-scope theo ADR-006.
 
 ## 25. Definition of Done
 
 ### 25.1. Telemetry và features
 
-- [ ] Đọc được metrics, traces và structured logs từ artifact hoặc adapter canonical, dùng đúng 11 `service.name`.
-- [ ] Kiểm tra UTC/identity/coverage và tạo data-quality report; lọc được trace nhiễu.
+- [ ] Đọc được metrics, traces và structured logs từ artifact hoặc adapter canonical, dùng đúng 11 `service.name`. (Export đã chạy ở PR #77, chưa merge.)
+- [ ] Kiểm tra UTC/identity/coverage và tạo data-quality report; lọc được trace nhiễu. (Đã có ở PR #77, #79, chưa merge; còn thiếu `phase_coverage` và trường async, cần fault manifest tuần 14.)
 - [ ] Windowing/alignment deterministic và có test.
 - [ ] Service/edge/queue feature schema có version.
 - [ ] Missing semantics (gồm "không áp dụng", "chưa đo", "im lặng") và normalization được ghi rõ.
@@ -1905,7 +1963,7 @@ Không bắt đầu deep model, Kubernetes hoặc component-level RCA trước k
 
 - [ ] Graph v2 được xây từ trace (sync, async) và validate với `e01–e29`, gồm cạnh async nối PRODUCER/CONSUMER.
 - [ ] Graph mang cạnh xác thực, shared-resource và `scheduler → scheduler-worker` như cạnh thiết kế.
-- [ ] Có Max Anomaly, Earliest Anomaly, Graph-aware và baseline thủ công tự động.
+- [ ] Có Max Anomaly, Earliest Anomaly, Graph-aware, baseline thủ công tự động, SimpleRCA và BARO (ADR-007).
 - [ ] Proposed ranker xuất component scores và `propagation_path`.
 - [ ] Candidate set và metric chính ở service-level theo catalogue v2 mục 8.
 - [ ] Dependency/hạ tầng được giữ dưới dạng evidence riêng.
@@ -1925,10 +1983,13 @@ Không bắt đầu deep model, Kubernetes hoặc component-level RCA trước k
 
 - [ ] Tính được Precision, Recall, F1, FPR và Detection Delay.
 - [ ] Tính service-level Top-1, Top-3 và MRR; báo cáo riêng tỉ lệ `insufficient_evidence`.
-- [ ] Đo thời gian chẩn đoán thủ công so với AI (baseline tự động; thử nghiệm người nếu protocol chốt).
+- [ ] Đo chi phí chẩn đoán thủ công so với AI (E4: số artifact `base-manual-auto` phải mở và thời gian); thử nghiệm người E7 chỉ khi đạt mức Target.
 - [ ] Báo cáo tách case nguyên nhân trên và ngoài đường request, ghi rõ case nào đã chạy thật.
 - [ ] Có modality, graph (theo loại cạnh) và temporal ablation theo protocol.
-- [ ] Có ít nhất một robustness evaluation focused (trace dropping/sampling simulation hoặc missing-modality); expanded matrix chỉ thuộc Target.
+- [ ] Có E3: giữ 50% và 10% trace, log mất `trace_id`, mất một modality (ADR-007); expanded matrix chỉ thuộc Target.
+- [ ] Có E1 (detector học máy so với ngưỡng cố định trên workload bán thực) và E8 (case study C6); bảng chính E2 kèm bootstrap CI 95% và McNemar exact.
+- [ ] Workload bán thực có báo cáo kiểm chứng độ thực (so hold-out và hai nguồn tải đơn giản, ngưỡng chốt trước).
+- [ ] Giả thuyết, cấu hình và ngưỡng được đăng ký trước (commit) ở mốc freeze tuần 19, trước khi chạy run test.
 - [ ] Mức tối thiểu campaign theo evaluation-protocol-v1 (`K` case đủ điều kiện × `R` repetition), hoặc ghi rõ run invalid/rerun.
 - [ ] Prediction và evaluation artifact link ngược được tới manifest/config/commit.
 - [ ] Báo cáo có failure cases, limitations và trade-off.
@@ -1970,7 +2031,11 @@ Mục này không phải tiêu chí hoàn thành đề tài (ADR-002).
 | Detector nhầm tải cao hoặc batch lớn khỏe | Healthy high-load và batch lớn khỏe trong healthy dataset, workload-shift test. |
 | RCA rank symptom thay vì nguyên nhân | Temporal precedence, reverse propagation, cạnh async/auth/shared, baseline thủ công để so sánh. |
 | Độ trễ nhân quả dài (C4, C6) làm window và merge gap gộp sai | Cửa sổ tương quan riêng, tolerance tách theo nhóm case; chốt sau pilot. |
-| `identity` im lặng không có telemetry | Cờ `telemetry_silent` (chưa kiểm chứng), cạnh xác thực thiết kế luôn tồn tại. |
+| `identity` im lặng không có telemetry | Cờ `telemetry_silent` tính theo counter `process_cpu_time_seconds_total` (đã cài ở PR #79, đã chạy trên pause `scheduler`; dùng làm feature chưa kiểm chứng), cạnh xác thực thiết kế luôn tồn tại. |
+| Collector giữ series khoảng 5 phút sau khi runtime ngừng, metric "phẳng" chứ không mất | Feature dựa trên mức tăng của counter và cờ `telemetry_silent`, không dựa trên việc thiếu mẫu (mục 7.3). |
+| Workload đơn giản làm RCA trông tốt hơn thực tế (`[L-Fang2025]` [Fang et al. 2025](https://arxiv.org/abs/2510.04711)) | Workload bán thực từ log Moodle thật, kiểm chứng độ thực trước khi thu dataset, fault trùng cao điểm tải (mục 18). |
+| Engine chỉ hòa baseline đơn giản khi quan sát đầy đủ | Bộ bằng chứng E1–E8 (phát hiện trong nhiễu, quan sát suy giảm, chi phí chẩn đoán), có SimpleRCA và BARO trong bảng chính, báo cáo trung thực case hòa/thua (ADR-007 mục 3, 5). |
+| Thiên lệch do nhóm tự ra đề và tự chấm | Đăng ký trước ở tuần 19; đối chứng ngoài RCAEval RE2 (E6, Target). |
 | Quy tắc owner–worker chưa chốt (`ai` và `ai-worker`, `media` và `media-worker`) | Engine xuất `service.name` quan sát được; chỉ số chính chấm `root_cause_service`, owner-level Top-K là diagnostic phụ (evaluation-protocol-v1 mục 4.2, chờ Đức xác nhận). |
 | Trace sampling hoặc đứt PRODUCER/CONSUMER làm graph thiếu cạnh async | 100% baseline trước, robustness + fallback theo queue đích. |
 | Trace nhiễu (`/ready`, thăm dò `scheduler-worker`) tạo incident giả | Lọc ở adapter theo `http_route_template`/`operation_name`, test riêng. |
@@ -1999,7 +2064,8 @@ Mục này không phải tiêu chí hoàn thành đề tài (ADR-002).
 - Controlled fault injection là nguồn ground truth chính; ground truth không vào bước suy luận.
 - `RcaIncidentResult` là hợp đồng đầu ra duy nhất; MCP chỉ đọc kết quả này.
 - Docker Compose là runtime chính; Kubernetes chỉ Stretch.
-- External benchmark là validation bổ sung.
+- External benchmark là validation bổ sung (RCAEval RE2, E6, Target theo ADR-007).
+- Dữ liệu healthy/fault đến từ workload bán thực (mức 2+ cho học viên, mức 2 cho giảng viên/admin/job lịch), không từ chuỗi request cố định (ADR-007).
 - LLM không nằm trong RCA engine; chỉ ở agent thứ yếu.
 
 ## 28. Tài liệu nghiên cứu kế thừa từ bản cũ
@@ -2017,19 +2083,37 @@ Danh mục dưới đây được giữ như reading list; metadata/citation ph�
 
 Các công trình này định hướng baseline, multi-source fusion, onset estimation, graph/temporal reasoning và robustness; không yêu cầu nhóm reproduce toàn bộ mô hình hoặc dataset. Với vai trò AI chính, cần bổ sung reading list về RCA dựa trên học máy và learning-to-rank (chưa có trong danh mục; việc của literature matrix).
 
+Cập nhật 17/11/2026 (ADR-007): danh mục chuẩn có trích dẫn, URL và giấy phép là [literature-matrix-v1](../plan/literature-matrix-v1.md). Các nguồn tài liệu này dùng trực tiếp:
+
+- `[L-Fang2025]` Fang et al. 2025, benchmark RCA mới và SimpleRCA — https://arxiv.org/abs/2510.04711
+- `[L-Pham2024ASE]` Pham et al., ASE 2024, "Root Cause Analysis for Microservices based on Causal Inference: How Far Are We?" (mục 4 của danh sách trên) — https://arxiv.org/abs/2408.13729
+- `[L-BARO]` Pham et al., BARO, FSE 2024 (mục 3) — https://arxiv.org/abs/2405.09330
+- `[L-RCAEval]` Pham et al., RCAEval, WWW 2025 Companion (mục 5) — https://arxiv.org/abs/2412.17015 ; https://github.com/phamquiluan/RCAEval
+- `[L-TraceRCA]` Li et al., TraceRCA, IWQoS 2021 — https://github.com/NetManAIOps/TraceRCA
+- `[L-Unistudium]` Franzoni, Biondi, Milani, log Moodle Unistudium 2022, CC BY 4.0 — https://zenodo.org/records/13763175
+- `[L-OULAD]` Kuzilek et al., Scientific Data 2017 — https://pmc.ncbi.nlm.nih.gov/articles/PMC5704676/
+- `[L-WESSBAS]` Vögele et al., SoSyM 2018 — https://pmc.ncbi.nlm.nih.gov/articles/PMC5910480/
+- `[L-PaxsonFloyd]` Paxson & Floyd, ToN 1995 — https://www.icir.org/vern/papers/poisson.TON.pdf
+- `[L-LogAssist]` LogAssist, IEEE TSE 2022 (online 2021) (user study 19 người) — https://ece.uwaterloo.ca/~wshang/pubs/TSE2021_LogAssist.pdf
+
 ## 29. Checklist trước implementation lớn
 
-- [ ] Telemetry schema, identity và ground-truth schema v1 đã chốt.
-- [ ] Quyết định có bổ sung metric thiếu ở mục 5.5 trước khi thu dataset hay không.
+Trạng thái cập nhật 17/11/2026; "PR chưa merge" nghĩa là đã có code nhưng chưa vào `main`, nên ô vẫn để trống.
+
+- [ ] Telemetry schema, identity và ground-truth schema v1 đã chốt. (Schema logic v1 có, chờ Đức xác nhận; schema vật lý của artifact export: [telemetry-data-dictionary-v2](telemetry-data-dictionary-v2.md), PR #79 chưa merge.)
+- [ ] Quyết định có bổ sung metric thiếu ở mục 5.5 trước khi thu dataset hay không. (ADR-006: LMS đóng băng, chỉ thêm khi case cần; chưa có quyết định riêng.)
 - [ ] Feature window và split protocol đã chốt.
 - [ ] Candidate set `service-candidates.v1` (10 service/worker) và cách xử lý owner–worker (owner-level Top-K) được Đức xác nhận trong evaluation-protocol-v1.
-- [ ] Detection và RCA baselines, gồm baseline thủ công, đã chốt.
-- [ ] Metric và tolerance (gồm nhóm case trễ nhân quả dài) đã chốt.
-- [ ] Missing-data policy đã chốt.
+- [ ] Detection và RCA baselines đã chốt: ngưỡng cố định (E1), `base-manual-auto`, SimpleRCA, BARO, random, constant (ADR-007).
+- [ ] Metric và tolerance (gồm nhóm case trễ nhân quả dài) đã chốt; chỉ số chính Top-1 và MRR, CI bootstrap, McNemar exact (ADR-007).
+- [ ] Missing-data policy đã chốt, gồm `telemetry_silent` theo counter và series mới giữa cửa sổ (mục 7.3).
 - [ ] Schema `RcaIncidentResult` và nơi lưu đã được mảng AI xác nhận.
-- [ ] Config/artifact layout đã chốt.
-- [ ] Fault injector và workload k6 chạy được ít nhất cho C6 và một case khác.
-- [ ] Pilot run có data-quality report.
+- [ ] Config/artifact layout đã chốt. (Layout artifact export `artifacts/<run_id>/` đã có ở PR #77; layout artifact của engine ở mục 17.1 vẫn là đề xuất.)
+- [ ] Fault injector và workload k6 chạy được ít nhất cho C6 và một case khác. (Lớp fault cho C2, C3, C4 và k6 mức 1 đã chạy ở mức smoke, PR #75, #76 chưa merge; C6 dùng `docker pause`.)
+- [ ] Workload bán thực (mức 2+ học viên, mức 2 giảng viên/admin/job lịch) đạt kiểm chứng độ thực theo ADR-007 mục 2 (tuần 14).
+- [ ] Fault manifest có tùy chọn đặt fault trùng cao điểm tải (tuần 14).
+- [ ] Pilot run có data-quality report. (Quality report đã chạy trên run k6 mức 1 và cửa sổ pause `scheduler`; chưa phải pilot.)
+- [ ] Giả thuyết E1–E5 và cấu hình đã đăng ký trước ở mốc freeze tuần 19.
 - [ ] Implementation task có DoD và output path theo workspace standard.
 
 Nếu một quyết định làm thay đổi research question, backend topology, schema kết quả RCA hoặc plan, phải cập nhật tài liệu canonical tương ứng thay vì tạo convention thứ hai trong file này.
@@ -2051,20 +2135,21 @@ Bản trước: [analysis-anomaly-rca-blueprint](analysis-anomaly-rca-blueprint.
 | Feature | Service/edge/log/trace | Thêm feature queue, độ trễ CONSUMER so với PRODUCER, độ rộng lỗi theo identity, im lặng; "không áp dụng" cho worker |
 | Xếp hạng | Điểm tuyến tính 5 thành phần; propagation theo cạnh sync | Giữ điểm tuyến tính làm Hướng 1; thêm ranker học từ fault injection (Hướng 2, chờ xác nhận); propagation theo bốn loại cạnh; `insufficient_evidence` |
 | Đầu ra | Prediction artifact và JSON incident mẫu | `RcaIncidentResult` theo catalogue v0 (link, không chép); ánh xạ thành phần engine → trường kết quả |
-| Case phức tạp | Không có; 5 scenario F1–F5 | Mục 15: C1–C7 với cạnh/tín hiệu engine cần; chỉ C6 đã chạy thật |
+| Case phức tạp | Không có; 5 scenario F1–F5 | Mục 15: C1–C7 với cạnh/tín hiệu engine cần; C6 đã chạy trọn chuỗi, cơ chế C2–C4 đã chạy ở smoke (PR #75) |
 | MCP/agent | "LLM không thuộc core" | Mục 16: thứ yếu, chỉ đọc kết quả, không truy vấn tùy ý, log/trace không tin cậy, `get_ground_truth` chỉ offline; LLM vẫn ngoài RCA engine |
 | Đánh giá | Top-1/Top-3/MRR, ablation | Thêm thời gian chẩn đoán (thủ công vs AI), baseline thủ công tự động, tỉ lệ `insufficient_evidence`, tách case trong/ngoài đường request, ablation theo loại cạnh |
 | Dataset | MVP floor 5 × 3 = 15 run | Không giữ nguyên; tập scenario theo C1–C7/FA–FH, mức tối thiểu theo evaluation-protocol-v1 (`K` case đủ điều kiện × `R`); lưu ý seed SQL không tạo telemetry |
-| Vị trí mã | `analysis/` (và `experiments/runs/`) | Trong `aiops-platform/` (đề xuất `training/`, `mcp/`, `agent/`); chưa có thư mục nào ngoài `observability/` |
+| Vị trí mã | `analysis/` (và `experiments/runs/`) | Trong `aiops-platform/` (`training/`, `mcp/`, `agent/`); trên `main` chưa có thư mục nào ngoài `observability/`, còn `faults/`, `load/`, `training/` đã có code ở PR #75–#77, #79 (tuần 13, chưa merge) |
 | Ví dụ Submission/storage, timeline Submission | Dùng `submission-storage`, `submission` | Thay bằng ví dụ v2 (C1, C3, C6); ví dụ chỉ minh họa |
 
 Phần giữ nguyên về ý nghĩa: nguyên tắc split theo run, fit chỉ trên healthy, missing có chủ đích; detector baseline A–E và fusion; lifecycle incident; thành phần điểm A/T/P/E/V; yêu cầu determinism; ablation modality/temporal/evidence; robustness MVP; reading list; cấu trúc DoD.
 
 ### Giả định và điểm chờ xác nhận còn lại
 
-- `telemetry-and-ground-truth-schema-v1` đang được viết song song; tài liệu này chỉ link, chưa đối chiếu nội dung chi tiết.
-- [evaluation-protocol-v1](evaluation-protocol-v1.md) đã có nhưng cũng là đề xuất chờ Đức xác nhận: `R = 3`, `K` tối thiểu, owner-level Top-K, luật `base-manual-auto`, thử nghiệm người đều chưa chốt.
-- Tên thư mục `aiops-platform/training/` (và vị trí kết quả) là đề xuất; mọi weight, ngưỡng, window, prior cạnh và ngưỡng `verdict` là giá trị khởi điểm hoặc `<validation-selected>`, chưa kiểm chứng trên v2.
+- `telemetry-and-ground-truth-schema-v1` đã có (đề xuất chờ Đức xác nhận); schema vật lý của artifact export là [telemetry-data-dictionary-v2](telemetry-data-dictionary-v2.md) (PR #79). Tài liệu này chỉ link, chưa đối chiếu từng field.
+- [evaluation-protocol-v1](evaluation-protocol-v1.md) đã có nhưng cũng là đề xuất chờ Đức xác nhận. ADR-006 đã chốt `R = 5`, bộ case MVP và định nghĩa `base-manual-auto`; ADR-007 đã chốt bộ bằng chứng E1–E8, baseline SimpleRCA/BARO, E3 thay RQ4 cũ. Còn chưa chốt: `K` tối thiểu, owner-level Top-K, luật chi tiết của `base-manual-auto`, người tham gia E7.
+- Tên thư mục `aiops-platform/training/` đã dùng ở PR #77; vị trí kết quả RCA (mục 17.1) vẫn là đề xuất. Mọi weight, ngưỡng, window, prior cạnh và ngưỡng `verdict` là giá trị khởi điểm hoặc `<validation-selected>`, chưa kiểm chứng trên v2.
+- Cách đưa chuỗi metric của testbed vào BARO và cách quy kết quả của BARO/SimpleRCA về service (mục 12.6) chưa cài, chưa kiểm chứng.
 - Cạnh `shared-resource`, feature `telemetry_silent`, `span_missing_downstream`, `dep_latency_dispersion_over_operations`, `dep_error_breadth_across_services`, bảng quy đổi identity → candidate và ranker Hướng 2 là đề xuất chưa kiểm chứng.
 - Ngữ nghĩa `status="expected_failure"` của `lms_dependency_*` và cách tính percentile từ histogram cần xác nhận khi viết adapter.
 - Việc bổ sung metric thiếu ở testbed (mục 5.5) do Đức quyết định, chưa quyết.
