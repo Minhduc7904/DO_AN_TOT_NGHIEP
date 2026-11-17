@@ -249,6 +249,25 @@ jobs:
       - name: Validate full stack Compose (LMS + aiops-platform)
         run: docker compose --env-file docker-compose/.env.example -f docker-compose/compose.full.yaml config --quiet
 
+      - name: Validate full stack Compose with fault injection overlay
+        run: docker compose --env-file docker-compose/.env.example -f docker-compose/compose.full.yaml -f aiops-platform/faults/compose.faults.yaml config --quiet
+
+  aiops-platform:
+    name: aiops-platform unit tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v6
+
+      - name: Set up toolchain
+        uses: ./.github/actions/setup-lms
+        with:
+          install: 'false'
+
+      - name: Fault injection (LLM stub, fault-control)
+        run: node --test 'aiops-platform/faults/**/*.test.mjs'
+
   compose-reset:
     name: Reset/seed Testbed twice with stable fingerprint
     runs-on: ubuntu-latest
