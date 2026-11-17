@@ -20,7 +20,7 @@
 | [task-01_design-user-behavior-workload](task-01_design-user-behavior-workload.md) | Tài liệu thiết kế workload mức 1 + 2 theo hành vi người dùng, có nguồn cho tham số | Bách | Không có | Cao | Đã giao |
 | [task-02_build-k6-level-one-journeys](task-02_build-k6-level-one-journeys.md) | k6 mức 1: các hành trình W1–W7 trên dữ liệu seed | Bách | Không có | Cao | Đã giao |
 | [task-03_add-llm-stub-and-latency-proxies](task-03_add-llm-stub-and-latency-proxies.md) | LLM stub chỉnh được độ trễ/lỗi và proxy chèn trễ trước MinIO, `course-postgres` trong Compose | Bách | Không có | Cao | Đã giao |
-| [task-04_build-telemetry-export-adapter](task-04_build-telemetry-export-adapter.md) | Adapter export Prometheus, Tempo, Loki theo run và cửa sổ thời gian | Bách | Không có | Cao | Đã giao |
+| [task-04_build-telemetry-export-adapter](task-04_build-telemetry-export-adapter.md) | Adapter export Prometheus, Tempo, Loki theo run và cửa sổ thời gian | Bách | Không có | Cao | Chờ review |
 | [task-05_define-data-dictionary-and-quality-check](task-05_define-data-dictionary-and-quality-check.md) | Data dictionary, schema chuẩn hóa v2 và data-quality check trên một run thử | Bách | Không có | Cao | Đã giao |
 
 > Khi đọc tiến độ project-wide, chỉ coi hàng có trạng thái `Hoàn thành` trên nhánh canonical là hoàn thành; trạng thái đã finalization trên task branch chưa thay thế nguồn này.
