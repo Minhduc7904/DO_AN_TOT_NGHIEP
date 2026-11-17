@@ -114,6 +114,25 @@ for (const row of dependencyRows) {
 }
 results.dependency_edges = dependencyRows.length;
 
+// `operation_name` hữu hạn (Gate R, plan-v0.3): route template, không chứa UUID hay số ID.
+const operationRows = await prometheus.query(
+  'sum by (service_name, dependency_identity, operation_name)(lms_dependency_request_count_total)',
+);
+const ID_SEGMENT =
+  /(?:^|[/\s])(?:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|\d+)(?=$|[/\s?])/iu;
+for (const row of operationRows) {
+  const operation = row.metric.operation_name ?? '';
+  assert.ok(
+    !ID_SEGMENT.test(operation),
+    `${row.metric.dependency_identity}: operation_name chứa ID (${operation})`,
+  );
+}
+assert.ok(
+  operationRows.some((row) => /\/:[A-Za-z]+/u.test(row.metric.operation_name ?? '')),
+  'chưa thấy operation_name dạng route template có tham số',
+);
+results.dependency_operations = operationRows.length;
+
 // 3. Broker: 24 queue (12 canonical + .error) đúng chủ sở hữu, consumer đúng.
 const expectedQueues = queues.flatMap((queue) => [queue, `${queue}.error`]);
 await poll(

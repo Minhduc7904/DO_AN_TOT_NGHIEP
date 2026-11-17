@@ -29,7 +29,8 @@ export class MediaHttpClient implements MediaContentSource {
 
   async downloadContent(mediaId: string): Promise<Uint8Array> {
     const response = await this.client.request<Uint8Array>({
-      path: `/${INTERNAL_PREFIX}/media/${mediaId}/content`,
+      path: `/${INTERNAL_PREFIX}/media/:mediaId/content`,
+      params: { mediaId },
       responseType: 'bytes',
     });
     if (response.status === 200) return response.body;

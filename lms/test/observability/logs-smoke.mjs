@@ -56,22 +56,27 @@ for (const service of RUNTIMES) {
     assert.equal(log.metadata.service_version, env.OTEL_SERVICE_VERSION, service);
     assert.equal(log.metadata.service_instance_id, env.OTEL_SERVICE_INSTANCE_ID, service);
   }
-  sampled.push({
-    service,
-    log: logs.find((log) => log.metadata.http_route !== '/ready') ?? logs[0],
-  });
+  const business = logs.filter((log) => log.metadata.http_route !== '/ready');
+  sampled.push({ service, candidates: (business.length > 0 ? business : logs).slice(0, 5) });
 }
 results.services_with_logs = RUNTIMES.length;
 
-// 3. trace_id/span_id của log phải trỏ tới span thuộc đúng service trong Tempo.
-for (const { service, log } of sampled) {
+// 3. trace_id/span_id của log phải trỏ tới span thuộc đúng service trong Tempo. Thử tối đa 5 log mới
+// nhất, dừng ở log đầu tiên có span: `tracing-smoke` pause `identity`, lô span còn trong hàng đợi lúc
+// pause không tới Tempo (đo ngày 17/11/2026: mọi span ~2 giây trước pause bị mất) nên log mới nhất có
+// thể không còn span. Truy vấn tuần tự và dừng sớm để không làm Tempo (giới hạn 512 MiB) bị OOM.
+for (const { service, candidates } of sampled) {
   await poll(
     `${service}: log khớp span trong Tempo`,
     async () => {
-      const spans = await stack.tempo.trace(log.metadata.trace_id);
-      const span = spans.find((item) => item.spanId === log.metadata.span_id);
-      assert.ok(span, `không có span ${log.metadata.span_id}`);
-      assert.equal(span.service, service);
+      for (const log of candidates) {
+        const spans = await stack.tempo.trace(log.metadata.trace_id);
+        const span = spans.find((item) => item.spanId === log.metadata.span_id);
+        if (!span) continue;
+        assert.equal(span.service, service, `span ${log.metadata.span_id} sai service`);
+        return;
+      }
+      assert.fail(`không log nào trong ${candidates.length} log có span trong Tempo`);
     },
     { tag: TAG, timeoutMs: 30_000, intervalMs: 2_000 },
   );

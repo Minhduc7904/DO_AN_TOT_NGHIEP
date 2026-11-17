@@ -1,7 +1,7 @@
 import { jest } from '@jest/globals';
 import { startTelemetry } from '@aiops-lms/observability';
 import { InMemorySpanExporter, SimpleSpanProcessor } from '@aiops-lms/observability/testing';
-import { context, propagation, trace } from '@opentelemetry/api';
+import { context, propagation, SpanStatusCode, trace } from '@opentelemetry/api';
 import type { ConsumeMessage } from 'amqplib';
 
 import {
@@ -373,5 +373,47 @@ describe('RabbitMqCommandPublisher: trace context', () => {
     await publishWith(undefined);
     const [span] = exporter.getFinishedSpans();
     expect(span?.parentSpanContext).toBeUndefined();
+  });
+
+  function failingPublisher(session: Partial<RabbitMqSession>): RabbitMqCommandPublisher {
+    return new RabbitMqCommandPublisher(session as RabbitMqSession, {
+      confirmTimeoutMs: 50,
+      dependencyIdentity: 'course-rabbitmq',
+    });
+  }
+  const envelope = () =>
+    buildCommandEnvelope({
+      commandName: 'media.x',
+      schemaVersion: 1,
+      payload: {},
+      producer: { serviceName: 'course', serviceVersion: '0.1.0' },
+    });
+
+  it('lỗi publish mang identity canonical <service>-rabbitmq và giữ lỗi gốc trên span', async () => {
+    const publisher = failingPublisher({
+      channel: () => Promise.reject(new Error('channel closed by broker')),
+    });
+
+    await expect(publisher.publish('media-worker--x-v1', envelope())).rejects.toMatchObject({
+      code: 'DEPENDENCY_UNAVAILABLE',
+      details: { dependency: 'course-rabbitmq' },
+    });
+    const [span] = exporter.getFinishedSpans();
+    expect(span?.status.code).toBe(SpanStatusCode.ERROR);
+    expect(span?.attributes['error.type']).toBe('unavailable');
+    expect(span?.events.find((event) => event.name === 'exception')?.attributes).toMatchObject({
+      'exception.message': 'channel closed by broker',
+    });
+  });
+
+  it('broker không xác nhận kịp: DEPENDENCY_TIMEOUT với identity canonical', async () => {
+    const channel = { assertExchange: () => Promise.resolve(), publish: () => true };
+    const publisher = failingPublisher({ channel: () => Promise.resolve(channel as never) });
+
+    await expect(publisher.publish('media-worker--x-v1', envelope())).rejects.toMatchObject({
+      code: 'DEPENDENCY_TIMEOUT',
+      details: { dependency: 'course-rabbitmq' },
+    });
+    expect(exporter.getFinishedSpans()[0]?.attributes['error.type']).toBe('timeout');
   });
 });

@@ -9,6 +9,18 @@ import type { Principal } from '../ports/index.js';
 import { observeDependency } from '../telemetry/observe-dependency.js';
 import { CircuitBreaker } from './circuit-breaker.js';
 
+/** Tham số route là một segment bắt đầu bằng `:`; `ids:query` không phải tham số. */
+const ROUTE_PARAM = /(?<=\/):([A-Za-z_][A-Za-z0-9_]*)/g;
+
+/** Thay `:name` trong route template bằng giá trị đã URL-encode; thiếu giá trị là lỗi lập trình. */
+function resolveRoutePath(template: string, params: Record<string, string> = {}): string {
+  return template.replace(ROUTE_PARAM, (_, name: string) => {
+    const value = params[name];
+    if (value === undefined) throw new Error(`Thiếu tham số route "${name}" cho ${template}`);
+    return encodeURIComponent(value);
+  });
+}
+
 export interface HttpQueryClientOptions {
   /** Định danh dependency canonical, ví dụ `media-identity`. */
   dependency: string;
@@ -21,7 +33,13 @@ export interface HttpQueryClientOptions {
 
 export interface HttpRequest {
   method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
+  /**
+   * Route template, ví dụ `/internal/v1/students/:studentId`. Không nội suy ID vào chuỗi này: template
+   * được dùng nguyên văn làm `operation_name` của span và metric dependency, nên phải hữu hạn.
+   */
   path: string;
+  /** Giá trị cho các tham số `:name` trong `path`; được URL-encode khi dựng URL. */
+  params?: Record<string, string>;
   query?: Record<string, string | number | boolean | undefined>;
   body?: unknown;
   headers?: Record<string, string>;
@@ -58,6 +76,7 @@ export class HttpQueryClient {
 
   async request<T = unknown>(request: HttpRequest): Promise<HttpResponse<T>> {
     const method = request.method ?? 'GET';
+    const path = resolveRoutePath(request.path, request.params);
     // Lấy token trước khi mở span dependency: lỗi lấy token thuộc về dependency `*-identity-token`.
     const token = await this.options.auth?.tokens.getToken(this.options.auth.audience);
     return observeDependency(this.options.dependency, `${method} ${request.path}`, async () => {
@@ -66,7 +85,7 @@ export class HttpQueryClient {
         throw AppError.dependencyUnavailable(this.options.dependency);
       }
       try {
-        const response = await this.send<T>(method, request, token);
+        const response = await this.send<T>(method, path, request, token);
         if (response.status >= 500 && !request.passthroughStatuses?.includes(response.status)) {
           throw response.status === 504
             ? AppError.dependencyTimeout(this.options.dependency)
@@ -83,10 +102,11 @@ export class HttpQueryClient {
 
   private async send<T>(
     method: string,
+    path: string,
     request: HttpRequest,
     token: string | undefined,
   ): Promise<HttpResponse<T>> {
-    const url = new URL(request.path, this.options.baseUrl);
+    const url = new URL(path, this.options.baseUrl);
     for (const [key, value] of Object.entries(request.query ?? {})) {
       if (value !== undefined) url.searchParams.set(key, String(value));
     }

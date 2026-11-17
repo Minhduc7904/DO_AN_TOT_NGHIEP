@@ -223,38 +223,38 @@ Mỗi dependency call có client span và ba metric `lms_dependency_request_coun
 | Gateway → identity (lấy token) | `gateway-identity-token` | `POST /internal/v1/auth/service-token` |
 | course, media, notification-worker, ai-worker, scheduler-worker → identity (lấy token) | `<caller>-identity-token` | `POST /internal/v1/auth/service-token` |
 | Mọi bên verify token → identity (JWKS) | `<service>-identity-jwks` | `GET jwks` |
-| course → media | `course-media` | `<METHOD> <path>` |
-| course → ai | `course-ai` | `<METHOD> <path>` |
-| media → identity | `media-identity` | `<METHOD> <path>` |
-| notification-worker → identity | `notification-worker-identity` | `<METHOD> <path>` |
-| scheduler-worker → media | `scheduler-worker-media` | `<METHOD> <path>` |
-| ai-worker → course | `ai-worker-course` | `<METHOD> <path>` |
-| ai-worker → media | `ai-worker-media` | `<METHOD> <path>` |
+| course → media | `course-media` | `<METHOD> <route template>` |
+| course → ai | `course-ai` | `<METHOD> <route template>` |
+| media → identity | `media-identity` | `<METHOD> <route template>` |
+| notification-worker → identity | `notification-worker-identity` | `<METHOD> <route template>` |
+| scheduler-worker → media | `scheduler-worker-media` | `<METHOD> <route template>` |
+| ai-worker → course | `ai-worker-course` | `<METHOD> <route template>` |
+| ai-worker → media | `ai-worker-media` | `<METHOD> <route template>` |
 
 Lưu ý:
 
-- **`operation_name` của `HttpQueryClient` là `<METHOD> <path>` thô**, nên một số cạnh có ID trong operation: `GET /internal/v1/students/<id>` (`media-identity`, `notification-worker-identity`), `GET /internal/v1/ai/jobs/<job_id>` (`course-ai`), `…/courses/<id>/lessons/<id>/…` (`ai-worker-course`), `…/media/<id>/content` (`ai-worker-media`). Điều này **lệch** với quy tắc của v1 (operation hữu hạn, không đưa ID vào metric label). Giảm nhẹ hiện có: view của SDK chỉ cho phép allowlist thuộc tính và giới hạn 512 tổ hợp mỗi instrument, phần tràn không chứa ID gốc; hành vi chính xác khi tràn chưa kiểm chứng. Đây là điểm cần Đức quyết định (chuẩn hóa operation bằng route template) trước khi thu dataset; policy này chưa sửa code.
-- Cạnh RabbitMQ chỉ có span (PRODUCER/CONSUMER mang `dependency_identity=<service.name>-rabbitmq`, `operation_name` là `publish`/`consume`); **không có** metric `lms_dependency_*` cho RabbitMQ, chỉ có metric broker. Lỗi publish ném `DEPENDENCY_*` với `details.dependency=rabbitmq` (chưa theo identity canonical).
+- **`operation_name` của `HttpQueryClient` là `<METHOD> <route template>`** (sửa ngày 17/11/2026 cho Gate R của [plan-v0.3](../plan/plan-v0.3-24-weeks.md)). Caller truyền `path` dạng template và giá trị tham số qua `params`, ví dụ `{ path: '/internal/v1/students/:studentId', params: { studentId } }`; client URL-encode giá trị khi dựng URL. Các operation hiện có: `GET /internal/v1/students/:studentId` (`media-identity`, `notification-worker-identity`), `GET /internal/v1/ai/jobs/:jobId` (`course-ai`), `… /internal/v1/courses/:courseId/lessons/:lessonId/{ai-context,ai-content,ai-quizzes}` (`ai-worker-course`), `GET /internal/v1/media/:mediaId/content` (`ai-worker-media`). Số operation hữu hạn, đúng quy tắc của v1. Template thiếu tham số làm request thất bại trước khi gửi (lỗi lập trình, không tính là lỗi dependency).
+- Cạnh RabbitMQ chỉ có span (PRODUCER/CONSUMER mang `dependency_identity=<service.name>-rabbitmq`, `operation_name` là `publish`/`consume`); **không có** metric `lms_dependency_*` cho RabbitMQ, chỉ có metric broker. Lỗi publish ném `DEPENDENCY_*` với `details.dependency=<service.name>-rabbitmq`; span PRODUCER ghi lỗi gốc (`exception`), `error.type` (`timeout`/`unavailable`) và log `event=dependency.failure` như các dependency khác.
 - Metric label chỉ chứa identity/operation/status; không đưa principal ID, resource ID, `message_id`, credential, token, query string hoặc fault truth vào label. Span có thể giữ path để chẩn đoán nhưng không ghi query string, credential hay token.
 
 ## 9. Kiểm chứng
 
 Test hiện có chứng minh các hành vi trên:
 
-- `lms/packages/common/test/unit/clients.spec.ts`: breaker mở/half-open/đóng, timeout thành `DEPENDENCY_TIMEOUT`, 5xx thành `DEPENDENCY_UNAVAILABLE` và breaker mở sau ngưỡng, `passthroughStatuses`, 4xx trả về caller, forward correlation id và query.
+- `lms/packages/common/test/unit/clients.spec.ts`: breaker mở/half-open/đóng, timeout thành `DEPENDENCY_TIMEOUT`, 5xx thành `DEPENDENCY_UNAVAILABLE` và breaker mở sau ngưỡng, `passthroughStatuses`, 4xx trả về caller, forward correlation id và query, route template (tham số được URL-encode, `operation_name` giữ template, thiếu tham số thì không gửi request).
 - `lms/packages/common/test/unit/service-auth.spec.ts`: cache token theo audience và single-flight, làm mới nền ở 50% TTL, stale-while-error của token và JWKS, `kid` lạ refetch tối đa một lần mỗi khoảng tối thiểu, ma trận loại token.
-- `lms/packages/common/test/unit/messaging.spec.ts`: envelope và tên queue, ghi outbox, relay đánh dấu đã phát hoặc lên lịch thử lại khi lỗi, inbox bỏ qua message trùng, consumer khi channel đã đóng (không retry, không unhandled rejection), `stop` chờ command đang xử lý. `lms/packages/common/test/integration/rabbitmq-outbox.integration.mjs` (RabbitMQ thật): retry đủ `maxAttempts` rồi command nằm trong `<queue>.error`.
+- `lms/packages/common/test/unit/messaging.spec.ts`: envelope và tên queue, ghi outbox, relay đánh dấu đã phát hoặc lên lịch thử lại khi lỗi, inbox bỏ qua message trùng, consumer khi channel đã đóng (không retry, không unhandled rejection), `stop` chờ command đang xử lý, lỗi và timeout publish mang identity `<service>-rabbitmq`. `lms/packages/common/test/integration/rabbitmq-outbox.integration.mjs` (RabbitMQ thật): retry đủ `maxAttempts` rồi command nằm trong `<queue>.error`.
 - `lms/services/gateway/test/telemetry/dependency.telemetry-test.mjs` (qua `pnpm run test:telemetry`): span và metric dependency của Gateway.
-- `tracing-smoke` trong `pnpm run test:observability`: kịch bản `identity` ngừng phản hồi (login lỗi ngay tại `gateway-identity`, token còn hạn vẫn dùng được, lỗi `gateway-identity-token` sau khi token dịch vụ hết hạn, phục hồi sau `unpause`); `metrics-smoke`: dừng một worker làm backlog tăng, command sai vào `.error`, drain khi phục hồi.
+- `tracing-smoke` trong `pnpm run test:observability`: kịch bản `identity` ngừng phản hồi (login lỗi ngay tại `gateway-identity`, token còn hạn vẫn dùng được, lỗi `gateway-identity-token` sau khi token dịch vụ hết hạn, phục hồi sau `unpause`); `metrics-smoke`: dừng một worker làm backlog tăng, command sai vào `.error`, drain khi phục hồi; mọi `operation_name` của `lms_dependency_*` không chứa UUID hay số ID (lần chạy ngày 17/11/2026: 186 tổ hợp, đạt).
 - `pnpm run ci:verify` (`format:check`, build, lint, test) và `docker compose config` phải pass trước khi chuyển `Chờ review`.
 
-Chưa có test riêng cho: số lần gọi mạng bằng 1 ở từng client của v2, hành vi khi `operation_name` vượt 512 tổ hợp, timeout/pool mặc định của PostgreSQL và MinIO.
+Chưa có test riêng cho: số lần gọi mạng bằng 1 ở từng client của v2, timeout/pool mặc định của PostgreSQL và MinIO.
 
 ## 10. Điểm chưa kiểm chứng và việc mở
 
 - Timeout và kích thước pool mặc định của PostgreSQL (`pg`/Prisma adapter) và MinIO client: code không đặt, chưa kiểm chứng.
 - `AI_WORKER_LEASE_MS > AI_COMPLETION_TIMEOUT_MS` mới là quy ước, chưa ép bằng schema.
-- Chuẩn hóa `operation_name` để không chứa ID (mục 8) và metric publish/consume RabbitMQ, độ trễ outbox: quyết định của Đức.
+- Metric `lms_dependency_*` cho publish/consume RabbitMQ và độ trễ outbox: chưa có; chỉ thêm nếu case C1 (Target) cần ([ADR-006](../adr/adr-006-trim-project-scope-v1.md)).
 - Giới hạn tốc độ cho `POST /internal/v1/auth/service-token` chưa có ([http-and-event-contracts-v2](http-and-event-contracts-v2.md) mục 10).
 
 ## Khác biệt so với bản trước
@@ -267,6 +267,6 @@ Chưa có test riêng cho: số lần gọi mạng bằng 1 ở từng client c�
 | Retry | HTTP retry tắt; không định nghĩa retry/DLQ cho messaging | HTTP retry vẫn tắt; thêm retry consumer trong tiến trình (mặc định 5 lần, chờ cố định 1 giây, không có queue `.retry` hay DLX) rồi `<queue>.error`; outbox backoff không giới hạn số lần; inbox idempotent |
 | Error mapping của Gateway | Gateway ánh xạ upstream 504 → 504, 500–503/505–599 → 503 | Gateway trả nguyên vẹn phản hồi upstream; chỉ tự sinh 404/401/403/503/504 trong các trường hợp ở mục 5.3 |
 | Business 4xx | Course 404, Submission 404, `{ enrolled: false }` | Theo từng cạnh v2 (mục 5.2): hồ sơ student 404 → `null`, `ai`/`course`/`media` giữ mã nghiệp vụ, `course-media` coi mọi mã khác 2xx là dependency lỗi |
-| Dependency identity | 10 cạnh HTTP (`gateway-*`, `enrollment-course`, `submission-*`, `grading-submission`) với `operation_name` hữu hạn | Cạnh mới (`course-media`, `course-ai`, `media-identity`, `notification-worker-identity`, `scheduler-worker-media`, `ai-worker-course`, `ai-worker-media`, `<caller>-identity-token`, `<service>-identity-jwks`); `operation_name` là `<METHOD> <path>` thô nên một số cạnh có ID (lệch quy tắc v1, ghi ở mục 8) |
+| Dependency identity | 10 cạnh HTTP (`gateway-*`, `enrollment-course`, `submission-*`, `grading-submission`) với `operation_name` hữu hạn | Cạnh mới (`course-media`, `course-ai`, `media-identity`, `notification-worker-identity`, `scheduler-worker-media`, `ai-worker-course`, `ai-worker-media`, `<caller>-identity-token`, `<service>-identity-jwks`); `operation_name` là `<METHOD> <route template>`, hữu hạn như v1 (mục 8) |
 | Xác thực service-to-service | Mục "Bổ sung v2" ngắn ở cuối bản v1 | Mục 6 viết lại đầy đủ: token (làm mới nền 50% TTL, single-flight, giãn 5 giây sau lỗi, stale đến hết hạn), JWKS (cache 5 phút, refetch tối đa 10 giây một lần, stale không thời hạn) |
 | Kiểm chứng | `format:check`, build, lint, unit test, `test:telemetry`, `ci:verify`, `git diff --check`, `docker compose config` | Dẫn test và smoke thực tế của v2 (mục 9), nêu rõ các khoảng chưa có test |

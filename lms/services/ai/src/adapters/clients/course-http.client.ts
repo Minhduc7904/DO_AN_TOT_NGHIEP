@@ -48,13 +48,21 @@ export class CourseHttpClient implements LessonCourseClient {
     });
   }
 
-  private path(courseId: string, lessonId: string, suffix: string): string {
-    return `/${INTERNAL_PREFIX}/courses/${courseId}/lessons/${lessonId}/${suffix}`;
+  /** Route template và tham số; ID không nằm trong `path` để `operation_name` hữu hạn. */
+  private lessonRoute(
+    courseId: string,
+    lessonId: string,
+    suffix: 'ai-context' | 'ai-content' | 'ai-quizzes',
+  ): { path: string; params: Record<string, string> } {
+    return {
+      path: `/${INTERNAL_PREFIX}/courses/:courseId/lessons/:lessonId/${suffix}`,
+      params: { courseId, lessonId },
+    };
   }
 
   async getContext(courseId: string, lessonId: string): Promise<LessonContext> {
     const response = await this.client.request({
-      path: this.path(courseId, lessonId, 'ai-context'),
+      ...this.lessonRoute(courseId, lessonId, 'ai-context'),
     });
     if (response.status !== 200) throw upstreamError(DEPENDENCY, response.status, response.body);
     const parsed = contextSchema.safeParse(response.body);
@@ -71,7 +79,7 @@ export class CourseHttpClient implements LessonCourseClient {
   }): Promise<{ previousContentMarkdown: string | null }> {
     const response = await this.client.request({
       method: 'PUT',
-      path: this.path(input.courseId, input.lessonId, 'ai-content'),
+      ...this.lessonRoute(input.courseId, input.lessonId, 'ai-content'),
       body: {
         requested_by: input.requestedBy,
         content_markdown: input.contentMarkdown,
@@ -92,7 +100,7 @@ export class CourseHttpClient implements LessonCourseClient {
   }): Promise<CreateQuizOutcome> {
     const response = await this.client.request({
       method: 'POST',
-      path: this.path(input.courseId, input.lessonId, 'ai-quizzes'),
+      ...this.lessonRoute(input.courseId, input.lessonId, 'ai-quizzes'),
       body: {
         requested_by: input.requestedBy,
         title: input.quiz.title,
