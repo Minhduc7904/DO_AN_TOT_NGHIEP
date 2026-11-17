@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-01_design-user-behavior-workload` |
 | Tuần | `week-13_2026-10-25_to_2026-10-31` |
-| Trạng thái | Đã giao |
+| Trạng thái | Chờ review |
 | Người phụ trách | Bách |
 | Collaborator | Không có |
 | Ưu tiên | Cao |
@@ -46,22 +46,22 @@ Viết tài liệu thiết kế workload v1 theo gợi ý của giảng viên (m
 
 ## Definition of Done
 
-- [ ] Tài liệu có đủ năm phần User Profile, Goal, Behavior Model, System Response → Update User State, nhịp tải.
-- [ ] Mọi thao tác trong máy trạng thái ánh xạ được tới endpoint có thật trên `main`.
-- [ ] Mỗi tham số có nguồn kiểm chứng được hoặc được đánh dấu là giả định kèm lý do.
-- [ ] Có định nghĩa hai profile healthy bắt buộc và tiêu chí kiểm chứng phân phối traffic.
-- [ ] PR mở vào `main`; URL PR ghi vào card.
+- [x] Tài liệu có đủ năm phần User Profile, Goal, Behavior Model, System Response → Update User State, nhịp tải.
+- [x] Mọi thao tác trong máy trạng thái ánh xạ được tới endpoint có thật trên `main`.
+- [x] Mỗi tham số có nguồn kiểm chứng được hoặc được đánh dấu là giả định kèm lý do.
+- [x] Có định nghĩa hai profile healthy bắt buộc và tiêu chí kiểm chứng phân phối traffic.
+- [x] PR mở vào `main`; URL PR ghi vào card.
 
 ## Liên kết hồ sơ thực hiện
 
 - Input workspace: Không tạo (giai đoạn tự bắt kịp; bằng chứng nằm trong PR).
 - Output workspace: Không tạo.
-- Pull request: Chưa tạo.
-- Kết quả review: Chưa review.
+- Pull request: [#78](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/78).
+- Kết quả review: Chưa review (giai đoạn tự bắt kịp: review và merge theo ngoại lệ do Bách xác nhận).
 
 > URL/số PR và `Chờ review` phải được commit/push vào PR head trước review. Thành viên còn lại phải gửi `APPROVED` hợp lệ trên GitHub; sau đó người phụ trách finalization metadata, ghi `Hoàn thành` trên chính branch/PR và tự merge task của mình. Card chỉ canonically hoàn thành khi commit đó vào nhánh canonical; xem [vòng đời task canonical](../../../rules/git-and-pull-request-rules.md#vòng-đời-task-canonical).
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 17/11/2026 — lập card.
-- Ghi chú/tồn đọng: Không có.
+- Cập nhật gần nhất: 17/11/2026 — hoàn thành tài liệu, mở PR #78, chuyển Chờ review.
+- Ghi chú/tồn đọng: Script tính OULAD chưa nằm trong repo (đưa vào `aiops-platform/load/tools/` ở tuần 14); mức tải chốt sau pilot.

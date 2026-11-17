@@ -10,8 +10,9 @@ Quyết định tách: [ADR-001](../docs/processed/adr/adr-001-restructure-lms-t
 | --------------------------------- | ---------- | ------------------------------------------------------------------------------------------------------ |
 | `observability/`                  | Có         | Collector, Prometheus, Tempo, Loki, Grafana: cấu hình, Dockerfile, dashboard, `compose.yaml` riêng     |
 | `training/`                       | Chưa tạo   | **Phần chính**: RCA engine (detector không giám sát, incident, graph, xếp hạng nguyên nhân) và dataset |
+| `faults/`                         | Có         | Fault injection: toxiproxy trước `course-postgres` và MinIO, LLM stub, CLI `fault-control` ([README](faults/README.md)) |
 | `load/`                           | Có         | Workload k6 mức 1 cho W1–W7 ([README](load/README.md))                                                  |
-| `faults/`, `evaluation/`          | Chưa tạo   | Fault injection, đánh giá                                                                              |
+| `evaluation/`                     | Chưa tạo   | Đánh giá                                                                                               |
 
 Chỉ tạo thư mục khi bắt đầu triển khai module tương ứng. MCP server và agent LLM nằm ngoài phạm vi theo ADR-006.
 
@@ -35,6 +36,10 @@ docker compose --env-file docker-compose/.env.example -f docker-compose/compose.
 
 # Toàn bộ (LMS + aiops-platform trong một project, dùng cho test và CI)
 docker compose --env-file docker-compose/.env.example -f docker-compose/compose.full.yaml up --build -d --wait
+
+# Toàn bộ + lớp fault injection (dùng cho thí nghiệm; xem faults/README.md)
+docker compose --env-file docker-compose/.env.example \
+  -f docker-compose/compose.full.yaml -f aiops-platform/faults/compose.faults.yaml up --build -d --wait
 ```
 
 Khi chạy hai project riêng (hai lệnh đầu), Compose cảnh báo network `aiops-net` đã tồn tại do project khác tạo; đây là hành vi mong muốn vì hai bên dùng chung network.
