@@ -229,7 +229,7 @@ Mục này mô tả tín hiệu RCA engine được phép dựa vào. Số đo v
 Mọi telemetry record phải truy được tối thiểu:
 
 ```text
-service.name        # 1 trong 12 giá trị canonical (catalogue v2 mục 2.1)
+service.name        # 1 trong 11 giá trị canonical (catalogue v2 mục 2.1)
 service.version
 service.instance.id
 timestamp
@@ -357,7 +357,7 @@ Bốn quy ước ảnh hưởng trực tiếp tới feature và ground truth (ca
 Mỗi run (và mỗi cửa sổ giám sát thật) có báo cáo kiểm tra theo `TelemetryQualityReport` của [telemetry-and-ground-truth-schema-v1](telemetry-and-ground-truth-schema-v1.md); báo cáo này được tham chiếu trong `RcaIncidentResult.telemetry_quality`. Các kiểm tra tối thiểu:
 
 - timestamp hợp lệ và không lẫn timezone;
-- tỷ lệ record thiếu `service.name` hoặc `service.name` ngoài 12 giá trị canonical;
+- tỷ lệ record thiếu `service.name` hoặc `service.name` ngoài 11 giá trị canonical;
 - tỷ lệ span thiếu parent hoặc trace relation, riêng cặp PRODUCER/CONSUMER không nối được;
 - độ phủ trace theo luồng (9 luồng ở catalogue v0 mục 1.2);
 - độ phủ metric theo họ (RED 11/11, `lms_dependency_*` theo cặp service/identity, queue 24) và khoảng trống scrape;
@@ -428,7 +428,7 @@ ServiceWindowFeature
 
 ### 6.3. EdgeWindowFeature
 
-Edge dùng hướng caller → callee. Có bốn loại cạnh (mục 11.1): `sync`, `async`, `dependency`, `shared-resource`; feature quan sát chỉ có cho ba loại đầu.
+Edge dùng hướng caller → callee. Có năm loại cạnh (mục 11.1): `sync`, `async`, `dependency`, `auth`, `shared-resource`; feature quan sát có cho bốn loại đầu (`auth` quan sát qua `<caller>-identity-token`/`<caller>-identity-jwks`), `shared-resource` chỉ là prior.
 
 ```text
 EdgeWindowFeature
@@ -922,16 +922,17 @@ Timeline event phải trỏ tới evidence (metric + nhãn + khoảng thời gia
 ```text
 G(W) = (V, E)
 V = service nodes (11 service.name) quan sát trong window W
-E = các cạnh caller -> callee thuộc bốn loại dưới đây
+E = các cạnh caller -> callee thuộc năm loại dưới đây
 ```
 
-Bốn loại cạnh:
+Năm loại cạnh (thống nhất với mục 11.5, 12 và graph config mục 17.5; sửa ngày 17/11/2026):
 
 | Loại | Nguồn | Ý nghĩa |
 | --- | --- | --- |
 | `sync` | Span CLIENT/SERVER cùng trace và `lms_dependency_*` với `dependency_identity` dạng `<caller>-<callee>` | HTTP đồng bộ giữa service |
 | `async` | Span PRODUCER → CONSUMER cùng `trace_id`, nối theo queue đích | Command qua RabbitMQ (async logical edge) |
 | `dependency` | `lms_dependency_*` và span CLIENT tới identity hạ tầng | Service → PostgreSQL, MinIO, SMTP, LLM provider (evidence, không phải node candidate) |
+| `auth` | Span CLIENT và `lms_dependency_*` với `dependency_identity` dạng `<caller>-identity-token` / `<caller>-identity-jwks` | Service phụ thuộc `identity` để lấy service token và JWKS (ADR-004); tần suất thấp, lỗi xuất hiện muộn theo TTL cache (mục 11.5) |
 | `shared-resource` | Topology tĩnh (catalogue v2 mục 4, hạ tầng chung) | Hai service cùng dùng một tài nguyên vật lý (broker, instance PostgreSQL) hoặc cùng một nguồn xác thực; **không có trong trace**, là prior cho case tranh chấp tài nguyên |
 
 Cạnh `sync` theo catalogue v2 mục 5.1:

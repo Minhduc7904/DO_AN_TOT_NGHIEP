@@ -78,7 +78,7 @@ Repository chỉ scaffold các module khi bắt đầu triển khai. Cây source
 
 ## Quick Start Docker Compose
 
-Testbed v2 gồm Gateway, bảy service (Auth, Student, Course, Media, Notification, Scheduler, AI), bốn worker
+Testbed v2 gồm Gateway, sáu service nghiệp vụ (Identity, Course, Media, Notification, Scheduler, AI), bốn worker
 (`media-worker`, `notification-worker`, `scheduler-worker`, `ai-worker`), PostgreSQL, RabbitMQ, MinIO và Mailpit; dựng
 kèm stack observability của `aiops-platform` khi dùng `compose.full.yaml`. Thứ tự dựng từ checkout sạch:
 
@@ -100,7 +100,7 @@ kèm stack observability của `aiops-platform` khi dùng `compose.full.yaml`. T
 | [Mô tả đề tài](docs/processed/description/Mo_ta_de_tai_DATN_260811_125322_day_du.md) | Mô tả đề tài đã chuyển đổi từ tài liệu nguồn. |
 | [Quy ước workspace](agent-resources/skills/graduation-workspace/references/workspace-standard.md) | Cách tổ chức task, input/output và tài liệu của nhóm. |
 
-Định hướng tổng thể, hai blueprint và plan v0.2 tạo thành kiến trúc nền cho implementation; định hướng và hai blueprint đã được viết lại theo topology v2 ở R-12 (bản trước giữ làm lịch sử), plan v0.2 chưa cập nhật theo refactor. Thay đổi architectural decision đáng kể sau mốc này phải được ghi bằng ADR và cập nhật tài liệu canonical liên quan.
+Định hướng tổng thể, hai blueprint và plan v0.3 tạo thành kiến trúc nền cho implementation; định hướng và hai blueprint đã được viết lại theo topology v2 ở R-12 (bản trước giữ làm lịch sử), plan v0.3 thay plan v0.2 từ tuần 11 ([ADR-006](docs/processed/adr/adr-006-trim-project-scope-v1.md)). Thay đổi architectural decision đáng kể sau mốc này phải được ghi bằng ADR và cập nhật tài liệu canonical liên quan.
 
 `plan-v0.1-20-weeks.md` là historical baseline và không được dùng làm kế hoạch triển khai hiện tại.
 

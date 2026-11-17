@@ -97,7 +97,7 @@ Log chẩn đoán được ghi ở các điểm dùng chung, không rải theo t
 - `createHttpTelemetryMiddleware` ghi đúng một log cho mỗi request, trong context của server span, kèm `http_method`, `http_route` (template hoặc `unmatched`), `http_status_code` và `duration_ms`:
   - `ERROR` `event=http.server.error` cho HTTP 5xx, `client_aborted` và exception, thêm `error_type`.
   - Access log `event=http.server.request` cho request còn lại: `INFO` với 1xx–3xx, `WARN` với 4xx. HTTP 4xx nghiệp vụ không bị coi là lỗi.
-  - Access log bỏ qua route `/health` để probe của Docker (5 giây/lần) không làm nhiễu log; lỗi 5xx của `/health` vẫn được ghi. Option `accessLog: { enabled, ignoreRoutes }` đổi hành vi này; các runtime HTTP đọc `HTTP_ACCESS_LOG_ENABLED` (mặc định `true`) để tắt access log khi cần giảm volume mà không mất log lỗi.
+  - Access log bỏ qua route `/health`; lỗi 5xx của `/health` vẫn được ghi. Lưu ý: healthcheck của Compose (5 giây/lần) chỉ gọi `/health` ở `gateway`, 10 runtime còn lại gọi `/ready`, nên mỗi runtime đó vẫn sinh một trace và một access log mỗi 5 giây; RCA engine phải lọc `/ready` như trace nhiễu. Option `accessLog: { enabled, ignoreRoutes }` đổi hành vi này; các runtime HTTP đọc `HTTP_ACCESS_LOG_ENABLED` (mặc định `true`) để tắt access log khi cần giảm volume mà không mất log lỗi.
 - `logDependencyFailure(span, ...)` ghi `ERROR` `event=dependency.failure` với `dependency_identity`, `operation_name`, `error_type` (`timeout`/`unavailable`) trong context của client span lỗi. Hàm này được gọi từ `observeDependency` (mọi dependency v2) và Gateway proxy. Conflict nghiệp vụ không ghi log này.
 - Worker xử lý command chưa có log riêng (chỉ access log `/ready`); lỗi xử lý thấy ở span CONSUMER và `dependency.failure`.
 

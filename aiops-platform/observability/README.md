@@ -1,6 +1,6 @@
 # Observability của LMS testbed
 
-Stack thu thập telemetry (Collector, Prometheus, Tempo, Loki, Grafana) tách khỏi LMS. 12 runtime của LMS (8 service và 4 worker, xem [topology v2](../../docs/processed/architecture/service-catalogue-and-topology-v2.md)) chỉ gửi OTLP/HTTP tới `otel-collector:4318` qua network `aiops-net`; LMS không import mã từ thư mục này.
+Stack thu thập telemetry (Collector, Prometheus, Tempo, Loki, Grafana) tách khỏi LMS. 11 runtime của LMS (7 service và 4 worker, xem [topology v2](../../docs/processed/architecture/service-catalogue-and-topology-v2.md)) chỉ gửi OTLP/HTTP tới `otel-collector:4318` qua network `aiops-net`; LMS không import mã từ thư mục này.
 
 Cách dựng chung với LMS nằm ở [aiops-platform/README.md](../README.md). Test đo telemetry xuyên service nằm ở [mục Kiểm chứng](#kiểm-chứng-bằng-smoke).
 
@@ -77,7 +77,7 @@ Grafana provision từ file trong repo, không lưu thay đổi trên UI (`allow
 
 ## Tín hiệu LMS phát ra
 
-Registry, nhãn, bucket và giới hạn của metric/log nằm ở [lms/packages/observability/README.md](../../lms/packages/observability/README.md). Tóm tắt các họ metric Prometheus nhận được từ 12 runtime:
+Registry, nhãn, bucket và giới hạn của metric/log nằm ở [lms/packages/observability/README.md](../../lms/packages/observability/README.md). Tóm tắt các họ metric Prometheus nhận được từ 11 runtime:
 
 | Họ metric                                                          | Nhãn chính                                                                  |
 | ------------------------------------------------------------------ | --------------------------------------------------------------------------- |

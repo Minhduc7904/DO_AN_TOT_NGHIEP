@@ -85,11 +85,11 @@ Compose không đặt các biến này nên dùng mặc định.
 
 Hành vi:
 
-1. **Tính là lỗi** (tăng bộ đếm liên tiếp): timeout, lỗi mạng/DNS/kết nối, phản hồi 5xx (trừ mã trong `passthroughStatuses`), body không parse được thành JSON. **Reset bộ đếm**: mọi phản hồi 2xx/3xx/4xx, kể cả 404/409 nghiệp vụ.
+1. **Tính là lỗi** (tăng bộ đếm liên tiếp): timeout, lỗi mạng/DNS/kết nối, phản hồi 5xx (trừ mã trong `passthroughStatuses`), body không parse được thành JSON. **Reset bộ đếm**: mọi phản hồi 2xx/3xx/4xx, kể cả 404/409 nghiệp vụ, và mã 5xx nằm trong `passthroughStatuses`.
 2. Đủ ngưỡng lỗi liên tiếp thì breaker **mở** trong cooldown: request mới bị short-circuit thành `DEPENDENCY_UNAVAILABLE` ngay, không gọi mạng; span có `circuit_breaker_open=true` và metric ghi `status=unavailable`. Request bị short-circuit không tăng bộ đếm.
 3. Hết cooldown, breaker **half-open**: đúng một request được thử (probe), các request khác vẫn bị short-circuit. Probe thành công thì đóng; probe thất bại thì mở lại với cooldown mới.
 4. Breaker **không retry** request đã thất bại và không làm tăng số lần gọi mạng.
-5. `passthroughStatuses` là tùy chọn cho phép trả một số mã 5xx về caller thay vì ném lỗi dependency (không tính vào breaker); client hỗ trợ và có unit test, nhưng hiện chưa service nào dùng.
+5. `passthroughStatuses` là tùy chọn cho phép trả một số mã 5xx về caller thay vì ném lỗi dependency; với breaker, mã này được tính như phản hồi thành công (`breaker.onSuccess()` đặt lại bộ đếm lỗi liên tiếp); client hỗ trợ và có unit test, nhưng hiện chưa service nào dùng.
 
 Không có circuit breaker ở: Gateway → upstream (`gateway-<service>`), tải JWKS (giới hạn bằng khoảng refetch tối thiểu, mục 6.2), publish RabbitMQ (dùng backoff của outbox, mục 4), SMTP, MinIO, PostgreSQL và LLM provider.
 
@@ -143,7 +143,7 @@ Các cơ chế sau nằm trong nghiệp vụ nhưng ảnh hưởng tới lan l�
 | Item thông báo (`notification-worker`) | `NOTIFICATION_ITEM_MAX_ATTEMPTS` 3; `NOTIFICATION_ITEM_RETRY_DELAY_MS` 1.000 ms | Gửi email lỗi thì item sang `RETRY`, chờ `base × 2^(n-1)` rồi gửi lại; hết lượt thì `FAILED`, batch có thể `PARTIAL_FAILED`; claim bằng lease |
 | Run scheduler | `SCHEDULER_RUN_LEASE_MS` 120.000 ms; `SCHEDULER_RUN_MAX_ATTEMPTS` 3 | Worker chết thì lease hết hạn và run được nhận lại tới hết lượt, sau đó `FAILED` (`RUN_LEASE_EXPIRED`) |
 | Tài liệu AI | tối đa 3 lần trích; lease `AI_WORKER_LEASE_MS` 600.000 ms | Lease hết hạn thì nhận lại tới hết lượt rồi `FAILED` |
-| Job AI | lặp agent tối đa 6 lượt gọi provider | Job `RUNNING` quá hạn lease thì `FAILED` `WORKER_INTERRUPTED` và **không chạy lại** (tránh ghi trùng) |
+| Job AI | lặp agent tối đa 6 lượt gọi provider; lease gia hạn trước mỗi lượt | Command được giao lại khi job `RUNNING` đã quá hạn lease thì `FAILED` `WORKER_INTERRUPTED` và **không chạy lại** (tránh ghi trùng). Không có tiến trình quét định kỳ: không có lần giao lại thì job ở `RUNNING`. Provider lỗi hoặc quá `AI_COMPLETION_TIMEOUT_MS` trong lúc chạy thì job `FAILED` với mã lỗi của lời gọi |
 | Thumbnail media | dùng retry của consumer; hết lượt thì thumbnail và job `FAILED` | Client có thể retry thủ công qua API |
 
 ## 5. Error mapping
