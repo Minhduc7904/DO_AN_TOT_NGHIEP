@@ -7,7 +7,7 @@
 | Tuần | `week-13_2026-10-25_to_2026-10-31` |
 | Nguồn plan canonical | [Plan v0.3 — Tuần 13](../../plan-v0.3-24-weeks.md#tuần-13--thiết-kế-workload-theo-hành-vi-người-dùng-và-lớp-export-telemetry) |
 | Mục tiêu tuần | Thiết kế workload mức 1 + 2 có nguồn cho tham số; k6 mức 1 cho W1–W7; LLM stub và proxy chèn trễ chạy trong Compose; lớp export Prometheus/Tempo/Loki theo run và cửa sổ thời gian; data dictionary, schema chuẩn hóa v2 và kiểm tra chất lượng dữ liệu trên một run thử. |
-| Trạng thái tuần | Đang thực hiện |
+| Trạng thái tuần | Chờ xử lý — sáu task đã hoàn thành và merge (PR #75–#78, #80, #81); còn Gate R điều kiện 5 (ngoại lệ ở dưới) |
 
 > Tuần canonical là 25/10/2026–31/10/2026. Kế hoạch được lập và thực hiện từ 17/11/2026 (tuần lịch 16) vì giai đoạn tái cấu trúc kéo dài; hạn task bên dưới là mốc bù tiến độ, không đổi phạm vi milestone.
 
@@ -17,11 +17,11 @@
 
 | Mã task | Task | Người phụ trách | Collaborator | Ưu tiên | Trạng thái |
 | --- | --- | --- | --- | --- | --- |
-| [task-01_design-user-behavior-workload](task-01_design-user-behavior-workload.md) | Tài liệu thiết kế workload mức 1 + 2 theo hành vi người dùng, có nguồn cho tham số | Bách | Không có | Cao | Chờ review |
-| [task-02_build-k6-level-one-journeys](task-02_build-k6-level-one-journeys.md) | k6 mức 1: các hành trình W1–W7 trên dữ liệu seed | Bách | Không có | Cao | Chờ review |
-| [task-03_add-llm-stub-and-latency-proxies](task-03_add-llm-stub-and-latency-proxies.md) | LLM stub chỉnh được độ trễ/lỗi và proxy chèn trễ trước MinIO, `course-postgres` trong Compose | Bách | Không có | Cao | Chờ review |
-| [task-04_build-telemetry-export-adapter](task-04_build-telemetry-export-adapter.md) | Adapter export Prometheus, Tempo, Loki theo run và cửa sổ thời gian | Bách | Không có | Cao | Chờ review |
-| [task-05_define-data-dictionary-and-quality-check](task-05_define-data-dictionary-and-quality-check.md) | Data dictionary, schema chuẩn hóa v2 và data-quality check trên một run thử | Bách | Không có | Cao | Chờ review |
+| [task-01_design-user-behavior-workload](task-01_design-user-behavior-workload.md) | Tài liệu thiết kế workload mức 1 + 2 theo hành vi người dùng, có nguồn cho tham số | Bách | Không có | Cao | Hoàn thành |
+| [task-02_build-k6-level-one-journeys](task-02_build-k6-level-one-journeys.md) | k6 mức 1: các hành trình W1–W7 trên dữ liệu seed | Bách | Không có | Cao | Hoàn thành |
+| [task-03_add-llm-stub-and-latency-proxies](task-03_add-llm-stub-and-latency-proxies.md) | LLM stub chỉnh được độ trễ/lỗi và proxy chèn trễ trước MinIO, `course-postgres` trong Compose | Bách | Không có | Cao | Hoàn thành |
+| [task-04_build-telemetry-export-adapter](task-04_build-telemetry-export-adapter.md) | Adapter export Prometheus, Tempo, Loki theo run và cửa sổ thời gian | Bách | Không có | Cao | Hoàn thành |
+| [task-05_define-data-dictionary-and-quality-check](task-05_define-data-dictionary-and-quality-check.md) | Data dictionary, schema chuẩn hóa v2 và data-quality check trên một run thử | Bách | Không có | Cao | Hoàn thành |
 | [task-06_adopt-semi-real-data-strategy](task-06_adopt-semi-real-data-strategy.md) | Chốt chiến lược dữ liệu bán thực và bằng chứng đóng góp của AI/RCA (ADR-007, plan v0.4), rà soát tài liệu và ghi reference | Bách | Không có | Cao | Hoàn thành |
 
 > Khi đọc tiến độ project-wide, chỉ coi hàng có trạng thái `Hoàn thành` trên nhánh canonical là hoàn thành; trạng thái đã finalization trên task branch chưa thay thế nguồn này.
@@ -42,7 +42,7 @@
 
 ## Tiêu chí kết thúc tuần
 
-- [ ] Các task ưu tiên cao có trạng thái và bằng chứng được cập nhật.
-- [ ] Các task hoàn thành đã liên kết đến PR và bằng chứng DoD.
+- [x] Các task ưu tiên cao có trạng thái và bằng chứng được cập nhật.
+- [x] Các task hoàn thành đã liên kết đến PR và bằng chứng DoD.
 - [ ] Gate R điều kiện 5 có bằng chứng của Bách (ngoại lệ ở trên được đóng).
-- [ ] Tồn đọng và việc chuyển sang tuần 14 đã được ghi rõ.
+- [x] Tồn đọng và việc chuyển sang tuần 14 đã được ghi rõ: Gate R điều kiện 5; việc tuần 14 theo [plan-v0.4](../../plan-v0.4-24-weeks.md).

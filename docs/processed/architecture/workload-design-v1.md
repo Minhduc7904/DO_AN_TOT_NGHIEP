@@ -102,7 +102,7 @@ Phần này gom các con số **đã kiểm chứng** mà các mục sau dùng. 
 | NIST/SEMATECH e-Handbook, mục 1.3.5.15 và 1.3.5.16 | Kiểm định chi-bình phương dùng cho dữ liệu chia nhóm/rời rạc; kiểm định Kolmogorov–Smirnov (KS) chỉ hợp lệ với phân phối liên tục có tham số **cố định trước**, không ước lượng từ chính dữ liệu đang kiểm. |
 | Paxson, Floyd (1995), IEEE/ACM ToN [L-PaxsonFloyd] (thêm 17/11/2026, đã mở PDF) | Trên 24 trace TCP diện rộng: "user-initiated TCP session arrivals ... are well-modeled as Poisson processes with fixed hourly rates"; các tiến trình đến khác (gói tin trong phiên, kết nối dữ liệu FTP) burst hơn Poisson nhiều; kết nối do máy khởi tạo theo timer (SMTP, NNTP) không theo Poisson. Dùng cho mục 7.7. |
 | Vögele và cs. (2018), WESSBAS, SoSyM [L-WESSBAS] (thêm 17/11/2026) | Trích **mô hình hành vi** (chuỗi Markov) và **tỉ lệ trộn hành vi** từ log phiên thật (gom nhóm bằng X-means), sinh kịch bản tải tự động; kiểm chứng bằng thống kê mô tả (độ dài phiên, số request theo loại); ghi nhận chuỗi Markov bậc 1 có thể sinh phiên dài hơn thật. Dùng cho mục 13.8. |
-| Fang và cs. (2025), arXiv 2510.04711 [L-Fang2025] (thêm 17/11/2026) | Workload của các benchmark RCA cũ chỉ 0,14–4,35 QPS, phủ ít service; với workload theo máy trạng thái (16,47 QPS, phủ 84% service), Top-1 trung bình của 11 phương pháp RCA còn 0,21, Nezha từ 0,87 xuống 0,04. Lý do phải làm traffic giống thật (mục 13.1). |
+| Fang và cs. (2025), arXiv 2510.04711 [L-Fang2025] (thêm 17/11/2026) | Workload của các benchmark RCA cũ chỉ 0,14–4,35 (ví dụ trên Train-Ticket) QPS, phủ ít service; với workload theo máy trạng thái (16,47 QPS, phủ 84% service), Top-1 trung bình của 11 phương pháp RCA còn 0,21, Nezha từ 0,87 xuống 0,04 khi đánh giá trên bộ khó và thực tế hơn (bộ mới đổi nhiều yếu tố cùng lúc, không chỉ workload). Lý do phải làm traffic giống thật (mục 13.1). |
 
 ### 2.3. Log Moodle Unistudium 2022 — tính lại từ dữ liệu gốc (thêm theo ADR-007)
 
@@ -1089,7 +1089,7 @@ WESSBAS ghi nhận Markov bậc 1 có xu hướng sinh phiên dài hơn thật; 
 ## 14. Mức 3 offline — LLM sinh persona và nội dung một lần (Stretch, theo ADR-007)
 
 - **Làm gì:** dùng LLM sinh **một lần** 50–200 persona giảng viên kèm nội dung (đề cương khóa học, nội dung bài, câu hỏi quiz, tài liệu cho W6), lưu JSON có hash, đưa vào manifest; k6 mức 2 của giảng viên chỉ đọc file này. Đây là độ thực của **nội dung/payload**, không phải nhịp tải.
-- **Vì sao không chạy LLM agent trực tiếp làm nguồn tải:** chậm (UXAgent khoảng 8 giây mỗi bước, [L-UXAgent], https://arxiv.org/abs/2504.09407); hành vi lệch người thật (AgentA/B: agent 6,05 hành động/phiên so với 15,96 của người, [L-AgentAB], https://arxiv.org/abs/2504.09723); không tái lập được kể cả khi đặt temperature 0 ([L-LLMNondet], https://arxiv.org/abs/2408.04667). Gần nhất với hướng "LLM có căn cứ dữ liệu thật" là SimGym dựng persona từ clickstream thật ([L-SimGym], https://arxiv.org/abs/2602.01443).
+- **Vì sao không chạy LLM agent trực tiếp làm nguồn tải:** chậm (UXAgent khoảng 8 giây mỗi bước (bản v2 của bài), [L-UXAgent], https://arxiv.org/abs/2504.09407); hành vi lệch người thật (AgentA/B: agent 6,05 hành động/phiên so với 15,96 của người, [L-AgentAB], https://arxiv.org/abs/2504.09723); không tái lập được kể cả khi đặt temperature 0 ([L-LLMNondet], https://arxiv.org/abs/2408.04667). Gần nhất với hướng "LLM có căn cứ dữ liệu thật" là SimGym dựng persona từ clickstream thật ([L-SimGym], https://arxiv.org/abs/2602.01443).
 - **Trạng thái:** Stretch — chỉ làm khi E1–E5, E8 đã xong (plan v0.4 mục 9).
 
 ## 15. Giới hạn và giả định

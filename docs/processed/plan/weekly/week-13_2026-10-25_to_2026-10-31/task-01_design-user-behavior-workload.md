@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-01_design-user-behavior-workload` |
 | Tuần | `week-13_2026-10-25_to_2026-10-31` |
-| Trạng thái | Chờ review |
+| Trạng thái | Hoàn thành |
 | Người phụ trách | Bách |
 | Collaborator | Không có |
 | Ưu tiên | Cao |
@@ -57,11 +57,11 @@ Viết tài liệu thiết kế workload v1 theo gợi ý của giảng viên (m
 - Input workspace: Không tạo (giai đoạn tự bắt kịp; bằng chứng nằm trong PR).
 - Output workspace: Không tạo.
 - Pull request: [#78](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/78).
-- Kết quả review: Chưa review (giai đoạn tự bắt kịp: review và merge theo ngoại lệ do Bách xác nhận).
+- Kết quả review: Không có GitHub `APPROVED` (giai đoạn tự bắt kịp). PR #78 được Bách (người phụ trách) merge ngày 17/11/2026 trước khi finalization; card chuyển `Hoàn thành` bằng commit ghi nhận hậu kiểm trên `main` theo yêu cầu của Bách.
 
 > URL/số PR và `Chờ review` phải được commit/push vào PR head trước review. Thành viên còn lại phải gửi `APPROVED` hợp lệ trên GitHub; sau đó người phụ trách finalization metadata, ghi `Hoàn thành` trên chính branch/PR và tự merge task của mình. Card chỉ canonically hoàn thành khi commit đó vào nhánh canonical; xem [vòng đời task canonical](../../../rules/git-and-pull-request-rules.md#vòng-đời-task-canonical).
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 17/11/2026 — hoàn thành tài liệu, mở PR #78, chuyển Chờ review.
+- Cập nhật gần nhất: 17/11/2026 — đã merge PR #78; ghi nhận hậu kiểm, chuyển Hoàn thành.
 - Ghi chú/tồn đọng: Script tính OULAD chưa nằm trong repo (đưa vào `aiops-platform/load/tools/` ở tuần 14); mức tải chốt sau pilot.
