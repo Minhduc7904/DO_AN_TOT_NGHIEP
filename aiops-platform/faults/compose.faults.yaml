@@ -1,0 +1,82 @@
+# Lớp fault injection cho thí nghiệm, ghép SAU compose.full.yaml:
+#
+#   docker compose --env-file docker-compose/.env \
+#     -f docker-compose/compose.full.yaml -f aiops-platform/faults/compose.faults.yaml up -d --wait
+#
+# Không sửa code LMS (đóng băng theo ADR-006): chỉ đổi địa chỉ kết nối của `course` (PostgreSQL) và
+# `media`, `media-worker` (MinIO) sang toxiproxy, và thêm LLM stub cho `ai-worker`.
+# Proxy luôn nằm trên đường đi, kể cả run healthy, để healthy và fault run có cùng topology mạng.
+#
+# LƯU Ý ĐƯỜNG DẪN: khi ghép nhiều file bằng -f, Compose tính đường dẫn tương đối theo thư mục của file
+# đầu tiên (docker-compose/), nên bind mount ở đây viết `../aiops-platform/faults/...`.
+
+services:
+  toxiproxy:
+    image: ghcr.io/shopify/toxiproxy:2.12.0
+    command: ["-host=0.0.0.0", "-config=/config/toxiproxy.json"]
+    volumes:
+      - ../aiops-platform/faults/toxiproxy.json:/config/toxiproxy.json:ro
+    ports:
+      # API điều khiển chỉ mở trên loopback của host.
+      - "127.0.0.1:${TOXIPROXY_API_PORT:-8474}:8474"
+    healthcheck:
+      test: ["CMD", "/toxiproxy-cli", "list"]
+      interval: 3s
+      timeout: 2s
+      retries: 20
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    networks:
+      - lms-network
+
+  llm-stub:
+    image: node:22.13.1-alpine
+    command: ["node", "/app/server.mjs"]
+    working_dir: /app
+    volumes:
+      - ../aiops-platform/faults/llm-stub:/app:ro
+    environment:
+      LLM_STUB_PORT: 8080
+      LLM_STUB_SEED: "${LLM_STUB_SEED:-1}"
+    ports:
+      - "127.0.0.1:${LLM_STUB_PORT:-18081}:8080"
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - >-
+          fetch("http://127.0.0.1:8080/__control")
+          .then((response) => { if (!response.ok) process.exit(1); })
+          .catch(() => process.exit(1));
+      interval: 3s
+      timeout: 2s
+      retries: 20
+    networks:
+      - lms-network
+
+  course:
+    environment:
+      COURSE_DATABASE_URL: "postgresql://${COURSE_POSTGRES_USER:-course_user}:${COURSE_POSTGRES_PASSWORD:-course-local-only}@toxiproxy:15432/course_db"
+    depends_on:
+      toxiproxy:
+        condition: service_healthy
+
+  media:
+    environment:
+      MINIO_ENDPOINT: toxiproxy
+      MINIO_PORT: 19000
+    depends_on:
+      toxiproxy:
+        condition: service_healthy
+
+  media-worker:
+    environment:
+      MINIO_ENDPOINT: toxiproxy
+      MINIO_PORT: 19001
+    depends_on:
+      toxiproxy:
+        condition: service_healthy

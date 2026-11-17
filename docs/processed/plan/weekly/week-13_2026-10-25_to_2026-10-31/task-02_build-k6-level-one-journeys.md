@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-02_build-k6-level-one-journeys` |
 | Tuần | `week-13_2026-10-25_to_2026-10-31` |
-| Trạng thái | Đã giao |
+| Trạng thái | Chờ review |
 | Người phụ trách | Bách |
 | Collaborator | Không có |
 | Ưu tiên | Cao |
@@ -43,22 +43,22 @@ Dựng module workload `aiops-platform/load/` bằng k6. Mức 1: mỗi hành tr
 
 ## Definition of Done
 
-- [ ] Một lệnh chạy k6 mức 1 trên stack đầy đủ; cả bảy hành trình có request thành công, tỉ lệ lỗi HTTP không mong đợi bằng 0 trên stack khỏe.
-- [ ] Trace của mỗi hành trình xuất hiện trong Tempo (kiểm bằng TraceQL theo route).
-- [ ] Tóm tắt run JSON có `run_id`, thời điểm bắt đầu/kết thúc UTC và số request theo hành trình.
-- [ ] README ghi lệnh chạy, biến môi trường và giới hạn tài nguyên.
-- [ ] PR mở vào `main`; URL PR ghi vào card.
+- [x] Một lệnh chạy k6 mức 1 trên stack đầy đủ; cả bảy hành trình có request thành công, tỉ lệ lỗi HTTP không mong đợi bằng 0 trên stack khỏe.
+- [x] Trace của mỗi hành trình xuất hiện trong Tempo (kiểm bằng TraceQL theo route).
+- [x] Tóm tắt run JSON có `run_id`, thời điểm bắt đầu/kết thúc UTC và số request theo hành trình.
+- [x] README ghi lệnh chạy, biến môi trường và giới hạn tài nguyên.
+- [x] PR mở vào `main`; URL PR ghi vào card.
 
 ## Liên kết hồ sơ thực hiện
 
 - Input workspace: Không tạo (giai đoạn tự bắt kịp; bằng chứng nằm trong PR).
 - Output workspace: Không tạo.
-- Pull request: Chưa tạo.
-- Kết quả review: Chưa review.
+- Pull request: [#76](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/76).
+- Kết quả review: Chưa review (giai đoạn tự bắt kịp: review và merge theo ngoại lệ do Bách xác nhận).
 
 > URL/số PR và `Chờ review` phải được commit/push vào PR head trước review. Thành viên còn lại phải gửi `APPROVED` hợp lệ trên GitHub; sau đó người phụ trách finalization metadata, ghi `Hoàn thành` trên chính branch/PR và tự merge task của mình. Card chỉ canonically hoàn thành khi commit đó vào nhánh canonical; xem [vòng đời task canonical](../../../rules/git-and-pull-request-rules.md#vòng-đời-task-canonical).
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 17/11/2026 — lập card.
-- Ghi chú/tồn đọng: Không có.
+- Cập nhật gần nhất: 17/11/2026 — hoàn thành phần việc, mở PR #76, chuyển Chờ review.
+- Ghi chú/tồn đọng: W6 cần `llm-stub` của PR #75. Unit test của `load/` vào CI sau khi #75 (job `aiops-platform`) merge. CI GitHub bị khóa thanh toán; kiểm tra chạy cục bộ, kết quả trong PR.
