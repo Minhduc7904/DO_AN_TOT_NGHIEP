@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-06_adopt-semi-real-data-strategy` |
 | Tuần | `week-13_2026-10-25_to_2026-10-31` |
-| Trạng thái | Đang thực hiện |
+| Trạng thái | Chờ review |
 | Người phụ trách | Bách |
 | Collaborator | Không có |
 | Ưu tiên | Cao |
@@ -49,22 +49,22 @@ Task phát sinh sau khi xong phần việc tuần 13 (17/11/2026): Bách yêu c�
 
 ## Definition of Done
 
-- [ ] ADR-007 và plan-v0.4 có hiệu lực; plan-v0.3 có banner "đã được thay thế".
-- [ ] Các tài liệu canonical chịu ảnh hưởng có banner ADR-007 và không còn đoạn mâu thuẫn đã biết.
-- [ ] Mọi đoạn dùng kết quả nghiên cứu có reference (khóa `[L-…]` + URL).
-- [ ] `explanations-v2/` được Git theo dõi, đã rà soát, có `research-defense/`; PDF commit đều có giấy phép mở.
-- [ ] PR mở vào `main`; URL PR ghi vào card.
+- [x] ADR-007 và plan-v0.4 có hiệu lực; plan-v0.3 có banner "đã được thay thế".
+- [x] Các tài liệu canonical chịu ảnh hưởng có banner ADR-007 và không còn đoạn mâu thuẫn đã biết.
+- [x] Mọi đoạn dùng kết quả nghiên cứu có reference (khóa `[L-…]` + URL).
+- [x] `explanations-v2/` được Git theo dõi, đã rà soát, có `research-defense/`; PDF commit đều có giấy phép mở.
+- [x] PR mở vào `main`; URL PR ghi vào card.
 
 ## Liên kết hồ sơ thực hiện
 
 - Input workspace: Không tạo (giai đoạn tự bắt kịp; bằng chứng nằm trong PR).
 - Output workspace: Không tạo.
-- Pull request: Chưa tạo.
-- Kết quả review: Chưa review.
+- Pull request: [#80](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/80) (merge sau #78, #75, #76, #77, #79).
+- Kết quả review: Chưa review (giai đoạn tự bắt kịp: review và merge theo ngoại lệ do Bách xác nhận).
 
 > URL/số PR và `Chờ review` phải được commit/push vào PR head trước review. Thành viên còn lại phải gửi `APPROVED` hợp lệ trên GitHub; sau đó người phụ trách finalization metadata, ghi `Hoàn thành` trên chính branch/PR và tự merge task của mình. Card chỉ canonically hoàn thành khi commit đó vào nhánh canonical; xem [vòng đời task canonical](../../../rules/git-and-pull-request-rules.md#vòng-đời-task-canonical).
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 17/11/2026 — lập card, bắt đầu thực hiện.
+- Cập nhật gần nhất: 17/11/2026 — hoàn thành, mở PR #80, chuyển Chờ review.
 - Ghi chú/tồn đọng: Không có.

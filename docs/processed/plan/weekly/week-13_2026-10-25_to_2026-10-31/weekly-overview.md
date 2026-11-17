@@ -22,7 +22,7 @@
 | [task-03_add-llm-stub-and-latency-proxies](task-03_add-llm-stub-and-latency-proxies.md) | LLM stub chỉnh được độ trễ/lỗi và proxy chèn trễ trước MinIO, `course-postgres` trong Compose | Bách | Không có | Cao | Đã giao |
 | [task-04_build-telemetry-export-adapter](task-04_build-telemetry-export-adapter.md) | Adapter export Prometheus, Tempo, Loki theo run và cửa sổ thời gian | Bách | Không có | Cao | Đã giao |
 | [task-05_define-data-dictionary-and-quality-check](task-05_define-data-dictionary-and-quality-check.md) | Data dictionary, schema chuẩn hóa v2 và data-quality check trên một run thử | Bách | Không có | Cao | Đã giao |
-| [task-06_adopt-semi-real-data-strategy](task-06_adopt-semi-real-data-strategy.md) | Chốt chiến lược dữ liệu bán thực và bằng chứng đóng góp của AI/RCA (ADR-007, plan v0.4), rà soát tài liệu và ghi reference | Bách | Không có | Cao | Đang thực hiện |
+| [task-06_adopt-semi-real-data-strategy](task-06_adopt-semi-real-data-strategy.md) | Chốt chiến lược dữ liệu bán thực và bằng chứng đóng góp của AI/RCA (ADR-007, plan v0.4), rà soát tài liệu và ghi reference | Bách | Không có | Cao | Chờ review |
 
 > Khi đọc tiến độ project-wide, chỉ coi hàng có trạng thái `Hoàn thành` trên nhánh canonical là hoàn thành; trạng thái đã finalization trên task branch chưa thay thế nguồn này.
 
