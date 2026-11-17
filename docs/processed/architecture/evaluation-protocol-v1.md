@@ -272,7 +272,7 @@ Ground truth root cause của campaign chỉ theo fault matrix/catalogue canonic
 
 Ghi chú nguồn:
 
-- Catalogue case (R-12) chốt chi tiết ma trận fault v0 ở fault matrix v2; hai tài liệu khác nhau ở: component của FB (`notification-worker-rabbitmq` ở catalogue, `notification-rabbitmq` ở fault matrix v2), triệu chứng của C6/FG (504 ngay tại gateway ở catalogue, đã đo; 503 và "≤ 10 phút" ở fault matrix v2, đề xuất ban đầu), và C7/FH chỉ có đầy đủ ở catalogue. Tài liệu này dùng catalogue (số đo thật). `RunGroundTruth` của schema v1 quyết định giá trị cuối cùng của `root_cause_component`; component không tham gia primary metric.
+- (Cập nhật 17/11/2026: fault matrix v2, catalogue v2 và blueprint v2 nay đều ghi component FB là `notification-worker-rabbitmq`, FG đo được 504; ghi chú dưới đây giữ làm lịch sử.) Catalogue case (R-12) chốt chi tiết ma trận fault v0 ở fault matrix v2; hai tài liệu khác nhau ở: component của FB (`notification-worker-rabbitmq` ở catalogue, `notification-rabbitmq` ở fault matrix v2), triệu chứng của C6/FG (504 ngay tại gateway ở catalogue, đã đo; 503 và "≤ 10 phút" ở fault matrix v2, đề xuất ban đầu), và C7/FH chỉ có đầy đủ ở catalogue. Tài liệu này dùng catalogue (số đo thật). `RunGroundTruth` của schema v1 quyết định giá trị cuối cùng của `root_cause_component`; component không tham gia primary metric.
 - FA (`media` / `media-worker`) và FD (`ai` / process `ai-worker`) có hai process cùng owner. Catalogue ghi `root_cause_service` là service owner. Primary metric chấm **đúng `root_cause_service` của `RunGroundTruth`**. Để không phạt oan khi engine chỉ ra worker thay vì service cùng owner, báo cáo thêm **owner-level Top-K** (gộp `X` và `X-worker` thành một owner) như diagnostic phụ, không thay primary metric. **Đề xuất chờ Đức xác nhận.**
 - Phân bố root cause của bảy case: `notification-worker`, `course`, `ai`, `media`, `identity`, `identity`, `identity` — năm service khác nhau trên tổng 10 candidate, `identity` xuất hiện ba lần (C5, C6, C7; trước R-13 là `student` một lần và `auth` hai lần). Ba case này khác nhau ở `component` (`identity-postgres`, tiến trình `identity`, `identity-jwks`) nhưng cùng `root_cause_service`, nên primary metric service-level không phân biệt được chúng; phần phân biệt chỉ là diagnostic.
 - FF không có case: không vào floor. Nếu Đức muốn thêm case quá tải tài nguyên làm case đánh giá thì cần bổ sung vào catalogue trước, rồi bump `campaign_manifest_version`.
@@ -1147,7 +1147,8 @@ V0 có rủi ro structural saturation: F1–F5 chỉ có 3 root cause khác nhau
 
 - 7 case C1–C7 có 5 `root_cause_service` khác nhau trên 10 candidate; `identity` chiếm ba case (C5, C6, C7).
 - Nếu cả bảy case vào campaign với số run bằng nhau: một ranking hằng **tốt nhất có thể** đặt `identity` cộng hai service khác ở Top-3 thì đúng 5/7 case (≈ 71%) ở Top-3 và 3/7 (≈ 43%) ở Top-1 (chọn `identity`).
-- Ranking ngẫu nhiên đều: kỳ vọng Top-1 = 1/11 ≈ 9,1%, Top-3 = 3/11 ≈ 27,3%.
+- Ranking ngẫu nhiên đều trên candidate set 10: kỳ vọng Top-1 = 1/10 = 10%, Top-3 = 3/10 = 30%.
+- Với bộ case MVP của ADR-006 (C2, C3, C4, C6, bốn `root_cause_service` khác nhau: `course`, `ai`, `media`, `identity`) và số run bằng nhau: một ranking hằng đặt ba trong bốn service đó ở Top-3 đạt 3/4 = 75% Top-3 và 1/4 = 25% Top-1. Top-3 vẫn bão hòa; báo cáo Top-1 và MRR làm chỉ số chính và luôn kèm mốc ranking hằng.
 - Nếu chỉ một vài case vào campaign (hiện trạng: chỉ C6 đã chạy), con số trên đổi: với đúng một case, ranking hằng đặt đúng service đó đạt 100% Top-1. Vì vậy Top-K phải luôn được đọc cùng `K` và danh sách case.
 
 Top-3 vẫn là metric canonical và phải được báo cáo, nhưng không được dùng độc lập để kết luận một method RCA tốt hơn. Mọi kết luận RCA phải đọc cùng Top-1, Top-3, MRR, Average Rank, kết quả theo từng case và so với hai mốc tham chiếu (constant ranking theo thứ tự tie-break, random ranking) như diagnostic, không phải core baseline mới và không thay metric/RQ/fault catalogue canonical.
@@ -1587,7 +1588,7 @@ RQ4 là ngoại lệ đã được protocol v0 freeze ở mức comparison desig
 4. Các profile healthy v2 (mục 5.4) và số run healthy mỗi profile.
 5. Số người, time cap, brief và cách nạp lại telemetry của thử nghiệm người (mục 15.3); cách chuẩn hóa so sánh `T_human` với `T_engine` (mục 15.4).
 6. Có đưa FF thành case đánh giá riêng hay không (mục 4.2).
-7. Các điều chỉnh tài liệu nguồn còn lệch: component FB (`notification-worker-rabbitmq` hay `notification-rabbitmq`), triệu chứng FG (504 đã đo hay 503 ở fault matrix v2), và các tài liệu direction/blueprint còn v1 (mục 1).
+7. Các điều chỉnh tài liệu nguồn còn lệch: ~~component FB~~ và ~~triệu chứng FG~~ (đã thống nhất ngày 17/11/2026: `notification-worker-rabbitmq`, 504), và các tài liệu direction/blueprint còn v1 (mục 1).
 
 ---
 

@@ -354,7 +354,7 @@ JSON một dòng ra stdout và đồng thời gửi OTLP tới Loki: `timestamp`
 
 | Họ metric | Nguồn |
 | --- | --- |
-| `http_server_request_count_total`, `http_server_request_error_count_total`, `http_server_request_duration_seconds_*` (RED) | runtime, 12/12 |
+| `http_server_request_count_total`, `http_server_request_error_count_total`, `http_server_request_duration_seconds_*` (RED) | runtime, 11/11 |
 | `lms_dependency_request_count_total`, `lms_dependency_error_count_total`, `lms_dependency_duration_seconds_*` (nhãn `dependency_identity`, `operation_name`, `status` ∈ `ok`/`timeout`/`unavailable`/`expected_failure`) | runtime, qua `observeDependency` |
 | `process_cpu_time_seconds_total`, `process_memory_usage_bytes` | runtime |
 | `rabbitmq_detailed_queue_messages[_ready/_unacked]`, `rabbitmq_detailed_queue_consumers` | **broker** (Collector scrape), `service_name` là worker tiêu thụ |
@@ -376,7 +376,7 @@ Ma trận fault v0 (FA–FH) và case phức tạp C1–C7 nằm ở [data-owner
 | Fault | Loại | Root-cause service | Component |
 | --- | --- | --- | --- |
 | FA | Độ trễ phụ thuộc | `media` / `media-worker` | `media-minio` |
-| FB | Backlog hàng đợi | `notification-worker` | `notification-rabbitmq` |
+| FB | Backlog hàng đợi | `notification-worker` | `notification-worker-rabbitmq` |
 | FC | Giữ kết nối DB | `course` | `course-postgres` |
 | FD | Độ trễ nhà cung cấp AI | `ai` | `ai-llm-provider` |
 | FE | Độ trễ dependency nhỏ | `identity` | `identity-postgres` |

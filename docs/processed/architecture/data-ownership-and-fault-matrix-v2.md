@@ -8,6 +8,8 @@
 >
 > **Cập nhật R-13:** `auth_db` và `student_db` gộp thành `identity_db` của service `identity` ([ADR-005](../adr/adr-005-merge-auth-student-into-identity-v1.md)); bảng đổi tên `identity_*` và còn 6 logical DB.
 >
+> **Cập nhật 17/11/2026 ([ADR-006](../adr/adr-006-trim-project-scope-v1.md)):** bộ case MVP còn C2, C3, C4, C6 (`R = 5`), C1, C5, C7 là Target. C2/FC viết lại: cơ chế "export CSV giữ kết nối DB" không khớp code (export đọc từng khối 500 dòng), thay bằng chèn trễ có kiểm soát trên kết nối `course` → `course-postgres`. Khi đoạn chi tiết mâu thuẫn, ADR-006 được ưu tiên.
+>
 > **Phụ thuộc:** [service-catalogue-and-topology-v2](service-catalogue-and-topology-v2.md), [http-and-event-contracts-v2](http-and-event-contracts-v2.md), [ADR-001](../adr/adr-001-restructure-lms-testbed-v1.md), [ADR-002](../adr/adr-002-ai-primary-root-cause-analysis-v1.md).
 >
 > **Mục đích:** chốt ai sở hữu dữ liệu nào, ràng buộc toàn vẹn quan trọng, và đặt nền cho fault/case demo "AI tìm được, truy vết thủ công không tìm ra".
@@ -136,7 +138,7 @@ Mất đồng bộ giữa các ID này (ví dụ student bị xóa nhưng còn e
 | Thành phần       | Chủ sở hữu            | Quy tắc                                                                                                                                           |
 | ---------------- | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
 | PostgreSQL 17    | Compose LMS           | 6 logical DB + 6 role; `POSTGRES_DB` mặc định không dùng cho nghiệp vụ                                                                            |
-| RabbitMQ         | Compose LMS           | Exchange `lms.commands`; queue theo `<consumer>--<command>-v<n>`; vhost riêng cho LMS; metric broker được collector trong `aiops-platform` scrape |
+| RabbitMQ         | Compose LMS           | Exchange `lms.commands`; queue theo `<consumer>--<command>-v<n>`; vhost mặc định `/` (URL AMQP trong Compose không chỉ định vhost); metric broker được collector trong `aiops-platform` scrape |
 | MinIO            | `media`               | Bucket do `minio-init` tạo; access key riêng cho `media`/`media-worker`                                                                           |
 | Mailpit / SMTP   | `notification-worker` | Dev/CI dùng Mailpit; production đổi biến môi trường SMTP                                                                                          |
 | Nhà cung cấp LLM | `ai`                  | Test dùng HTTP stub OpenAI-compatible                                                                                                             |

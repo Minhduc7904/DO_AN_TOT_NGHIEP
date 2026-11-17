@@ -10,6 +10,8 @@
 >
 > **Cập nhật R-13:** `auth` và `student` đã gộp thành một service `identity` (ADR-005). Topology hiện hành là **7 service + 4 worker (11 runtime)** với 6 logical DB; văn bản dưới đây đã sửa tại chỗ theo topology đó.
 >
+> **Cập nhật 17/11/2026 ([ADR-006](../adr/adr-006-trim-project-scope-v1.md)):** bộ case MVP còn C2, C3, C4, C6 (`R = 5`), C1, C5, C7 là Target. C2/FC viết lại: cơ chế "export CSV giữ kết nối DB" không khớp code (export đọc từng khối 500 dòng), thay bằng chèn trễ có kiểm soát trên kết nối `course` → `course-postgres`. Khi đoạn chi tiết mâu thuẫn, ADR-006 được ưu tiên.
+>
 > **Mục đích:** chốt bộ service, dependency graph và identity telemetry của LMS testbed sau tái cấu trúc, để export/query layer, workload và dataset về sau dùng cùng một topology.
 
 ## 1. Source of truth và ranh giới tài liệu
@@ -237,7 +239,7 @@ media, media-worker -> media-minio
 notification-worker -> notification-smtp
 ai, ai-worker -> ai-llm-provider
 ai-worker -> ai-postgres
-course, media, notification, ai -> <service>-rabbitmq (publish)
+course, media, notification, notification-worker, ai -> <service>-rabbitmq (publish; relay outbox của notification-worker hiện ghi identity notification-rabbitmq)
 media-worker, notification-worker, ai-worker -> <service>-rabbitmq (consume)
 ```
 
@@ -285,7 +287,7 @@ gateway, course, media, ... -> identity   # tải JWKS (GET /.well-known/jwks.js
 | `e23`   | `<service>`                       | `<service>-postgres` | DB            | tất cả     | `dependency_identity=<service>-postgres` (6 identity) |
 | `e24`   | publisher / consumer              | `<service>-rabbitmq` | messaging     | W2, W4, W5, W6 | publish/consume span + broker metrics                 |
 | `e25`   | gateway, mọi service              | identity (JWKS)      | HTTP          | nền        | `dependency_identity=<caller>-identity-jwks`, tần suất thấp |
-| `e26`   | gateway                           | identity (token)     | HTTP          | nền        | `dependency_identity=<caller>-identity-token`, chu kỳ ~5 phút |
+| `e26`   | gateway, course, media, notification-worker, scheduler-worker, ai-worker | identity (token)     | HTTP          | nền        | `dependency_identity=<caller>-identity-token`, chu kỳ ~5 phút |
 | `e27`   | ai-worker                         | course               | HTTP          | W6         | caller=`ai-worker`, callee=`course`, `dependency_identity=ai-worker-course`; **đóng vòng `course → ai → course`** (xem dưới) |
 | `e28`   | ai-worker                         | media                | HTTP          | W6         | caller=`ai-worker`, callee=`media`, `dependency_identity=ai-worker-media` |
 | `e29`   | ai, media                         | ai-worker            | async command | W6         | `command_name` (`ai.document.extract`, `ai.job.run`), `message_id`, producer/consumer |
@@ -331,8 +333,8 @@ Chi tiết ở [data-ownership-and-fault-matrix-v2](data-ownership-and-fault-mat
 | Fault v0               | Root-cause               | Evidence/component      | Symptom dự kiến                                       |
 | ---------------------- | ------------------------ | ----------------------- | ----------------------------------------------------- |
 | FA Chậm MinIO          | `media` / `media-worker` | `media-minio`           | upload-complete timeout tại gateway, thumbnail kẹt    |
-| FB Backlog hàng đợi    | `notification-worker`    | `notification-rabbitmq` | thumbnail của `media-worker` chậm, usage sync trễ     |
-| FC Chậm DB giữ kết nối | `course`                 | `course-postgres`       | enroll/quiz submit chậm không có span lỗi             |
+| FB Backlog hàng đợi    | `notification-worker`    | `notification-worker-rabbitmq` | thumbnail của `media-worker` chậm, usage sync trễ     |
+| FC Chậm DB giữ kết nối | `course`                 | `course-postgres`       | enroll/quiz submit chậm không có span lỗi (ADR-006: C2 viết lại thành chèn trễ trên kết nối `course` → `course-postgres`) |
 | FD Provider AI chậm    | `ai`                     | `ai-llm-provider`       | lease job hết hạn, retry chồng, outbox backlog        |
 | FE Identity chậm       | `identity`               | `identity-postgres`     | batch notification partial-failed, log không có error |
 | FF Quá tải CPU         | một service bất kỳ       | instance                | latency/error lan theo dependency                     |

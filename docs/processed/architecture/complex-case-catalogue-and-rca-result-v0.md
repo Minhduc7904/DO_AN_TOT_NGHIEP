@@ -34,7 +34,7 @@ Cạnh dependency quan sát được (đủ cho dependency graph):
 - Cơ sở dữ liệu: `identity-postgres`, `course-postgres`, `media-postgres` (cả `media` và `media-worker`), `notification-postgres` (cả `notification` và `notification-worker`), `scheduler-postgres` (cả `scheduler` và `scheduler-worker`), `ai-postgres` (cả `ai` và `ai-worker`).
 - Hạ tầng khác: `media-minio` (`media`, `media-worker`), `notification-smtp`, `ai-llm-provider` (`ai`, `ai-worker`).
 - HTTP đồng bộ giữa service: `gateway-{identity,course,media,notification,scheduler,ai}`, `course-media`, `course-ai`, `media-identity`, `notification-worker-identity`, `scheduler-worker-media`, `ai-worker-course`, `ai-worker-media`.
-- Xác thực (ADR-004): `<service>-identity-token` (gateway và mọi worker, `course`, `media`) và `<service>-identity-jwks`.
+- Xác thực (ADR-004): `<service>-identity-token` (gateway, `course`, `media`, `notification-worker`, `scheduler-worker`, `ai-worker`; `media-worker` không lấy token) và `<service>-identity-jwks`.
 
 ## 1.2. Trace (Tempo)
 
@@ -117,7 +117,7 @@ Mọi case chạy song song workload k6 để tạo nhiễu; đối chứng th�
 | Mục | Nội dung |
 | --- | --- |
 | Kịch bản gây lỗi | Provider LLM giả (HTTP stub) trả chậm hoặc lỗi ngắt quãng; instructor tạo job AI và tài liệu `extract_text`. |
-| Triệu chứng | Job AI mãi `RUNNING` rồi `WORKER_INTERRUPTED`; tài liệu mãi `EXTRACTING`; `course` thấy lỗi muộn ở `ai-worker → course`. |
+| Triệu chứng | Job AI `RUNNING` lâu; tài liệu mãi `EXTRACTING`; `course` thấy lỗi muộn ở `ai-worker → course`. Trạng thái cuối phụ thuộc tham số stub (đối chiếu code 17/11/2026, `run-job.use-case.ts`): provider lỗi hoặc một lượt gọi vượt `AI_COMPLETION_TIMEOUT_MS` (240 giây) thì job `FAILED` với mã lỗi của lời gọi; `WORKER_INTERRUPTED` chỉ xuất hiện khi command được giao lại lúc job đã quá lease (lease 600 giây, gia hạn trước mỗi lượt), không có tiến trình quét định kỳ. |
 | Ground truth | `fault_type=dependency_latency`, `root_cause_service=ai`, `root_cause_component=ai-llm-provider` (chủ sở hữu `ai`; process chạm provider là `ai-worker`), đường lan: provider → `ai-worker` (giữ lease) → `ai` job/tài liệu → `course`. |
 | Tín hiệu xác nhận | Span CLIENT `ai-llm-provider POST chat/completions` dài hoặc lỗi trong trace của luồng "Job AI"; `lms_dependency_duration_seconds{dependency_identity="ai-llm-provider"}`; `ai-worker` CONSUMER `run-ai-job` kéo dài. |
 | Trạng thái | **Đã đo tín hiệu**: trace luồng AI đủ `gateway → course → ai → ai-worker → course` kèm span provider. Stub chậm chưa chạy. |
@@ -127,7 +127,7 @@ Mọi case chạy song song workload k6 để tạo nhiễu; đối chứng th�
 | Mục | Nội dung |
 | --- | --- |
 | Kịch bản gây lỗi | Chèn trễ hoặc ngắt kết nối giữa `media` và MinIO trong lúc upload/promote. |
-| Triệu chứng | Media `PENDING` kẹt, usage chưa gắn; `scheduler-worker` coi là không dùng và xóa; lỗi lộ muộn ở scheduler. |
+| Triệu chứng | Media `PENDING` kẹt, usage chưa gắn (đồng bộ usage markdown chỉ gắn media `READY`, job đồng bộ ghi `PARTIAL_FAILED` không có span lỗi). Khi job dọn chạy, media `PENDING` quá hạn upload (`MEDIA_UPLOAD_EXPIRES_SECONDS` 900) cộng ân hạn (`MEDIA_CLEANUP_PENDING_GRACE_MINUTES` 15) bị coi là upload bỏ dở: `FAILED` `UPLOAD_ABANDONED`, object bị xóa (nhánh `media.list-stale-pending`, `cleanup-media.use-case.ts`). Nhánh "`READY` không có usage" là nhánh khác, giữ mặc định 168 giờ. Lỗi lộ muộn ở scheduler/media. |
 | Ground truth | `fault_type=dependency_latency`, `root_cause_service=media`, `root_cause_component=media-minio`, đường lan: MinIO → `media`/`media-worker` → usage trống → `scheduler-worker` cleanup. |
 | Tín hiệu xác nhận | Span `media-minio *` chậm hoặc lỗi; `lms_dependency_*{dependency_identity="media-minio"}`; trace "Dọn media theo lịch" có `media-minio remove-object` bất thường về số lượng. |
 | Trạng thái | **Đã đo tín hiệu** (span và metric MinIO có ở cả `media` và `media-worker`; trace dọn media có thật). Cơ chế chèn trễ chưa chạy. Scheduler và worker không cùng trace (mục 1.5). |

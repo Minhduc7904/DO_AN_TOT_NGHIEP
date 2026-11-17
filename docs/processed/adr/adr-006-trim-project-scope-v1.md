@@ -27,7 +27,7 @@ Rà soát thiết kế cho thấy thêm ba điểm:
 ### 1. Đóng băng LMS (System Under Test)
 
 1. Không thêm nghiệp vụ hoặc tính năng sản phẩm mới. Chỉ nhận thay đổi phục vụ trực tiếp telemetry, fault hoặc workload, ví dụ: metric pool PostgreSQL, metric outbox backlog, root span cho mỗi lần chạy của `scheduler-worker`, LLM stub chỉnh được độ trễ/lỗi, điểm chèn fault (proxy trước dependency), sửa lỗi chặn regression.
-2. **Hủy R-18 và revert slice 1** (commit `a1ea944`). Media quay lại cơ chế đọc nội dung bằng UUID khó đoán, `Cache-Control: no-store`, đã được chấp nhận ở R-12. Giới hạn này ghi trong [http-and-event-contracts-v2](../architecture/http-and-event-contracts-v2.md) §1.1.
+2. **Hủy R-18 và revert slice 1** (commit `a1ea944`). Media quay lại cơ chế đọc nội dung bằng UUID khó đoán (header `Cache-Control: public, max-age=300` như trước R-18; bản đầu ADR này ghi nhầm `no-store`, đính chính ngày 17/11/2026), đã được chấp nhận ở R-12. Giới hạn này ghi trong [http-and-event-contracts-v2](../architecture/http-and-event-contracts-v2.md) §1.1.
 3. Giữ nguyên các phần đã xong, có test và không cản trở nghiên cứu dù ít giá trị cho RCA: ba cửa đăng nhập, CRUD provider/model/binding của `ai`, avatar và tự nhận MIME (PR #71), tách chi tiết khóa học (PR #70), giao diện terminal của seeder, export CSV. Gỡ ra tốn công và rủi ro hơn giữ. Báo cáo đồ án không cần mô tả các phần này.
 
 ### 2. Vai trò của RCA engine
@@ -66,7 +66,7 @@ Rà soát thiết kế cho thấy thêm ba điểm:
 ## Hệ quả
 
 - `media`: bỏ `MEDIA_URL_SIGNING_KEY`, `MEDIA_URL_TTL_SECONDS`, contract tầng truy cập, mã lỗi `MEDIA_URL_INVALID`; regression `media-upload` và Postman quay về bản trước R-18. Ảnh markdown của bài học, quiz, thông báo đọc được trở lại.
-- Các tài liệu project-scope-v2, ADR-002, blueprint-v1, evaluation-protocol-v1, research-questions-and-metrics-v2, complex-case-catalogue, khung định hướng v1 và `aiops-platform/README.md` có ghi chú cập nhật trỏ về ADR này. Những đoạn chi tiết chưa sửa từng dòng thì ADR này được ưu tiên khi mâu thuẫn.
+- Các tài liệu project-scope-v2, ADR-002, blueprint-v1, evaluation-protocol-v1, research-questions-and-metrics-v2, complex-case-catalogue, data-ownership-and-fault-matrix-v2, service-catalogue-and-topology-v2, khung định hướng v1 và `aiops-platform/README.md` có ghi chú cập nhật trỏ về ADR này. Những đoạn chi tiết chưa sửa từng dòng thì ADR này được ưu tiên khi mâu thuẫn.
 - Phạm vi MVP còn lại: fault injector cho 4 case, workload k6, runner dataset, RCA engine (Hướng 1 và các baseline), `base-manual-auto` mới, đánh giá RQ1–RQ6.
 
 ## Việc tiếp theo (không thuộc quyết định này)
@@ -80,4 +80,4 @@ Rà soát thiết kế cho thấy thêm ba điểm:
 
 - **Gỡ CRUD provider/model/binding của `ai` và gộp ba cửa đăng nhập:** giảm code nhưng phải sửa test, regression, Postman và seeder trong lúc tiến độ AI đang trễ; lợi ích cho nghiên cứu gần bằng không.
 - **Làm nốt R-18 cho `course`/`notification`:** thêm endpoint nội bộ, scope và script chuyển markdown mà không tạo tín hiệu mới cho RCA.
-- **Giữ bảy case với `R = 3`:** chỉ 2 run final test mỗi case; ba case cùng `identity` khiến xếp hạng hằng đã đạt Top-3 khoảng 71% (ADR-005).
+- **Giữ bảy case với `R = 3`:** chỉ 2 run final test mỗi case; ba case cùng `identity` khiến xếp hạng hằng đã đạt Top-3 khoảng 71% (ADR-005). Lưu ý (đính chính 17/11/2026): bộ bốn case MVP cũng không hết bão hòa Top-3. Bốn `root_cause_service` khác nhau nên xếp hạng hằng vẫn đạt Top-3 = 75%, Top-1 = 25%. Lợi ích thật của bộ mới là nhiều run test mỗi case hơn; khi báo cáo, Top-1 và MRR là chỉ số chính và luôn kèm mốc xếp hạng hằng ([evaluation-protocol-v1](../architecture/evaluation-protocol-v1.md) mục 18.4).

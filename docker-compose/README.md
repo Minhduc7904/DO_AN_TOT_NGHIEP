@@ -10,7 +10,7 @@ Thư mục này chứa manifest orchestration root cho LMS testbed. Baseline hi�
 >
 > Hai bên nối với nhau qua network `aiops-net` (biến `AIOPS_NETWORK_NAME`); service LMS chỉ gửi OTLP/HTTP tới `otel-collector:4318`. Các lệnh bên dưới dùng `compose.full.yaml` khi cần đủ 18 thành phần; mục observability ở dưới sẽ chuyển về `aiops-platform/` khi viết lại tài liệu ở R-12. Đường dẫn `observability/…` trong các mục đó nay là `../aiops-platform/observability/…`.
 
-> **Hạ tầng topology v2 (R-03):** `compose.yaml` đã thêm `student` (service mẫu Prisma, sau này được gộp vào `identity`), `minio` + `minio-init` (5 bucket `images`, `videos`, `documents`, `audios`, `other`; API `9000`, console `9001`), `mailpit` (SMTP `1025`, UI `8025`) và các DB `media_db`, `notification_db`, `scheduler_db`, `ai_db` kèm role riêng (`postgres-init/02-create-v2-databases.sh`). Từ R-05 `enrollment`, `submission`, `grading`, `submission-storage-mock` và Redis đã bị gỡ; từ R-07 `notification` là service v2 (cổng `3006`) kèm `notification-worker` (cổng `3007`, gửi email qua Mailpit); từ R-08 `ai` (cổng `3009`, gateway LLM, sở hữu trích xuất tài liệu và job AI soạn bài; API key provider mã hóa bằng `AI_ENCRYPTION_KEY`) kèm `ai-worker` (cổng `3011`, nhận command trích xuất/chạy job, gọi `course` và `media`), `course` chỉ là facade; từ R-09 `scheduler` (cổng `3008` trong network, publish ra host `3018` vì `3008` thuộc Grafana) kèm `scheduler-worker` (cổng `3010`, job `MEDIA_UNUSED_CLEANUP` gọi `media`). Volume Postgres cũ còn `course_db` của v1 phải tạo lại (`down --volumes`) vì `course` v2 dùng Prisma và role riêng `course_user`. Container v2 chạy `prisma migrate deploy` trước khi khởi động.
+> **Hạ tầng topology v2 (R-03):** `compose.yaml` đã thêm `student` (service mẫu Prisma, sau này được gộp vào `identity`), `minio` + `minio-init` (5 bucket `images`, `videos`, `documents`, `audios`, `other`; API `9000`; cổng `9001` vẫn được map nhưng image `bitnamilegacy/minio` đang dùng không còn giao diện console, kiểm ngày 17/11/2026), `mailpit` (SMTP `1025`, UI `8025`) và các DB `media_db`, `notification_db`, `scheduler_db`, `ai_db` kèm role riêng (`postgres-init/02-create-v2-databases.sh`). Từ R-05 `enrollment`, `submission`, `grading`, `submission-storage-mock` và Redis đã bị gỡ; từ R-07 `notification` là service v2 (cổng `3006`) kèm `notification-worker` (cổng `3007`, gửi email qua Mailpit); từ R-08 `ai` (cổng `3009`, gateway LLM, sở hữu trích xuất tài liệu và job AI soạn bài; API key provider mã hóa bằng `AI_ENCRYPTION_KEY`) kèm `ai-worker` (cổng `3011`, nhận command trích xuất/chạy job, gọi `course` và `media`), `course` chỉ là facade; từ R-09 `scheduler` (cổng `3008` trong network, publish ra host `3018` vì `3008` thuộc Grafana) kèm `scheduler-worker` (cổng `3010`, job `MEDIA_UNUSED_CLEANUP` gọi `media`). Volume Postgres cũ còn `course_db` của v1 phải tạo lại (`down --volumes`) vì `course` v2 dùng Prisma và role riêng `course_user`. Container v2 chạy `prisma migrate deploy` trước khi khởi động.
 
 > **Gộp `auth` + `student` (R-13):** `identity` (cổng `3001`, database `identity_db` với role riêng) thay cho `auth` và `student`; còn 7 service + 4 worker (11 runtime), 6 logical DB và 21 thành phần Compose. Biến `AUTH_*` đổi thành `IDENTITY_*`, `GATEWAY_{AUTH,STUDENT}_BASE_URL` thành `GATEWAY_IDENTITY_BASE_URL`. `.env` local cũ và volume Postgres còn `auth_db`/`student_db` phải cập nhật và tạo lại (`down --volumes`). Xem [ADR-005](../docs/processed/adr/adr-005-merge-auth-student-into-identity-v1.md).
 
@@ -18,7 +18,7 @@ Thư mục này chứa manifest orchestration root cho LMS testbed. Baseline hi�
 
 - Docker Engine đang chạy.
 - Docker Compose v2 hỗ trợ `docker compose up --wait`.
-- Các port mặc định `3000`–`3006`, `5432`, `5672`, `15672`, `9000`–`9001`, `1025` và `8025` chưa bị chiếm, hoặc đã được đổi trong file `.env` local.
+- Các port mặc định chưa bị chiếm: LMS `3000`–`3007`, `3009`–`3011`, `3018`; hạ tầng `5432`, `5672`, `15672`, `9000`–`9001`, `1025`, `8025`; observability (khi dùng `compose.full.yaml`) `3008` (Grafana), `3100`, `3200`, `4317`, `4318`, `9090`. Nếu cổng nào bị chiếm thì đổi biến cổng tương ứng trong file `.env` local (hoặc biến shell như `LOKI_PORT` cho observability).
 - Docker được cấp khoảng 8 GB RAM khi bật cả observability. Với bộ nhớ hạn chế, build lại toàn bộ image không dùng cache bằng một lệnh `build --no-cache` có thể lỗi `cannot allocate memory` vì các image build song song; khi đó build tuần tự theo mục [Build lại image không dùng cache](#build-lại-image-không-dùng-cache).
 - Reset/seed và regression cần toolchain của `lms/` (Node.js `22.13.1`, pnpm `11.19.0`) và dependency đã cài theo [`../lms/README.md`](../lms/README.md#cài-đặt-và-kiểm-tra).
 
@@ -64,7 +64,7 @@ Kiểm tra Course từ Bash:
 curl --fail http://localhost:3003/ready
 ```
 
-Kiểm tra Identity (qua Gateway) từ Bash:
+Kiểm tra Identity (gọi thẳng cổng của Identity, không qua Gateway) từ Bash:
 
 ```bash
 curl --fail http://localhost:3001/health
