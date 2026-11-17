@@ -11,7 +11,8 @@ Quyết định tách: [ADR-001](../docs/processed/adr/adr-001-restructure-lms-t
 | `observability/`                  | Có         | Collector, Prometheus, Tempo, Loki, Grafana: cấu hình, Dockerfile, dashboard, `compose.yaml` riêng     |
 | `training/`                       | Chưa tạo   | **Phần chính**: RCA engine (detector không giám sát, incident, graph, xếp hạng nguyên nhân) và dataset |
 | `faults/`                         | Có         | Fault injection: toxiproxy trước `course-postgres` và MinIO, LLM stub, CLI `fault-control` ([README](faults/README.md)) |
-| `load/`, `evaluation/`            | Chưa tạo   | Workload, đánh giá                                                                                     |
+| `load/`                           | Có         | Workload k6 mức 1 cho W1–W7 ([README](load/README.md))                                                  |
+| `evaluation/`                     | Chưa tạo   | Đánh giá                                                                                               |
 
 Chỉ tạo thư mục khi bắt đầu triển khai module tương ứng. MCP server và agent LLM nằm ngoài phạm vi theo ADR-006.
 

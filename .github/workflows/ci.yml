@@ -265,8 +265,8 @@ jobs:
         with:
           install: 'false'
 
-      - name: Fault injection (LLM stub, fault-control)
-        run: node --test 'aiops-platform/faults/**/*.test.mjs'
+      - name: Node unit tests (faults, load)
+        run: node --test 'aiops-platform/**/*.test.mjs'
 
   compose-reset:
     name: Reset/seed Testbed twice with stable fingerprint
