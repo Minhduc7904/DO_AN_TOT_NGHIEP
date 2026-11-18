@@ -128,10 +128,7 @@ test('lịch arrival-rate: số iteration mỗi ô 30 s bằng số phiên bắt
 
 test('windowSessions cắt và dời mốc thời gian', () => {
   const sessions = [{ start_s: 10 }, { start_s: 100 }, { start_s: 250 }];
-  assert.deepEqual(
-    windowSessions(sessions, 100, 150),
-    [{ start_s: 0 }],
-  );
+  assert.deepEqual(windowSessions(sessions, 100, 150), [{ start_s: 0 }]);
   assert.deepEqual(windowSessions(sessions, 0, 300).length, 3);
 });
 
