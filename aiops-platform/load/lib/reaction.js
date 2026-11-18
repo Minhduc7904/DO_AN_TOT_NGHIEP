@@ -2,7 +2,7 @@
  * Logic thuần (không import k6) cho phản ứng của người dùng ảo mức 2/2+ với phản hồi của hệ thống,
  * theo workload-design-v1 mục 3.5 và 6.2–6.5. Tham số ở `params/reaction-v1.json`.
  */
-import { hash32 } from './rng.js';
+import { createRng, hash32 } from './rng.js';
 
 /** Mã coi là lỗi tạm thời: thử lại có backoff nếu thao tác an toàn để lặp (mục 6.2, 6.3). */
 export const RETRYABLE_STATUSES = Object.freeze([0, 429, 502, 503, 504]);
@@ -56,7 +56,7 @@ export function seedAccountIndex(seed, userKey, accounts) {
  * hoạch và nội dung phiên, nên hai run cùng seed có kế hoạch trùng 100% (mục 10.3).
  * `rng` là luồng kế hoạch của phiên (tách khỏi luồng hành vi, mục 11.1).
  */
-export function studentSessionPlan({ session, phase, params, rng, seed, accounts }) {
+export function studentSessionPlan({ session, phase, params, rng, seed, accounts, accountIndex }) {
   const profile = session.profile ?? rng.weighted(params.student_profile_mix[phase]);
   const patience = drawPatience(rng, params, profile, phase);
   const refreshAtAction =
@@ -65,7 +65,7 @@ export function studentSessionPlan({ session, phase, params, rng, seed, accounts
       : null;
   const plan = {
     source_session_id: session.session_id,
-    account_index: seedAccountIndex(seed, session.user_key, accounts),
+    account_index: accountIndex ?? seedAccountIndex(seed, session.user_key, accounts),
     profile,
     goal: session.goal ?? null,
     phase,
@@ -135,4 +135,47 @@ export function windowSessions(sessions, windowStartS, windowS) {
       (session) => session.start_s >= windowStartS && session.start_s < windowStartS + windowS,
     )
     .map((session) => ({ ...session, start_s: session.start_s - windowStartS }));
+}
+
+/** Think time loại "điều hướng" (μ = 2,659 + ln 0,5; σ = 1,325; kẹp [1; 300] s, mục 5.6). */
+export function navigationThink(rng, { mu, sigma, clamp_s: [low, high] }) {
+  for (let attempt = 0; attempt < 1000; attempt += 1) {
+    const value = rng.lognormal(mu, sigma);
+    if (value >= low && value <= high) return value;
+  }
+  return Math.min(Math.max(Math.exp(mu), low), high);
+}
+
+/**
+ * Gán tài khoản seed không trùng: hoán vị Fisher–Yates có seed của các chỉ số 1..accounts, người dùng
+ * thứ i (theo thứ tự xuất hiện trong kế hoạch) nhận phần tử thứ i. Chỉ dùng lại tài khoản khi số người
+ * dùng vượt số tài khoản (vòng lại từ đầu hoán vị).
+ */
+export function accountAssignment(seed, userKeys, accounts) {
+  const rng = createRng(hash32(seed, 'account-permutation'));
+  const order = Array.from({ length: accounts }, (_, index) => index + 1);
+  for (let index = order.length - 1; index > 0; index -= 1) {
+    const swap = Math.floor(rng.next() * (index + 1));
+    [order[index], order[swap]] = [order[swap], order[index]];
+  }
+  const map = {};
+  let next = 0;
+  for (const key of userKeys) {
+    if (map[key] !== undefined) continue;
+    map[key] = order[next % accounts];
+    next += 1;
+  }
+  return map;
+}
+
+/**
+ * Ánh xạ khóa Moodle A–D → bốn khóa học **seed** (id do seeder đặt, tiền tố `5eed`) nhỏ nhất theo id.
+ * Chỉ lấy khóa seed để ánh xạ không đổi khi giảng viên của các run trước đã tạo/xuất bản khóa mới.
+ * `ids` phải là **toàn bộ** danh mục: khóa mới xếp trước (mới nhất trước) nên khóa seed dễ nằm ở trang
+ * sau.
+ */
+export function seedCourseMap(ids) {
+  const seeds = ids.filter((id) => id.startsWith('5eed')).sort();
+  if (seeds.length < 4) throw new Error(`Cần ít nhất 4 khóa học seed đã xuất bản, có ${seeds.length}`);
+  return Object.fromEntries(['A', 'B', 'C', 'D'].map((key, index) => [key, seeds[index]]));
 }

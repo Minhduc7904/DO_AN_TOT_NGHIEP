@@ -1,9 +1,15 @@
 import { SharedArray } from 'k6/data';
 import exec from 'k6/execution';
 
-import { api, login } from '../lib/api.js';
+import { catalogueIds, login } from '../lib/api.js';
 import { config, seedStudentEmail } from '../lib/config.js';
-import { buildArrivalStages, studentSessionPlan, windowSessions } from '../lib/reaction.js';
+import {
+  accountAssignment,
+  buildArrivalStages,
+  seedCourseMap,
+  studentSessionPlan,
+  windowSessions,
+} from '../lib/reaction.js';
 import { createRng, hash32 } from '../lib/rng.js';
 import { playStudentSession } from '../model/student-replay.js';
 
@@ -47,6 +53,15 @@ function startTimes() {
 
 const arrival = buildArrivalStages(startTimes(), RUN_SECONDS);
 
+/** Tài khoản seed của từng người dùng trong kế hoạch: hoán vị có seed, không trùng (mục 13.4). */
+function userKeys() {
+  const keys = [];
+  for (let index = 0; index < sessions.length; index += 1) keys.push(sessions[index].user_key);
+  return keys;
+}
+const accounts = accountAssignment(WORKLOAD_SEED, userKeys(), config.seedStudents);
+const distinctUsers = Object.keys(accounts).length;
+
 export const options = {
   scenarios: {
     students: {
@@ -65,18 +80,11 @@ export const options = {
   summaryTrendStats: ['avg', 'med', 'p(95)', 'max'],
 };
 
-/** Ánh xạ khóa Moodle A–D → bốn khóa học seed đầu tiên của danh mục (sắp theo id, cố định). */
+/** Ánh xạ khóa Moodle A–D → bốn khóa học seed (`seedCourseMap`), đọc toàn bộ danh mục. */
 export function setup() {
   const startedAt = new Date().toISOString();
   const probe = login('setup', 'student', seedStudentEmail(1), config.seedPassword);
-  const catalogue = api('GET', '/api/v1/courses?page=1&page_size=20', {
-    journey: 'setup',
-    name: 'GET /api/v1/courses',
-    token: probe.token,
-  }).data;
-  const ids = catalogue.map((course) => course.id).sort();
-  if (ids.length < 4) throw new Error(`Cần ít nhất 4 khóa học đã xuất bản, có ${ids.length}`);
-  const courseMap = Object.fromEntries(['A', 'B', 'C', 'D'].map((key, index) => [key, ids[index]]));
+  const courseMap = seedCourseMap(catalogueIds(probe.token));
   return { startedAt, courseMap, mediaIds: [] };
 }
 
@@ -91,6 +99,7 @@ export function students(setupData) {
     rng: createRng(hash32(WORKLOAD_SEED, 'students-plan', index)),
     seed: WORKLOAD_SEED,
     accounts: config.seedStudents,
+    accountIndex: accounts[session.user_key],
   });
   playStudentSession({
     session,
@@ -130,6 +139,11 @@ export function handleSummary(data) {
     course_map: data.setup_data?.courseMap ?? null,
     iterations: metricValue(data, 'iterations', 'count'),
     dropped_iterations: metricValue(data, 'dropped_iterations', 'count') ?? 0,
+    // Iteration bị bỏ làm lệch ánh xạ iteration → phiên: run như vậy không tái lập được, không dùng
+    // làm dữ liệu thí nghiệm (README mục mức 2+).
+    plan_reproducible: (metricValue(data, 'dropped_iterations', 'count') ?? 0) === 0,
+    distinct_users: distinctUsers,
+    accounts_reused: Math.max(0, distinctUsers - config.seedStudents),
     http_reqs: metricValue(data, 'http_reqs', 'count'),
     http_req_failed_rate: metricValue(data, 'http_req_failed', 'rate'),
     http_req_duration_p95_ms: metricValue(data, 'http_req_duration', 'p(95)'),
