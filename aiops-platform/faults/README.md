@@ -101,8 +101,22 @@ node $S plan --case C4 --align-peak aiops-platform/load/data/plans/moodle-normal
 node $S run --case C6 --run-start 2026-11-18T05:00:00Z --log results/<run_id>/faults.jsonl
 ```
 
+- Lịch tùy chỉnh (`--start-s`, `--duration-s`) phải giữ warm-up và recovery của manifest; `--allow-short` bỏ kiểm này cho chạy thử và lịch ghi `timeline_check = skipped_allow_short`.
 - `--align-peak <kế hoạch phát lại>`: đặt cửa sổ fault vào đoạn có nhiều phiên bắt đầu nhất (ADR-007: mỗi case có ít nhất một run fault trùng cao điểm tải), vẫn giữ warm-up và recovery.
-- `run` kiểm điều kiện tiên quyết (`docker inspect` biến môi trường của container), chờ tới mốc, bật, chờ, gỡ. Mỗi sự kiện là một dòng JSON có `ts` UTC thật (`fault.precheck`, `fault.scheduled`, `fault.activate` kèm `drift_ms`, `fault.deactivate`); đây là nguồn `fault_start`/`fault_end` của `RunGroundTruth`. Bật lỗi một phần thì gỡ ngay; Ctrl-C/SIGTERM luôn gỡ fault trước khi thoát (mã 130).
+- `run` kiểm điều kiện tiên quyết (`docker inspect` biến môi trường của container), chờ tới mốc, bật, chờ, gỡ. Mỗi sự kiện là một dòng JSON có `ts` UTC thật (`fault.precheck`, `fault.scheduled`, `fault.activate` kèm `drift_ms`, `fault.deactivate`); đây là nguồn `fault_start`/`fault_end` của `RunGroundTruth`. Bật lỗi một phần thì gỡ ngay; Ctrl-C/SIGTERM luôn gỡ fault trước khi thoát (mã 130), tín hiệu lặp lại trong lúc gỡ không cắt ngang; precheck lỗi (ví dụ sai tên container) vẫn ghi một dòng `fault.precheck` có `error`.
+
+## Bằng chứng chạy thử manifest (18/11/2026)
+
+Stack đầy đủ + overlay (`identity` có `IDENTITY_SERVICE_TOKEN_TTL_SECONDS=60`), tải nền k6 mức 1 15 phút (`RUN_ID=w14-t05-fault-trial`), chạy lần lượt bốn case bằng `fault-schedule.mjs run` với cửa sổ rút ngắn (120–150 s) để vừa một run (nay cần thêm `--allow-short`). Mọi lệnh bật/tắt thành công, lệch mốc 0–1 ms. Kiểm chứng bằng `aiops-training ground-truth --artifact` (task-06) trên telemetry đã export:
+
+| Case | Bật → gỡ (UTC) | Kiểm chứng | Số đo |
+| --- | --- | --- | --- |
+| C2 | 05:08:24 → 05:10:24 | `dependency_latency_increased` đạt | `course-postgres` trung bình 1,9 ms (32.964 lời gọi trước fault) → 373 ms (388 lời gọi) |
+| C4 | 05:11:24 → 05:13:24 | đạt | `media-minio` 1,3 ms → 369 ms (234 lời gọi) |
+| C3 | 05:14:24 → 05:16:54 | đạt | `ai-llm-provider` 1,2 ms → 31,6 s (3 lời gọi) |
+| C6 | 05:17:54 → 05:20:24 | `root_cause_heartbeat_stopped`, `symptom_observed_within_lag_window` đạt | CPU của `identity` tăng 7,67 s trong 5 phút trước, 0 khi pause; 5xx ở gateway bắt đầu từ phút 05:19 (khoảng yên lặng ~70 s), hết sau phút 05:21 |
+
+Ghi chú: hành trình mức 1 không có backoff nên khi C6 làm mọi request lỗi nhanh, VU lặp lại liên tục (≈ 1.000–1.700 request 5xx/s trong 3 phút) — đây là giới hạn của mức 1, không phải của fault. Mức 2/2+ thử lại có backoff và bỏ ngang phiên (workload-design-v1 mục 6). Số lời gọi C3 trong cửa sổ fault chỉ vừa đủ ngưỡng 3: run thật cần đủ job AI (workload-design-v1 mục 8.5).
 
 ## Bằng chứng kiểm chứng (17/11/2026)
 

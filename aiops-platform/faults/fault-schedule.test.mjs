@@ -43,6 +43,11 @@ describe('fault manifest', () => {
     assert.equal(base.root_cause_component, 'course-postgres');
     const custom = buildSchedule(manifest, 'C6', { startS: 900, durationS: 120 });
     assert.deepEqual([custom.activate_at_s, custom.deactivate_at_s], [900, 1020]);
+    assert.equal(custom.timeline_check, 'ok');
+    assert.throws(() => buildSchedule(manifest, 'C2', { startS: 60 }), /warm-up/u);
+    assert.throws(() => buildSchedule(manifest, 'C2', { startS: 2000 }), /recovery/u);
+    const short = buildSchedule(manifest, 'C2', { startS: 60, durationS: 60, allowShort: true });
+    assert.equal(short.timeline_check, 'skipped_allow_short');
     // Đỉnh tải quanh giây 1500–1700: cửa sổ 600 s phải phủ trọn đỉnh.
     const starts = [...Array(50).keys()].map((i) => 400 + i * 40).concat(Array(300).fill(1600));
     const aligned = buildSchedule(manifest, 'C2', { peakStarts: starts });
@@ -55,9 +60,9 @@ describe('fault manifest', () => {
     const timeline = { run_seconds: 2880, warmup_s: 360, min_recovery_s: 600 };
     assert.equal(peakAlignedStart([10, 20, 30], timeline, 600).start, 360);
     // Đỉnh ở 2.200 s: cửa sổ phải phủ đỉnh nhưng không bắt đầu sau 2.880 − 600 − 600 = 1.680 s.
-  const late = peakAlignedStart(Array(5).fill(2200), timeline, 600);
-  assert.ok(late.start > 1600 && late.start <= 1680);
-  assert.equal(late.count, 5);
+    const late = peakAlignedStart(Array(5).fill(2200), timeline, 600);
+    assert.ok(late.start > 1600 && late.start <= 1680);
+    assert.equal(late.count, 5);
     assert.throws(() => peakAlignedStart([], timeline, 2500), /quá ngắn/u);
   });
 });
@@ -121,7 +126,7 @@ describe('runSchedule trên LLM stub thật, đồng hồ giả', () => {
   }
 
   test('bật đúng mốc, gỡ đúng mốc, nhật ký có drift', async () => {
-    const schedule = buildSchedule(manifest, 'C3', { startS: 60, durationS: 30 });
+    const schedule = buildSchedule(manifest, 'C3', { startS: 60, durationS: 30, allowShort: true });
     const clock = fakeClock(1_000_000);
     const records = [];
     const observed = {};
@@ -147,7 +152,11 @@ describe('runSchedule trên LLM stub thật, đồng hồ giả', () => {
   });
 
   test('bị ngắt khi fault đang bật: vẫn gỡ fault và ghi lý do', async () => {
-    const schedule = buildSchedule(manifest, 'C3', { startS: 10, durationS: 600 });
+    const schedule = buildSchedule(manifest, 'C3', {
+      startS: 10,
+      durationS: 600,
+      allowShort: true,
+    });
     const clock = fakeClock(0);
     const controller = new AbortController();
     const records = [];
@@ -169,7 +178,7 @@ describe('runSchedule trên LLM stub thật, đồng hồ giả', () => {
 
   test('bật lỗi thì gỡ ngay và báo thất bại', async () => {
     const schedule = {
-      ...buildSchedule(manifest, 'C3', { startS: 0, durationS: 10 }),
+      ...buildSchedule(manifest, 'C3', { startS: 0, durationS: 10, allowShort: true }),
       activate: [['llm', 'set', '--error-rate', '3']],
     };
     const records = [];
