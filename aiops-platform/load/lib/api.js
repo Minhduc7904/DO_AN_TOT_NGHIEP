@@ -105,3 +105,18 @@ export function waitFor(journey, description, probe, intervalSeconds = 1) {
     sleep(intervalSeconds);
   }
 }
+
+/** Id của mọi khóa học đã xuất bản, đọc hết các trang của `GET /api/v1/courses`. */
+export function catalogueIds(token, journey = 'setup') {
+  const ids = [];
+  for (let page = 1; ; page += 1) {
+    const result = api('GET', `/api/v1/courses?page=${page}&page_size=100`, {
+      journey,
+      name: 'GET /api/v1/courses',
+      token,
+    });
+    for (const course of result.data ?? []) ids.push(course.id);
+    const totalPages = result.meta?.pagination?.total_pages ?? 1;
+    if (page >= totalPages || (result.data ?? []).length === 0) return ids;
+  }
+}

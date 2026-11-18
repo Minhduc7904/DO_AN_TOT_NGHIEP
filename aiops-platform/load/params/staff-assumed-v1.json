@@ -1,0 +1,112 @@
+{
+  "schema": "staff-params.v1",
+  "description": "Tham số GIẢ ĐỊNH của giảng viên, admin và job lịch (mức 2), chép từ workload-design-v1 mục 3.4–3.5, 4.2–4.3, 5.6–5.8, 6.4, 7.3–7.5, P29–P34.",
+  "instructor": {
+    "accounts": 10,
+    "sessions_per_day": 90,
+    "goal_mix": { "I1": 0.45, "I2": 0.3, "I3": 0.2, "I4": 0.05 },
+    "hourly_weight": [
+      0.02, 0.02, 0.02, 0.02, 0.02, 0.02, 0.02, 0.35, 0.6, 0.8, 0.9, 0.9, 0.8, 0.85, 0.9, 0.95,
+      0.95, 0.85, 0.8, 0.45, 0.5, 0.5, 0.4, 0.23
+    ],
+    "goal_tables": {
+      "I1": {
+        "I_LOGIN": { "I_COURSES": 1.0 },
+        "I_COURSES": {
+          "I_EDIT_LESSON": 0.4,
+          "I_CREATE_COURSE": 0.2,
+          "I_ADD_LESSON": 0.2,
+          "I_CREATE_QUIZ": 0.1,
+          "EXIT": 0.1
+        },
+        "I_CREATE_COURSE": { "I_ADD_LESSON": 0.9, "EXIT": 0.1 },
+        "I_ADD_LESSON": {
+          "I_ADD_LESSON": 0.35,
+          "I_EDIT_LESSON": 0.25,
+          "I_CREATE_QUIZ": 0.15,
+          "I_REORDER": 0.1,
+          "EXIT": 0.15
+        },
+        "I_EDIT_LESSON": {
+          "EXIT": 0.3,
+          "I_EDIT_LESSON": 0.25,
+          "I_UPLOAD": 0.15,
+          "I_CREATE_QUIZ": 0.15,
+          "I_COURSES": 0.15
+        },
+        "I_UPLOAD": { "I_EDIT_LESSON": 0.8, "EXIT": 0.2 },
+        "I_REORDER": { "I_EDIT_LESSON": 0.5, "EXIT": 0.5 },
+        "I_CREATE_QUIZ": { "I_PUBLISH_QUIZ": 0.6, "EXIT": 0.3, "I_EDIT_LESSON": 0.1 },
+        "I_PUBLISH_QUIZ": { "EXIT": 0.5, "I_PUBLISH_COURSE": 0.3, "I_COURSES": 0.2 },
+        "I_PUBLISH_COURSE": { "EXIT": 0.7, "I_COURSES": 0.3 }
+      },
+      "I2": {
+        "I_LOGIN": { "I_LIBRARY": 0.5, "I_COURSES": 0.5 },
+        "I_LIBRARY": { "I_UPLOAD": 0.8, "EXIT": 0.2 },
+        "I_COURSES": { "I_UPLOAD": 0.9, "EXIT": 0.1 },
+        "I_UPLOAD": { "I_ATTACH": 0.6, "I_UPLOAD": 0.25, "I_LIBRARY": 0.1, "EXIT": 0.05 },
+        "I_ATTACH": { "EXIT": 0.4, "I_UPLOAD": 0.3, "I_LIBRARY": 0.3 }
+      },
+      "I4": {
+        "I_LOGIN": { "I_COURSES": 1.0 },
+        "I_COURSES": { "I_EXPORT": 0.5, "EXIT": 0.5 },
+        "I_EXPORT": { "EXIT": 1.0 }
+      }
+    },
+    "i3_sequence": [
+      "I_COURSES",
+      "I_CREATE_COURSE",
+      "I_ADD_LESSON",
+      "I_UPLOAD_TXT",
+      "I_ATTACH",
+      "I_AI_SYNC",
+      "I_AI_JOB"
+    ],
+    "i3_abort_per_step": 0.05,
+    "i3_after_job": { "EXIT": 0.4, "I_AI_JOB": 0.4, "I_PUBLISH_QUIZ": 0.2 },
+    "upload_png_share": 0.8,
+    "max_actions": 40
+  },
+  "admin": {
+    "adhoc_hours": [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18],
+    "adhoc_goal_mix": { "A1": 0.6, "A2": 0.4 },
+    "batch_hours": [8, 19],
+    "cleanup_hours": [2],
+    "batch_size": 100,
+    "cleanup_retention_hours": 168
+  },
+  "think": {
+    "mu": 2.659,
+    "sigma": 1.325,
+    "clamp_s": [1, 300],
+    "type_factor": { "navigation": 0.5, "answer": 1.5, "read": 2.0, "compose": 3.0 },
+    "type_of_state": {
+      "I_COURSES": "navigation",
+      "I_CREATE_COURSE": "compose",
+      "I_ADD_LESSON": "compose",
+      "I_EDIT_LESSON": "compose",
+      "I_REORDER": "navigation",
+      "I_CREATE_QUIZ": "compose",
+      "I_PUBLISH_QUIZ": "navigation",
+      "I_PUBLISH_COURSE": "navigation",
+      "I_UPLOAD": "answer",
+      "I_UPLOAD_TXT": "answer",
+      "I_ATTACH": "navigation",
+      "I_LIBRARY": "navigation",
+      "I_AI_SYNC": "navigation",
+      "I_AI_JOB": "navigation",
+      "I_EXPORT": "navigation",
+      "A_ACCOUNTS": "navigation",
+      "A_NOTIFY": "compose",
+      "A_BATCH": "compose",
+      "A_CLEANUP": "navigation"
+    }
+  },
+  "background_wait": {
+    "thumbnail": { "interval_s": 5, "jitter_s": 1, "timeout_s": 60 },
+    "ai_document": { "interval_s": 5, "jitter_s": 1, "timeout_s": 90 },
+    "ai_job": { "interval_s": 5, "jitter_s": 1, "timeout_s": 90 },
+    "batch": { "interval_s": 10, "jitter_s": 2, "timeout_s": 180 },
+    "cleanup": { "interval_s": 10, "jitter_s": 2, "timeout_s": 120 }
+  }
+}
