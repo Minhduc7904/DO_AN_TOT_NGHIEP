@@ -14,6 +14,7 @@ from pathlib import Path
 
 import httpx
 
+from .features.pipeline import write_features
 from .telemetry.adapters.loki import LokiAdapter
 from .telemetry.adapters.prometheus import PrometheusAdapter
 from .telemetry.adapters.tempo import TempoAdapter, TempoExportOptions
@@ -106,16 +107,32 @@ def _run_quality(args: argparse.Namespace) -> int:
     return 1 if report["overall_status"] == "fail" else 0
 
 
+def _features_parser(sub: argparse._SubParsersAction) -> None:
+    parser = sub.add_parser("features", help="Sinh đặc trưng theo cửa sổ (feature pipeline v0)")
+    parser.add_argument("artifact_dir", type=Path, help="Thư mục artifact (có manifest.json)")
+    parser.add_argument("--out", type=Path, help="Mặc định <artifact_dir>/features")
+
+
+def _run_features(args: argparse.Namespace) -> int:
+    meta = write_features(args.artifact_dir, args.out)
+    keys = ("run_id", "windows", "service_rows", "edge_rows", "silent_windows")
+    print(json.dumps({key: meta[key] for key in keys}, ensure_ascii=False))
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="aiops-training")
     sub = parser.add_subparsers(dest="command", required=True)
     _export_parser(sub)
     _quality_parser(sub)
+    _features_parser(sub)
     args = parser.parse_args(argv)
     if args.command == "export":
         return _run_export(args)
     if args.command == "quality":
         return _run_quality(args)
+    if args.command == "features":
+        return _run_features(args)
     parser.error(f"Lệnh không hỗ trợ: {args.command}")
     return 2
 

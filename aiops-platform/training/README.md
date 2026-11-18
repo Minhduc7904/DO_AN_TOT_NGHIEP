@@ -64,6 +64,14 @@ uv run aiops-training quality artifacts/<run_id>      # ghi artifacts/<run_id>/q
 
 In bảng mỗi runtime một dòng (số metric, nhịp tim, gap, span, log, cờ) và trả `pass`/`partial`/`fail` (mã thoát 1 chỉ khi `fail`). Định nghĩa từng trường, cờ `telemetry_silent` và quy tắc trạng thái: [telemetry data dictionary v2](../../docs/processed/architecture/telemetry-data-dictionary-v2.md) mục 8.
 
+## Đặc trưng theo cửa sổ (feature pipeline v0)
+
+```bash
+uv run aiops-training features artifacts/<RUN_ID>          # → artifacts/<RUN_ID>/features/
+```
+
+Cửa sổ 60 s bước 15 s; `service_windows.parquet` (RED, CPU, bộ nhớ, trace/log error rate, cờ thiếu modality, `telemetry_silent`) và `edge_windows.parquet` (số lời gọi, tỉ lệ lỗi/timeout, độ trễ trung bình/p95/p99 theo cạnh). Cột và cách tính: [telemetry-data-dictionary-v2](../../docs/processed/architecture/telemetry-data-dictionary-v2.md) mục 9.
+
 ## Cách export bảo vệ Tempo
 
 Tempo của testbed bị giới hạn 512 MiB và từng bị OOM khi nhận truy vấn dồn dập. Adapter:

@@ -262,9 +262,51 @@ Hệ quả cho feature pipeline: **mọi metric của runtime đã ngừng vẫn
 
 **Cửa sổ `pause-scheduler-check`** (10:12:56–10:17:06 UTC, `docker pause` `scheduler` 10:14:26–10:15:36, không có workload): `partial`, lý do duy nhất `telemetry_silent:scheduler`, khoảng im lặng 10:14:31–10:15:46 (75 s), nhịp tim `scheduler` 74%; 10 runtime còn lại không bị gắn cờ. Không có span hay log nghiệp vụ vì không có workload (`no_traffic`).
 
-## 9. Giới hạn và việc tiếp theo
+## 9. Bảng đặc trưng v0 (`features/`, task-07 tuần 14)
+
+`uv run aiops-training features <artifact_dir>` ghi `features/service_windows.parquet`, `features/edge_windows.parquet` và `features/features-manifest.json` (`feature_version = feature.v0`, cấu hình cửa sổ, file đầu vào). Cửa sổ `[window_start, window_end)` dài 60 s, bước 15 s, mốc chia hết cho 15 s; theo [telemetry-and-ground-truth-schema-v1](telemetry-and-ground-truth-schema-v1.md) mục 11.1–11.2. Đặc trưng chỉ đọc telemetry, không đọc ground truth, fault manifest hay nhật ký workload.
+
+Quy tắc chung: mức tăng counter/histogram trong cửa sổ = tổng hiệu dương liên tiếp của từng series (mẫu gần nhất trước cửa sổ làm mốc; series mới coi giá trị trước là 0; counter reset đếm lại từ 0). Percentile tính từ hiệu bucket, nội suy như `histogram_quantile`.
+
+### 9.1. `service_windows.parquet` — một dòng cho mỗi (cửa sổ, runtime trong 11 `service.name`)
+
+| Cột | Kiểu | Đơn vị | Nguồn / cách tính |
+| --- | --- | --- | --- |
+| `run_id`, `window_start`, `window_end`, `service_name` | string, timestamp UTC | — | Khóa |
+| `request_rate` | float | request/s | Mức tăng `http_server_request_count_total` ÷ 60 |
+| `error_rate` | float | tỉ lệ | Mức tăng `http_server_request_error_count_total` ÷ mức tăng request; null khi không có request |
+| `latency_p50`, `latency_p95`, `latency_p99` | float | s | Từ hiệu bucket `http_server_request_duration_seconds_bucket` của service |
+| `cpu_usage` | float | giây CPU/s | Mức tăng `process_cpu_time_seconds_total` ÷ 60 |
+| `memory_usage` | float | byte | Giá trị cuối trong cửa sổ của `process_memory_usage_bytes` (lớn nhất theo instance) |
+| `trace_error_rate` | float | tỉ lệ | Span có `status = error` ÷ số span của service bắt đầu trong cửa sổ (trace export có giới hạn số trace nên là ước lượng) |
+| `span_count` | int | span | Số span của service bắt đầu trong cửa sổ |
+| `downstream_latency_p95` | float | s | p95 từ hiệu bucket `lms_dependency_duration_seconds_bucket` với service là bên gọi |
+| `log_error_rate`, `log_count` | float, int | dòng/s, dòng | Log `level ∈ {error, fatal}` ÷ 60; tổng số dòng log |
+| `missing_metrics` | bool | — | Chưa có mẫu nhịp tim nào của runtime tới cuối cửa sổ |
+| `missing_traces`, `missing_logs` | bool | — | Modality `missing` trong manifest artifact |
+| `telemetry_silent` | bool | — | Runtime đã có mẫu nhịp tim trước đó nhưng `process_cpu_time_seconds_total` không tăng trong cửa sổ (mục 8.2). Khi `true`, các đặc trưng tốc độ/độ trễ/CPU/bộ nhớ là null, không phải 0 |
+
+### 9.2. `edge_windows.parquet` — một dòng cho mỗi (cửa sổ, cạnh `caller_service → dependency_identity` có trong metric)
+
+| Cột | Kiểu | Đơn vị | Nguồn / cách tính |
+| --- | --- | --- | --- |
+| `caller_service`, `dependency_identity` | string | — | Nhãn `service_name`, `dependency_identity` của `lms_dependency_*` (bên gọi ghi) |
+| `call_count` | float | lời gọi | Mức tăng `lms_dependency_request_count_total` |
+| `error_ratio` | float | tỉ lệ | Mức tăng `lms_dependency_error_count_total` ÷ `call_count` |
+| `timeout_ratio` | float | tỉ lệ | Mức tăng `lms_dependency_request_count_total{status="timeout"}` ÷ `call_count` |
+| `duration_mean` | float | s | Mức tăng `_sum` ÷ mức tăng `_count` của `lms_dependency_duration_seconds` |
+| `duration_p95`, `duration_p99` | float | s | Từ hiệu bucket `lms_dependency_duration_seconds_bucket` |
+| `caller_silent` | bool | — | `telemetry_silent` của bên gọi trong cùng cửa sổ |
+
+Khác logical schema v1 mục 11.2: đặc trưng cạnh v0 lấy từ **metric** dependency (đếm đủ mọi lời gọi) thay vì từ `TraceSpan` (bị giới hạn số trace khi export); `first_degradation_time` và `missing_trace_ratio` chưa làm (cần detector và đối chiếu span–metric, tuần 15–16).
+
+### 9.3. Kết quả trên run thử có fault (18/11/2026)
+
+Artifact `w14-t05-fault-trial` (15 phút, tải nền k6 mức 1, bốn case bật lần lượt): 59 cửa sổ, 649 dòng service, 2.360 dòng cạnh (40 cạnh), chạy trong ~49 s. Trung vị đặc trưng của thành phần gốc trước → trong cửa sổ fault: C2 `course→course-postgres` `duration_mean` 1,3 ms → 377 ms; C4 `media→media-minio` 1,2 ms → 365 ms; C3 `ai-worker→ai-llm-provider` 1,2 ms → 31,7 s; C6 `gateway→gateway-identity-token` `error_ratio` 0 → 1,0 và `identity` có `telemetry_silent = true` ở 6 cửa sổ trong lúc bị pause (bắt đầu 05:18:00–05:19:15 UTC).
+
+## 10. Giới hạn và việc tiếp theo
 
 - Chưa có `phase_coverage`, `workflow_trace_coverage_ratio` và các trường async của schema v1 mục 7.2 (cần nhật ký thao tác k6 mức 2 và fault manifest, tuần 14).
 - Ngưỡng (`silent_threshold_s` 30 s, mép 35 s, tương quan log 95%) là giá trị khởi đầu, chốt sau pilot.
 - `notification-worker` khi phát lại command từ outbox đang dùng identity `notification-rabbitmq` thay vì `notification-worker-rabbitmq` (lệch so với schema v1 mục 3.2.4; `lms/services/notification/src/adapters/messaging/outbox-relay.service.ts`). Ảnh hưởng cột `dependency_identity` của span PRODUCER trong artifact; cần sửa code hoặc ghi chú khi dựng cạnh async.
-- Bộ đếm lỗi xuất hiện lần đầu giữa cửa sổ là series mới; `increase()` của Prometheus bỏ mẫu đầu. Artifact giữ giá trị thô nên feature pipeline coi giá trị trước đó là 0.
+- Bộ đếm lỗi xuất hiện lần đầu giữa cửa sổ là series mới; `increase()` của Prometheus bỏ mẫu đầu. Artifact giữ giá trị thô nên feature pipeline coi giá trị trước đó là 0 (đã làm ở mục 9).
