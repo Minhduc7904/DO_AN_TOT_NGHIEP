@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-03_build-staff-workload-and-healthy-profiles` |
 | Tuần | `week-14_2026-11-01_to_2026-11-07` |
-| Trạng thái | Đã giao |
+| Trạng thái | Đang thực hiện |
 | Người phụ trách | Bách |
 | Collaborator | Không có |
 | Ưu tiên | Cao |
@@ -53,12 +53,12 @@ Theo [workload-design-v1](../../../architecture/workload-design-v1.md) mục 5.7
 
 - Input workspace: Không tạo (giai đoạn tự bắt kịp; bằng chứng nằm trong PR).
 - Output workspace: Không tạo.
-- Pull request: Chưa tạo.
-- Kết quả review: Chưa review.
+- Pull request: [#88](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/88).
+- Kết quả review: Không có GitHub `APPROVED` (giai đoạn tự bắt kịp; CI GitHub bị khóa thanh toán, kiểm tra chạy cục bộ, kết quả trong PR). Không có review ngoài GitHub cho PR này. PR #88 được Bách (người phụ trách) merge ngày 18/11/2026 khi DoD chưa đủ, theo yêu cầu của Bách; task giữ `Đang thực hiện`.
 
 > URL/số PR và `Chờ review` phải được commit/push vào PR head trước review. Thành viên còn lại phải gửi `APPROVED` hợp lệ trên GitHub; sau đó người phụ trách finalization metadata, ghi `Hoàn thành` trên chính branch/PR và tự merge task của mình. Card chỉ canonically hoàn thành khi commit đó vào nhánh canonical; xem [vòng đời task canonical](../../../rules/git-and-pull-request-rules.md#vòng-đời-task-canonical).
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 18/11/2026 — lập card.
-- Ghi chú/tồn đọng:
+- Cập nhật gần nhất: 18/11/2026 — đã merge PR #88 (phần code); ghi nhận hậu kiểm, giữ Đang thực hiện.
+- Ghi chú/tồn đọng: PR #88 đã merge phần code, unit test và run thử 3 phút; DoD 1 chưa đạt: hai profile cả ngày (`normal-mixed`, `healthy-spike`) chưa chạy trọn với code cuối, tiêu chí khỏe mục 8.4 chưa báo cáo. Run `w14-t03-normal-mixed-r1` (code trước sửa) bỏ 42 iteration nên không dùng. `healthy-spike` cần khoảng 1.000 VU dựng sẵn, chạy khi máy đủ RAM; bằng chứng đưa vào PR tiếp theo của task.

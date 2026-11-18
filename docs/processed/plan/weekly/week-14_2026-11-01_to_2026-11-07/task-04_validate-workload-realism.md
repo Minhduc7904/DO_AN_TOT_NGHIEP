@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-04_validate-workload-realism` |
 | Tuần | `week-14_2026-11-01_to_2026-11-07` |
-| Trạng thái | Đã giao |
+| Trạng thái | Hoàn thành |
 | Người phụ trách | Bách |
 | Collaborator | Không có |
 | Ưu tiên | Cao |
@@ -52,12 +52,12 @@ Theo [ADR-007](../../../adr/adr-007-semi-real-workload-and-ai-evidence-v1.md) m�
 
 - Input workspace: Không tạo (giai đoạn tự bắt kịp; bằng chứng nằm trong PR).
 - Output workspace: Không tạo.
-- Pull request: Chưa tạo.
-- Kết quả review: Chưa review.
+- Pull request: [#89](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/89).
+- Kết quả review: Không có GitHub `APPROVED` (giai đoạn tự bắt kịp; CI GitHub bị khóa thanh toán, kiểm tra chạy cục bộ, kết quả trong PR). Không có review ngoài GitHub cho PR này. PR #89 được Bách (người phụ trách) merge ngày 18/11/2026 trước khi finalization; card chuyển `Hoàn thành` bằng commit ghi nhận hậu kiểm trên `main` theo yêu cầu của Bách.
 
 > URL/số PR và `Chờ review` phải được commit/push vào PR head trước review. Thành viên còn lại phải gửi `APPROVED` hợp lệ trên GitHub; sau đó người phụ trách finalization metadata, ghi `Hoàn thành` trên chính branch/PR và tự merge task của mình. Card chỉ canonically hoàn thành khi commit đó vào nhánh canonical; xem [vòng đời task canonical](../../../rules/git-and-pull-request-rules.md#vòng-đời-task-canonical).
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 18/11/2026 — lập card.
-- Ghi chú/tồn đọng:
+- Cập nhật gần nhất: 18/11/2026 — đã merge PR #89; ghi nhận hậu kiểm, chuyển Hoàn thành.
+- Ghi chú/tồn đọng: Báo cáo [workload-realism-report-v1](../../../architecture/workload-realism-report-v1.md) là lần đo pilot: chưa nguồn nào đạt đủ ngưỡng chốt trước (bán thực 5/7). Phải chạy lại ba run trên code workload cuối cùng (TTL token mặc định) trước khi thu dữ liệu tuần 15.

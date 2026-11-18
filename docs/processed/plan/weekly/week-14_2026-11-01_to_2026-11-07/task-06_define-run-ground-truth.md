@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-06_define-run-ground-truth` |
 | Tuần | `week-14_2026-11-01_to_2026-11-07` |
-| Trạng thái | Đã giao |
+| Trạng thái | Hoàn thành |
 | Người phụ trách | Bách |
 | Collaborator | Không có |
 | Ưu tiên | Cao |
@@ -51,12 +51,12 @@
 
 - Input workspace: Không tạo (giai đoạn tự bắt kịp; bằng chứng nằm trong PR).
 - Output workspace: Không tạo.
-- Pull request: Chưa tạo.
-- Kết quả review: Chưa review.
+- Pull request: [#86](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/86).
+- Kết quả review: Không có GitHub `APPROVED` (giai đoạn tự bắt kịp; CI GitHub bị khóa thanh toán, kiểm tra chạy cục bộ, kết quả trong PR). Có một vòng review bằng agent ngoài GitHub; các phát hiện đã sửa trong PR. PR #86 được Bách (người phụ trách) merge ngày 18/11/2026 trước khi finalization; card chuyển `Hoàn thành` bằng commit ghi nhận hậu kiểm trên `main` theo yêu cầu của Bách.
 
 > URL/số PR và `Chờ review` phải được commit/push vào PR head trước review. Thành viên còn lại phải gửi `APPROVED` hợp lệ trên GitHub; sau đó người phụ trách finalization metadata, ghi `Hoàn thành` trên chính branch/PR và tự merge task của mình. Card chỉ canonically hoàn thành khi commit đó vào nhánh canonical; xem [vòng đời task canonical](../../../rules/git-and-pull-request-rules.md#vòng-đời-task-canonical).
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 18/11/2026 — lập card.
-- Ghi chú/tồn đọng:
+- Cập nhật gần nhất: 18/11/2026 — đã merge PR #86; ghi nhận hậu kiểm, chuyển Hoàn thành.
+- Ghi chú/tồn đọng: Không có.
