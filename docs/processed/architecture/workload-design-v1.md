@@ -1067,7 +1067,7 @@ Phát lại theo kịch bản nhưng vẫn phản ứng như người thật ở
 
 ### 13.7. Định dạng file phiên, script và quy tắc dữ liệu
 
-- Script ở `aiops-platform/load/tools/` (tuần 14): (1) tải zip từ Zenodo và kiểm sha256; (2) chuyển log thành `sessions-<phiên-bản>.json` gồm danh sách phiên `{session_id, user_key, course_key, day_index, start_offset_s, actions: [{state, think_s}]}`; (3) in báo cáo tỉ lệ phủ, số phiên, phân phối.
+- Script ở `aiops-platform/load/tools/` (đã cài ở task-01 tuần 14, xem [`aiops-platform/load/README.md`](../../../aiops-platform/load/README.md)): (1) tải zip từ Zenodo và kiểm md5 + sha256; (2) chuyển log thành `moodle-build-v1.json` / `moodle-holdout-v1.json` gồm danh sách phiên `{session_id, user_key, course_key, day_index, start_offset_s, actions: [{state, think_s}]}`; (3) in báo cáo tỉ lệ phủ, số phiên, phân phối.
 - k6 nạp file phiên bằng `SharedArray`, executor arrival-rate theo đường cong mục 7.7, mỗi iteration phát một phiên bằng các hàm thao tác ở `aiops-platform/load/journeys/` (PR #76).
 - **Không commit** CSV gốc hay file phiên sinh ra (log không có thông tin cá nhân nhưng vẫn là dữ liệu của bên thứ ba); repo chỉ có script và sha256. Ghi nguồn đúng CC BY 4.0: Milani, Biondi, Franzoni, *Unistudium 2022: students groups logs on moodle*, Zenodo, DOI 10.5281/zenodo.13763175.
 
@@ -1163,7 +1163,7 @@ Làm lại được với Python thuần (thư viện chuẩn `csv`, `statistics
 
 ## Phụ lục B. Cách tính số liệu log Moodle (thêm theo ADR-007)
 
-Tính bằng một script Python thuần (`csv`, `collections`, `math`), không commit (giữ ở máy người viết); tuần 14 đưa phiên bản chính thức vào `aiops-platform/load/tools/`.
+Tính lần đầu bằng một script Python thuần (`csv`, `collections`, `math`) không commit. Phiên bản chính thức là `aiops-platform/load/tools/moodle-to-sessions.mjs` (task-01 tuần 14); chạy lại trên cùng CSV cho đúng các số B.2–B.3 (198.095 dòng phủ, 34.247 phiên có thao tác).
 
 - **B.1. Đọc và cắt phiên:** nhóm dòng theo `userId`, sắp theo `dateTime`; cắt phiên khi khoảng cách giữa hai sự kiện > 1.800 s.
 - **B.2. Ánh xạ:** theo bảng mục 13.2; sự kiện phụ trong ≤ 2 s sau thao tác trước gộp vào thao tác đó; cùng trạng thái lặp lại trong ≤ 1 s coi là trùng. Đếm: 171.892 dòng thành thao tác riêng, 18.476 dòng phụ, 7.727 dòng trùng, 10.014 dòng bỏ.
