@@ -167,3 +167,15 @@ export function accountAssignment(seed, userKeys, accounts) {
   }
   return map;
 }
+
+/**
+ * Ánh xạ khóa Moodle A–D → bốn khóa học **seed** (id do seeder đặt, tiền tố `5eed`) nhỏ nhất theo id.
+ * Chỉ lấy khóa seed để ánh xạ không đổi khi giảng viên của các run trước đã tạo/xuất bản khóa mới.
+ * `ids` phải là **toàn bộ** danh mục: khóa mới xếp trước (mới nhất trước) nên khóa seed dễ nằm ở trang
+ * sau.
+ */
+export function seedCourseMap(ids) {
+  const seeds = ids.filter((id) => id.startsWith('5eed')).sort();
+  if (seeds.length < 4) throw new Error(`Cần ít nhất 4 khóa học seed đã xuất bản, có ${seeds.length}`);
+  return Object.fromEntries(['A', 'B', 'C', 'D'].map((key, index) => [key, seeds[index]]));
+}
