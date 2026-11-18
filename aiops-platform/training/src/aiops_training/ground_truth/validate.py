@@ -189,7 +189,7 @@ def verify(
         )
         lag = ground_truth.get("expected_symptom_lag") or {}
         lag_end = min(
-            fault_end, fault_start + timedelta(seconds=float(lag.get("max_seconds", 120)) + 30)
+            fault_end, fault_start + timedelta(seconds=float(lag.get("max_seconds", 120)))
         )
         errors = _sum_increase(
             series,
@@ -224,9 +224,10 @@ def apply_verification(
         return record
     passed = all(check["result"] == "pass" for check in checks)
     record["verification_result"] = "succeeded" if passed else "failed"
-    reasons = list(record.get("invalid_reasons", []))
+    reasons = [r for r in record.get("invalid_reasons", []) if r != "verification_not_run"]
     if not passed:
         reasons.append("verification_failed")
     record["invalid_reasons"] = reasons
-    record["run_status"] = "invalid" if reasons else record["run_status"]
+    if record["run_status"] != "failed":
+        record["run_status"] = "invalid" if reasons else "valid"
     return record

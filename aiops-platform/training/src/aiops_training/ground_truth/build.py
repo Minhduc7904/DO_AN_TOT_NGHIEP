@@ -14,6 +14,7 @@ import json
 from pathlib import Path
 from typing import Any
 
+from ..telemetry.window import parse_utc
 from .cases import CASE_TRUTH, HEALTHY_TRUTH, expected_symptom_lag
 
 GROUND_TRUTH_SCHEMA_VERSION = "ground-truth.v1"
@@ -67,6 +68,14 @@ def _result(steps_ok: list[bool]) -> str:
 def _fault_section(case: dict[str, Any], records: list[dict[str, Any]]) -> dict[str, Any]:
     case_id = case["case_id"]
     mine = [record for record in records if record.get("case_id") == case_id]
+    # Nhật ký có thể được append qua nhiều lần chạy: chỉ lấy lần lập lịch cuối cùng của case (kèm
+    # precheck ngay trước nó).
+    starts = [index for index, record in enumerate(mine) if record["event"] == "fault.scheduled"]
+    if starts:
+        first = starts[-1]
+        if first > 0 and mine[first - 1]["event"] == "fault.precheck":
+            first -= 1
+        mine = mine[first:]
     activate = next((r for r in mine if r["event"] == "fault.activate"), None)
     deactivate = next((r for r in reversed(mine) if r["event"] == "fault.deactivate"), None)
     precheck = next((r for r in mine if r["event"] == "fault.precheck"), None)
@@ -109,6 +118,7 @@ def _fault_section(case: dict[str, Any], records: list[dict[str, Any]]) -> dict[
         "deactivation_result": deactivation,
         "deactivation_details": deactivate,
         "_precheck_ok": precheck is None or precheck.get("ok", False),
+        "_aborted": bool(deactivate and deactivate.get("reason") == "aborted"),
     }
 
 
@@ -183,6 +193,8 @@ def build_ground_truth(
         section = _fault_section(case, fault_records)
         if not section.pop("_precheck_ok"):
             invalid.append("precheck_failed")
+        if section.pop("_aborted"):
+            invalid.append("fault_aborted")
         if section["activation_result"] != "succeeded":
             invalid.append(f"activation_{section['activation_result']}")
         if section["deactivation_result"] != "succeeded":
@@ -195,7 +207,8 @@ def build_ground_truth(
             "reset_start": None,
             "reset_end": None,
             "reset_result": "not_applicable",
-            "verification_result": "not_run",
+            # Fault run chỉ `valid` sau khi kiểm chứng (apply_verification); healthy không có check.
+            "verification_result": "not_applicable" if case_id is None else "failed",
             "verification_checks": [],
             "code_commit": provenance.get("code_commit"),
             "service_versions": provenance.get("service_versions", {}),
@@ -205,9 +218,22 @@ def build_ground_truth(
             "notes": provenance.get("notes", []),
         }
     )
-    if not record["run_start"] or not record["run_end"]:
+    if case_id is not None:
+        invalid.append("verification_not_run")
+    failed = not record["run_start"] or not record["run_end"]
+    if failed:
         invalid.append("workload_window_missing")
-    record["run_status"] = "invalid" if invalid else "valid"
+    elif record.get("fault_start") and record.get("fault_end"):
+        inside = (
+            parse_utc(record["workload_start"])
+            <= parse_utc(record["fault_start"])
+            <= parse_utc(record["fault_end"])
+            <= parse_utc(record["workload_end"])
+        )
+        if not inside:
+            invalid.append("fault_outside_workload")
+    # mục 8.3: thiếu cửa sổ tải nghĩa là run không hoàn tất (failed); vi phạm khác là invalid.
+    record["run_status"] = "failed" if failed else ("invalid" if invalid else "valid")
     check_required(record)
     return record
 

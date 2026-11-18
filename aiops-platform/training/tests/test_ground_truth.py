@@ -56,7 +56,9 @@ def build(case_id: str | None, records=None, workload=WORKLOAD):
 
 def test_fault_run_uses_control_plane_interval_and_manifest_labels():
     record = build("C2", fault_log("C2", 1080, 1680))
-    assert record["run_status"] == "valid"
+    # Chưa kiểm chứng với telemetry thì chưa được valid.
+    assert record["run_status"] == "invalid"
+    assert record["invalid_reasons"] == ["verification_not_run"]
     assert record["fault_start"] == iso(1080) and record["fault_end"] == iso(1680)
     assert record["fault_id"] == "FC" and record["fault_target"] == "course-postgres"
     assert record["root_cause_service"] == "course"
@@ -81,6 +83,7 @@ def test_failed_activation_is_invalid_without_fake_fault_start():
     assert record["run_status"] == "invalid"
     assert record["fault_start"] is None
     assert "activation_failed" in record["invalid_reasons"]
+    assert record["run_status"] == "invalid"
 
 
 def test_healthy_run_and_required_fields():
@@ -92,7 +95,7 @@ def test_healthy_run_and_required_fields():
     with pytest.raises(GroundTruthError):
         build("C9", [])
     broken = build(None, workload={**WORKLOAD, "finished_at": None})
-    assert broken["run_status"] == "invalid"
+    assert broken["run_status"] == "failed"
 
 
 def test_counter_increase_handles_new_series_and_reset():
@@ -177,3 +180,18 @@ def test_healthy_run_has_no_verification(tmp_path):
     record = build(None)
     assert verify(record, tmp_path) == []
     assert apply_verification(record, [])["verification_result"] == "not_applicable"
+
+
+def test_aborted_outside_window_and_appended_log():
+    aborted = fault_log("C2", 1080, 1680)
+    aborted[-1]["reason"] = "aborted"
+    assert "fault_aborted" in build("C2", aborted)["invalid_reasons"]
+    late = build("C2", fault_log("C2", 2700, 2900))  # tải kết thúc ở 2880 s
+    assert "fault_outside_workload" in late["invalid_reasons"]
+    missing = build("C2", fault_log("C2", 100, 200), workload={**WORKLOAD, "finished_at": None})
+    assert missing["run_status"] == "failed"
+    # Nhật ký append hai lần chạy: chỉ lấy lần lập lịch cuối.
+    twice = fault_log("C2", 100, 200, ok=False) + fault_log("C2", 1080, 1680)
+    record = build("C2", twice)
+    assert record["fault_start"] == iso(1080)
+    assert "activation_failed" not in record["invalid_reasons"]
