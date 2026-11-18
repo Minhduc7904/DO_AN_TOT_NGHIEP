@@ -5,6 +5,8 @@ import { test } from 'node:test';
 import { classifyLogLine } from '../tools/split-workload-log.mjs';
 import {
   accountAssignment,
+  peakConcurrency,
+  vuSizing,
   navigationThink,
   backoffMs,
   buildArrivalStages,
@@ -174,6 +176,22 @@ test('think "tự bấm lại" theo loại điều hướng, kẹp [1; 300] s', 
   const sorted = [...values].sort((a, b) => a - b);
   const median = sorted[1000];
   assert.ok(median > 5 && median < 10, `trung vị ${median}`); // lý thuyết e^1,966 ≈ 7,1 s
+});
+
+test('đỉnh phiên đồng thời của kế hoạch và số VU suy ra', () => {
+  const session = (start, thinks) => ({
+    start_s: start,
+    actions: [{ think_s: 0 }, ...thinks.map((think) => ({ think_s: think }))],
+  });
+  // overhead 0: phiên A [0, 30), B [10, 15), C [20, 50), D [30, 30) — đỉnh 2 (A với B, rồi A với C).
+  const plan = [session(0, [10, 20]), session(10, [5]), session(20, [30]), session(30, [])];
+  assert.equal(peakConcurrency(plan, { actionOverheadS: 0, preludeActions: 0 }), 2);
+  // Kết thúc trước khi phiên khác bắt đầu cùng thời điểm thì không tính chồng.
+  assert.equal(peakConcurrency([session(0, [5]), session(5, [5])], { actionOverheadS: 0 }), 1);
+  // Overhead 2 s/thao tác (kể cả 2 bước chèn đầu phiên) làm B kéo dài tới 10 + 2·4 + 5 = 23 > 20.
+  assert.equal(peakConcurrency(plan), 3);
+  assert.deepEqual(vuSizing(176), { preAllocated: 213, max: 266 });
+  assert.deepEqual(vuSizing(0), { preAllocated: 10, max: 60 });
 });
 
 test('ánh xạ khóa Moodle → bốn khóa seed nhỏ nhất, bỏ khóa do run trước tạo', () => {

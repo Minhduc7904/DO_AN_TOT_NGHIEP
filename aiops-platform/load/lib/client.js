@@ -103,27 +103,31 @@ export class UserSession {
       profile: this.plan.profile,
       goal: this.plan.goal,
       state: this.state,
+      action_index: this.actions,
       think_before_ms: this.thinkBeforeMs,
       ...fields,
     });
     this.thinkBeforeMs = 0;
   }
 
-  send(method, path, name, body, expected, withToken) {
-    const response = http.request(
-      method,
-      `${config.baseUrl}${path}`,
-      body === undefined ? null : JSON.stringify(body),
-      {
-        headers: {
-          ...(body === undefined ? {} : { 'content-type': 'application/json' }),
-          ...(withToken && this.token ? { authorization: `Bearer ${this.token}` } : {}),
-        },
-        tags: { name, scenario_role: this.role },
-        timeout: `${this.params.request_timeout_s}s`,
-        responseCallback: expectedCallback(expected),
-      },
-    );
+  send(method, path, name, body, expected, withToken, raw) {
+    const url = raw ? path : `${config.baseUrl}${path}`;
+    let payload = null;
+    const headers = {};
+    if (raw) {
+      payload = body;
+      headers['content-type'] = raw.contentType;
+    } else if (body !== undefined) {
+      payload = JSON.stringify(body);
+      headers['content-type'] = 'application/json';
+    }
+    if (withToken && this.token) headers.authorization = `Bearer ${this.token}`;
+    const response = http.request(method, url, payload, {
+      headers,
+      tags: { name, scenario_role: this.role },
+      timeout: `${this.params.request_timeout_s}s`,
+      responseCallback: expectedCallback(expected),
+    });
     this.requests += 1;
     return response;
   }
@@ -137,13 +141,17 @@ export class UserSession {
    * @param {boolean} options.idempotent an toàn để tự thử lại (mục 6.5)
    * @param {boolean} options.auth gửi kèm token người dùng (mặc định có)
    */
-  call(method, path, { name, body, expected = [200], idempotent = method === 'GET', auth = true }) {
+  call(
+    method,
+    path,
+    { name, body, expected = [200], idempotent = method === 'GET', auth = true, raw = null },
+  ) {
     const label = name ?? `${method} ${path}`;
     const patienceMs = this.plan.patience_s * 1000;
     let reauthenticated = false;
     let retapped = false;
     for (let retry = 0; ; retry += 1) {
-      const response = this.send(method, path, label, body, expected, auth);
+      const response = this.send(method, path, label, body, expected, auth && !raw, raw);
       const durationMs = Math.round(response.timings.duration);
       const status = response.status;
       const kind = classifyResponse({ status, durationMs, expected, patienceMs });
