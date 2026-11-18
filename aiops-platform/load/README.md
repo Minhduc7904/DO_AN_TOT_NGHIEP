@@ -161,7 +161,41 @@ Kế hoạch `moodle-normal-mixed-k4-v1`, đoạn `WINDOW_START_S=1140 WINDOW_S=
 - Không có dòng `unexpected_status`; `run_end` nhiều vì think time thật dài hơn đoạn chạy thử 5 phút.
 - **Tái lập:** run a và b có `plan_hash` trùng 269/269 phiên; chuỗi (trạng thái, endpoint) trùng hoàn toàn 265/269 phiên (98,5%, ngưỡng mục 10.3 là ≥ 90%); 4 phiên khác nhau vì lần thử lại sau EOF. Seed khác (run c): 0/104 `plan_hash` trùng.
 - EOF ở `PUT /api/v1/student/lessons/:lesson_id/progress` (k6 báo `status 0`) xuất hiện lẻ tẻ khi tải ổn định, nhiều khả năng do Gateway đóng kết nối keep-alive đúng lúc k6 dùng lại; client xử lý như lỗi mạng (thử lại có backoff). Chưa điều tra sâu vì LMS đóng băng.
-- Lần chạy đầu với 40 VU dựng sẵn bị bỏ 13 iteration ở đỉnh, nên mặc định nâng lên 120/300.
+- Lần chạy đầu với 40 VU dựng sẵn bị bỏ 13 iteration ở đỉnh, nên mặc định nâng lên 120/300 (nay thay bằng số VU tính từ kế hoạch, xem trên).
+
+## Profile healthy: học viên + giảng viên + admin + job lịch (`scenarios/profile.js`)
+
+Hai profile bắt buộc của workload-design-v1 mục 8.1–8.2, chạy trên một ngày nén 48 phút:
+
+```bash
+RUN_ID=<run_id mới> PROFILE=normal-mixed  WORKLOAD_SEED=7 aiops-platform/load/run-k6.sh profile
+RUN_ID=<run_id mới> PROFILE=healthy-spike WORKLOAD_SEED=7 aiops-platform/load/run-k6.sh profile
+# Chạy thử 3 phút quanh 10h sáng của ngày nén (lịch giảng viên/admin cắt theo cùng cửa sổ):
+RUN_ID=<run_id mới> PROFILE=normal-mixed WINDOW_START_S=1140 WINDOW_S=180 aiops-platform/load/run-k6.sh profile
+```
+
+| Scenario k6 | Vai trò | Mức | Lịch |
+| --- | --- | --- | --- |
+| `students` | Học viên | 2+ | Phát lại kế hoạch `data/plans/moodle-<PROFILE>-k4-v1.json` như `student-replay.js` |
+| `instructors` | Giảng viên, mục tiêu I1–I4 | 2 | `ramping-arrival-rate` theo trọng số giờ (`params/staff-assumed-v1.json`, 90 phiên/ngày) |
+| `admin_adhoc` | Admin A1–A2 | 2 | Một phiên mỗi giờ hành chính (8h–18h) |
+| `admin_batch_<i>` | Admin gửi thông báo hàng loạt (A3) | 2 | Một lần lúc 8h và 19h của ngày nén |
+| `admin_cleanup_<i>` | Kích hoạt job dọn media (A4) | 2 | Một lần lúc 2h |
+
+- **Setup** cấu hình provider AI trỏ tới `llm-stub`, tạo kho media dùng chung cho giảng viên, tạo job dọn media (retention 168 h) và ánh xạ khóa Moodle → khóa seed.
+- **Ngưỡng:** `dropped_iterations` = 0 (điều kiện tái lập của phần học viên) và tỉ lệ request lỗi < 0,5%. Vượt ngưỡng thì k6 thoát mã 99; run như vậy không dùng làm dữ liệu.
+- **Kết quả:** ngoài `actions.jsonl`, `sessions.jsonl` còn có `k6-summary.json` (tóm tắt theo scenario, `planned_peak_concurrency`, `plan_reproducible`) và `workload-manifest.json` (mục 11.2: version profile, hash tham số và kế hoạch, seed, cửa sổ, mốc thời gian workload). `end_reason` của giảng viên/admin theo mục 6.1: `goal_done`, `exit` (kể cả khi bỏ chờ việc nền; nhật ký thao tác vẫn ghi `background_wait_timeout`), `run_end`, `too_many_errors`, `auth_failed`.
+- **`RUN_ID` phải mới cho mỗi lần chạy.** `run-k6.sh` từ chối `RUN_ID` đã có thư mục kết quả: tên provider, job và idempotency key phía server theo `run_id`, và export telemetry, ground truth cũng đánh khóa theo nó.
+- **Tài nguyên:** `healthy-spike` cần dựng sẵn khoảng 1.000 VU học viên (đỉnh đồng thời ước lượng 914 phiên), nên chạy khi máy còn nhiều RAM trống.
+
+### Bằng chứng profile (18/11/2026)
+
+| Run | Cấu hình | Kết quả |
+| --- | --- | --- |
+| `w14-t03-normal-mixed-r1` | Cả ngày, 120 VU học viên dựng sẵn (đặt tay), code trước review | **Không đạt:** `dropped_iterations` = 42 (k6 thoát 99). 13.679 request, lỗi 0,12%, p95 43 ms; cả sáu scenario có traffic (học viên 1.203 phiên, giảng viên 90, admin 11 + 2 đợt gửi + 1 lần dọn). Nguyên nhân: giờ đỉnh cần khoảng 180 VU, VU dựng thêm giữa run không kịp. Dẫn tới việc tính VU từ kế hoạch |
+| `w14-t03-smoke-merge-2` | `WINDOW_START_S=1140 WINDOW_S=180`, code sau review, VU tính từ kế hoạch (đỉnh 85 → 108 dựng sẵn) | `dropped_iterations` = 0; 1.590 request, lỗi 0,06% (1 EOF ở `POST /auth/refresh`, thử lại thành công), p95 44 ms. Học viên 174 phiên (`exit` 114, `run_end` 60), giảng viên 9 (`goal_done` 3, `run_end` 6), admin 1. Khóa A–D ánh xạ đúng 4 khóa seed |
+
+Run cả ngày của hai profile với code này chưa chạy lại (máy thiếu RAM cho `healthy-spike`); tiêu chí sức khỏe mục 8.4 sẽ báo cáo sau khi chạy.
 
 ## Bằng chứng (17/11/2026)
 

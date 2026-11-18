@@ -17,6 +17,12 @@ SCRIPT="$ROOT/scenarios/$SCENARIO.js"
 
 export RUN_ID="${RUN_ID:-k6-${SCENARIO}-$(date -u +%Y%m%dT%H%M%SZ)}"
 RESULTS_HOST_DIR="${RESULTS_HOST_DIR:-$ROOT/results}"
+# run_id định danh một lần chạy (export telemetry, ground truth, tên provider/job/idempotency key phía
+# server đều theo nó). Dùng lại sẽ ghi đè kết quả và va tên đã tạo ở lần trước, nên từ chối.
+if [[ -n "$(ls -A "$RESULTS_HOST_DIR/$RUN_ID" 2>/dev/null)" ]]; then
+  echo "RUN_ID=$RUN_ID đã có kết quả ở $RESULTS_HOST_DIR/$RUN_ID; đặt RUN_ID mới" >&2
+  exit 2
+fi
 mkdir -p "$RESULTS_HOST_DIR/$RUN_ID"
 
 # Chỉ chuyển các biến cấu hình đã biết (xem lib/config.js) vào container.

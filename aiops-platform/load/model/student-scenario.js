@@ -2,12 +2,13 @@ import crypto from 'k6/crypto';
 import { SharedArray } from 'k6/data';
 import exec from 'k6/execution';
 
-import { api, login } from '../lib/api.js';
+import { catalogueIds, login } from '../lib/api.js';
 import { config, seedStudentEmail } from '../lib/config.js';
 import {
   accountAssignment,
   buildArrivalStages,
   peakConcurrency,
+  seedCourseMap,
   studentSessionPlan,
   vuSizing,
   windowSessions,
@@ -96,23 +97,10 @@ export function studentScenario() {
   };
 }
 
-/**
- * Ánh xạ khóa Moodle A–D → bốn khóa học **seed** (id do seeder đặt, tiền tố `5eed`) nhỏ nhất theo id.
- * Chỉ lấy khóa seed để ánh xạ không đổi khi giảng viên của các run trước đã tạo/xuất bản khóa mới.
- */
+/** Ánh xạ khóa Moodle A–D → bốn khóa học seed (`seedCourseMap`), đọc toàn bộ danh mục. */
 export function courseMapSetup() {
   const probe = login('setup', 'student', seedStudentEmail(1), config.seedPassword);
-  const catalogue = api('GET', '/api/v1/courses?page=1&page_size=100', {
-    journey: 'setup',
-    name: 'GET /api/v1/courses',
-    token: probe.token,
-  }).data;
-  const ids = catalogue
-    .map((course) => course.id)
-    .filter((id) => id.startsWith('5eed'))
-    .sort();
-  if (ids.length < 4) throw new Error(`Cần ít nhất 4 khóa học seed đã xuất bản, có ${ids.length}`);
-  return Object.fromEntries(['A', 'B', 'C', 'D'].map((key, index) => [key, ids[index]]));
+  return seedCourseMap(catalogueIds(probe.token));
 }
 
 export function runStudentIteration(setupData) {

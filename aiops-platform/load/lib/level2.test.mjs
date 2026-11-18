@@ -14,6 +14,7 @@ import {
   createSessionCounters,
   drawPatience,
   seedAccountIndex,
+  seedCourseMap,
   studentSessionPlan,
   windowSessions,
 } from './reaction.js';
@@ -191,4 +192,11 @@ test('đỉnh phiên đồng thời của kế hoạch và số VU suy ra', () =
   assert.equal(peakConcurrency(plan), 3);
   assert.deepEqual(vuSizing(176), { preAllocated: 213, max: 266 });
   assert.deepEqual(vuSizing(0), { preAllocated: 10, max: 60 });
+});
+
+test('ánh xạ khóa Moodle → bốn khóa seed nhỏ nhất, bỏ khóa do run trước tạo', () => {
+  const seed = (n) => `5eed0010-0000-4000-8000-${String(n).padStart(12, '0')}`;
+  const ids = ['ffff0000-x', seed(3), '0000aaaa-y', seed(1), seed(5), seed(2), seed(4)];
+  assert.deepEqual(seedCourseMap(ids), { A: seed(1), B: seed(2), C: seed(3), D: seed(4) });
+  assert.throws(() => seedCourseMap([seed(1), seed(2), seed(3), 'abc']), /có 3/);
 });
