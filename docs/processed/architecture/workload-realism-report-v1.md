@@ -112,7 +112,12 @@ Cả hai được phát hiện khi đọc bảng của lần chạy đầu. Cả
 
 ## 7. Giới hạn của lần đo pilot
 
-- **Code workload trước review.** Ba run dùng code của PR #85 trước vòng review (end reason cũ `completed`; gán tài khoản chưa dùng hoán vị nên hai phiên có thể trùng một tài khoản seed). Có 1 phiên ở run bán thực bị 409 `QUIZ_ATTEMPT_ALREADY_SUBMITTED`, khả năng do trùng tài khoản. Phải chạy lại trên code cuối cùng trước tuần 15.
+- **Code workload trước review.** Ba run dùng code của PR #85 trước vòng review, với ba khác biệt:
+  - `end_reason` cũ là `completed`.
+  - Gán tài khoản chưa dùng hoán vị, nên hai phiên có thể trùng một tài khoản seed. Có 1 phiên ở run bán thực bị 409 `QUIZ_ATTEMPT_ALREADY_SUBMITTED`, khả năng do trùng tài khoản.
+  - Khóa Moodle A–D được ánh xạ sang bốn khóa đầu trang 1 của danh mục. Lúc đó bốn khóa này là khóa do run thử fault tạo ra, không phải khóa seed.
+
+  Hình dạng phiên phía client (thứ tự thao tác, think time) do kế hoạch quyết định nên gần như không đổi: 1.190/1.245 phiên chạy đủ số thao tác của kế hoạch, phần lớn số còn lại là `run_end`. Phía server thì khác: các phiên làm việc trên khóa có ít bài học và quiz hơn khóa seed. Phải chạy lại trên code cuối cùng trước tuần 15.
 - **Nhiễu token nội bộ.** Stack chạy với TTL service token 60 s (cần cho fault C6). Khoảng 0,05% request đăng nhập bị 401 `SERVICE_TOKEN_INVALID` (6 phiên ở run (b), 3 phiên ở run (c) kết thúc `auth_failed`). Run kiểm chứng độ thực nên chạy với TTL mặc định.
 - **Lỗi kết nối giữ sống.** 4 request `PUT …/progress` ở run (c) gặp `EOF` sau 6 s nghỉ: kết nối keep-alive bị server đóng đúng lúc dùng lại. Client đã thử lại thành công (`outcome = retried`).
 - **Một run, một seed cho mỗi nguồn,** và chỉ profile `normal-mixed`. Chưa có khoảng tin cậy giữa các seed.
