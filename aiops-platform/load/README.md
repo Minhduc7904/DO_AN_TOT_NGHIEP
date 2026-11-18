@@ -90,7 +90,7 @@ Mỗi request gắn tag `journey` và `name` là METHOD + route mẫu (không ch
 - Dữ liệu do workload tạo (khóa học, media, thông báo) không bị xóa sau run; reset bằng `lms/test/testbed-reset/` khi cần trạng thái sạch.
 - Media seed không có object trong MinIO nên W4 và W6 luôn upload tệp thật.
 - Mỗi đợt gửi hàng loạt sinh một email cho từng học viên (profile `small` khoảng 1000 email); Mailpit giữ tối đa 5000 thư.
-- Chưa ghi nhật ký từng thao tác của VU (mức 2).
+- Mức 1 không ghi nhật ký từng thao tác và không có backoff: khi một dependency lỗi nhanh (ví dụ C6), VU lặp lại liên tục và tạo bão request. Dùng mức 2/2+ cho run thí nghiệm.
 
 ## Dữ liệu phiên thật cho mức 2+ (`tools/`)
 
@@ -129,6 +129,39 @@ Kết quả chuyển đổi trên log thật (18/11/2026, CSV sha256 `66bfe766�
 | `learned-normal-mixed` (seed 1) | — | 1.246 | 5.939 | 9,9% |
 
 `k` = 4 là giá trị khởi đầu; pilot ở tuần 15 chốt `k` theo tải mục tiêu (mục 13.5) và RAM của máy.
+
+## Mức 2+: phát lại phiên học viên (`scenarios/student-replay.js`)
+
+```bash
+# Kế hoạch tạo bằng tools/build-replay-plan.mjs (mục trên). Một ngày nén 48 phút:
+RUN_ID=replay-normal-r1 WORKLOAD_SEED=1001 PLAN=data/plans/moodle-normal-mixed-k4-v1.json \
+  aiops-platform/load/run-k6.sh student-replay
+# Chạy thử 5 phút quanh 10h sáng của ngày nén (giây 1.140–1.440 của kế hoạch):
+WINDOW_START_S=1140 WINDOW_S=300 aiops-platform/load/run-k6.sh student-replay
+```
+
+- **Lịch:** executor `ramping-arrival-rate` (mô hình mở). Tốc độ không đổi trong mỗi ô 30 s và bằng đúng số phiên bắt đầu trong ô của kế hoạch, nên giờ bắt đầu thật của log được giữ ở độ phân giải 30 s (= 15 phút của ngày thật). Đây là quá trình đến **thật** của log, không phải xấp xỉ Poisson; đặc tính dao động của nó được kiểm ở báo cáo độ thực (task-04).
+- **Một iteration = một phiên.** Iteration thứ i phát phiên thứ i (theo giờ bắt đầu). Kế hoạch phiên (tài khoản seed, profile dùng để rút kiên nhẫn, kiên nhẫn, `slow_limit`, có làm mới token giữa phiên hay không) chỉ phụ thuộc `WORKLOAD_SEED` và có `plan_hash`. **Điều kiện tái lập:** `dropped_iterations` = 0; nếu k6 bỏ iteration vì hết VU thì các phiên sau đó chạy lệch giờ và phiên cuối kế hoạch không được phát, nên tóm tắt ghi `plan_reproducible = false` và run đó không dùng làm dữ liệu thí nghiệm. Mặc định `STUDENT_PRE_VUS` 120, `STUDENT_MAX_VUS` 300.
+- **Tài khoản:** mỗi người dùng của kế hoạch (đã gắn hậu tố ngày) nhận một tài khoản seed theo hoán vị có seed, nên không có hai người dùng chung tài khoản khi số người ≤ 1.000 (tóm tắt ghi `distinct_users`, `accounts_reused`).
+- **Đầu phiên:** log Moodle chèn `LOGIN` (`POST /auth/student/login`, `GET /auth/me`) và `DASH` (`GET /student/enrollments`, `GET /notifications/me?status=UNREAD`); phiên của mô hình giả định chỉ chèn `LOGIN` (có `REGISTER` với 1% phiên người mới).
+- **Trạng thái → request** theo workload-design-v1 mục 5.2; điều kiện chặn theo mục 5.5. Khóa học của phiên là một khóa học viên đã ghi danh (chọn ổn định theo người dùng của log); chưa ghi danh khóa nào thì ghi danh vào khóa ánh xạ từ khóa Moodle A–D (bốn khóa **seed** — id tiền tố `5eed` — nhỏ nhất, nên không đổi khi các run trước đã tạo khóa mới; ghi `course_map` trong tóm tắt). `VIEW_MEDIA` cần kho media của run (task-03); không có kho thì bỏ qua.
+- **Phản ứng với phản hồi** (`lib/reaction.js`, `lib/client.js`, tham số `params/reaction-v1.json`): chậm hơn kiên nhẫn đếm `slow_count`, chậm hơn 2 × kiên nhẫn bỏ ngang (`impatient`); 0/429/502/503/504 thử lại tối đa 2 lần kiểu Full Jitter với thao tác an toàn để lặp, thao tác tạo mới chỉ "tự bấm lại" một lần với xác suất 0,5 sau một think time loại điều hướng; hết lượt thì thao tác thất bại (`error_count` + 1) và phiên đi tiếp; 401 làm mới token rồi đăng nhập lại một lần (`auth_failed` nếu vẫn hỏng); 500 bỏ qua thao tác (0,5) hoặc rời đi (`exit`); 4xx ngoài danh sách mong đợi ghi `unexpected_status`, bỏ thao tác, quay về `DASH`; 3 lỗi thì `too_many_errors`; think time vượt hạn run thì `run_end`; phát hết phiên thì `exit`.
+- **Nhật ký** (workload-design-v1 mục 11.2): `run-k6.sh` ghi log JSON của k6 vào `results/<RUN_ID>/k6-log.jsonl` rồi tách thành `actions.jsonl` (một request: `ts`, `session_key`, `role`, `profile`, `state`, `method`, `endpoint` dạng mẫu, `status`, `error_code`, `duration_ms`, `think_before_ms`, `retry_index`, `outcome`) và `sessions.jsonl` (một phiên: kế hoạch, số thao tác/request, `end_reason`, bộ đếm, `plan_hash`, `source_session_id`).
+
+### Bằng chứng mức 2+ (18/11/2026)
+
+Kế hoạch `moodle-normal-mixed-k4-v1`, đoạn `WINDOW_START_S=1140 WINDOW_S=300` (quanh 10h sáng của ngày nén, đỉnh 80 phiên/phút), stack đầy đủ + lớp fault, không bật fault:
+
+| Run | `WORKLOAD_SEED` | Phiên | Request | `dropped_iterations` | Lỗi HTTP ngoài mong đợi | p95 | Kết thúc phiên |
+| --- | ---: | ---: | ---: | ---: | --- | ---: | --- |
+| `w14-t02-replay-repro-a` | 101 | 269 | 2.313 | 0 | 0 | 42,5 ms | 196 `completed`, 73 `run_end` |
+| `w14-t02-replay-repro-b` | 101 | 269 | 2.317 | 0 | 4 lần EOF ở `PUT …/progress`, đều thử lại thành công | 42,7 ms | như run a |
+| `w14-t02-replay-repro-c` (120 s) | 202 | 104 | 872 | 0 | 0 | 42,8 ms | 62 `completed`, 42 `run_end` |
+
+- Không có dòng `unexpected_status`; `run_end` nhiều vì think time thật dài hơn đoạn chạy thử 5 phút.
+- **Tái lập:** run a và b có `plan_hash` trùng 269/269 phiên; chuỗi (trạng thái, endpoint) trùng hoàn toàn 265/269 phiên (98,5%, ngưỡng mục 10.3 là ≥ 90%); 4 phiên khác nhau vì lần thử lại sau EOF. Seed khác (run c): 0/104 `plan_hash` trùng.
+- EOF ở `PUT /api/v1/student/lessons/:lesson_id/progress` (k6 báo `status 0`) xuất hiện lẻ tẻ khi tải ổn định, nhiều khả năng do Gateway đóng kết nối keep-alive đúng lúc k6 dùng lại; client xử lý như lỗi mạng (thử lại có backoff). Chưa điều tra sâu vì LMS đóng băng.
+- Lần chạy đầu với 40 VU dựng sẵn bị bỏ 13 iteration ở đỉnh, nên mặc định nâng lên 120/300.
 
 ## Bằng chứng (17/11/2026)
 
