@@ -102,6 +102,7 @@ export class UserSession {
       profile: this.plan.profile,
       goal: this.plan.goal,
       state: this.state,
+      action_index: this.actions,
       think_before_ms: this.thinkBeforeMs,
       ...fields,
     });
