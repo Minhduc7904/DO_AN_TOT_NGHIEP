@@ -30,6 +30,7 @@
   "retry": { "max_retries": 2, "base_ms": 1000, "cap_ms": 8000 },
   "error_limit": 3,
   "retap_probability": 0.5,
+  "retap_think": { "mu": 1.966, "sigma": 1.325, "clamp_s": [1, 300] },
   "skip_after_500_probability": 0.5,
   "refresh_share": 0.03,
   "request_timeout_s": 15,

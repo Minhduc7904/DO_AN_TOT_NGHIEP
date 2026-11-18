@@ -4,6 +4,8 @@ import { test } from 'node:test';
 
 import { classifyLogLine } from '../tools/split-workload-log.mjs';
 import {
+  accountAssignment,
+  navigationThink,
   backoffMs,
   buildArrivalStages,
   classifyResponse,
@@ -128,10 +130,7 @@ test('lịch arrival-rate: số iteration mỗi ô 30 s bằng số phiên bắt
 
 test('windowSessions cắt và dời mốc thời gian', () => {
   const sessions = [{ start_s: 10 }, { start_s: 100 }, { start_s: 250 }];
-  assert.deepEqual(
-    windowSessions(sessions, 100, 150),
-    [{ start_s: 0 }],
-  );
+  assert.deepEqual(windowSessions(sessions, 100, 150), [{ start_s: 0 }]);
   assert.deepEqual(windowSessions(sessions, 0, 300).length, 3);
 });
 
@@ -147,4 +146,31 @@ test('tách log k6: bản ghi workload, dòng khác, dòng hỏng', () => {
   );
   assert.equal(classifyLogLine('không phải JSON').kind, 'other');
   assert.equal(classifyLogLine('   '), null);
+});
+
+test('gán tài khoản bằng hoán vị có seed: không trùng khi số người ≤ số tài khoản', () => {
+  const keys = Array.from({ length: 900 }, (_, i) => `u${i % 600}@d3`); // 600 người, có lặp
+  const map = accountAssignment(7, keys, 1000);
+  const values = Object.values(map);
+  assert.equal(values.length, 600);
+  assert.equal(new Set(values).size, 600);
+  assert.ok(values.every((value) => value >= 1 && value <= 1000));
+  assert.deepEqual(accountAssignment(7, keys, 1000), map);
+  assert.notDeepEqual(accountAssignment(8, keys, 1000), map);
+  // Vượt số tài khoản thì vòng lại, vẫn trong miền.
+  const many = accountAssignment(
+    1,
+    Array.from({ length: 12 }, (_, i) => `x${i}`),
+    10,
+  );
+  assert.equal(new Set(Object.values(many)).size, 10);
+});
+
+test('think "tự bấm lại" theo loại điều hướng, kẹp [1; 300] s', () => {
+  const rng = createRng(3);
+  const values = Array.from({ length: 2000 }, () => navigationThink(rng, params.retap_think));
+  assert.ok(values.every((value) => value >= 1 && value <= 300));
+  const sorted = [...values].sort((a, b) => a - b);
+  const median = sorted[1000];
+  assert.ok(median > 5 && median < 10, `trung vị ${median}`); // lý thuyết e^1,966 ≈ 7,1 s
 });

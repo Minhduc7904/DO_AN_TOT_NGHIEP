@@ -38,8 +38,9 @@ class StudentContext {
     this.answered = false;
   }
 
-  enrollments() {
-    if (this.enrolledIds === null) {
+  /** Danh sách khóa đã ghi danh; `refresh` buộc gọi lại (màn DASH luôn tải lại, mục 5.2). */
+  enrollments(refresh = false) {
+    if (this.enrolledIds === null || refresh) {
       const result = this.user.call('GET', `${P}/student/enrollments?page_size=50`, {
         name: 'GET /api/v1/student/enrollments',
       });
@@ -141,10 +142,13 @@ class StudentContext {
     if (!this.attempt || !this.quiz) return;
     const questions = this.quiz.questions ?? [];
     const count = Math.min(questions.length, this.rng.int(1, 3));
-    const answers = questions.slice(0, count).map((question) => ({
-      question_id: question.id,
-      option_ids: [this.rng.pick(question.options).id],
-    }));
+    const answers = questions
+      .slice(0, count)
+      .filter((question) => question.options?.length)
+      .map((question) => ({
+        question_id: question.id,
+        option_ids: question.options?.length ? [this.rng.pick(question.options).id] : [],
+      }));
     if (answers.length === 0) return;
     this.user.call('PUT', `${P}/student/attempts/${this.attempt.id}/answers`, {
       name: 'PUT /api/v1/student/attempts/:attempt_id/answers',
@@ -221,7 +225,7 @@ class StudentContext {
 
 const STATE_HANDLERS = {
   DASH: (ctx) => {
-    ctx.enrollments();
+    ctx.enrollments(true);
     ctx.user.call('GET', `${P}/notifications/me?status=UNREAD&page_size=20`, {
       name: 'GET /api/v1/notifications/me',
     });
@@ -278,7 +282,7 @@ export function playStudentSession({
     deadlineMs,
   });
   const ctx = new StudentContext(user, setupData, session, rng);
-  let endReason = 'completed';
+  let endReason = 'exit';
   try {
     for (const step of prelude) {
       user.begin(step);
@@ -297,11 +301,18 @@ export function playStudentSession({
     }
     session.actions.forEach((action, index) => {
       user.think(action.think_s);
-      if (plan.refresh_at_action === index) user.refresh();
       user.begin(action.state);
+      // Làm mới token giữa phiên (3% phiên, mục 6.4) chạy sau begin để think time gắn đúng thao tác.
+      if (plan.refresh_at_action === index) user.refresh();
       const handler = STATE_HANDLERS[action.state];
       if (!handler) throw new SessionEnd('unexpected_status', `trạng thái lạ ${action.state}`);
       handler(ctx);
+      if (user.returnToDash) {
+        // Phản hồi 4xx ngoài mong đợi: bỏ thao tác, quay về màn chính (mục 6.2).
+        user.returnToDash = false;
+        user.begin('DASH');
+        STATE_HANDLERS.DASH(ctx);
+      }
     });
   } catch (error) {
     if (!(error instanceof SessionEnd)) throw error;
