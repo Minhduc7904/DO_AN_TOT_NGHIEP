@@ -7,6 +7,7 @@
  *        [--align-peak <replay-plan.json>]
  *   node aiops-platform/faults/fault-schedule.mjs run --case C2 [--run-start <ISO>|now] [--log <file>]
  *        [--start-s N] [--duration-s N] [--align-peak <replay-plan.json>] [--skip-precheck]
+ *        [--allow-short]   (bỏ kiểm warm-up/recovery, chỉ cho chạy thử; lịch ghi timeline_check)
  *
  * Nhật ký (một dòng JSON mỗi sự kiện) là dấu vết thời điểm fault thật để dựng `RunGroundTruth`
  * (telemetry-and-ground-truth-schema-v1 mục 8): `fault.scheduled`, `fault.precheck`, `fault.activate`,
@@ -96,7 +97,11 @@ export function peakAlignedStart(sessionStarts, timeline, durationS, stepS = 30)
 }
 
 /** Lịch của một case: thời điểm bật/tắt tính theo giây từ đầu run. */
-export function buildSchedule(manifest, caseId, { startS, durationS, peakStarts } = {}) {
+export function buildSchedule(
+  manifest,
+  caseId,
+  { startS, durationS, peakStarts, allowShort = false } = {},
+) {
   const item = manifest.cases.find((entry) => entry.case_id === caseId);
   if (!item) throw new Error(`Không có case ${caseId} trong manifest`);
   const duration = durationS ?? item.fault_duration_s;
@@ -111,6 +116,14 @@ export function buildSchedule(manifest, caseId, { startS, durationS, peakStarts 
   if (start < 0 || end > manifest.timeline.run_seconds) {
     throw new Error(`Cửa sổ fault [${start}, ${end}] s nằm ngoài run`);
   }
+  const { warmup_s: warmup, min_recovery_s: recovery, run_seconds: runSeconds } = manifest.timeline;
+  const tight = start < warmup || end + recovery > runSeconds;
+  if (tight && !allowShort) {
+    throw new Error(
+      `Cửa sổ fault [${start}, ${end}] s vi phạm warm-up ${warmup} s hoặc recovery ${recovery} s ` +
+        '(dùng --allow-short cho chạy thử)',
+    );
+  }
   return {
     case_id: item.case_id,
     manifest_version: manifest.manifest_version,
@@ -121,6 +134,7 @@ export function buildSchedule(manifest, caseId, { startS, durationS, peakStarts 
     deactivate_at_s: end,
     fault_duration_s: duration,
     alignment,
+    timeline_check: tight ? 'skipped_allow_short' : 'ok',
     activate: item.activate,
     deactivate: item.deactivate,
     requires: item.requires ?? [],
@@ -253,6 +267,7 @@ async function main(argv) {
       'run-start': { type: 'string', default: 'now' },
       log: { type: 'string' },
       'skip-precheck': { type: 'boolean', default: false },
+      'allow-short': { type: 'boolean', default: false },
     },
   });
   const manifest = JSON.parse(readFileSync(values.manifest, 'utf8'));
@@ -265,6 +280,7 @@ async function main(argv) {
   const optionalNumber = (raw) => (raw === undefined ? undefined : Number(raw));
   const schedule = buildSchedule(manifest, values.case, {
     startS: optionalNumber(values['start-s']),
+    allowShort: values['allow-short'],
     durationS: optionalNumber(values['duration-s']),
     peakStarts: readPeakStarts(values['align-peak']),
   });
@@ -280,7 +296,17 @@ async function main(argv) {
     if (values.log) appendFileSync(values.log, `${line}\n`);
   };
   if (!values['skip-precheck']) {
-    const check = await precheck(schedule);
+    let check;
+    try {
+      check = await precheck(schedule);
+    } catch (error) {
+      // Ví dụ sai tên container: vẫn ghi một dòng JSON để nhật ký run biết vì sao không bật fault.
+      check = {
+        ok: false,
+        error: error instanceof Error ? error.message : String(error),
+        results: [],
+      };
+    }
     log({
       ts: new Date().toISOString(),
       event: 'fault.precheck',
@@ -290,7 +316,9 @@ async function main(argv) {
     if (!check.ok) return 1;
   }
   const controller = new AbortController();
-  for (const name of ['SIGINT', 'SIGTERM']) process.once(name, () => controller.abort());
+  // Dùng `on` (không phải `once`): tín hiệu lần hai trong lúc đang gỡ fault không được giết process
+  // trước khi gỡ xong; chỉ ghi nhận và tiếp tục gỡ.
+  for (const name of ['SIGINT', 'SIGTERM']) process.on(name, () => controller.abort());
   const runStartMs = values['run-start'] === 'now' ? Date.now() : Date.parse(values['run-start']);
   if (Number.isNaN(runStartMs)) throw new Error(`--run-start không hợp lệ: ${values['run-start']}`);
   const result = await runSchedule(schedule, { runStartMs, log, signal: controller.signal });
