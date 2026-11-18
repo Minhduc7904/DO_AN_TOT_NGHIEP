@@ -4,6 +4,10 @@ import { test } from 'node:test';
 
 import { classifyLogLine } from '../tools/split-workload-log.mjs';
 import {
+  accountAssignment,
+  peakConcurrency,
+  vuSizing,
+  navigationThink,
   backoffMs,
   buildArrivalStages,
   classifyResponse,
@@ -144,4 +148,47 @@ test('tách log k6: bản ghi workload, dòng khác, dòng hỏng', () => {
   );
   assert.equal(classifyLogLine('không phải JSON').kind, 'other');
   assert.equal(classifyLogLine('   '), null);
+});
+
+test('gán tài khoản bằng hoán vị có seed: không trùng khi số người ≤ số tài khoản', () => {
+  const keys = Array.from({ length: 900 }, (_, i) => `u${i % 600}@d3`); // 600 người, có lặp
+  const map = accountAssignment(7, keys, 1000);
+  const values = Object.values(map);
+  assert.equal(values.length, 600);
+  assert.equal(new Set(values).size, 600);
+  assert.ok(values.every((value) => value >= 1 && value <= 1000));
+  assert.deepEqual(accountAssignment(7, keys, 1000), map);
+  assert.notDeepEqual(accountAssignment(8, keys, 1000), map);
+  // Vượt số tài khoản thì vòng lại, vẫn trong miền.
+  const many = accountAssignment(
+    1,
+    Array.from({ length: 12 }, (_, i) => `x${i}`),
+    10,
+  );
+  assert.equal(new Set(Object.values(many)).size, 10);
+});
+
+test('think "tự bấm lại" theo loại điều hướng, kẹp [1; 300] s', () => {
+  const rng = createRng(3);
+  const values = Array.from({ length: 2000 }, () => navigationThink(rng, params.retap_think));
+  assert.ok(values.every((value) => value >= 1 && value <= 300));
+  const sorted = [...values].sort((a, b) => a - b);
+  const median = sorted[1000];
+  assert.ok(median > 5 && median < 10, `trung vị ${median}`); // lý thuyết e^1,966 ≈ 7,1 s
+});
+
+test('đỉnh phiên đồng thời của kế hoạch và số VU suy ra', () => {
+  const session = (start, thinks) => ({
+    start_s: start,
+    actions: [{ think_s: 0 }, ...thinks.map((think) => ({ think_s: think }))],
+  });
+  // overhead 0: phiên A [0, 30), B [10, 15), C [20, 50), D [30, 30) — đỉnh 2 (A với B, rồi A với C).
+  const plan = [session(0, [10, 20]), session(10, [5]), session(20, [30]), session(30, [])];
+  assert.equal(peakConcurrency(plan, { actionOverheadS: 0, preludeActions: 0 }), 2);
+  // Kết thúc trước khi phiên khác bắt đầu cùng thời điểm thì không tính chồng.
+  assert.equal(peakConcurrency([session(0, [5]), session(5, [5])], { actionOverheadS: 0 }), 1);
+  // Overhead 2 s/thao tác (kể cả 2 bước chèn đầu phiên) làm B kéo dài tới 10 + 2·4 + 5 = 23 > 20.
+  assert.equal(peakConcurrency(plan), 3);
+  assert.deepEqual(vuSizing(176), { preAllocated: 213, max: 266 });
+  assert.deepEqual(vuSizing(0), { preAllocated: 10, max: 60 });
 });

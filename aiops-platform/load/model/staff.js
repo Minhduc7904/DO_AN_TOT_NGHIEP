@@ -283,7 +283,8 @@ class InstructorContext {
   }
 
   aiSync() {
-    if (!this.mediaId || !this.lesson || !this.createdCourse) throw new SessionEnd('completed');
+    // Thiếu tiền đề (chưa có media, bài học, khóa tự tạo): giảng viên rời đi.
+    if (!this.mediaId || !this.lesson || !this.createdCourse) throw new SessionEnd('exit');
     const base = `${P}/courses/${this.course.id}/lessons/${this.lesson.id}`;
     this.user.call('POST', `${base}/ai-documents/sync`, {
       name: 'POST /api/v1/courses/:course_id/lessons/:lesson_id/ai-documents/sync',
@@ -305,8 +306,8 @@ class InstructorContext {
       },
     );
     // Bỏ chờ hoặc trích xuất lỗi: giảng viên rời đi, việc nền tiếp tục (mục 6.4).
-    if (!document || document.status !== 'EXTRACTED')
-      throw new SessionEnd('background_wait_timeout');
+    // `background_wait_timeout` đã ghi ở nhật ký thao tác; end_reason theo mục 6.1 là `exit`.
+    if (!document || document.status !== 'EXTRACTED') throw new SessionEnd('exit');
   }
 
   aiJob() {
@@ -337,7 +338,7 @@ class InstructorContext {
           : null;
       },
     );
-    if (!status) throw new SessionEnd('background_wait_timeout');
+    if (!status) throw new SessionEnd('exit');
   }
 
   exportCsv() {
@@ -385,7 +386,7 @@ export function playInstructorSession({
     deadlineMs,
   });
   const ctx = new InstructorContext(user, staff, rng, setupData);
-  let endReason = 'completed';
+  let endReason = 'goal_done';
   try {
     user.begin('I_LOGIN');
     user.login();
@@ -433,7 +434,7 @@ function accounts(user, rng, role) {
 /** A1 (thông báo đơn) hoặc A2 (xem tài khoản), mục 5.8. */
 export function playAdminAdhoc({ plan, staff, reaction, rng, sessionKey, deadlineMs }) {
   const user = adminUser({ scenario: 'admin_adhoc', plan, reaction, rng, sessionKey, deadlineMs });
-  let endReason = 'completed';
+  let endReason = 'goal_done';
   try {
     user.begin('A_LOGIN');
     user.login();
@@ -472,7 +473,7 @@ export function playAdminAdhoc({ plan, staff, reaction, rng, sessionKey, deadlin
 /** A3: đợt thông báo hàng loạt, thăm dò tới khi xong hoặc hết 3 phút. */
 export function playAdminBatch({ plan, staff, reaction, rng, sessionKey, deadlineMs }) {
   const user = adminUser({ scenario: 'admin_batch', plan, reaction, rng, sessionKey, deadlineMs });
-  let endReason = 'completed';
+  let endReason = 'goal_done';
   try {
     user.begin('A_LOGIN');
     user.login();
@@ -516,7 +517,7 @@ export function playAdminCleanup({ plan, staff, reaction, rng, sessionKey, deadl
     sessionKey,
     deadlineMs,
   });
-  let endReason = 'completed';
+  let endReason = 'goal_done';
   try {
     user.begin('A_LOGIN');
     user.login();

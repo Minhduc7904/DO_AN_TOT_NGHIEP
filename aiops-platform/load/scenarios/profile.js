@@ -31,6 +31,7 @@ import {
   runStudentIteration,
   sessions,
   studentScenario,
+  studentSummary,
   WINDOW_START_S,
   WORKLOAD_SEED,
 } from '../model/student-scenario.js';
@@ -388,8 +389,10 @@ export function handleSummary(data) {
     http_reqs: metricValue(data, 'http_reqs', 'count'),
     http_req_failed_rate: metricValue(data, 'http_req_failed', 'rate'),
     http_req_duration_p95_ms: metricValue(data, 'http_req_duration', 'p(95)'),
-    dropped_iterations: metricValue(data, 'dropped_iterations', 'count') ?? 0,
-    vus_max: metricValue(data, 'vus_max', 'max'),
+    ...studentSummary(
+      metricValue(data, 'dropped_iterations', 'count') ?? 0,
+      metricValue(data, 'vus_max', 'max'),
+    ),
   };
   // k6-summary.json giữ tên trường mà export/ground-truth đang đọc (started_at, finished_at, plan_id).
   const summary = {

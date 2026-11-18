@@ -9,6 +9,7 @@ import {
   runStudentIteration,
   sessions,
   studentScenario,
+  studentSummary,
   WINDOW_START_S,
   WORKLOAD_SEED,
 } from '../model/student-scenario.js';
@@ -64,11 +65,13 @@ export function handleSummary(data) {
     finished_at: new Date().toISOString(),
     course_map: data.setup_data?.courseMap ?? null,
     iterations: metricValue(data, 'iterations', 'count'),
-    dropped_iterations: metricValue(data, 'dropped_iterations', 'count') ?? 0,
+    ...studentSummary(
+      metricValue(data, 'dropped_iterations', 'count') ?? 0,
+      metricValue(data, 'vus_max', 'max'),
+    ),
     http_reqs: metricValue(data, 'http_reqs', 'count'),
     http_req_failed_rate: metricValue(data, 'http_req_failed', 'rate'),
     http_req_duration_p95_ms: metricValue(data, 'http_req_duration', 'p(95)'),
-    vus_max: metricValue(data, 'vus_max', 'max'),
   };
   return {
     stdout: `${JSON.stringify(summary)}\n`,

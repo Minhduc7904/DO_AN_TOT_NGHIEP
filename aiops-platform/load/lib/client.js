@@ -2,7 +2,7 @@ import { sleep } from 'k6';
 import http from 'k6/http';
 
 import { config } from './config.js';
-import { backoffMs, classifyResponse, createSessionCounters } from './reaction.js';
+import { backoffMs, classifyResponse, createSessionCounters, navigationThink } from './reaction.js';
 
 /**
  * Client HTTP của người dùng ảo mức 2/2+ (workload-design-v1 mục 6, 11.2, 12.2): gắn token, timeout
@@ -70,6 +70,7 @@ export class UserSession {
     this.principalId = null;
     this.state = null;
     this.thinkBeforeMs = 0;
+    this.returnToDash = false;
     this.requests = 0;
     this.actions = 0;
     this.startedAt = Date.now();
@@ -192,12 +193,14 @@ export class UserSession {
           this.log({ ...entry, outcome: 'retried' });
           retapped = true;
           this.tracker.onRetry();
-          sleep(this.rng.uniform(2, 8));
+          sleep(navigationThink(this.rng, this.params.retap_think));
           continue;
         }
+        // Hết lượt thử: thao tác thất bại, error_count + 1; chỉ bỏ ngang khi đủ ngưỡng (mục 6.2).
         this.log({ ...entry, outcome: 'failed' });
         const reason = this.tracker.onError();
-        throw new SessionEnd(reason ?? 'gave_up', `${label} ${status}`);
+        if (reason) throw new SessionEnd(reason, `${label} ${status}`);
+        return null;
       }
 
       if (kind === 'auth' && auth && !reauthenticated && this.token) {
@@ -212,7 +215,7 @@ export class UserSession {
         const reason = this.tracker.onError();
         if (reason) throw new SessionEnd(reason, label);
         if (this.rng.chance(this.params.skip_after_500_probability)) return null;
-        throw new SessionEnd('gave_up', `${label} 500`);
+        throw new SessionEnd('exit', `${label} 500`);
       }
 
       if (kind === 'not_found') {
@@ -220,11 +223,16 @@ export class UserSession {
         return null;
       }
 
-      this.log({ ...entry, outcome: kind === 'auth' ? 'failed' : 'unexpected_status' });
-      throw new SessionEnd(
-        kind === 'auth' ? 'auth_failed' : 'unexpected_status',
-        `${label} ${status}`,
-      );
+      if (kind === 'auth') {
+        this.log({ ...entry, outcome: 'failed' });
+        throw new SessionEnd('auth_failed', `${label} ${status}`);
+      }
+      // 4xx ngoài danh sách mong đợi là lỗi của workload: ghi unexpected_status, bỏ thao tác, về DASH
+      // (mục 6.2). Riêng bước đăng nhập đầu phiên thì kết thúc phiên (mục 6.4 điểm 4).
+      this.log({ ...entry, outcome: 'unexpected_status' });
+      if (!this.token) throw new SessionEnd('unexpected_status', `${label} ${status}`);
+      this.returnToDash = true;
+      return null;
     }
   }
 
