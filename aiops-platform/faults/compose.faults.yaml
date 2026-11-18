@@ -80,3 +80,10 @@ services:
     depends_on:
       toxiproxy:
         condition: service_healthy
+
+  # C6: rút ngắn TTL token dịch vụ để khoảng yên lặng sau khi `identity` dừng ngắn lại (đo 70–74 s với
+  # 60 s). Đặt cho MỌI run (healthy lẫn fault) để hai loại run có cùng cấu hình; fault manifest kiểm
+  # giá trị này trước khi bật C6.
+  identity:
+    environment:
+      IDENTITY_SERVICE_TOKEN_TTL_SECONDS: "${FAULTS_SERVICE_TOKEN_TTL_SECONDS:-60}"

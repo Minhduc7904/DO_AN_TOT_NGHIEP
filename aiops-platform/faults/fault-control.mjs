@@ -1,5 +1,7 @@
 #!/usr/bin/env node
+import { execFile } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
+import { promisify } from 'node:util';
 
 /**
  * CLI bật/tắt fault cho thí nghiệm. Không phụ thuộc thư viện ngoài; gọi HTTP API của toxiproxy và
@@ -16,13 +18,31 @@ Lệnh proxy (tên proxy: course-to-postgres, media-to-minio, media-worker-to-mi
   reconnect <proxy>                        bật lại proxy
   clear [<proxy>]                          gỡ mọi toxic và bật lại (không có tên: mọi proxy)
 
+Lệnh container (C6; chỉ service runtime của LMS):
+  container pause|unpause <service>        docker pause/unpause container của service
 Lệnh LLM stub:
   llm set [--latency-ms N] [--jitter-ms N] [--error-rate R] [--error-mode status|disconnect]
           [--error-status S] [--affect-models true|false] [--seed N]
   llm reset                                về mặc định (không trễ, không lỗi)
 
 Biến môi trường: TOXIPROXY_URL (mặc định http://127.0.0.1:8474),
-                 LLM_STUB_CONTROL_URL (mặc định http://127.0.0.1:18081).`;
+                 LLM_STUB_CONTROL_URL (mặc định http://127.0.0.1:18081),
+                 COMPOSE_PROJECT_NAME (mặc định aiops-lms; container là <project>-<service>-1).`;
+
+/** Service runtime được phép pause (catalogue topology v2); không cho pause hạ tầng hay observability. */
+export const PAUSABLE_SERVICES = Object.freeze([
+  'gateway',
+  'identity',
+  'course',
+  'media',
+  'media-worker',
+  'notification',
+  'notification-worker',
+  'ai',
+  'ai-worker',
+  'scheduler',
+  'scheduler-worker',
+]);
 
 const LATENCY_TOXIC = 'latency';
 
@@ -95,6 +115,16 @@ export function planCommand(argv) {
       return { action: 'set-enabled', proxy: proxyName(), enabled: true };
     case 'clear':
       return { action: 'clear', proxy: positional[0] ?? null };
+    case 'container': {
+      const [operation, service] = positional;
+      if (operation !== 'pause' && operation !== 'unpause') {
+        throw new UsageError('Lệnh container cần pause hoặc unpause');
+      }
+      if (!PAUSABLE_SERVICES.includes(service)) {
+        throw new UsageError(`Service không được phép: ${service ?? '(thiếu)'}`);
+      }
+      return { action: 'container', operation, service };
+    }
     case 'llm': {
       const sub = positional[0];
       if (sub === 'reset') return { action: 'llm-reset' };
@@ -152,7 +182,12 @@ async function removeToxics(fetchImpl, toxiproxy, proxy) {
 }
 
 /** Thực hiện kế hoạch; trả object kết quả để in thành một dòng JSON. */
-export async function execute(plan, { fetchImpl = fetch, env = process.env } = {}) {
+const execFileAsync = promisify(execFile);
+
+export async function execute(
+  plan,
+  { fetchImpl = fetch, env = process.env, execImpl = execFileAsync } = {},
+) {
   const toxiproxy = (env.TOXIPROXY_URL ?? 'http://127.0.0.1:8474').replace(/\/$/u, '');
   const llm = (env.LLM_STUB_CONTROL_URL ?? 'http://127.0.0.1:18081').replace(/\/$/u, '');
 
@@ -235,12 +270,26 @@ export async function execute(plan, { fetchImpl = fetch, env = process.env } = {
       );
     case 'llm-reset':
       return expectOk(await request(fetchImpl, 'POST', `${llm}/__control/reset`), 'reset LLM stub');
+    case 'container': {
+      const container = `${env.COMPOSE_PROJECT_NAME ?? 'aiops-lms'}-${plan.service}-1`;
+      await execImpl('docker', [plan.operation, container]);
+      const { stdout } = await execImpl('docker', [
+        'inspect',
+        '--format',
+        '{{.State.Status}}',
+        container,
+      ]);
+      return { container, state: stdout.trim() };
+    }
     default:
       throw new Error(`Hành động không hỗ trợ: ${plan.action}`);
   }
 }
 
-export async function main(argv, { fetchImpl, env, out = console.log, err = console.error } = {}) {
+export async function main(
+  argv,
+  { fetchImpl, env, execImpl, out = console.log, err = console.error } = {},
+) {
   let plan;
   try {
     plan = planCommand(argv);
@@ -252,7 +301,7 @@ export async function main(argv, { fetchImpl, env, out = console.log, err = cons
     throw error;
   }
   try {
-    const result = await execute(plan, { fetchImpl, env });
+    const result = await execute(plan, { fetchImpl, env, execImpl });
     out(JSON.stringify({ ts: new Date().toISOString(), ok: true, ...plan, result }));
     return 0;
   } catch (error) {
