@@ -1,0 +1,112 @@
+{
+  "schema": "student-assumed-params.v1",
+  "description": "Tham số GIẢ ĐỊNH của máy trạng thái học viên (nguồn 'mức 2 thuần'), chép từ workload-design-v1 mục 3.2–3.5, 4.1, 5.4, 5.6, 5.9, 7.3, 8.2. Không dùng để sinh traffic học viên của run thí nghiệm (ADR-007).",
+  "profile_mix": {
+    "normal": { "P1": 0.69, "P2": 0.22, "P3": 0.09 },
+    "deadline": { "P1": 0.53, "P2": 0.38, "P3": 0.09 }
+  },
+  "goal_mix": {
+    "P1": {
+      "normal": { "G1": 0.6, "G2": 0.2, "G3": 0.05, "G4": 0.15 },
+      "deadline": { "G1": 0.45, "G2": 0.4, "G3": 0.05, "G4": 0.1 }
+    },
+    "P2": {
+      "normal": { "G1": 0.15, "G2": 0.15, "G3": 0.2, "G4": 0.5 },
+      "deadline": { "G1": 0.2, "G2": 0.7, "G3": 0.0, "G4": 0.1 }
+    },
+    "P3": {
+      "normal": { "G1": 0.1, "G2": 0.05, "G3": 0.7, "G4": 0.15 },
+      "deadline": { "G1": 0.1, "G2": 0.1, "G3": 0.65, "G4": 0.15 }
+    }
+  },
+  "goal_tables": {
+    "G1": {
+      "LOGIN": { "DASH": 1.0 },
+      "DASH": { "OPEN_COURSE": 0.75, "NOTIF": 0.1, "BROWSE": 0.05, "PROFILE": 0.02, "EXIT": 0.08 },
+      "OPEN_COURSE": { "READ_LESSON": 0.8, "LIST_QUIZ": 0.1, "DASH": 0.05, "EXIT": 0.05 },
+      "READ_LESSON": {
+        "READ_LESSON": 0.45,
+        "LIST_QUIZ": 0.2,
+        "VIEW_MEDIA": 0.15,
+        "OPEN_COURSE": 0.05,
+        "EXIT": 0.15
+      },
+      "VIEW_MEDIA": { "READ_LESSON": 0.85, "EXIT": 0.15 },
+      "LIST_QUIZ": { "START_QUIZ": 0.6, "READ_LESSON": 0.25, "EXIT": 0.15 },
+      "START_QUIZ": { "ANSWER": 0.95, "EXIT": 0.05 },
+      "ANSWER": { "SUBMIT": 0.65, "ANSWER": 0.3, "EXIT": 0.05 },
+      "SUBMIT": { "READ_LESSON": 0.4, "OPEN_COURSE": 0.15, "DASH": 0.1, "EXIT": 0.35 },
+      "NOTIF": { "DASH": 0.5, "OPEN_COURSE": 0.3, "EXIT": 0.2 },
+      "PROFILE": { "DASH": 0.7, "EXIT": 0.3 },
+      "BROWSE": { "VIEW_COURSE": 0.7, "DASH": 0.1, "EXIT": 0.2 },
+      "VIEW_COURSE": { "ENROLL": 0.4, "OPEN_COURSE": 0.3, "BROWSE": 0.15, "EXIT": 0.15 },
+      "ENROLL": { "OPEN_COURSE": 0.85, "EXIT": 0.15 }
+    },
+    "G2": {
+      "LOGIN": { "DASH": 1.0 },
+      "DASH": { "OPEN_COURSE": 0.85, "NOTIF": 0.1, "EXIT": 0.05 },
+      "OPEN_COURSE": { "LIST_QUIZ": 0.7, "READ_LESSON": 0.25, "EXIT": 0.05 },
+      "READ_LESSON": { "LIST_QUIZ": 0.55, "READ_LESSON": 0.25, "EXIT": 0.2 },
+      "LIST_QUIZ": { "START_QUIZ": 0.8, "READ_LESSON": 0.1, "EXIT": 0.1 },
+      "START_QUIZ": { "ANSWER": 0.97, "EXIT": 0.03 },
+      "ANSWER": { "SUBMIT": 0.72, "ANSWER": 0.25, "EXIT": 0.03 },
+      "SUBMIT": { "LIST_QUIZ": 0.45, "OPEN_COURSE": 0.1, "EXIT": 0.45 },
+      "NOTIF": { "OPEN_COURSE": 0.7, "EXIT": 0.3 }
+    },
+    "G3": {
+      "LOGIN": { "BROWSE": 0.6, "DASH": 0.4 },
+      "DASH": { "BROWSE": 0.6, "OPEN_COURSE": 0.2, "EXIT": 0.2 },
+      "BROWSE": { "VIEW_COURSE": 0.5, "BROWSE": 0.25, "EXIT": 0.25 },
+      "VIEW_COURSE": { "BROWSE": 0.45, "ENROLL": 0.2, "OPEN_COURSE": 0.1, "EXIT": 0.25 },
+      "ENROLL": { "OPEN_COURSE": 0.7, "EXIT": 0.3 },
+      "OPEN_COURSE": { "READ_LESSON": 0.5, "BROWSE": 0.2, "EXIT": 0.3 },
+      "READ_LESSON": { "EXIT": 0.6, "READ_LESSON": 0.2, "VIEW_MEDIA": 0.1, "BROWSE": 0.1 },
+      "VIEW_MEDIA": { "EXIT": 0.6, "READ_LESSON": 0.4 }
+    },
+    "G4": {
+      "LOGIN": { "DASH": 1.0 },
+      "DASH": { "NOTIF": 0.55, "EXIT": 0.2, "OPEN_COURSE": 0.15, "PROFILE": 0.1 },
+      "NOTIF": { "EXIT": 0.6, "OPEN_COURSE": 0.3, "DASH": 0.1 },
+      "OPEN_COURSE": { "EXIT": 0.6, "READ_LESSON": 0.4 },
+      "READ_LESSON": { "EXIT": 0.7, "READ_LESSON": 0.3 },
+      "PROFILE": { "EXIT": 0.8, "DASH": 0.2 }
+    }
+  },
+  "new_user_share": 0.01,
+  "think": {
+    "mu": 2.659,
+    "sigma": 1.325,
+    "clamp_s": [1, 300],
+    "type_factor": { "navigation": 0.5, "answer": 1.5, "read": 2.0 },
+    "type_of_state": {
+      "DASH": "navigation",
+      "BROWSE": "navigation",
+      "ENROLL": "navigation",
+      "OPEN_COURSE": "navigation",
+      "LIST_QUIZ": "navigation",
+      "SUBMIT": "navigation",
+      "NOTIF": "navigation",
+      "PROFILE": "navigation",
+      "START_QUIZ": "answer",
+      "ANSWER": "answer",
+      "VIEW_COURSE": "read",
+      "READ_LESSON": "read",
+      "VIEW_MEDIA": "read"
+    }
+  },
+  "max_actions": { "mu": 2.32, "sigma": 1.29, "clamp": [3, 40] },
+  "time_available": {
+    "sigma": 0.5,
+    "clamp_min": [1, 15],
+    "median_min": {
+      "P1": { "normal": 8, "deadline": 8 },
+      "P2": { "normal": 5, "deadline": 10 },
+      "P3": { "normal": 3, "deadline": 3 }
+    }
+  },
+  "hourly_weight": [
+    0.15, 0.08, 0.05, 0.04, 0.04, 0.06, 0.15, 0.35, 0.6, 0.8, 0.9, 0.9, 0.8, 0.85, 0.9, 0.95, 0.95,
+    0.85, 0.8, 0.9, 1.0, 1.0, 0.8, 0.45
+  ],
+  "deadline_evening_factor": { "19": 1.25, "20": 1.5, "21": 1.5, "22": 1.25 }
+}
