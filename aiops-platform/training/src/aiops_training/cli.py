@@ -15,6 +15,8 @@ from pathlib import Path
 import httpx
 
 from .features.pipeline import write_features
+from .ground_truth.build import build_ground_truth, read_jsonl
+from .ground_truth.validate import apply_verification, verify
 from .telemetry.adapters.loki import LokiAdapter
 from .telemetry.adapters.prometheus import PrometheusAdapter
 from .telemetry.adapters.tempo import TempoAdapter, TempoExportOptions
@@ -120,12 +122,65 @@ def _run_features(args: argparse.Namespace) -> int:
     return 0
 
 
+def _ground_truth_parser(sub: argparse._SubParsersAction) -> None:
+    parser = sub.add_parser(
+        "ground-truth", help="Dựng RunGroundTruth của một run và kiểm chứng với telemetry"
+    )
+    parser.add_argument("--k6-summary", type=Path, required=True, help="k6-summary.json của run")
+    parser.add_argument("--run-id", help="Mặc định lấy từ k6-summary.json")
+    parser.add_argument("--scenario-id", help="Mặc định: case (fault run) hoặc 'healthy'")
+    parser.add_argument("--repeat-index", type=int, default=0)
+    parser.add_argument("--case", help="C2 | C3 | C4 | C6; bỏ trống là run healthy")
+    parser.add_argument("--fault-log", type=Path, help="faults.jsonl của fault-schedule.mjs")
+    parser.add_argument("--fault-manifest", type=Path, help="fault-manifest-v1.json")
+    parser.add_argument("--artifact", type=Path, help="Thư mục artifact export để kiểm chứng")
+    parser.add_argument("--code-commit")
+    parser.add_argument("--environment-profile", default="compose-full+faults")
+    parser.add_argument("--out", type=Path, required=True, help="Đường dẫn ghi ground-truth.json")
+
+
+def _run_ground_truth(args: argparse.Namespace) -> int:
+    workload = json.loads(args.k6_summary.read_text(encoding="utf-8"))
+    manifest = (
+        json.loads(args.fault_manifest.read_text(encoding="utf-8")) if args.fault_manifest else None
+    )
+    record = build_ground_truth(
+        run_id=args.run_id or workload["run_id"],
+        scenario_id=args.scenario_id or (args.case or "healthy"),
+        repeat_index=args.repeat_index,
+        workload=workload,
+        fault_manifest=manifest,
+        case_id=args.case,
+        fault_records=read_jsonl(args.fault_log) if args.fault_log else None,
+        provenance={
+            "code_commit": args.code_commit,
+            "environment_profile": args.environment_profile,
+        },
+    )
+    if args.artifact:
+        record = apply_verification(record, verify(record, args.artifact))
+    args.out.parent.mkdir(parents=True, exist_ok=True)
+    args.out.write_text(json.dumps(record, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    brief = {
+        "run_id": record["run_id"],
+        "run_status": record["run_status"],
+        "fault_start": record["fault_start"],
+        "fault_end": record["fault_end"],
+        "verification_result": record["verification_result"],
+        "checks": {c["check_name"]: c["result"] for c in record["verification_checks"]},
+        "invalid_reasons": record["invalid_reasons"],
+    }
+    print(json.dumps(brief, ensure_ascii=False))
+    return 0 if record["run_status"] == "valid" else 1
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="aiops-training")
     sub = parser.add_subparsers(dest="command", required=True)
     _export_parser(sub)
     _quality_parser(sub)
     _features_parser(sub)
+    _ground_truth_parser(sub)
     args = parser.parse_args(argv)
     if args.command == "export":
         return _run_export(args)
@@ -133,6 +188,8 @@ def main(argv: list[str] | None = None) -> int:
         return _run_quality(args)
     if args.command == "features":
         return _run_features(args)
+    if args.command == "ground-truth":
+        return _run_ground_truth(args)
     parser.error(f"Lệnh không hỗ trợ: {args.command}")
     return 2
 

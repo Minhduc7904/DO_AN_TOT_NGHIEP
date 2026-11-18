@@ -1023,6 +1023,15 @@ Quy tắc đi kèm:
 - Đánh giá detection onset/lag không được lấy `fault_start` làm mốc triệu chứng; `fault_start` chỉ dùng cho evaluation/overlay (mục 11.3).
 - Tập `expected_evidence` của FG/FH dùng `entity_type=dependency` với `entity_id=<caller>-identity-token` hoặc `<caller>-identity-jwks`, không dùng `entity_id=identity` cho signal nằm ở service khác.
 
+
+## 9.2. Hiện thực tối thiểu (task-06 tuần 14)
+
+- **Nhãn và kỳ vọng của 4 case MVP** (C2/FC, C3/FD, C4/FA, C6/FG): `fault_id`, `fault_target`, `fault_target_kind`, `expected_symptom`, `expected_propagation_path`, `expected_evidence` (chỉ các tín hiệu có thật ở mục 10, `required=false` cho bằng chứng phụ), `expected_symptom_services` và nền của `expected_symptom_lag` nằm ở `aiops-platform/training/src/aiops_training/ground_truth/cases.py`; nhãn `fault_type`/`root_cause_*` và lệnh bật/tắt lấy từ fault manifest `aiops-platform/faults/manifests/fault-manifest-v1.json` (task-05).
+- **Dựng bản ghi:** `uv run aiops-training ground-truth --k6-summary <k6-summary.json> --case C2 --fault-log <faults.jsonl> --fault-manifest <manifest> --artifact <thư mục export> --out ground-truth.json`. `fault_start`/`fault_end` là `ts` của sự kiện `fault.activate`/`fault.deactivate` do `fault-schedule.mjs` ghi khi lệnh điều khiển thành công; bật lỗi thì không ghi `fault_start` và `run_status = invalid`.
+- **`expected_symptom_lag` của FG** tính từ cấu hình: `{min_seconds: 0, max_seconds: TTL + 30, basis: IDENTITY_SERVICE_TOKEN_TTL_SECONDS}`, TTL đọc từ biến môi trường thật của container lúc precheck. Biên 30 s là giả định (chu kỳ làm mới token, độ trễ thu thập), chốt ở pilot.
+- **`verification_checks`** trên metric đã export (counter/histogram lấy hiệu cuối − đầu từng series, series mới coi giá trị trước là 0): C2/C3/C4 `dependency_latency_increased` (latency trung bình của component trong cửa sổ fault, bỏ 15 s đầu, ≥ 2 × 300 s trước fault và ≥ 3 lời gọi); C6 `root_cause_heartbeat_stopped` (`process_cpu_time_seconds_total` của `identity` tăng trước fault, đứng yên khi fault) và `symptom_observed_within_lag_window` (`lms_dependency_error_count_total{dependency_identity="gateway-identity-token"}` tăng trước `fault_start + max_seconds`). Kiểm chứng không đạt thì `verification_result = failed`, `run_status = invalid` (mục 9.1).
+- **`run_status`** (mục 8.3): `failed` khi thiếu cửa sổ tải (run không hoàn tất); `invalid` khi precheck hỏng, bật/gỡ fault không trọn, fault bị ngắt giữa chừng (`reason = aborted`), khoảng fault nằm ngoài khoảng tải, hoặc fault run **chưa chạy kiểm chứng** (`verification_not_run`); còn lại `valid`. Nhật ký fault append qua nhiều lần chạy thì chỉ lấy lần lập lịch cuối của case. Ngưỡng là điểm khởi đầu, chốt ở pilot và ghi vào manifest thí nghiệm của T5.
+- Chưa làm: reset/verification tự động trước run (`reset_*` để `not_applicable`), `service_versions` (runner tuần 15).
 ---
 
 # 10. Fault-to-telemetry evidence requirement

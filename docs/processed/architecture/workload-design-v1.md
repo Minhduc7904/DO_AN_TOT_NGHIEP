@@ -1047,7 +1047,7 @@ Tỉ lệ dòng được phủ: **95,2%** (198.095/208.109); riêng `access_prev
 
 ### 13.3. Cắt phiên
 
-Một phiên = chuỗi sự kiện của một người dùng, cắt khi nghỉ quá **30 phút** (quy ước phổ biến trong phân tích log web). Kết quả: 34.248 phiên; độ nhạy: ngưỡng 15 phút cho 38.419 phiên (mục 2.3). Sự kiện trùng cùng trạng thái trong ≤ 1 s gộp làm một; sự kiện phụ trong ≤ 2 s gộp vào thao tác trước (Phụ lục B).
+Một phiên = chuỗi sự kiện của một người dùng, cắt khi nghỉ quá **30 phút** (quy ước phổ biến trong phân tích log web). Kết quả: 34.248 phiên; độ nhạy: ngưỡng 15 phút cho 38.419 phiên (mục 2.3). Sự kiện trùng cùng trạng thái trong ≤ 1 s gộp làm một; sự kiện phụ gộp vào thao tác trước (quy tắc đầy đủ ở Phụ lục B.2).
 
 ### 13.4. Gán người dùng và khóa học sang dữ liệu seed
 
@@ -1067,7 +1067,7 @@ Phát lại theo kịch bản nhưng vẫn phản ứng như người thật ở
 
 ### 13.7. Định dạng file phiên, script và quy tắc dữ liệu
 
-- Script ở `aiops-platform/load/tools/` (tuần 14): (1) tải zip từ Zenodo và kiểm sha256; (2) chuyển log thành `sessions-<phiên-bản>.json` gồm danh sách phiên `{session_id, user_key, course_key, day_index, start_offset_s, actions: [{state, think_s}]}`; (3) in báo cáo tỉ lệ phủ, số phiên, phân phối.
+- Script ở `aiops-platform/load/tools/` (đã cài ở task-01 tuần 14, xem [`aiops-platform/load/README.md`](../../../aiops-platform/load/README.md)): (1) tải zip từ Zenodo và kiểm md5 + sha256; (2) chuyển log thành `moodle-build-v1.json` / `moodle-holdout-v1.json` gồm danh sách phiên `{session_id, user_key, course_key, day_index, start_offset_s, actions: [{state, think_s}]}`; (3) in báo cáo tỉ lệ phủ, số phiên, phân phối.
 - k6 nạp file phiên bằng `SharedArray`, executor arrival-rate theo đường cong mục 7.7, mỗi iteration phát một phiên bằng các hàm thao tác ở `aiops-platform/load/journeys/` (PR #76).
 - **Không commit** CSV gốc hay file phiên sinh ra (log không có thông tin cá nhân nhưng vẫn là dữ liệu của bên thứ ba); repo chỉ có script và sha256. Ghi nguồn đúng CC BY 4.0: Milani, Biondi, Franzoni, *Unistudium 2022: students groups logs on moodle*, Zenodo, DOI 10.5281/zenodo.13763175.
 
@@ -1163,10 +1163,10 @@ Làm lại được với Python thuần (thư viện chuẩn `csv`, `statistics
 
 ## Phụ lục B. Cách tính số liệu log Moodle (thêm theo ADR-007)
 
-Tính bằng một script Python thuần (`csv`, `collections`, `math`), không commit (giữ ở máy người viết); tuần 14 đưa phiên bản chính thức vào `aiops-platform/load/tools/`.
+Tính lần đầu bằng một script Python thuần (`csv`, `collections`, `math`) không commit. Phiên bản chính thức là `aiops-platform/load/tools/moodle-to-sessions.mjs` (task-01 tuần 14); chạy lại trên cùng CSV cho đúng các số B.2–B.3 (198.095 dòng phủ, 34.247 phiên có thao tác).
 
 - **B.1. Đọc và cắt phiên:** nhóm dòng theo `userId`, sắp theo `dateTime`; cắt phiên khi khoảng cách giữa hai sự kiện > 1.800 s.
-- **B.2. Ánh xạ:** theo bảng mục 13.2; sự kiện phụ trong ≤ 2 s sau thao tác trước gộp vào thao tác đó; cùng trạng thái lặp lại trong ≤ 1 s coi là trùng. Đếm: 171.892 dòng thành thao tác riêng, 18.476 dòng phụ, 7.727 dòng trùng, 10.014 dòng bỏ.
+- **B.2. Ánh xạ:** theo bảng mục 13.2; sự kiện phụ (`role_assigned`, `attempt_viewed`, `attempt_summary_viewed`, `submission_status_viewed`, `feedback_viewed`) luôn gộp vào thao tác đứng trước, không giới hạn thời gian; ba trường hợp gộp theo ngữ cảnh dùng cửa sổ ≤ 2 s (`course_module_completion_updated` ngay sau khi xem bài, `attempt_submitted` ngay sau `user_graded`, `course_module_viewed` ngay sau khi nộp bài); cùng trạng thái lặp lại trong ≤ 1 s coi là trùng. Đếm: 171.892 dòng thành thao tác riêng, 18.476 dòng phụ, 7.727 dòng trùng, 10.014 dòng bỏ.
 - **B.3. Thống kê:** số thao tác/phiên (trung vị 3, p90 11, trung bình 5,02), thời lượng phiên (trung vị 46 s, p90 1.433 s), think time giữa hai thao tác (137.645 khoảng; p25/p50/p75 = 7/15/55 s; p90 308 s; 10,2% > 300 s; khớp log-normal trên các khoảng ≥ 1 s: μ = 3,093, σ = 1,636, trung vị 22 s), số request ước tính mỗi phiên (trung vị 8,9; trung bình 11,3) theo số request của từng trạng thái ở mục 5.2.
 - **B.4. Ma trận chuyển:** đếm cặp (trạng thái hiện tại → trạng thái kế tiếp, kể cả "thoát" ở cuối phiên) trên các phiên đã ánh xạ rồi chuẩn hóa theo hàng; bảng mục 13.8 trích các hàng chính.
 - **B.5. Theo giờ, theo ngày:** đếm phiên bắt đầu theo giờ (chuẩn hóa về đỉnh = 1 cho `w_moodle`), sự kiện và phiên theo ngày (`day_index` từ ngày đầu tiên của log); ngày cao điểm là ngày có nhiều phiên nhất.

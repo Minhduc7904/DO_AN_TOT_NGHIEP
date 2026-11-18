@@ -64,6 +64,18 @@ uv run aiops-training quality artifacts/<run_id>      # ghi artifacts/<run_id>/q
 
 In bảng mỗi runtime một dòng (số metric, nhịp tim, gap, span, log, cờ) và trả `pass`/`partial`/`fail` (mã thoát 1 chỉ khi `fail`). Định nghĩa từng trường, cờ `telemetry_silent` và quy tắc trạng thái: [telemetry data dictionary v2](../../docs/processed/architecture/telemetry-data-dictionary-v2.md) mục 8.
 
+## Ground truth của run (`RunGroundTruth`)
+
+```bash
+uv run aiops-training ground-truth \
+  --k6-summary ../load/results/<RUN_ID>/k6-summary.json \
+  --case C2 --fault-log ../load/results/<RUN_ID>/faults.jsonl \
+  --fault-manifest ../faults/manifests/fault-manifest-v1.json \
+  --artifact artifacts/<RUN_ID> --out artifacts/<RUN_ID>/ground-truth.json
+```
+
+Bỏ `--case`, `--fault-log` cho run healthy. Bản ghi theo [telemetry-and-ground-truth-schema-v1](../../docs/processed/architecture/telemetry-and-ground-truth-schema-v1.md) mục 8; `fault_start`/`fault_end` lấy từ nhật ký của `fault-schedule.mjs` (không suy ra từ bất thường). Có `--artifact` thì chạy `verification_checks` (mục 9.2 của tài liệu): fault bật thành công mà không thấy triệu chứng tối thiểu thì `run_status = invalid`. Mã thoát 0 khi `valid`.
+
 ## Đặc trưng theo cửa sổ (feature pipeline v0)
 
 ```bash

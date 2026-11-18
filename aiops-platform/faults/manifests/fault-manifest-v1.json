@@ -1,0 +1,79 @@
+{
+  "schema": "fault-manifest.v1",
+  "manifest_version": "1.0.0",
+  "status": "Giá trị khởi đầu trước pilot. Thời lượng fault và cường độ chốt ở pilot tuần 15 (evaluation-protocol-v1 mục 6.1, 7.3): thời lượng fault phải lớn hơn độ trễ triệu chứng đo được cộng window và persistence.",
+  "timeline": {
+    "run_seconds": 2880,
+    "warmup_s": 360,
+    "default_start_s": 1080,
+    "min_recovery_s": 600,
+    "note": "Run 48 phút (workload-design-v1 mục 7.2). Mặc định fault bắt đầu ở phút 18 (09:00 của ngày nén, workload-design-v1 mục 8.5); phút 0–6 là warm-up, sau khi gỡ fault giữ ít nhất 10 phút recovery."
+  },
+  "cases": [
+    {
+      "case_id": "C2",
+      "fault_family": "FC",
+      "fault_type": "dependency_latency",
+      "root_cause_service": "course",
+      "root_cause_component": "course-postgres",
+      "injector": "toxiproxy",
+      "activate": [["latency", "course-to-postgres", "200", "--jitter", "20"]],
+      "deactivate": [["clear", "course-to-postgres"]],
+      "fault_duration_s": 600,
+      "requires": [],
+      "source": "complex-case-catalogue-and-rca-result-v0 mục C2 (smoke 200 ms, PR #75); ADR-006"
+    },
+    {
+      "case_id": "C3",
+      "fault_family": "FD",
+      "fault_type": "dependency_latency",
+      "root_cause_service": "ai",
+      "root_cause_component": "ai-llm-provider",
+      "injector": "llm-stub",
+      "activate": [["llm", "set", "--latency-ms", "30000", "--jitter-ms", "5000"]],
+      "deactivate": [["llm", "reset"]],
+      "fault_duration_s": 600,
+      "requires": [],
+      "source": "complex-case-catalogue-and-rca-result-v0 mục C3; trễ 30 s ± 5 s nhỏ hơn AI_COMPLETION_TIMEOUT_MS 240 s nên job chậm chứ không FAILED"
+    },
+    {
+      "case_id": "C4",
+      "fault_family": "FA",
+      "fault_type": "dependency_latency",
+      "root_cause_service": "media",
+      "root_cause_component": "media-minio",
+      "injector": "toxiproxy",
+      "activate": [
+        ["latency", "media-to-minio", "300", "--jitter", "30"],
+        ["latency", "media-worker-to-minio", "300", "--jitter", "30"]
+      ],
+      "deactivate": [
+        ["clear", "media-to-minio"],
+        ["clear", "media-worker-to-minio"]
+      ],
+      "fault_duration_s": 600,
+      "requires": [],
+      "source": "complex-case-catalogue-and-rca-result-v0 mục C4 (smoke 300 ms, PR #75). Chuỗi 'media PENDING kẹt → cleanup xóa' cần fault dài hơn 30 phút nên không thuộc manifest này"
+    },
+    {
+      "case_id": "C6",
+      "fault_family": "FG",
+      "fault_type": "dependency_unavailable",
+      "root_cause_service": "identity",
+      "root_cause_component": "identity",
+      "injector": "docker",
+      "activate": [["container", "pause", "identity"]],
+      "deactivate": [["container", "unpause", "identity"]],
+      "fault_duration_s": 300,
+      "requires": [
+        {
+          "container_env": "identity",
+          "name": "IDENTITY_SERVICE_TOKEN_TTL_SECONDS",
+          "value": "60",
+          "why": "Rút ngắn khoảng yên lặng (đo 70–74 s với TTL 60 s); compose.faults.yaml đặt giá trị này cho MỌI run để healthy và fault run cùng cấu hình"
+        }
+      ],
+      "source": "complex-case-catalogue-and-rca-result-v0 mục C6; ADR-004; tracing-smoke"
+    }
+  ]
+}
