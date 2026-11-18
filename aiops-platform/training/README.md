@@ -76,6 +76,14 @@ uv run aiops-training ground-truth \
 
 Bỏ `--case`, `--fault-log` cho run healthy. Bản ghi theo [telemetry-and-ground-truth-schema-v1](../../docs/processed/architecture/telemetry-and-ground-truth-schema-v1.md) mục 8; `fault_start`/`fault_end` lấy từ nhật ký của `fault-schedule.mjs` (không suy ra từ bất thường). Có `--artifact` thì chạy `verification_checks` (mục 9.2 của tài liệu): fault bật thành công mà không thấy triệu chứng tối thiểu thì `run_status = invalid`. Mã thoát 0 khi `valid`.
 
+## Đặc trưng theo cửa sổ (feature pipeline v0)
+
+```bash
+uv run aiops-training features artifacts/<RUN_ID>          # → artifacts/<RUN_ID>/features/
+```
+
+Cửa sổ 60 s bước 15 s; `service_windows.parquet` (RED, CPU, bộ nhớ, trace/log error rate, cờ thiếu modality, `telemetry_silent`) và `edge_windows.parquet` (số lời gọi, tỉ lệ lỗi/timeout, độ trễ trung bình/p95/p99 theo cạnh). Cột và cách tính: [telemetry-data-dictionary-v2](../../docs/processed/architecture/telemetry-data-dictionary-v2.md) mục 9.
+
 ## Cách export bảo vệ Tempo
 
 Tempo của testbed bị giới hạn 512 MiB và từng bị OOM khi nhận truy vấn dồn dập. Adapter:
