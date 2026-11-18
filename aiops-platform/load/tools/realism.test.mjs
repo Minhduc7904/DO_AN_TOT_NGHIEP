@@ -81,11 +81,15 @@ test('phiên từ nhật ký mức 2: bỏ bước chèn đầu phiên, gom theo
       rec('s1', 3, 'OPEN_COURSE', 10),
       rec('s1', 3, 'OPEN_COURSE', 10.2),
       rec('s1', 4, 'READ_LESSON', 30.1),
+      rec('s2', 3, 'READ_LESSON', 40, 250),
       { ...rec('s9', 1, 'I_COURSES', 5), role: 'instructor' },
     ],
     base,
   );
-  assert.equal(sessions.length, 1);
+  assert.equal(sessions.length, 2);
+  // Thời lượng = tổng khoảng nghỉ (như log Moodle), không cộng thời gian xử lý của request.
+  assert.ok(Math.abs(sessions[0].duration_s - 19.8) < 1e-9);
+  assert.equal(sessions[1].duration_s, 0);
   assert.deepEqual(
     sessions[0].actions.map((action) => action.state),
     ['OPEN_COURSE', 'READ_LESSON'],
@@ -96,13 +100,15 @@ test('phiên từ nhật ký mức 2: bỏ bước chèn đầu phiên, gom theo
 
 test('phiên từ điểm k6 mức 1: route → trạng thái, request liên tiếp cùng trạng thái gộp', () => {
   const base = Date.parse('2026-11-18T06:00:00Z');
+  // Dạng thật của k6 `--out json`: `vu`, `iter` nằm trong `metadata`, không phải tag.
   const point = (name, endS, vu = '1', iter = '0', journey = 'w3') => ({
     type: 'Point',
     metric: 'http_req_duration',
     data: {
       time: new Date(base + endS * 1000).toISOString(),
       value: 50,
-      tags: { name, vu, iter, journey },
+      tags: { name, journey },
+      metadata: { vu, iter },
     },
   });
   const sessions = sessionsFromK6Points(
@@ -112,13 +118,19 @@ test('phiên từ điểm k6 mức 1: route → trạng thái, request liên ti�
       point('GET /api/v1/courses/:course_id/lessons', 6),
       point('GET /api/v1/student/courses/:course_id/progress', 6.3),
       point('GET /api/v1/courses', 3, '2', '0', 'w2'),
+      point('GET /api/v1/courses', 4, '2', '0'),
+      point('GET /api/v1/courses', 5, '1', '1'),
     ],
     base,
   );
-  assert.equal(sessions.length, 1);
+  assert.equal(sessions.length, 3); // (vu 1, iter 0), (vu 2, iter 0), (vu 1, iter 1)
   assert.deepEqual(
     sessions[0].actions.map((action) => action.state),
     ['BROWSE', 'OPEN_COURSE'],
+  );
+  assert.deepEqual(
+    sessions.slice(1).map((session) => session.actions.length),
+    [1, 1],
   );
 });
 

@@ -78,13 +78,17 @@ export function sessionsFromRequests(requests, runStartMs) {
         actions.push({ ...request });
       }
     }
+    const observed = actions.map((action, index) => ({
+      state: action.state,
+      think_s: index === 0 ? 0 : (action.startMs - actions[index - 1].endMs) / 1000,
+    }));
     sessions.push({
       start_s: (actions[0].startMs - runStartMs) / 1000,
-      duration_s: (actions[actions.length - 1].endMs - actions[0].startMs) / 1000,
-      actions: actions.map((action, index) => ({
-        state: action.state,
-        think_s: index === 0 ? 0 : (action.startMs - actions[index - 1].endMs) / 1000,
-      })),
+      // Cùng định nghĩa với log Moodle (sự kiện tức thời): thời lượng = tổng khoảng nghỉ giữa các
+      // thao tác, không cộng thời gian server xử lý. Nếu cộng, phiên một thao tác (≈ 18%) ra > 0
+      // thay vì đúng 0 như hold-out và riêng điều đó đã đẩy KS D thời lượng lên ~0,17.
+      duration_s: observed.reduce((sum, action) => sum + action.think_s, 0),
+      actions: observed,
     });
   }
   return sessions.sort((a, b) => a.start_s - b.start_s);
@@ -108,20 +112,22 @@ export function sessionsFromActionLog(records, runStartMs) {
 }
 
 /**
- * Từ output JSON của k6 (`--out json`) mức 1: điểm `http_req_duration` có tag `journey`, `vu`,
- * `iter`, `name`. Một phiên = một lượt (VU, iteration) của hành trình học viên (W1, W3).
+ * Từ output JSON của k6 (`--out json`) mức 1: điểm `http_req_duration` có tag `journey`, `name` và
+ * metadata `vu`, `iter`. Một phiên = một lượt (VU, iteration) của hành trình học viên (W1, W3).
  */
 export function sessionsFromK6Points(points, runStartMs, journeys = ['w1', 'w3']) {
   const requests = [];
   for (const point of points) {
     if (point.type !== 'Point' || point.metric !== 'http_req_duration') continue;
     const tags = point.data.tags ?? {};
+    // k6 ≥ 0.41 ghi `vu`, `iter` vào `metadata` (không còn là tag); giữ đọc tag cho output cũ.
+    const meta = point.data.metadata ?? {};
     if (!journeys.includes(tags.journey)) continue;
     const state = LEVEL1_ROUTE_STATE[tags.name];
     if (!state) continue;
     const endMs = Date.parse(point.data.time);
     requests.push({
-      sessionKey: `${tags.journey}-${tags.vu}-${tags.iter}`,
+      sessionKey: `${tags.journey}-${meta.vu ?? tags.vu}-${meta.iter ?? tags.iter}`,
       state,
       startMs: endMs - point.data.value,
       endMs,
