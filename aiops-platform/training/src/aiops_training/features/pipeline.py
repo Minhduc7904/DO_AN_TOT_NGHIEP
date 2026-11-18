@@ -68,6 +68,9 @@ class SeriesData:
     le: str | None
     times: list[float]
     values: list[float]
+    #: Series đã tồn tại trước khi artifact bắt đầu: mẫu đầu là giá trị tích lũy từ lúc process khởi
+    #: động, chỉ dùng làm mốc chứ không tính là mức tăng.
+    carried: bool = False
 
 
 #: metric → (service_name, dependency_identity) → danh sách series.
@@ -82,13 +85,26 @@ def _iso(seconds: float) -> str:
     return datetime.fromtimestamp(seconds, tz=UTC).isoformat().replace("+00:00", "Z")
 
 
-def increase(times: list[float], values: list[float], start: float, end: float) -> float:
-    """Mức tăng của một counter trong [start, end) theo quy tắc ở docstring module."""
+def increase(
+    times: list[float], values: list[float], start: float, end: float, carried: bool = False
+) -> float:
+    """Mức tăng của một counter trong [start, end) theo quy tắc ở docstring module.
+
+    `carried`: series có từ trước khi artifact bắt đầu, nên mẫu đầu tiên chỉ là mốc (không coi
+    giá trị
+    trước nó là 0, tránh đếm toàn bộ giá trị tích lũy từ lúc process khởi động vào cửa sổ đầu).
+    """
     first = bisect.bisect_left(times, start)
     last = bisect.bisect_left(times, end)
-    if first == last:
+    if first == 0 and carried:
+        first = 1
+        if last < first:
+            return 0.0
+        previous = values[0]
+    elif first == last:
         return 0.0
-    previous = values[first - 1] if first > 0 else 0.0
+    else:
+        previous = values[first - 1] if first > 0 else 0.0
     total = 0.0
     for value in values[first:last]:
         total += value - previous if value >= previous else value
@@ -128,49 +144,50 @@ def histogram_quantile(q: float, buckets: dict[float, float]) -> float | None:
     return previous_bound
 
 
-def load_metric_index(artifact_dir: Path) -> Index:
-    """Đọc metric cần dùng, gom theo (service_name, dependency_identity)."""
-    table = pq.read_table(
-        artifact_dir / "metrics.parquet",
-        columns=[
-            "metric_name",
-            "service_name",
-            "service_instance_id",
-            "dependency_identity",
-            "status",
-            "le",
-            "http_route_template",
-            "http_method",
-            "operation_name",
-            "http_status_class",
-            "timestamp",
-            "value",
-        ],
-        filters=[("metric_name", "in", list(METRICS_USED))],
-    )
-    raw: dict[tuple, list[tuple[float, float]]] = defaultdict(list)
-    for row in table.to_pylist():
-        if row["value"] is None:
-            continue
-        key = (
-            row["metric_name"],
-            row["service_name"],
-            row["dependency_identity"],
-            row["status"],
-            row["le"],
-            row["service_instance_id"],
-            row["http_route_template"],
-            row["http_method"],
-            row["operation_name"],
-            row["http_status_class"],
-        )
-        raw[key].append((_ts(row["timestamp"]), row["value"]))
+def load_metric_index(artifact_dir: Path, time_start: float, step_s: float = 5.0) -> Index:
+    """Đọc metric cần dùng, gom theo (service_name, dependency_identity).
+
+    Đọc từng metric một và theo cột để giới hạn RAM (artifact 48 phút có vài triệu dòng). Series có
+    mẫu đầu trong vòng một bước scrape từ `time_start` coi là đã tồn tại trước artifact (`carried`).
+    """
+    columns = [
+        "service_name",
+        "dependency_identity",
+        "status",
+        "le",
+        "service_instance_id",
+        "http_route_template",
+        "http_method",
+        "operation_name",
+        "http_status_class",
+    ]
     index: Index = defaultdict(lambda: defaultdict(list))
-    for key, points in raw.items():
-        points.sort()
-        index[key[0]][(key[1], key[2])].append(
-            SeriesData(key[3], key[4], [p[0] for p in points], [p[1] for p in points])
+    for metric in METRICS_USED:
+        table = pq.read_table(
+            artifact_dir / "metrics.parquet",
+            columns=[*columns, "timestamp", "value"],
+            filters=[("metric_name", "=", metric)],
         )
+        data = table.to_pydict()
+        raw: dict[tuple, list[tuple[float, float]]] = defaultdict(list)
+        for row in range(table.num_rows):
+            value = data["value"][row]
+            if value is None:
+                continue
+            key = tuple(data[column][row] for column in columns)
+            raw[key].append((_ts(data["timestamp"][row]), value))
+        del data, table
+        for key, points in raw.items():
+            points.sort()
+            index[metric][(key[0], key[1])].append(
+                SeriesData(
+                    status=key[2],
+                    le=key[3],
+                    times=[point[0] for point in points],
+                    values=[point[1] for point in points],
+                    carried=points[0][0] <= time_start + step_s,
+                )
+            )
     return index
 
 
@@ -185,7 +202,7 @@ def _sum_increase(
     items: list[SeriesData], start: float, end: float, status: str | None = None
 ) -> float:
     return sum(
-        increase(item.times, item.values, start, end)
+        increase(item.times, item.values, start, end, item.carried)
         for item in items
         if status is None or item.status == status
     )
@@ -195,7 +212,7 @@ def _bucket_increase(items: list[SeriesData], start: float, end: float) -> dict[
     buckets: dict[float, float] = defaultdict(float)
     for item in items:
         if item.le is not None:
-            buckets[float(item.le)] += increase(item.times, item.values, start, end)
+            buckets[float(item.le)] += increase(item.times, item.values, start, end, item.carried)
     return dict(buckets)
 
 
@@ -213,7 +230,7 @@ def windows(start: float, end: float, config: FeatureConfig) -> list[tuple[float
     return result
 
 
-def _span_index(artifact_dir: Path) -> dict[str, list[tuple[float, bool]]]:
+def _span_index(artifact_dir: Path) -> dict[str, EventIndex]:
     path = artifact_dir / "spans.parquet"
     if not path.exists():
         return {}
@@ -221,12 +238,10 @@ def _span_index(artifact_dir: Path) -> dict[str, list[tuple[float, bool]]]:
     spans: dict[str, list[tuple[float, bool]]] = defaultdict(list)
     for row in table.to_pylist():
         spans[row["service_name"]].append((_ts(row["start_time"]), row["status"] == "error"))
-    for items in spans.values():
-        items.sort()
-    return spans
+    return {service: _event_index(items) for service, items in spans.items()}
 
 
-def _log_index(artifact_dir: Path) -> dict[str, list[tuple[float, bool]]]:
+def _log_index(artifact_dir: Path) -> dict[str, EventIndex]:
     path = artifact_dir / "logs.parquet"
     if not path.exists():
         return {}
@@ -236,17 +251,31 @@ def _log_index(artifact_dir: Path) -> dict[str, list[tuple[float, bool]]]:
         logs[row["service_name"]].append(
             (_ts(row["timestamp"]), row["level"] in ("error", "fatal"))
         )
-    for items in logs.values():
-        items.sort()
-    return logs
+    return {service: _event_index(items) for service, items in logs.items()}
 
 
-def _count_in(items: list[tuple[float, bool]], start: float, end: float) -> tuple[int, int]:
-    times = [item[0] for item in items]
-    lo = bisect.bisect_left(times, start)
-    hi = bisect.bisect_left(times, end)
-    selected = items[lo:hi]
-    return len(selected), sum(1 for _, is_error in selected if is_error)
+@dataclass
+class EventIndex:
+    """Thời điểm sự kiện đã sắp và tổng tích lũy số lỗi, để đếm theo cửa sổ bằng bisect."""
+
+    times: list[float]
+    error_prefix: list[int]
+
+
+def _event_index(items: list[tuple[float, bool]]) -> EventIndex:
+    items.sort()
+    prefix = [0]
+    for _, is_error in items:
+        prefix.append(prefix[-1] + (1 if is_error else 0))
+    return EventIndex([item[0] for item in items], prefix)
+
+
+def _count_in(index: EventIndex | None, start: float, end: float) -> tuple[int, int]:
+    if index is None:
+        return 0, 0
+    lo = bisect.bisect_left(index.times, start)
+    hi = bisect.bisect_left(index.times, end)
+    return hi - lo, index.error_prefix[hi] - index.error_prefix[lo]
 
 
 def build_features(
@@ -257,7 +286,7 @@ def build_features(
     run_id = manifest["run_id"]
     start = _ts(parse_utc(manifest["time_start"]))
     end = _ts(parse_utc(manifest["time_end"]))
-    index = load_metric_index(artifact_dir)
+    index = load_metric_index(artifact_dir, start)
     spans = _span_index(artifact_dir)
     logs = _log_index(artifact_dir)
     span_available = manifest["modality_availability"].get("traces") != "missing"
@@ -309,8 +338,8 @@ def build_features(
             latency = _bucket_increase(data["latency"], *bounds)
             downstream = _bucket_increase(data["downstream"], *bounds)
             memory = [last_value(item.times, item.values, *bounds) for item in data["memory"]]
-            span_total, span_errors = _count_in(spans.get(runtime, []), *bounds)
-            log_total, log_errors = _count_in(logs.get(runtime, []), *bounds)
+            span_total, span_errors = _count_in(spans.get(runtime), *bounds)
+            log_total, log_errors = _count_in(logs.get(runtime), *bounds)
             live = not dead
             service_rows.append(
                 {

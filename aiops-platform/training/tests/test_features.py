@@ -26,6 +26,9 @@ def test_increase_handles_new_series_reset_and_empty_window():
     assert increase(times, values, 5, 40) == 6  # 7−5, reset → +2, 4−2
     assert increase(times, values, -5, 1) == 5  # series mới giữa cửa sổ: trước đó coi là 0
     assert increase(times, values, 31, 50) == 0
+    # Series có từ trước artifact: mẫu đầu chỉ là mốc, không đếm giá trị tích lũy từ lúc khởi động.
+    assert increase([0.0, 10.0], [1000.0, 1004.0], 0, 15, carried=True) == 4
+    assert increase([0.0], [1000.0], 0, 15, carried=True) == 0
 
 
 def test_histogram_quantile_matches_prometheus_interpolation():
@@ -133,3 +136,17 @@ def test_write_features_outputs_parquet_and_manifest(tmp_path):
     saved = json.loads((target / "features-manifest.json").read_text(encoding="utf-8"))
     assert saved["feature_version"] == "feature.v0"
     assert saved["edges"] == ["course->course-postgres"]
+
+
+def test_first_window_does_not_count_cumulative_value_from_process_start(tmp_path):
+    artifact = _artifact(tmp_path)
+    table = pq.read_table(artifact / "metrics.parquet").to_pylist()
+    for row in table:
+        if row["metric_name"] == "http_server_request_count_total":
+            row["value"] += 1_000_000  # process đã chạy lâu trước khi artifact bắt đầu
+    pq.write_table(to_table(table, METRIC_SCHEMA), artifact / "metrics.parquet")
+    service_rows, _, _ = build_features(artifact)
+    first = next(
+        row for row in service_rows if row["service_name"] == "course" and row["window_start"] == T0
+    )
+    assert first["request_rate"] == pytest.approx(2.0 * 55 / 60)

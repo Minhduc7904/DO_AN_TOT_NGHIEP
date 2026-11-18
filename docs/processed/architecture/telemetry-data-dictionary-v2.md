@@ -266,7 +266,7 @@ Hệ quả cho feature pipeline: **mọi metric của runtime đã ngừng vẫn
 
 `uv run aiops-training features <artifact_dir>` ghi `features/service_windows.parquet`, `features/edge_windows.parquet` và `features/features-manifest.json` (`feature_version = feature.v0`, cấu hình cửa sổ, file đầu vào). Cửa sổ `[window_start, window_end)` dài 60 s, bước 15 s, mốc chia hết cho 15 s; theo [telemetry-and-ground-truth-schema-v1](telemetry-and-ground-truth-schema-v1.md) mục 11.1–11.2. Đặc trưng chỉ đọc telemetry, không đọc ground truth, fault manifest hay nhật ký workload.
 
-Quy tắc chung: mức tăng counter/histogram trong cửa sổ = tổng hiệu dương liên tiếp của từng series (mẫu gần nhất trước cửa sổ làm mốc; series mới coi giá trị trước là 0; counter reset đếm lại từ 0). Percentile tính từ hiệu bucket, nội suy như `histogram_quantile`.
+Quy tắc chung: mức tăng counter/histogram trong cửa sổ = tổng hiệu dương liên tiếp của từng series (mẫu gần nhất trước cửa sổ làm mốc; series xuất hiện giữa artifact coi giá trị trước là 0; series đã có từ đầu artifact — mẫu đầu trong vòng một bước scrape từ `time_start` — lấy mẫu đầu làm mốc để không đếm giá trị tích lũy từ lúc process khởi động; counter reset đếm lại từ 0). Percentile tính từ hiệu bucket, nội suy như `histogram_quantile`.
 
 ### 9.1. `service_windows.parquet` — một dòng cho mỗi (cửa sổ, runtime trong 11 `service.name`)
 
@@ -284,7 +284,7 @@ Quy tắc chung: mức tăng counter/histogram trong cửa sổ = tổng hiệu 
 | `log_error_rate`, `log_count` | float, int | dòng/s, dòng | Log `level ∈ {error, fatal}` ÷ 60; tổng số dòng log |
 | `missing_metrics` | bool | — | Chưa có mẫu nhịp tim nào của runtime tới cuối cửa sổ |
 | `missing_traces`, `missing_logs` | bool | — | Modality `missing` trong manifest artifact |
-| `telemetry_silent` | bool | — | Runtime đã có mẫu nhịp tim trước đó nhưng `process_cpu_time_seconds_total` không tăng trong cửa sổ (mục 8.2). Khi `true`, các đặc trưng tốc độ/độ trễ/CPU/bộ nhớ là null, không phải 0 |
+| `telemetry_silent` | bool | — | Runtime đã có mẫu nhịp tim trước đó nhưng `process_cpu_time_seconds_total` không tăng trong cửa sổ (mục 8.2). Khi `true`, các đặc trưng tốc độ/độ trễ/CPU/bộ nhớ là null, không phải 0. Khác cờ cùng tên của `quality-report` (mục 8.2: khoảng không tăng > 30 s ở bất kỳ đâu trong run): ở mức cửa sổ chỉ gắn khi **cả 60 s** không tăng, nên lần dừng ngắn hơn một cửa sổ hoặc vắt qua mép cửa sổ chỉ làm `cpu_usage` giảm chứ không gắn cờ |
 
 ### 9.2. `edge_windows.parquet` — một dòng cho mỗi (cửa sổ, cạnh `caller_service → dependency_identity` có trong metric)
 
@@ -302,7 +302,7 @@ Khác logical schema v1 mục 11.2: đặc trưng cạnh v0 lấy từ **metric*
 
 ### 9.3. Kết quả trên run thử có fault (18/11/2026)
 
-Artifact `w14-t05-fault-trial` (15 phút, tải nền k6 mức 1, bốn case bật lần lượt): 59 cửa sổ, 649 dòng service, 2.360 dòng cạnh (40 cạnh), chạy trong ~49 s. Trung vị đặc trưng của thành phần gốc trước → trong cửa sổ fault: C2 `course→course-postgres` `duration_mean` 1,3 ms → 377 ms; C4 `media→media-minio` 1,2 ms → 365 ms; C3 `ai-worker→ai-llm-provider` 1,2 ms → 31,7 s; C6 `gateway→gateway-identity-token` `error_ratio` 0 → 1,0 và `identity` có `telemetry_silent = true` ở 6 cửa sổ trong lúc bị pause (bắt đầu 05:18:00–05:19:15 UTC).
+Artifact `w14-t05-fault-trial` (15 phút, tải nền k6 mức 1, bốn case bật lần lượt): 59 cửa sổ, 649 dòng service, 2.360 dòng cạnh (40 cạnh), chạy trong ~47 s, bộ nhớ đỉnh ~1,2 GB (đọc từng metric theo cột; artifact 48 phút dự kiến gấp ~3 lần, kiểm `free -h` trước khi chạy). Trung vị đặc trưng của thành phần gốc trước → trong cửa sổ fault: C2 `course→course-postgres` `duration_mean` 1,3 ms → 377 ms; C4 `media→media-minio` 1,2 ms → 365 ms; C3 `ai-worker→ai-llm-provider` 1,2 ms → 31,7 s; C6 `gateway→gateway-identity-token` `error_ratio` 0 → 1,0 và `identity` có `telemetry_silent = true` ở 6 cửa sổ trong lúc bị pause (bắt đầu 05:18:00–05:19:15 UTC).
 
 ## 10. Giới hạn và việc tiếp theo
 
