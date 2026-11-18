@@ -2,7 +2,7 @@
 
 Module này tạo ra các "sự cố có kiểm soát" để sinh dữ liệu cho anomaly detection và RCA. Nó không sửa code LMS (LMS đóng băng theo [ADR-006](../../docs/processed/adr/adr-006-trim-project-scope-v1.md)); mọi thứ nằm trong một file Compose ghép thêm vào stack đầy đủ.
 
-Kế hoạch: [plan v0.3 tuần 13–14](../../docs/processed/plan/plan-v0.3-24-weeks.md). Case: [case catalogue v0](../../docs/processed/architecture/complex-case-catalogue-and-rca-result-v0.md) và phần C2 viết lại ở ADR-006.
+Kế hoạch: [plan v0.4 tuần 13–14](../../docs/processed/plan/plan-v0.4-24-weeks.md). Case: [case catalogue v0](../../docs/processed/architecture/complex-case-catalogue-and-rca-result-v0.md) và phần C2 viết lại ở ADR-006.
 
 ## Thành phần
 
@@ -20,7 +20,7 @@ Ba proxy, đặt tên theo đường kết nối:
 | `media-to-minio` | `media` → `minio:9000` | `media-minio` (ghi bởi `media`) | C4 |
 | `media-worker-to-minio` | `media-worker` → `minio:9000` | `media-minio` (ghi bởi `media-worker`) | C4 |
 
-C3 dùng `llm-stub`. C6 không cần module này: `docker pause` container `identity` như [`tracing-smoke`](../../lms/test/observability/tracing-smoke.mjs) đã chạy.
+C3 dùng `llm-stub`. C6 dùng lệnh `container pause identity` của `fault-control.mjs` (`docker pause`, như [`tracing-smoke`](../../lms/test/observability/tracing-smoke.mjs) đã chạy); overlay đặt `IDENTITY_SERVICE_TOKEN_TTL_SECONDS=60` (biến `FAULTS_SERVICE_TOKEN_TTL_SECONDS`) cho `identity` ở **mọi** run để khoảng yên lặng ngắn lại mà healthy và fault run vẫn cùng cấu hình.
 
 Proxy **luôn nằm trên đường đi**, kể cả ở run healthy, để run healthy và run có lỗi có cùng topology mạng. Độ trễ nền đo bằng `pgbench` (`SELECT 1`, 1 kết nối, 15 giây, 17/11/2026): đi thẳng `postgres` 0,015 ms mỗi truy vấn, qua `toxiproxy` 0,034 ms — chênh khoảng 0,02 ms, không đáng kể so với vài mili giây của một truy vấn thật trong `course`.
 
@@ -59,6 +59,9 @@ node $CLI llm set --latency-ms 30000 --jitter-ms 5000   # C3: provider chậm
 node $CLI llm set --error-rate 0.3 --error-status 503   # C3: lỗi ngắt quãng (chuỗi lỗi theo seed)
 node $CLI llm set --error-rate 1 --error-mode disconnect # cắt kết nối thay vì trả lỗi HTTP
 node $CLI llm reset                                     # về mặc định
+
+node $CLI container pause identity                      # C6: docker pause aiops-lms-identity-1
+node $CLI container unpause identity
 ```
 
 Mỗi lệnh in **một dòng JSON** có `ts` (UTC), `ok`, hành động và kết quả. Runner (tuần 15) ghi các dòng này vào nhật ký run làm dấu vết thời điểm fault thật. LLM stub cũng ghi một dòng `control.updated` vào log container mỗi lần đổi cấu hình.
@@ -75,7 +78,31 @@ Mỗi lệnh in **một dòng JSON** có `ts` (UTC), `ok`, hành động và k�
 - Upload trực tiếp từ client lên MinIO (presigned POST tới `MINIO_PUBLIC_URL`) **không đi qua proxy**; proxy chỉ chặn kết nối phía server của `media` và `media-worker` (kiểm tra object, promote, đọc nội dung, thumbnail, xóa).
 - `course-to-postgres` chỉ áp cho `course`; các service khác vẫn nối thẳng `postgres`, đúng với C2 (`root_cause_component=course-postgres`).
 - Metric bộ đếm lỗi (ví dụ `lms_dependency_request_count_total{status="unavailable"}`) là **chuỗi mới** khi lỗi đầu tiên xảy ra; `increase()`/`rate()` của Prometheus không đếm mẫu đầu của chuỗi mới nên có thể trả 0 cho đợt lỗi đầu. Feature pipeline phải xử lý chuỗi xuất hiện giữa cửa sổ (đọc giá trị thô, coi giá trị trước đó là 0).
-- Chưa có fault manifest và lịch bật/tắt theo run (tuần 14), chưa có ghi ground truth (tuần 14–15).
+- `container pause|unpause` chỉ nhận 11 service runtime của LMS; tên container là `<COMPOSE_PROJECT_NAME>-<service>-1` (mặc định `aiops-lms`).
+
+## Fault manifest và bộ chạy lịch
+
+[`manifests/fault-manifest-v1.json`](manifests/fault-manifest-v1.json) mô tả 4 case MVP theo [case catalogue v0](../../docs/processed/architecture/complex-case-catalogue-and-rca-result-v0.md) và [telemetry-and-ground-truth-schema-v1](../../docs/processed/architecture/telemetry-and-ground-truth-schema-v1.md) mục 9: nhãn ground truth (`fault_type`, `root_cause_service`, `root_cause_component`), lệnh bật/tắt (chính là tham số dòng lệnh của `fault-control.mjs`), thời lượng, điều kiện tiên quyết.
+
+| Case | Bật | Gỡ | Thời lượng khởi đầu |
+| --- | --- | --- | --- |
+| C2 | `latency course-to-postgres 200 --jitter 20` | `clear course-to-postgres` | 600 s |
+| C3 | `llm set --latency-ms 30000 --jitter-ms 5000` | `llm reset` | 600 s |
+| C4 | `latency media-to-minio 300 --jitter 30` và `media-worker-to-minio` như vậy | `clear` hai proxy | 600 s |
+| C6 | `container pause identity` (cần TTL token dịch vụ 60 s) | `container unpause identity` | 300 s |
+
+Mọi giá trị là **điểm khởi đầu trước pilot**; pilot tuần 15 chốt thời lượng và cường độ (evaluation-protocol-v1 mục 6.1, 7.3). Run 48 phút: phút 0–6 warm-up, fault mặc định bắt đầu ở phút 18, sau khi gỡ giữ ít nhất 10 phút recovery.
+
+```bash
+S=aiops-platform/faults/fault-schedule.mjs
+node $S validate                                         # kiểm manifest
+node $S plan --case C2                                   # in lịch: activate_at_s, deactivate_at_s
+node $S plan --case C4 --align-peak aiops-platform/load/data/plans/moodle-normal-mixed-k4-v1.json
+node $S run --case C6 --run-start 2026-11-18T05:00:00Z --log results/<run_id>/faults.jsonl
+```
+
+- `--align-peak <kế hoạch phát lại>`: đặt cửa sổ fault vào đoạn có nhiều phiên bắt đầu nhất (ADR-007: mỗi case có ít nhất một run fault trùng cao điểm tải), vẫn giữ warm-up và recovery.
+- `run` kiểm điều kiện tiên quyết (`docker inspect` biến môi trường của container), chờ tới mốc, bật, chờ, gỡ. Mỗi sự kiện là một dòng JSON có `ts` UTC thật (`fault.precheck`, `fault.scheduled`, `fault.activate` kèm `drift_ms`, `fault.deactivate`); đây là nguồn `fault_start`/`fault_end` của `RunGroundTruth`. Bật lỗi một phần thì gỡ ngay; Ctrl-C/SIGTERM luôn gỡ fault trước khi thoát (mã 130).
 
 ## Bằng chứng kiểm chứng (17/11/2026)
 
