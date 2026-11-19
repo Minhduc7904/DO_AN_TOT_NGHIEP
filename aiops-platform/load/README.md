@@ -216,6 +216,38 @@ Tiêu chí "khỏe" mục 8.4 của run r4 (`docker stats` mỗi 15 s; p95 Gatew
 - **Lỗi còn lại đều có nguyên nhân đã biết:** 401 `SERVICE_TOKEN_INVALID` rải rác (token service–service TTL 60 s đặt cho mọi run để run healthy và fault cùng cấu hình; gây các phiên `auth_failed`); status 0 (EOF) ở `PUT …/progress`, `POST …/submit`, thử lại thành công; 1 lần 503 `DEPENDENCY_UNAVAILABLE` ở `POST …/ai-jobs` (job AI giảng viên).
 - Grafana đứng sát ngưỡng 85% (giới hạn 512 MiB) dù không ai mở dashboard trong run; cần theo dõi ở pilot tuần 15.
 
+## Chấm tiêu chí "khỏe" (`tools/health-check.mjs`)
+
+Tiêu chí của [workload-design-v1 mục 8.4](../../docs/processed/architecture/workload-design-v1.md) (bảng ở đầu `tools/health.mjs`). Cần mẫu CPU/bộ nhớ lấy trong lúc run:
+
+```bash
+# Song song với run (dừng bằng Ctrl+C hoặc kill sau run)
+node aiops-platform/load/tools/sample-docker-stats.mjs --out aiops-platform/load/results/<run_id>-stats.jsonl
+# Sau run (Prometheus giữ 24 giờ)
+node aiops-platform/load/tools/health-check.mjs aiops-platform/load/results/<run_id> \
+  --stats aiops-platform/load/results/<run_id>-stats.jsonl [--phase deadline] --out health.json
+```
+
+- p95 Gateway theo cửa sổ 60 s lấy từ Prometheus; phản hồi ngoài mong đợi là request có `outcome` `retried`, `failed` hoặc `unexpected_status` trong `actions.jsonl` (bỏ dòng `WAIT`); phiên bỏ ngang đếm theo giờ bắt đầu phiên.
+- CPU quy theo giới hạn CPU của container (Docker báo % của một core; không đặt giới hạn thì so với một core); chỉ xét container của project (`aiops-lms-*`), container k6 dùng để phân biệt nguyên nhân phía máy.
+- Restart/OOM đọc bằng `docker inspect` của container trong project.
+
+## Tìm điểm gãy `λ_knee` (`scenarios/knee.js`)
+
+Theo workload-design-v1 mục 8.4 bước 1: chỉ học viên pha `normal`, tốc độ bắt đầu phiên không đổi trong mỗi bậc 3 phút, bắt đầu từ `KNEE_START_RATE` (mặc định 0,2) và tăng 0,2 phiên/s mỗi bậc (`KNEE_RATE_STEP`, `KNEE_STEP_S`) tới `KNEE_MAX_RATE` (mặc định 6: 30 bậc, 90 phút). Mỗi bậc là một scenario `constant-arrival-rate` riêng nên tóm tắt có số iteration và `dropped_iterations` theo bậc. Phiên lấy lần lượt từ kế hoạch `normal-mixed` (phiên thật của log Moodle), dùng vòng khi hết; tài khoản gán theo lịch của bậc như mục 13.4 (`lib/knee.js`).
+
+```bash
+# Stack đầy đủ + lớp fault (TTL token 60 s như run thí nghiệm), dữ liệu seed small/42
+node aiops-platform/load/tools/sample-docker-stats.mjs --out aiops-platform/load/results/w15-t02-knee-r1-stats.jsonl \
+  --min-available-mb 1500 --stop-image grafana/k6:1.3.0 &
+RUN_ID=w15-t02-knee-r1 WORKLOAD_SEED=21 aiops-platform/load/run-k6.sh knee --quiet
+kill %1
+node aiops-platform/load/tools/health-check.mjs aiops-platform/load/results/w15-t02-knee-r1 \
+  --stats aiops-platform/load/results/w15-t02-knee-r1-stats.jsonl --steps --out knee-health.json
+```
+
+`--steps` chấm từng bậc (bỏ 60 s đầu mỗi bậc làm khoảng chuyển tiếp) và in `λ_knee` = tốc độ của bậc khỏe cuối cùng trước bậc đầu tiên không khỏe, tiêu chí bị vi phạm và nguyên nhân: `client` (k6 bỏ iteration, container k6 hết CPU, RAM máy dưới 1,5 GB) hoặc `system` (stack). Phiên trung bình bận khoảng 208 s, nên trên khoảng 4,6 phiên/s số phiên đồng thời vượt 1.000 tài khoản học viên của seed `small`; tóm tắt ghi `accounts_overlapping` theo bậc và bậc có 409 do dùng chung tài khoản được xếp nguyên nhân `client` (`seed_accounts_exhausted`). Muốn đo cao hơn thì nạp thêm học viên seed và đặt `SEED_STUDENTS` tương ứng, ghi rõ vì dữ liệu lớn hơn làm phép đo thận trọng hơn. Lưới an toàn: lỗi tích lũy quá 30% thì k6 tự dừng; bộ lấy mẫu dừng k6 khi RAM trống của máy dưới ngưỡng.
+
 ## Bằng chứng (17/11/2026)
 
 Stack đầy đủ + lớp fault, seed `small` (`--seed 42`), `RUN_ID=k6-level1-evidence-20261117`, mặc định (2 phút, 1 VU mỗi hành trình):

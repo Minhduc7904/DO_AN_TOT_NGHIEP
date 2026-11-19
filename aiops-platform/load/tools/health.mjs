@@ -1,0 +1,220 @@
+/**
+ * Tiêu chí "khỏe" của workload-design-v1 mục 8.4, tính trên một khoảng thời gian (cả run hoặc một bậc
+ * của run tìm điểm gãy). Chỉ có hàm thuần; đọc file, Prometheus và docker nằm ở `health-check.mjs`.
+ *
+ * | Tiêu chí | Ngưỡng |
+ * | p95 thời gian phản hồi tại Gateway, mỗi cửa sổ 60 s | < 1 s (normal), < 2 s (deadline/spike) |
+ * | Tỉ lệ phản hồi ngoài danh sách mong đợi | < 0,5% |
+ * | Phiên bỏ ngang (impatient, too_many_errors, auth_failed) | < 1% |
+ * | `dropped_iterations` của k6 | 0 |
+ * | CPU từng container (theo giới hạn CPU của nó, không giới hạn thì theo 1 core) | < 80% kéo dài quá 1 phút |
+ * | Bộ nhớ từng container | < 85% giới hạn; không restart, không OOM |
+ * | Dòng `unexpected_status` | 0 |
+ */
+
+export const HEALTH_LIMITS = Object.freeze({
+  p95_s: Object.freeze({ normal: 1, deadline: 2 }),
+  unexpected_rate: 0.005,
+  abandoned_share: 0.01,
+  cpu_perc: 80,
+  cpu_sustain_s: 60,
+  mem_perc: 85,
+});
+
+export const ABANDON_REASONS = Object.freeze(['impatient', 'too_many_errors', 'auth_failed']);
+/** Mỗi dòng của actions.jsonl là một request; các outcome này là phản hồi ngoài danh sách mong đợi. */
+export const UNEXPECTED_OUTCOMES = Object.freeze(['retried', 'failed', 'unexpected_status']);
+/** Container của bộ sinh tải (`docker run` của run-k6.sh không đặt tên, nên nhận theo image). */
+export const isClientContainer = (name, stats) => (stats.image ?? '').startsWith('grafana/k6') || /k6/u.test(name);
+/** Container thuộc hệ thống được đo: theo tiền tố tên project Compose. */
+export const DEFAULT_SYSTEM_PREFIX = 'aiops-lms-';
+
+const inWindow = (ms, from, to) => ms >= from && ms < to;
+
+/** Request, phản hồi ngoài mong đợi, phiên bắt đầu trong `[from, to)` (mili giây). */
+export function trafficStats({ actions, sessions, from, to }) {
+  let requests = 0;
+  let unexpected = 0;
+  let unexpectedStatus = 0;
+  const byOutcome = {};
+  for (const action of actions) {
+    if (action.method === 'WAIT') continue;
+    if (!inWindow(Date.parse(action.ts), from, to)) continue;
+    requests += 1;
+    if (UNEXPECTED_OUTCOMES.includes(action.outcome)) {
+      unexpected += 1;
+      const key = `${action.outcome} ${action.status ?? ''} ${action.endpoint}`;
+      byOutcome[key] = (byOutcome[key] ?? 0) + 1;
+    }
+    if (action.outcome === 'unexpected_status') unexpectedStatus += 1;
+  }
+  let started = 0;
+  let abandoned = 0;
+  for (const session of sessions) {
+    if (!inWindow(Date.parse(session.start), from, to)) continue;
+    started += 1;
+    if (ABANDON_REASONS.includes(session.end_reason)) abandoned += 1;
+  }
+  return {
+    requests,
+    unexpected,
+    unexpected_rate: requests === 0 ? null : unexpected / requests,
+    unexpected_status: unexpectedStatus,
+    sessions_started: started,
+    abandoned,
+    abandoned_share: started === 0 ? null : abandoned / started,
+    unexpected_top: Object.entries(byOutcome)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5),
+  };
+}
+
+/**
+ * CPU/bộ nhớ theo container trong `[from, to)` từ mẫu của `sample-docker-stats.mjs`
+ * (`{ ts, name, cpu_perc, cpu_limit, mem_perc }`; dòng `name = "HOST"` có `mem_available_mb`, `cpu_perc`).
+ * CPU quy theo giới hạn: `cpu_perc / cpu_limit` (Docker báo % của một core).
+ */
+export function resourceStats(samples, from, to, { sampleS = 15 } = {}) {
+  const byName = new Map();
+  let hostMinAvailableMb = null;
+  let hostCpuMax = null;
+  for (const sample of samples) {
+    if (!inWindow(Date.parse(sample.ts), from, to)) continue;
+    if (sample.name === 'HOST') {
+      if (sample.mem_available_mb !== undefined) {
+        hostMinAvailableMb = Math.min(hostMinAvailableMb ?? Infinity, sample.mem_available_mb);
+      }
+      if (sample.cpu_perc !== undefined) hostCpuMax = Math.max(hostCpuMax ?? 0, sample.cpu_perc);
+      continue;
+    }
+    if (!byName.has(sample.name)) byName.set(sample.name, []);
+    byName.get(sample.name).push(sample);
+  }
+  const containers = {};
+  for (const [name, list] of byName) {
+    list.sort((a, b) => Date.parse(a.ts) - Date.parse(b.ts));
+    let run = 0;
+    let longest = 0;
+    let cpuMax = 0;
+    let memMax = 0;
+    for (const sample of list) {
+      const cpu = sample.cpu_perc / (sample.cpu_limit || 1);
+      cpuMax = Math.max(cpuMax, cpu);
+      memMax = Math.max(memMax, sample.mem_perc ?? 0);
+      run = cpu > HEALTH_LIMITS.cpu_perc ? run + 1 : 0;
+      longest = Math.max(longest, run);
+    }
+    containers[name] = {
+      image: list[0].image ?? null,
+      cpu_max_perc_of_limit: cpuMax,
+      // n mẫu liên tiếp trên ngưỡng phủ khoảng n × chu kỳ lấy mẫu.
+      cpu_over_limit_longest_s: longest * sampleS,
+      mem_max_perc: memMax,
+      samples: list.length,
+    };
+  }
+  return { containers, host_min_available_mb: hostMinAvailableMb, host_cpu_max_perc: hostCpuMax };
+}
+
+/**
+ * Chấm một khoảng. `p95` là `[[epoch_s, giá trị_s], …]` của p95 Gateway theo cửa sổ 60 s; chỉ tính cửa
+ * sổ kết thúc trong `(from, to]`. `restarts` là danh sách container restart/OOM trong khoảng.
+ */
+export function evaluateHealth({
+  p95,
+  actions,
+  sessions,
+  samples,
+  from,
+  to,
+  phase,
+  dropped,
+  restarts = [],
+  systemPrefix = DEFAULT_SYSTEM_PREFIX,
+}) {
+  const p95Limit = HEALTH_LIMITS.p95_s[phase === 'deadline' ? 'deadline' : 'normal'];
+  const windows = p95.filter(([t]) => t * 1000 > from && t * 1000 <= to).map(([, v]) => v);
+  const traffic = trafficStats({ actions, sessions, from, to });
+  const resources = resourceStats(samples, from, to);
+  const systemContainers = Object.entries(resources.containers).filter(([name]) => name.startsWith(systemPrefix));
+  const cpuOffenders = systemContainers
+    .filter(([, s]) => s.cpu_over_limit_longest_s > HEALTH_LIMITS.cpu_sustain_s)
+    .map(([name, s]) => `${name} ${s.cpu_over_limit_longest_s}s`);
+  const memOffenders = systemContainers
+    .filter(([, s]) => s.mem_max_perc >= HEALTH_LIMITS.mem_perc)
+    .map(([name, s]) => `${name} ${s.mem_max_perc.toFixed(1)}%`);
+  const p95Max = windows.length === 0 ? null : Math.max(...windows);
+  const criteria = {
+    gateway_p95: { value: p95Max, windows: windows.length, limit: p95Limit, pass: windows.length > 0 && p95Max < p95Limit },
+    unexpected_rate: {
+      value: traffic.unexpected_rate,
+      limit: HEALTH_LIMITS.unexpected_rate,
+      pass: traffic.unexpected_rate !== null && traffic.unexpected_rate < HEALTH_LIMITS.unexpected_rate,
+    },
+    abandoned_share: {
+      value: traffic.abandoned_share,
+      limit: HEALTH_LIMITS.abandoned_share,
+      pass: traffic.abandoned_share === null || traffic.abandoned_share < HEALTH_LIMITS.abandoned_share,
+    },
+    dropped_iterations: { value: dropped, limit: 0, pass: dropped === 0 },
+    cpu_sustained: { value: cpuOffenders, pass: cpuOffenders.length === 0 },
+    memory: { value: memOffenders, restarts, pass: memOffenders.length === 0 && restarts.length === 0 },
+    unexpected_status: { value: traffic.unexpected_status, limit: 0, pass: traffic.unexpected_status === 0 },
+  };
+  const failed = Object.entries(criteria)
+    .filter(([, c]) => !c.pass)
+    .map(([name]) => name);
+  return { pass: failed.length === 0, failed, criteria, traffic, resources };
+}
+
+/**
+ * Nguyên nhân khi một bậc không khỏe: phía máy/bộ sinh tải (k6 bỏ iteration, container k6 hết CPU, RAM
+ * máy cạn) hay phía hệ thống được đo.
+ */
+export function classifyCause(result, { hostMinMb = 1500, accountsOverlapping = 0 } = {}) {
+  const reasons = [];
+  // Hết tài khoản seed: hai phiên chạy cùng lúc trên một tài khoản sinh 409 do workload, không do stack.
+  if (accountsOverlapping > 0 && result.criteria.unexpected_status.value > 0) reasons.push('seed_accounts_exhausted');
+  if (result.criteria.dropped_iterations.value > 0) reasons.push('k6_dropped_iterations');
+  for (const [name, s] of Object.entries(result.resources.containers)) {
+    if (isClientContainer(name, s) && s.cpu_over_limit_longest_s > HEALTH_LIMITS.cpu_sustain_s) {
+      reasons.push(`k6_cpu ${name}`);
+    }
+  }
+  const host = result.resources.host_min_available_mb;
+  if (host !== null && host < hostMinMb) reasons.push(`host_ram ${host} MB`);
+  return { side: reasons.length > 0 ? 'client' : 'system', reasons };
+}
+
+/**
+ * Chấm từng bậc của run tìm điểm gãy. `λ_knee` là tốc độ của bậc khỏe cuối cùng trước bậc đầu tiên
+ * không khỏe (bậc 1 đã hỏng thì không xác định). Cửa sổ của bậc lùi 60 s đầu để bỏ phần chuyển tiếp.
+ */
+export function evaluateSteps({ summary, p95, actions, sessions, samples, restartsInRange = () => [], settleS = 60, overlapByStep = {} }) {
+  const startMs = Date.parse(summary.workload_start);
+  const results = summary.steps.map((step) => {
+    const from = startMs + (step.start_s + settleS) * 1000;
+    const to = startMs + (step.start_s + step.duration_s) * 1000;
+    const result = evaluateHealth({
+      p95,
+      actions,
+      sessions,
+      samples,
+      from,
+      to,
+      phase: summary.phase,
+      dropped: step.dropped_iterations,
+      restarts: restartsInRange(from, to),
+    });
+    const cause = result.pass ? null : classifyCause(result, { accountsOverlapping: overlapByStep[step.index] ?? 0 });
+    return { step: step.index, rate_per_s: step.rate_per_s, ...result, cause };
+  });
+  const firstFail = results.findIndex((r) => !r.pass);
+  const lastHealthy = firstFail === -1 ? results.at(-1) : firstFail === 0 ? null : results[firstFail - 1];
+  return {
+    lambda_knee_per_s: lastHealthy?.rate_per_s ?? null,
+    reached_max_rate: firstFail === -1,
+    first_unhealthy: firstFail === -1 ? null : { step: results[firstFail].step, rate_per_s: results[firstFail].rate_per_s, failed: results[firstFail].failed, cause: results[firstFail].cause },
+    steps: results,
+  };
+}

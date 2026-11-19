@@ -114,18 +114,22 @@ export function courseMapSetup() {
   return seedCourseMap(catalogueIds(probe.token));
 }
 
-export function runStudentIteration(setupData) {
-  const index = exec.scenario.iterationInTest;
-  if (index >= sessions.length) return;
-  const session = sessions[index];
+/**
+ * Phát một phiên của kế hoạch với tài khoản đã gán. `stream` đặt tên bộ sinh số và khóa phiên
+ * (`students` cho kế hoạch phát lại, giữ nguyên để run cũ tái lập được; `knee` cho run tìm điểm gãy).
+ */
+export function playPlanSession(
+  setupData,
+  { session, index, accountIndex, deadlineMs, stream = 'students' },
+) {
   const plan = studentSessionPlan({
     session,
     phase: PHASE,
     params: reactionParams,
-    rng: createRng(hash32(WORKLOAD_SEED, 'students-plan', index)),
+    rng: createRng(hash32(WORKLOAD_SEED, `${stream}-plan`, index)),
     seed: WORKLOAD_SEED,
     accounts: config.seedStudents,
-    accountIndex: assignment.bySession[index],
+    accountIndex,
   });
   playStudentSession({
     session,
@@ -133,8 +137,19 @@ export function runStudentIteration(setupData) {
     plan,
     params: reactionParams,
     setupData,
-    rng: createRng(hash32(WORKLOAD_SEED, 'students-behavior', index)),
-    sessionKey: `students-${index}`,
+    rng: createRng(hash32(WORKLOAD_SEED, `${stream}-behavior`, index)),
+    sessionKey: `${stream}-${index}`,
+    deadlineMs,
+  });
+}
+
+export function runStudentIteration(setupData) {
+  const index = exec.scenario.iterationInTest;
+  if (index >= sessions.length) return;
+  playPlanSession(setupData, {
+    session: sessions[index],
+    index,
+    accountIndex: assignment.bySession[index],
     deadlineMs: exec.scenario.startTime + (RUN_SECONDS + GRACE_S - 5) * 1000,
   });
 }
