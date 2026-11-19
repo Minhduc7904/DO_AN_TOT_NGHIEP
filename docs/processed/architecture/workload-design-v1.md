@@ -1051,7 +1051,7 @@ Một phiên = chuỗi sự kiện của một người dùng, cắt khi nghỉ 
 
 ### 13.4. Gán người dùng và khóa học sang dữ liệu seed
 
-- Mỗi người dùng Moodle được gán **cố định** một tài khoản `seed-student-N` (băm `userId` theo seed của run), nên một người có nhiều phiên vẫn là cùng một tài khoản.
+- Tài khoản `seed-student-N` gán **theo phiên**, không để hai phiên chạy cùng lúc trên một tài khoản. Phiên giữ tài khoản của phiên trước cùng người dùng khi tài khoản đó đã rảnh, nên các phiên nối tiếp của một người vẫn là cùng một tài khoản; tài khoản mới lấy theo hoán vị có seed của run (`accountAssignment` trong `aiops-platform/load/lib/reaction.js`, khoảng đệm 30 s giữa hai phiên trên một tài khoản). Quyết định 18/11/2026, thay quy tắc "mỗi người dùng một tài khoản cố định": lịch bắt đầu phiên bị nén còn think time thì không, nên hai phiên của **cùng** một người ngoài đời cách nhau ≥ 30 phút vẫn chạy chồng nhau khi phát lại (1.071 cặp ở `healthy-spike` k=4); phiên sau "tiếp tục" lượt làm quiz mà phiên trước đang mở rồi nộp, phiên trước lưu câu trả lời nhận 409 `QUIZ_ATTEMPT_ALREADY_SUBMITTED` — một `unexpected_status` của chính workload (run `w14-t03-healthy-spike-r2`: 39 dòng). Số tài khoản cần bằng đỉnh phiên đồng thời của kế hoạch (tính cả khoảng đệm): `healthy-spike` k=4 có đỉnh 914, vừa đủ với 1.000 tài khoản; tóm tắt run ghi `accounts_overlapping` (phải là 0).
 - Mỗi khóa Moodle (A–D) gán một khóa học seed đã xuất bản; bài học và quiz được chọn theo thứ tự xuất hiện trong phiên (không có id bài học thật trong log).
 - `ENROLL` vào khóa đã ghi danh trả 409 và được coi là bình thường (mục 6.2).
 
@@ -1101,7 +1101,7 @@ WESSBAS ghi nhận Markov bậc 1 có xu hướng sinh phiên dài hơn thật; 
 5. **Nén thời gian** dồn lưu lượng một ngày vào 48 phút; mức tải tuyệt đối không đại diện cho quy mô người dùng thật. Think time không nén nên đường cong tải bị làm trơn khoảng 1 "giờ".
 6. **Thời điểm đến cách đều** trong mỗi stage của k6, không phải Poisson. Nghiên cứu mạng kinh điển thường mô hình phiên đến theo Poisson với tốc độ theo giờ, nhưng tài liệu này chưa mở được toàn văn nguồn đó để kiểm chứng nên không dựa vào.
 7. **Ít job AI trong cửa sổ fault của C3** (ước lượng 6–7 phiên AI trong 10 phút): có thể phải tăng tỉ lệ I3 sau pilot (mục 8.5).
-8. **Tài khoản dùng lại:** 3.000 học viên ảo dùng 1.000 tài khoản seed nên có lúc một tài khoản có hai phiên song song (giống đăng nhập hai thiết bị); lượt làm quiz dở có thể bị phiên kia tiếp tục.
+8. **Tài khoản dùng lại:** số người ảo lớn hơn 1.000 tài khoản seed nên một tài khoản phục vụ nhiều người ảo ở các thời điểm khác nhau; mức 2+ không để hai phiên chạy cùng lúc trên một tài khoản (mục 13.4), nên không mô phỏng việc đăng nhập hai thiết bị cùng lúc. Dữ liệu của người trước (ghi danh, lượt làm bài) còn trên tài khoản khi người sau dùng.
 9. **Dữ liệu tăng trong run:** khóa nháp, media, lượt làm bài, người dùng mới tích lũy trong run; mỗi run bắt đầu từ trạng thái reset-and-seed nên không cộng dồn giữa các run.
 10. **Mức tải và tiêu chí "khỏe" chưa đo:** mọi con số tải, `maxVUs`, ngưỡng mục 8.4 và 10.2 chốt sau pilot.
 11. **Chi tiết k6 chưa thử:** cách chuyển console ra file, tag cho mỗi request, cách khai báo mã mong đợi theo từng request — mới đối chiếu tài liệu k6, chưa chạy thử; cài ở tuần 14 có thể phải điều chỉnh.

@@ -6,12 +6,12 @@
 | --- | --- |
 | Mã task | `task-03_build-staff-workload-and-healthy-profiles` |
 | Tuần | `week-14_2026-11-01_to_2026-11-07` |
-| Trạng thái | Đang thực hiện |
+| Trạng thái | Chờ review |
 | Người phụ trách | Bách |
 | Collaborator | Không có |
 | Ưu tiên | Cao |
 | Hạn dự kiến | 22/11/2026 (mốc bù tiến độ) |
-| Nhánh thực hiện | `feat/week-14/task-03-build-staff-workload-and-healthy-profiles` |
+| Nhánh thực hiện | `feat/week-14/task-03-build-staff-workload-and-healthy-profiles` (PR #88), `feat/week-14/task-03-healthy-profile-evidence` (PR tiếp theo) |
 
 ## Yêu cầu và phạm vi
 
@@ -44,10 +44,10 @@ Theo [workload-design-v1](../../../architecture/workload-design-v1.md) mục 5.7
 
 ## Definition of Done
 
-- [ ] Mỗi profile chạy trọn trên stack khỏe; W1–W7 đều có request thành công; không có `unexpected_status`; tiêu chí "khỏe" mục 8.4 được báo cáo.
-- [ ] `workload-manifest.json` đủ trường mục 11.2 và đủ để điền phần workload của `RunGroundTruth`.
-- [ ] Unit test cho máy trạng thái giảng viên/admin (chuyển trạng thái theo bảng, seed tái lập).
-- [ ] PR mở vào `main`; URL PR ghi vào card.
+- [x] Mỗi profile chạy trọn trên stack khỏe; W1–W7 đều có request thành công; không có `unexpected_status`; tiêu chí "khỏe" mục 8.4 được báo cáo.
+- [x] `workload-manifest.json` đủ trường mục 11.2 và đủ để điền phần workload của `RunGroundTruth`.
+- [x] Unit test cho máy trạng thái giảng viên/admin (chuyển trạng thái theo bảng, seed tái lập).
+- [x] PR mở vào `main`; URL PR ghi vào card.
 
 ## Liên kết hồ sơ thực hiện
 
@@ -60,5 +60,5 @@ Theo [workload-design-v1](../../../architecture/workload-design-v1.md) mục 5.7
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 18/11/2026 — đã merge PR #88 (phần code); ghi nhận hậu kiểm, giữ Đang thực hiện.
-- Ghi chú/tồn đọng: PR #88 đã merge phần code, unit test và run thử 3 phút; DoD 1 chưa đạt: hai profile cả ngày (`normal-mixed`, `healthy-spike`) chưa chạy trọn với code cuối, tiêu chí khỏe mục 8.4 chưa báo cáo. Run `w14-t03-normal-mixed-r1` (code trước sửa) bỏ 42 iteration nên không dùng. `healthy-spike` cần khoảng 1.000 VU dựng sẵn, chạy khi máy đủ RAM; bằng chứng đưa vào PR tiếp theo của task.
+- Cập nhật gần nhất: 18/11/2026 — hai profile cả ngày chạy trọn và đạt tiêu chí khỏe mục 8.4 (run `w14-t03-normal-mixed-r4`, `w14-t03-healthy-spike-r4`); bằng chứng ở [README của `aiops-platform/load/`](../../../../../aiops-platform/load/README.md#bằng-chứng-profile-18112026), đưa vào PR tiếp theo của task.
+- Ghi chú/tồn đọng: PR #88 đã merge phần code, unit test và run thử 3 phút. Run cả ngày lộ hai lỗi của workload, sửa trong PR tiếp theo: (1) hai phiên chạy cùng lúc trên một tài khoản seed — cả phiên của cùng một người dùng vì lịch nén còn think time thì không — làm phiên này nộp lượt làm quiz phiên kia đang làm (409 `QUIZ_ATTEMPT_ALREADY_SUBMITTED`, 39 dòng `unexpected_status` ở `healthy-spike-r2`); tài khoản nay gán theo phiên (workload-design mục 13.4 cập nhật); (2) setup không thử lại lỗi tạm thời, một 401 `SERVICE_TOKEN_INVALID` làm hỏng cả run `normal-mixed-r3`. Tempo nâng giới hạn 512 MiB → 1 GiB (bị OOM khi export, chạm 88% ở spike). Run r1–r3 giữ trong `results/` làm bằng chứng quá trình. Grafana đứng ở 83–84% giới hạn, theo dõi ở pilot tuần 15.
