@@ -1,0 +1,8 @@
+{
+  "schema": "run-spec.v1",
+  "split": "pilot",
+  "repeat_index": 0,
+  "workload": { "profile": "normal-mixed", "seed": 12 },
+  "fault": { "case": "C2" },
+  "notes": "Fault run C2 kiểm chứng runner (task-01 tuần 15); lịch mặc định của fault manifest v1."
+}
