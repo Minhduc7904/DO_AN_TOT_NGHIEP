@@ -141,6 +141,12 @@ test('chấm từng bậc: bậc chưa chạy hết thì không chấm; không b
   assert.equal(result.steps_not_run, 1);
   assert.equal(result.reached_max_rate, false);
   assert.equal(result.lambda_knee_per_s, 0.4);
+  // Bậc 60 s mà bỏ 60 s chuyển tiếp thì không còn gì để chấm.
+  const short = { ...summary, steps: summary.steps.map((step) => ({ ...step, duration_s: 60 })) };
+  assert.throws(() => evaluateSteps({ summary: short, p95, actions, sessions, samples: [] }), RangeError);
+  // Bậc không có request: nguyên nhân không xác định, không đổ cho hệ thống.
+  const empty = evaluateSteps({ summary, p95: [], actions: [], sessions: [], samples: [] });
+  assert.deepEqual(empty.first_unhealthy.cause, { side: 'unknown', reasons: ['no_data'] });
 });
 
 test('đọc docker stats: đơn vị bộ nhớ và phần trăm', () => {

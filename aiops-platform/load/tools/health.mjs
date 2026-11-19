@@ -172,6 +172,10 @@ export function evaluateHealth({
  * máy cạn) hay phía hệ thống được đo.
  */
 export function classifyCause(result, { hostMinMb = 1500, accountsOverlapping = 0 } = {}) {
+  // Không có request hoặc không có cửa sổ p95 trong khoảng chấm: không kết luận được bên nào.
+  if (result.criteria.gateway_p95.windows === 0 || result.criteria.unexpected_rate.value === null) {
+    return { side: 'unknown', reasons: ['no_data'] };
+  }
   const reasons = [];
   // Hết tài khoản seed: hai phiên chạy cùng lúc trên một tài khoản sinh 409 do workload, không do stack.
   if (accountsOverlapping > 0 && result.criteria.unexpected_status.value > 0) reasons.push('seed_accounts_exhausted');
@@ -217,6 +221,9 @@ export function droppedByStep(summary, sessions, { tolerance = 1, prefix = 'knee
  * không khỏe (bậc 1 đã hỏng thì không xác định). Cửa sổ của bậc lùi 60 s đầu để bỏ phần chuyển tiếp.
  */
 export function evaluateSteps({ summary, p95, actions, sessions, samples, restartsInRange = () => [], settleS = 60, overlapByStep = {} }) {
+  if (summary.steps.some((step) => settleS >= step.duration_s)) {
+    throw new RangeError(`settleS (${settleS} s) phải nhỏ hơn thời lượng bậc`);
+  }
   const startMs = Date.parse(summary.workload_start);
   const endMs = summary.workload_end ? Date.parse(summary.workload_end) : Infinity;
   const dropped = droppedByStep(summary, sessions);
