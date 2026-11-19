@@ -55,13 +55,13 @@ Theo [plan v0.4 tuần 15](../../plan-v0.4-24-weeks.md#tuần-15--experiment-run
 - [x] Run bị ngắt giữa chừng (thử bằng tín hiệu dừng) vẫn gỡ fault, ghi dòng ledger trạng thái lỗi và giữ artifact đã có.
 - [x] Từ một `run_id` truy ra được commit, config, seed, kế hoạch phiên, fault và vị trí artifact.
 - [x] Unit test chạy không cần stack đạt; runbook đủ các bước dựng stack và chạy hai loại run.
-- [ ] PR mở vào `main`; URL PR ghi vào card.
+- [x] PR mở vào `main`; URL PR ghi vào card.
 
 ## Liên kết hồ sơ thực hiện
 
 - Input workspace: Không tạo (giai đoạn tự bắt kịp; bằng chứng nằm trong PR).
 - Output workspace: Không tạo.
-- Pull request: Chưa tạo.
+- Pull request: [#93](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/93)
 - Kết quả review: Chưa review.
 
 > URL/số PR và `Chờ review` phải được commit/push vào PR head trước review. Thành viên còn lại phải gửi `APPROVED` hợp lệ trên GitHub; sau đó người phụ trách finalization metadata, ghi `Hoàn thành` trên chính branch/PR và tự merge task của mình. Card chỉ canonically hoàn thành khi commit đó vào nhánh canonical; xem [vòng đời task canonical](../../../rules/git-and-pull-request-rules.md#vòng-đời-task-canonical).
