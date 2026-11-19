@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { classifyCause, evaluateHealth, evaluateSteps, resourceStats, trafficStats } from './health.mjs';
+import { classifyCause, droppedByStep, evaluateHealth, evaluateSteps, resourceStats, trafficStats } from './health.mjs';
 import { parseSize, parseStatsLine } from './sample-docker-stats.mjs';
 
 const T0 = Date.parse('2026-11-19T10:00:00Z');
@@ -109,6 +109,38 @@ test('chấm từng bậc: λ_knee là bậc khỏe cuối trước bậc đầu
   const allHealthy = evaluateSteps({ summary, p95: p95.map(([t]) => [t, 0.1]), actions, sessions, samples: [] });
   assert.equal(allHealthy.reached_max_rate, true);
   assert.equal(allHealthy.lambda_knee_per_s, 0.6);
+});
+
+test('iteration bị bỏ theo bậc: suy từ số phiên bắt đầu trong bậc, bỏ lệch biên; tổng k6 bằng 0 thì 0', () => {
+  const steps = [1, 2].map((index) => ({ index, start_s: (index - 1) * 60, duration_s: 60, planned: 30 }));
+  const knee = (s, i) => ({ session_key: `knee-${i}`, start: at(s) });
+  // Bậc 1: đủ 30 phiên trừ 1 (lệch biên); bậc 2: chỉ 20 phiên bắt đầu. Phiên của scenario khác không tính.
+  const sessions = [
+    ...Array.from({ length: 29 }, (_, i) => knee(i * 2, i)),
+    ...Array.from({ length: 20 }, (_, i) => knee(60 + i * 3, 29 + i)),
+    { session_key: 'students-1', start: at(70) },
+  ];
+  const summary = { workload_start: at(0), steps, dropped_iterations: 10 };
+  assert.deepEqual(droppedByStep(summary, sessions), { 1: 0, 2: 10 });
+  assert.deepEqual(droppedByStep({ ...summary, dropped_iterations: 0 }, sessions), { 1: 0, 2: 0 });
+});
+
+test('chấm từng bậc: bậc chưa chạy hết thì không chấm; không bậc nào hỏng nhưng thiếu bậc thì chưa tới bậc tối đa', () => {
+  const summary = {
+    workload_start: at(0),
+    workload_end: at(400), // dừng giữa bậc 3
+    phase: 'normal',
+    dropped_iterations: 0,
+    steps: [1, 2, 3].map((index) => ({ index, rate_per_s: 0.2 * index, start_s: (index - 1) * 180, duration_s: 180, planned: 36 * index })),
+  };
+  const p95 = Array.from({ length: 9 }, (_, i) => [T0 / 1000 + 60 * (i + 1), 0.1]);
+  const actions = Array.from({ length: 400 }, (_, i) => action(i));
+  const sessions = Array.from({ length: 200 }, (_, i) => session(i * 2));
+  const result = evaluateSteps({ summary, p95, actions, sessions, samples: [] });
+  assert.equal(result.steps.length, 2);
+  assert.equal(result.steps_not_run, 1);
+  assert.equal(result.reached_max_rate, false);
+  assert.equal(result.lambda_knee_per_s, 0.4);
 });
 
 test('đọc docker stats: đơn vị bộ nhớ và phần trăm', () => {

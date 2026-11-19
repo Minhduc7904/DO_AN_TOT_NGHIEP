@@ -59,3 +59,22 @@ test('bậc bắt đầu từ startRate; đếm phiên dùng chung tài khoản 
   const total = Object.values(few.overlapByStep).reduce((a, b) => a + b, 0);
   assert.ok(total > 0 && few.overlapByStep[2] > 0);
 });
+
+test('một scenario cho mọi bậc: stage 0 s để nhảy bậc, giữ tốc độ trong bậc; tìm bậc theo chỉ số phiên', async () => {
+  const { kneeStages, kneeStepOf } = await import('./knee.js');
+  const s = kneeSteps({ rateStep: 0.2, maxRate: 0.6, stepS: 180 });
+  assert.deepEqual(kneeStages(s), {
+    startRate: 12,
+    timeUnit: '1m',
+    stages: [
+      { target: 12, duration: '180s' },
+      { target: 24, duration: '0s' },
+      { target: 24, duration: '180s' },
+      { target: 36, duration: '0s' },
+      { target: 36, duration: '180s' },
+    ],
+  });
+  // Bậc 1: phiên 0–35, bậc 2: 36–107, bậc 3: 108–215.
+  assert.deepEqual([0, 35, 36, 107, 108, 215].map((i) => kneeStepOf(s, i).index), [1, 1, 2, 2, 3, 3]);
+  assert.equal(kneeStepOf(s, 216), null);
+});

@@ -187,12 +187,42 @@ export function classifyCause(result, { hostMinMb = 1500, accountsOverlapping = 
 }
 
 /**
+ * Iteration bị bỏ theo bậc. k6 chỉ báo tổng (một scenario cho mọi bậc) và không tăng chỉ số iteration
+ * khi bỏ, nên suy từ số phiên bắt đầu trong khoảng thời gian của bậc so với số dự kiến. Lệch ±`tolerance`
+ * phiên ở biên bậc là do pha của lịch, không tính. Tổng của k6 bằng 0 thì mọi bậc bằng 0.
+ */
+export function droppedByStep(summary, sessions, { tolerance = 1, prefix = 'knee-' } = {}) {
+  const result = {};
+  const startMs = Date.parse(summary.workload_start);
+  for (const step of summary.steps) {
+    if (!(summary.dropped_iterations > 0)) {
+      result[step.index] = 0;
+      continue;
+    }
+    const from = startMs + step.start_s * 1000;
+    const to = from + step.duration_s * 1000;
+    const started = sessions.filter((s) => {
+      if (!s.session_key?.startsWith(prefix)) return false;
+      const t = Date.parse(s.start);
+      return t >= from && t < to;
+    }).length;
+    const missing = step.planned - started;
+    result[step.index] = missing > tolerance ? missing : 0;
+  }
+  return result;
+}
+
+/**
  * Chấm từng bậc của run tìm điểm gãy. `λ_knee` là tốc độ của bậc khỏe cuối cùng trước bậc đầu tiên
  * không khỏe (bậc 1 đã hỏng thì không xác định). Cửa sổ của bậc lùi 60 s đầu để bỏ phần chuyển tiếp.
  */
 export function evaluateSteps({ summary, p95, actions, sessions, samples, restartsInRange = () => [], settleS = 60, overlapByStep = {} }) {
   const startMs = Date.parse(summary.workload_start);
-  const results = summary.steps.map((step) => {
+  const endMs = summary.workload_end ? Date.parse(summary.workload_end) : Infinity;
+  const dropped = droppedByStep(summary, sessions);
+  // Bậc chưa chạy hết (k6 dừng sớm: lỗi quá ngưỡng an toàn, RAM máy cạn) không được chấm.
+  const complete = summary.steps.filter((step) => startMs + (step.start_s + step.duration_s) * 1000 <= endMs);
+  const results = complete.map((step) => {
     const from = startMs + (step.start_s + settleS) * 1000;
     const to = startMs + (step.start_s + step.duration_s) * 1000;
     const result = evaluateHealth({
@@ -203,17 +233,19 @@ export function evaluateSteps({ summary, p95, actions, sessions, samples, restar
       from,
       to,
       phase: summary.phase,
-      dropped: step.dropped_iterations,
+      dropped: step.dropped_iterations ?? dropped[step.index],
       restarts: restartsInRange(from, to),
     });
     const cause = result.pass ? null : classifyCause(result, { accountsOverlapping: overlapByStep[step.index] ?? 0 });
     return { step: step.index, rate_per_s: step.rate_per_s, ...result, cause };
   });
   const firstFail = results.findIndex((r) => !r.pass);
-  const lastHealthy = firstFail === -1 ? results.at(-1) : firstFail === 0 ? null : results[firstFail - 1];
+  const lastHealthy = firstFail === -1 ? (results.at(-1) ?? null) : firstFail === 0 ? null : results[firstFail - 1];
   return {
     lambda_knee_per_s: lastHealthy?.rate_per_s ?? null,
-    reached_max_rate: firstFail === -1,
+    reached_max_rate: firstFail === -1 && complete.length === summary.steps.length,
+    steps_not_run: summary.steps.length - complete.length,
+    k6_dropped_iterations: summary.dropped_iterations ?? null,
     first_unhealthy: firstFail === -1 ? null : { step: results[firstFail].step, rate_per_s: results[firstFail].rate_per_s, failed: results[firstFail].failed, cause: results[firstFail].cause },
     steps: results,
   };

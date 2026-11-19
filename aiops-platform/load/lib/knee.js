@@ -37,6 +37,26 @@ export function kneeSteps({ rateStep = 0.2, maxRate = 6, stepS = 180, startRate 
   return steps;
 }
 
+/**
+ * Lịch của một scenario `ramping-arrival-rate` duy nhất cho mọi bậc: tốc độ giữ nguyên trong bậc, nhảy
+ * ngay sang bậc sau bằng stage dài 0 s. Một scenario dùng chung một bể VU: nếu mỗi bậc là một scenario
+ * riêng có `gracefulStop` tới cuối run thì k6 coi mọi bậc chạy đồng thời và dựng sẵn tổng VU của 30 bậc
+ * (`k6 inspect --execution-requirements` báo khoảng 12.000 VU).
+ */
+export function kneeStages(steps) {
+  const stages = [];
+  for (const [i, step] of steps.entries()) {
+    if (i > 0) stages.push({ target: step.rate_per_min, duration: '0s' });
+    stages.push({ target: step.rate_per_min, duration: `${step.duration_s}s` });
+  }
+  return { startRate: steps[0].rate_per_min, timeUnit: '1m', stages };
+}
+
+/** Bậc chứa phiên thứ `globalIndex` của lịch (theo số phiên dự kiến cộng dồn). */
+export function kneeStepOf(steps, globalIndex) {
+  return steps.find((step) => globalIndex >= step.offset && globalIndex < step.offset + step.planned) ?? null;
+}
+
 /** Tên scenario k6 của một bậc (`step_01`, `step_02`, …). */
 export function stepName(index) {
   return `step_${String(index).padStart(2, '0')}`;
