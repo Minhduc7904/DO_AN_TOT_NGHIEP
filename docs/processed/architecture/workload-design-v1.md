@@ -636,7 +636,7 @@ Schroeder và cs. (2006) chỉ ra website giống mô hình **partly-open**: ng�
 - **Số phiên bắt đầu** theo lịch (executor `ramping-arrival-rate` của k6, mô hình mở);
 - **Bên trong phiên** là hành vi tuần tự có think time (phần "đóng" của partly-open).
 
-Khi fault làm phiên dài ra, số VU đang chạy tăng lên (vì phiên mới vẫn đến), đúng như người thật. Nếu hết VU dự trữ, k6 bỏ phiên và tăng `dropped_iterations`; con số này được ghi lại như một triệu chứng phía người dùng.
+Khi fault làm phiên dài ra, số VU đang chạy tăng lên (vì phiên mới vẫn đến), đúng như người thật. Nếu hết VU dựng sẵn, k6 bỏ phiên và tăng `dropped_iterations`. Đó là giới hạn của bộ sinh tải chứ không phải hành vi người dùng (người thật vẫn đến); kế hoạch phiên bị lệch nên run như vậy không dùng làm dữ liệu ([README `load/`](../../../aiops-platform/load/README.md)). Vì vậy VU dựng sẵn phải đủ cho phiên dài ra khi có fault (mục 8.4).
 
 ### 7.2. Nén một ngày
 
