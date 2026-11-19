@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-01_build-experiment-runner` |
 | Tuần | `week-15_2026-11-08_to_2026-11-14` |
-| Trạng thái | Đã giao |
+| Trạng thái | Chờ review |
 | Người phụ trách | Bách |
 | Collaborator | Không có |
 | Ưu tiên | Cao |
@@ -51,10 +51,10 @@ Theo [plan v0.4 tuần 15](../../plan-v0.4-24-weeks.md#tuần-15--experiment-run
 
 ## Definition of Done
 
-- [ ] Một lệnh chạy trọn một run healthy và một fault run trên stack đầy đủ: artifact có telemetry, quality report, `RunGroundTruth` (fault run có `fault_start`/`fault_end` từ nhật ký fault), feature, run manifest; ledger có đủ dòng.
-- [ ] Run bị ngắt giữa chừng (thử bằng tín hiệu dừng) vẫn gỡ fault, ghi dòng ledger trạng thái lỗi và giữ artifact đã có.
-- [ ] Từ một `run_id` truy ra được commit, config, seed, kế hoạch phiên, fault và vị trí artifact.
-- [ ] Unit test chạy không cần stack đạt; runbook đủ các bước dựng stack và chạy hai loại run.
+- [x] Một lệnh chạy trọn một run healthy và một fault run trên stack đầy đủ: artifact có telemetry, quality report, `RunGroundTruth` (fault run có `fault_start`/`fault_end` từ nhật ký fault), feature, run manifest; ledger có đủ dòng.
+- [x] Run bị ngắt giữa chừng (thử bằng tín hiệu dừng) vẫn gỡ fault, ghi dòng ledger trạng thái lỗi và giữ artifact đã có.
+- [x] Từ một `run_id` truy ra được commit, config, seed, kế hoạch phiên, fault và vị trí artifact.
+- [x] Unit test chạy không cần stack đạt; runbook đủ các bước dựng stack và chạy hai loại run.
 - [ ] PR mở vào `main`; URL PR ghi vào card.
 
 ## Liên kết hồ sơ thực hiện
@@ -68,5 +68,12 @@ Theo [plan v0.4 tuần 15](../../plan-v0.4-24-weeks.md#tuần-15--experiment-run
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 19/11/2026 — lập card.
+- Cập nhật gần nhất: 19/11/2026 — runner, runbook, unit test 15/15; ba run thật qua runner trên stack đầy đủ (máy Linux), review bằng agent riêng, đã sửa các lỗi review tìm ra.
+- Bằng chứng (chi tiết trong mô tả PR):
+  - `pilot-healthy-normal-mixed-s11-20261119t084224z`: đủ bước reset → seed → k6 → export → quality → ground truth → feature (68 phút). Gate thực thi `pass` (1.349 phiên, lỗi 0,08%, p95 38 ms, `dropped_iterations` 0); `RunGroundTruth` `valid`. Chất lượng dữ liệu `fail`: export log từ Loki hết thời gian chờ 15 s khi máy đang dùng hết swap. Đã sửa: runner truyền timeout 60 s (`--export-timeout-s`).
+  - `pilot-c2-normal-mixed-s12-20261119t095053z`: fault bật đúng mốc (lệch 31 ms so với `workload_start` + 1.080 s), kéo dài 600 s; kiểm chứng của `RunGroundTruth` đạt (latency `course-postgres` từ 1,1 ms lên 288 ms); chất lượng `partial` (trace theo ngân sách 20.000 trace). Gate thực thi `fail` vì k6 bỏ 1 iteration (fault làm phiên dài ra, vượt 230 VU dựng sẵn): đúng quy tắc của load/README, run không dùng làm dữ liệu.
+  - `pilot-c2-normal-mixed-s13-20261119t110230z`: gửi SIGINT 60 s sau khi fault bật. Toxic được gỡ, k6 kịp ghi tóm tắt, ledger ghi `aborted`, artifact giữ nguyên, `RunGroundTruth` `invalid` (`fault_aborted`), không còn lock.
 - Ghi chú/tồn đọng:
+  - Fault run cần nhiều VU dựng sẵn hơn run healthy (fault làm phiên dài ra); chốt cùng mức tải ở task-02, kiểm ở task-03. Câu "con số này được ghi lại như một triệu chứng phía người dùng" ở workload-design-v1 mục 7.1 mâu thuẫn với load/README (iteration bị bỏ thì run không dùng làm dữ liệu); sửa câu đó khi task-02 cập nhật workload-design.
+  - Timeout export 60 s cần xác nhận lại ở run đầu tiên của task-03 (log phải `available`).
+  - Ba run trên là run pilot kiểm chứng runner, không thuộc dataset.
