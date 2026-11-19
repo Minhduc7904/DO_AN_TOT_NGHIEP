@@ -11,7 +11,7 @@
 | Collaborator | Không có |
 | Ưu tiên | Cao |
 | Hạn dự kiến | 24/11/2026 (mốc bù tiến độ) |
-| Nhánh thực hiện | `feat/week-14/task-04-validate-workload-realism` |
+| Nhánh thực hiện | `feat/week-14/task-04-validate-workload-realism` (PR #89), `feat/week-14/task-04-realism-rerun` (PR #91, đo lại trên code cuối) |
 
 ## Yêu cầu và phạm vi
 
@@ -52,12 +52,12 @@ Theo [ADR-007](../../../adr/adr-007-semi-real-workload-and-ai-evidence-v1.md) m�
 
 - Input workspace: Không tạo (giai đoạn tự bắt kịp; bằng chứng nằm trong PR).
 - Output workspace: Không tạo.
-- Pull request: [#89](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/89).
-- Kết quả review: Không có GitHub `APPROVED` (giai đoạn tự bắt kịp; CI GitHub bị khóa thanh toán, kiểm tra chạy cục bộ, kết quả trong PR). Không có review ngoài GitHub cho PR này. PR #89 được Bách (người phụ trách) merge ngày 18/11/2026 trước khi finalization; card chuyển `Hoàn thành` bằng commit ghi nhận hậu kiểm trên `main` theo yêu cầu của Bách.
+- Pull request: [#89](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/89); [#91](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/91) (đo lại trên code cuối).
+- Kết quả review: Không có GitHub `APPROVED` (giai đoạn tự bắt kịp; CI GitHub bị khóa thanh toán, kiểm tra chạy cục bộ, kết quả trong PR). Không có review ngoài GitHub cho PR này. PR #89 được Bách (người phụ trách) merge ngày 18/11/2026 trước khi finalization; card chuyển `Hoàn thành` bằng commit ghi nhận hậu kiểm trên `main` theo yêu cầu của Bách. PR #91 (đo lại trên code cuối, chỉ tài liệu) cũng không có GitHub `APPROVED`, CI bị khóa thanh toán; Bách (người phụ trách) xác nhận merge ngày 19/11/2026.
 
 > URL/số PR và `Chờ review` phải được commit/push vào PR head trước review. Thành viên còn lại phải gửi `APPROVED` hợp lệ trên GitHub; sau đó người phụ trách finalization metadata, ghi `Hoàn thành` trên chính branch/PR và tự merge task của mình. Card chỉ canonically hoàn thành khi commit đó vào nhánh canonical; xem [vòng đời task canonical](../../../rules/git-and-pull-request-rules.md#vòng-đời-task-canonical).
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 18/11/2026 — đã merge PR #89; ghi nhận hậu kiểm, chuyển Hoàn thành.
-- Ghi chú/tồn đọng: Báo cáo [workload-realism-report-v1](../../../architecture/workload-realism-report-v1.md) là lần đo pilot: chưa nguồn nào đạt đủ ngưỡng chốt trước (bán thực 5/7). Phải chạy lại ba run trên code workload cuối cùng (TTL token mặc định) trước khi thu dữ liệu tuần 15.
+- Cập nhật gần nhất: 19/11/2026 — chạy lại ba run trên code workload đã merge (`ba2d7da`, TTL token 600 s; run `w14-t04-*-r2`) và cập nhật báo cáo. 18/11/2026: đã merge PR #89; ghi nhận hậu kiểm, chuyển Hoàn thành.
+- Ghi chú/tồn đọng: Báo cáo [workload-realism-report-v1](../../../architecture/workload-realism-report-v1.md) là lần đo pilot: chưa nguồn nào đạt đủ ngưỡng chốt trước (bán thực 5/7). Lần đo lại 19/11/2026 trên code cuối cho số đo gần như trùng pilot: bán thực đạt 6/7 (chỉ trung vị thời lượng lệch −42% không đạt; KS D thời lượng 0,099 sát ngưỡng), vẫn chưa được kết luận "giống thật". Bản pilot ghi nhầm mức 2 thuần đạt 2/7, đúng là 1/7; đã sửa trong báo cáo.
