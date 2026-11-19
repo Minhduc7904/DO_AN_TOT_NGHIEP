@@ -28,26 +28,53 @@ export class UnexpectedStatusError extends Error {
   }
 }
 
+const IDEMPOTENT_METHODS = ['GET', 'HEAD', 'PUT', 'DELETE'];
+
+/**
+ * Lỗi tạm thời đáng thử lại: 401 `SERVICE_TOKEN_INVALID` (token service–service hết hạn giữa đường,
+ * service từ chối trước khi xử lý nên an toàn cả với POST) và, với method idempotent, mất kết nối
+ * (status 0) hoặc 502–504.
+ */
+export function isTransientFailure(method, status, body) {
+  if (status === 401) return String(body).includes('"SERVICE_TOKEN_INVALID"');
+  return IDEMPOTENT_METHODS.includes(method) && [0, 502, 503, 504].includes(status);
+}
+
 /**
  * Gọi Gateway. Trả `{ status, data, meta, body }`; ném `UnexpectedStatusError` khi mã không nằm trong
  * `expected` để hành trình dừng lượt hiện tại (phản ứng của mức 1: bỏ lượt, lượt sau làm lại).
+ * `retries`: số lần thử lại lỗi tạm thời (`isTransientFailure`), cách nhau 1 s. Mặc định 3 cho
+ * `journey = 'setup'` (một lỗi tạm thời ở setup làm hỏng cả run, run `w14-t03-normal-mixed-r3`), 0 cho
+ * hành trình đo tải.
  */
-export function api(method, path, { journey, name, token, body, expected = [200], headers } = {}) {
+export function api(
+  method,
+  path,
+  { journey, name, token, body, expected = [200], headers, retries } = {},
+) {
   const label = name ?? `${method} ${path}`;
-  const response = http.request(
-    method,
-    `${config.baseUrl}${path}`,
-    body === undefined ? null : JSON.stringify(body),
-    {
-      headers: {
-        ...(body === undefined ? {} : { 'content-type': 'application/json' }),
-        ...(token ? { authorization: `Bearer ${token}` } : {}),
-        ...headers,
+  const attempts = 1 + (retries ?? (journey === 'setup' ? 3 : 0));
+  let response;
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    response = http.request(
+      method,
+      `${config.baseUrl}${path}`,
+      body === undefined ? null : JSON.stringify(body),
+      {
+        headers: {
+          ...(body === undefined ? {} : { 'content-type': 'application/json' }),
+          ...(token ? { authorization: `Bearer ${token}` } : {}),
+          ...headers,
+        },
+        tags: { journey, name: label },
+        responseCallback: expectedCallback(expected),
       },
-      tags: { journey, name: label },
-      responseCallback: expectedCallback(expected),
-    },
-  );
+    );
+    if (expected.includes(response.status)) break;
+    if (attempt === attempts || !isTransientFailure(method, response.status, response.body)) break;
+    console.warn(`${label} trả ${response.status}, thử lại lần ${attempt}/${attempts - 1}`);
+    sleep(1);
+  }
   if (!expected.includes(response.status)) {
     throw new UnexpectedStatusError(label, response.status, response.body);
   }

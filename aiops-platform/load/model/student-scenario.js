@@ -9,6 +9,7 @@ import {
   buildArrivalStages,
   peakConcurrency,
   seedCourseMap,
+  sessionSpan,
   studentSessionPlan,
   vuSizing,
   windowSessions,
@@ -60,14 +61,20 @@ export const plannedPeakConcurrency = peakConcurrency(sessions, {
 });
 const sizing = vuSizing(plannedPeakConcurrency);
 
-/** Tài khoản seed của từng người dùng trong kế hoạch: hoán vị có seed, không trùng (mục 13.4). */
-function userKeys() {
+/**
+ * Tài khoản seed của từng phiên trong kế hoạch (mục 13.4, `accountAssignment`): không có hai phiên chạy
+ * cùng lúc trên một tài khoản. Tính một lần trong `SharedArray` thay vì ở init của từng VU.
+ */
+const assignment = new SharedArray('plan-accounts', () => {
   const keys = [];
-  for (let index = 0; index < sessions.length; index += 1) keys.push(sessions[index].user_key);
-  return keys;
-}
-export const accounts = accountAssignment(WORKLOAD_SEED, userKeys(), config.seedStudents);
-export const distinctUsers = Object.keys(accounts).length;
+  const spans = [];
+  const options = { preludeActions: (meta.prelude ?? []).length };
+  for (let index = 0; index < sessions.length; index += 1) {
+    keys.push(sessions[index].user_key);
+    spans.push(sessionSpan(sessions[index], options));
+  }
+  return [accountAssignment(WORKLOAD_SEED, keys, config.seedStudents, { spans })];
+})[0];
 
 /** Trường tóm tắt phần học viên dùng chung cho `k6-summary.json` của hai scenario. */
 export function studentSummary(droppedIterations, vusMax) {
@@ -79,8 +86,12 @@ export function studentSummary(droppedIterations, vusMax) {
     // Iteration bị bỏ làm lệch ánh xạ iteration → phiên: run như vậy không tái lập được, không dùng
     // làm dữ liệu thí nghiệm (README mục mức 2+).
     plan_reproducible: droppedIterations === 0,
-    distinct_users: distinctUsers,
-    accounts_reused: Math.max(0, distinctUsers - config.seedStudents),
+    distinct_users: assignment.users,
+    // Người ảo: phiên chồng nhau của cùng người dùng Moodle tách sang người ảo khác (`accountAssignment`).
+    virtual_people: assignment.people,
+    accounts_reused: Math.max(0, assignment.people - config.seedStudents),
+    // Người ảo buộc phải chung tài khoản với người ảo khác đang chạy cùng lúc (phải là 0).
+    accounts_overlapping: assignment.overlapping,
   };
 }
 
@@ -114,7 +125,7 @@ export function runStudentIteration(setupData) {
     rng: createRng(hash32(WORKLOAD_SEED, 'students-plan', index)),
     seed: WORKLOAD_SEED,
     accounts: config.seedStudents,
-    accountIndex: accounts[session.user_key],
+    accountIndex: assignment.bySession[index],
   });
   playStudentSession({
     session,

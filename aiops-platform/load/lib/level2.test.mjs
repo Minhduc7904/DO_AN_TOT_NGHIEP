@@ -153,20 +153,71 @@ test('tách log k6: bản ghi workload, dòng khác, dòng hỏng', () => {
 
 test('gán tài khoản bằng hoán vị có seed: không trùng khi số người ≤ số tài khoản', () => {
   const keys = Array.from({ length: 900 }, (_, i) => `u${i % 600}@d3`); // 600 người, có lặp
-  const map = accountAssignment(7, keys, 1000);
-  const values = Object.values(map);
-  assert.equal(values.length, 600);
-  assert.equal(new Set(values).size, 600);
-  assert.ok(values.every((value) => value >= 1 && value <= 1000));
-  assert.deepEqual(accountAssignment(7, keys, 1000), map);
-  assert.notDeepEqual(accountAssignment(8, keys, 1000), map);
-  // Vượt số tài khoản thì vòng lại, vẫn trong miền.
+  const result = accountAssignment(7, keys, 1000);
+  assert.equal(result.users, 600);
+  assert.equal(result.people, 600);
+  assert.equal(result.overlapping, 0);
+  // Không có khoảng bận: mọi phiên của một người dùng chung một tài khoản.
+  keys.forEach((key, i) => assert.equal(result.bySession[i], result.bySession[keys.indexOf(key)]));
+  assert.equal(new Set(result.bySession).size, 600);
+  assert.ok(result.bySession.every((value) => value >= 1 && value <= 1000));
+  assert.deepEqual(accountAssignment(7, keys, 1000), result);
+  assert.notDeepEqual(accountAssignment(8, keys, 1000).bySession, result.bySession);
+  // Vượt số tài khoản, không có khoảng bận: vòng lại, vẫn trong miền.
   const many = accountAssignment(
     1,
     Array.from({ length: 12 }, (_, i) => `x${i}`),
     10,
   );
-  assert.equal(new Set(Object.values(many)).size, 10);
+  assert.equal(new Set(many.bySession).size, 10);
+});
+
+/** Hai phiên có chồng nhau (tính cả khoảng đệm) không? */
+const clash = ([a0, a1], [b0, b1], gapS) => a0 < b1 + gapS && b0 < a1 + gapS;
+
+test('phiên chồng nhau của cùng người dùng nhận tài khoản khác', () => {
+  // u1: [0,100) và [130,200) cách 30 s < gap 60 → hai tài khoản; [300,400) giữ tài khoản phiên trước.
+  const keys = ['u1', 'u1', 'u1', 'u2'];
+  const spans = [[0, 100], [130, 200], [300, 400], [0, 50]];
+  const result = accountAssignment(3, keys, 10, { spans, gapS: 60 });
+  assert.equal(result.users, 2);
+  assert.equal(result.people, 3);
+  assert.notEqual(result.bySession[0], result.bySession[1]);
+  assert.equal(result.bySession[2], result.bySession[1]);
+  assert.equal(new Set(result.bySession).size, 3);
+});
+
+test('dùng lại tài khoản chỉ khi tài khoản đã rảnh; đủ tài khoản thì không trùng', () => {
+  // 3 tài khoản: x0–x2 bận [0, 100); x3 bận [50, 150) chồng tất cả → buộc trùng (overlapping 1);
+  // x4 [400, 500) và x5 [1000, 1100) dùng lại được.
+  const keys = ['x0', 'x1', 'x2', 'x3', 'x4', 'x5'];
+  const spans = [[0, 100], [0, 100], [0, 100], [50, 150], [400, 500], [1000, 1100]];
+  const { bySession, overlapping } = accountAssignment(5, keys, 3, { spans, gapS: 60 });
+  assert.equal(overlapping, 1);
+  for (const i of [4, 5]) {
+    for (let j = 0; j < keys.length; j += 1) {
+      if (j !== i && bySession[j] === bySession[i]) assert.ok(!clash(spans[i], spans[j], 60));
+    }
+  }
+  // Ngẫu nhiên 400 phiên, 50 người dùng: tham lam theo giờ bắt đầu dùng đúng số tài khoản bằng đỉnh
+  // đồng thời (tính cả gap) mà không phiên nào trùng.
+  const rng = createRng(9);
+  const many = Array.from({ length: 400 }, () => {
+    const start = Math.floor(rng.next() * 5000);
+    return [start, start + 20 + Math.floor(rng.next() * 400)];
+  });
+  const users = many.map((_, i) => `u${i % 50}`);
+  const events = many.flatMap(([a, b]) => [[a, 1], [b + 60, -1]]).sort((p, q) => p[0] - q[0] || p[1] - q[1]);
+  let current = 0;
+  let peak = 0;
+  for (const [, delta] of events) peak = Math.max(peak, (current += delta));
+  const fit = accountAssignment(2, users, peak, { spans: many, gapS: 60 });
+  assert.equal(fit.overlapping, 0);
+  for (let i = 0; i < many.length; i += 1) {
+    for (let j = i + 1; j < many.length; j += 1) {
+      if (fit.bySession[i] === fit.bySession[j]) assert.ok(!clash(many[i], many[j], 60));
+    }
+  }
 });
 
 test('think "tự bấm lại" theo loại điều hướng, kẹp [1; 300] s', () => {

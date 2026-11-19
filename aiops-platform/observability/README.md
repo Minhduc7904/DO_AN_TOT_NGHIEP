@@ -20,7 +20,7 @@ Năm image dẫn xuất chỉ thêm executable `/health-probe` (Go static, build
 | ---------- | ------------ | --- | -------------------------------------------------------------------- |
 | Collector  | 256 MiB      | 0.5 | Hàng đợi trong RAM                                                   |
 | Prometheus | 512 MiB      | 0.5 | `prometheus-data`, retention 24 giờ hoặc 512 MB tùy ngưỡng đến trước |
-| Tempo      | 512 MiB      | 0.5 | `tempo-data`, WAL/blocks local, retention 24 giờ                     |
+| Tempo      | 1 GiB        | 0.5 | `tempo-data`, WAL/blocks local, retention 24 giờ                     |
 | Loki       | 512 MiB      | 0.5 | `loki-data`, filesystem/TSDB v13, retention 24 giờ                   |
 | Grafana    | 512 MiB      | 0.5 | `grafana-data`, cấu hình/UI state local                              |
 
