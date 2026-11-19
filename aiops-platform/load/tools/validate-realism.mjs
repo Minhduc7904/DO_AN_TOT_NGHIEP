@@ -6,6 +6,10 @@
  *     --run level1=results/<run mức 1> --run assumed=results/<run mức 2 thuần> \
  *     --run moodle=results/<run bán thực> [--holdout data/sessions/moodle-holdout-v1.json] \
  *     [--profile normal-mixed --k 4 --think-cap-s 300 --run-seconds 2880] [--out report.json]
+ *     [--build data/sessions/moodle-build-v1.json]
+ *
+ * Chấm theo hai phiên bản tiêu chí: v1 (ngưỡng cố định, `THRESHOLDS`) và v2 (dao động tự nhiên của
+ * dữ liệu thật, `realism-v2.mjs`; cần file phiên của phần xây cho nhóm ngày tham chiếu).
  *
  * Hold-out (ngày 60–90) không dùng để chọn bất kỳ tham số nào (workload-design-v1 mục 10.4). Đại lượng
  * mức phiên (số thao tác, thời lượng, think time, tỉ lệ thao tác) lấy trên mọi phiên hold-out, kẹp
@@ -28,6 +32,7 @@ import {
   sessionsFromK6Points,
   sessionsFromSessionFile,
 } from './realism.mjs';
+import { CRITERIA_V2, compareV2, referenceDistribution, referenceGroups } from './realism-v2.mjs';
 import { buildPlan, selectDays } from './replay-plan.mjs';
 import { sessionsPerDay } from './session-stats.mjs';
 
@@ -42,20 +47,23 @@ function readLines(path) {
     .map((line) => JSON.parse(line));
 }
 
-export function loadRun(dir) {
+export function loadRun(dir, options = {}) {
   const summary = JSON.parse(readFileSync(join(dir, 'k6-summary.json'), 'utf8'));
   const runStartMs = Date.parse(summary.started_at);
   if (existsSync(join(dir, 'actions.jsonl'))) {
     return {
       summary,
-      sessions: sessionsFromActionLog(readLines(join(dir, 'actions.jsonl')), runStartMs),
+      sessions: sessionsFromActionLog(readLines(join(dir, 'actions.jsonl')), runStartMs, options),
     };
   }
   const points = ['k6-points.json.gz', 'k6-points.json']
     .map((name) => join(dir, name))
     .find(existsSync);
   if (!points) throw new Error(`${dir}: không có actions.jsonl hay k6-points.json(.gz)`);
-  return { summary, sessions: sessionsFromK6Points(readLines(points), runStartMs) };
+  return {
+    summary,
+    sessions: sessionsFromK6Points(readLines(points), runStartMs, undefined, options),
+  };
 }
 
 export function holdoutReference(holdout, { profile, k, thinkCapS, runSeconds }) {
@@ -94,6 +102,7 @@ function main() {
       k: { type: 'string', default: '4' },
       'think-cap-s': { type: 'string', default: '300' },
       'run-seconds': { type: 'string', default: '2880' },
+      build: { type: 'string', default: join(LOAD_DIR, 'data/sessions/moodle-build-v1.json') },
       out: { type: 'string' },
     },
   });
@@ -109,8 +118,24 @@ function main() {
   const arrivalRef = describe(ref.arrival, runSeconds);
   const reference = { ...sessionRef, ...pick(arrivalRef) };
 
+  const build = JSON.parse(readFileSync(values.build, 'utf8'));
+  const { pool, groups } = referenceGroups(build.sessions, sessionsPerDay(build.sessions), reference, {
+    profile: values.profile,
+    k: Number(values.k),
+    runSeconds,
+    thinkCapS: Number(values['think-cap-s']),
+  });
+  const distributions = new Map();
+
   const report = {
     thresholds: THRESHOLDS,
+    criteria_v2: {
+      ...CRITERIA_V2,
+      build_sessions: build.sessions.length,
+      pool_q1: pool.q1,
+      pool_q3: pool.q3,
+      pool_days: pool.days,
+    },
     holdout: {
       sessions: holdout.sessions.length,
       arrival_days: ref.days,
@@ -123,6 +148,22 @@ function main() {
     const { summary, sessions } = loadRun(dir);
     const observed = describe(sessions, runSeconds);
     const result = compare(observed, reference);
+    // V2: mốc thời gian theo giây như log Moodle; phân phối tham chiếu theo đúng số phiên của nguồn.
+    const snapped = describe(
+      loadRun(dir, { timeResolutionMs: CRITERIA_V2.timeResolutionMs }).sessions,
+      runSeconds,
+    );
+    if (!distributions.has(snapped.sessions)) {
+      distributions.set(
+        snapped.sessions,
+        referenceDistribution(groups, reference, snapped.sessions, { runSeconds }),
+      );
+    }
+    const v2 = compareV2(
+      compare(snapped, reference).rows,
+      distributions.get(snapped.sessions),
+      groups,
+    );
     report.sources[name] = {
       run_id: summary.run_id,
       sessions: observed.sessions,
@@ -132,6 +173,7 @@ function main() {
         think_s: median(observed.think_s),
       },
       ...result,
+      v2,
     };
   }
   report.reference_medians = {
@@ -173,7 +215,12 @@ function main() {
           `${fmt(s.rows.dispersion_index.source, 2)} | ${fmt(s.rows.dispersion_index.reference, 2)}`,
       ),
       line('Hurst', (s) => `${fmt(s.rows.hurst.source, 2)} | ${fmt(s.rows.hurst.reference, 2)}`),
-      line('Đạt mọi ngưỡng', (s) => (s.passed ? 'có' : 'không')),
+      line('Đạt mọi ngưỡng v1', (s) => (s.passed ? 'có' : 'không')),
+      ...CRITERIA_V2.metrics.map((metric) =>
+        line(`v2 thứ hạng ${metric}`, (s) => `${fmt(s.v2.ranks[metric], 2)} (${fmt(s.v2.distances[metric])})`),
+      ),
+      line('v2 điểm (thứ hạng lớn nhất) | tau', (s) => `${fmt(s.v2.score, 3)} | ${fmt(s.v2.tau, 3)}`),
+      line('Đạt v2', (s) => (s.v2.passed ? 'có' : 'không')),
     ].join('\n'),
   );
 }

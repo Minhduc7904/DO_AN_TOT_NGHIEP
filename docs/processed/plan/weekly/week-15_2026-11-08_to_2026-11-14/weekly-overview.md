@@ -6,7 +6,7 @@
 | --- | --- |
 | Tuần | `week-15_2026-11-08_to_2026-11-14` |
 | Nguồn plan canonical | [Plan v0.4 — Tuần 15](../../plan-v0.4-24-weeks.md#tuần-15--experiment-runner-pilot-và-dataset-v0) |
-| Mục tiêu tuần | Runner một lệnh (reset-and-seed → workload → fault → ground truth → export → kiểm chất lượng) có ledger theo run; pilot tìm `λ_knee` và chốt mức tải của hai profile; pilot 4 case MVP (C2, C3, C4, C6) tới khi chuỗi nhân quả xảy ra thật, kể cả fault trùng cao điểm; thu tập train healthy và tập validation thành dataset v0 có manifest split theo run; feature pipeline v1 có kiểm tra chống leakage; cập nhật evaluation protocol bằng số đo pilot; kiểm chứng độ thực v2 (đăng ký tiêu chí trước, nhiều seed); Gate M3. |
+| Mục tiêu tuần | Runner một lệnh (reset-and-seed → workload → fault → ground truth → export → kiểm chất lượng) có ledger theo run; pilot tìm `λ_knee` và chốt mức tải của hai profile; pilot 4 case MVP (C2, C3, C4, C6) tới khi chuỗi nhân quả xảy ra thật, kể cả fault trùng cao điểm; thu tập train healthy và tập validation thành dataset v0 có manifest split theo run; feature pipeline v1 có kiểm tra chống leakage; cập nhật evaluation protocol bằng số đo pilot; kiểm chứng độ thực v2 (tiêu chí theo dao động tự nhiên của dữ liệu thật, đăng ký trước); Gate M3. |
 | Trạng thái tuần | Đang thực hiện — bảng task lập ngày 19/11/2026; Gate R điều kiện 5 vẫn mở (ngoại lệ ở dưới) |
 
 > Tuần canonical là 08/11/2026–14/11/2026. Kế hoạch được lập ngày 19/11/2026 (tuần lịch 17) để bù tiến độ; hạn task bên dưới là mốc bù tiến độ. Theo quyết định của Bách (19/11/2026), phạm vi MVP của tuần làm đầy đủ, không áp dụng phương án nén lịch của plan v0.4 mục 9 chỉ vì trễ lịch.
@@ -23,14 +23,14 @@
 | [task-04_collect-dataset-v0](task-04_collect-dataset-v0.md) | Dataset v0: kế hoạch phiên theo split, tập train healthy, tập validation, kiểm label/ground truth, manifest split theo run | Bách | Không có | Cao | Đã giao |
 | [task-05_build-feature-pipeline-v1](task-05_build-feature-pipeline-v1.md) | Feature pipeline v1 trên dữ liệu pilot/dataset v0, có kiểm tra chống leakage | Bách | Không có | Cao | Đã giao |
 | [task-06_update-evaluation-protocol-after-pilot](task-06_update-evaluation-protocol-after-pilot.md) | Cập nhật evaluation protocol bằng số đo pilot (không đụng test); chốt E7 | Bách | Không có | Cao | Đã giao |
-| [task-07_validate-workload-realism-v2](task-07_validate-workload-realism-v2.md) | Kiểm chứng độ thực v2: đăng ký tiêu chí thời lượng trước, nhiều seed, báo cáo song song v1/v2 | Bách | Không có | Cao | Đã giao |
+| [task-07_validate-workload-realism-v2](task-07_validate-workload-realism-v2.md) | Kiểm chứng độ thực v2: tiêu chí theo dao động tự nhiên của dữ liệu thật, đăng ký trước, chấm trên run dataset v0, báo cáo song song v1/v2 | Bách | Không có | Cao | Đang thực hiện |
 | [task-08_verify-gate-m3](task-08_verify-gate-m3.md) | Gate M3: chạy lại từng case từ môi trường sạch theo runbook, export và xác nhận ground truth độc lập | Bách | Không có | Cao | Đã giao |
 
 > Khi đọc tiến độ project-wide, chỉ coi hàng có trạng thái `Hoàn thành` trên nhánh canonical là hoàn thành; trạng thái đã finalization trên task branch chưa thay thế nguồn này.
 
 ## Phụ thuộc, rủi ro và quyết định
 
-- Phụ thuộc: task-03 và task-04 chạy run qua runner của task-01 và dùng mức tải đã chốt ở task-02; task-04 dùng cường độ/thời lượng fault đã chốt ở task-03; task-05 chạy trên artifact của task-03/task-04; task-06 tổng hợp số đo của task-02, task-03, task-04; task-08 chạy lại theo runbook của task-01 sau khi task-03 xong. Task-07 độc lập (chạy khi máy không có run khác).
+- Phụ thuộc: task-03 và task-04 chạy run qua runner của task-01 và dùng mức tải đã chốt ở task-02; task-04 dùng cường độ/thời lượng fault đã chốt ở task-03; task-05 chạy trên artifact của task-03/task-04; task-06 tổng hợp số đo của task-02, task-03, task-04; task-08 chạy lại theo runbook của task-01 sau khi task-03 xong. Task-07 đăng ký tiêu chí trước, rồi chấm trên run dataset của task-04.
 - Rủi ro:
   - Một run 48 phút + export telemetry (khoảng 15–20 phút cho trace) + feature: mỗi run gần 1,5 giờ máy; mỗi lúc chỉ một run (máy ~15 GB RAM). Tổng tuần cỡ 25–30 run.
   - Telemetry chỉ giữ 24 giờ: runner phải export ngay sau run; Tempo đã nâng 1 GiB nhưng export dồn dập vẫn có thể OOM.
@@ -45,7 +45,7 @@
 
 ## Thứ tự thực hiện đề xuất
 
-1. Task-07 chạy nền trước (đăng ký tiêu chí v2 rồi chạy 3 seed) trong lúc viết task-01.
+1. Task-07 đăng ký tiêu chí v2 và chấm lại `r2` trước; phần chính chấm trên run của task-04.
 2. Task-02 (pilot `λ_knee`) song song với phần code của task-01.
 3. Task-03 bằng runner của task-01, mức tải của task-02.
 4. Task-04 (thu dataset v0), trong lúc chạy làm task-05 trên artifact pilot.
