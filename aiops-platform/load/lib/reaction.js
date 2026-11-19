@@ -138,22 +138,28 @@ export function windowSessions(sessions, windowStartS, windowS) {
 }
 
 /**
- * Số phiên chạy đồng thời lớn nhất của kế hoạch — cận trên của số VU cần có. Một phiên chiếm VU từ
- * `start_s` tới hết tổng think time cộng `actionOverheadS` cho mỗi thao tác (kể cả `preludeActions`
- * bước chèn đầu phiên: thời gian phản hồi, nghỉ điều hướng ngắn). Think time không bị nén theo lịch,
+ * Khoảng bận ước tính `[start_s, end_s]` của một phiên: từ `start_s` tới hết tổng think time cộng
+ * `actionOverheadS` cho mỗi thao tác (kể cả `preludeActions` bước chèn đầu phiên: thời gian phản hồi,
+ * nghỉ điều hướng ngắn).
+ */
+export function sessionSpan(session, { actionOverheadS = 2, preludeActions = 2 } = {}) {
+  let busy = actionOverheadS * (session.actions.length + preludeActions);
+  for (let step = 1; step < session.actions.length; step += 1) busy += session.actions[step].think_s;
+  return [session.start_s, session.start_s + busy];
+}
+
+/**
+ * Số phiên chạy đồng thời lớn nhất của kế hoạch — cận trên của số VU cần có. Một phiên chiếm VU trong
+ * khoảng `sessionSpan`. Think time không bị nén theo lịch,
  * nên ở giờ đỉnh nhiều phiên dài chồng lên nhau; VU dựng thêm giữa run chậm và làm k6 bỏ iteration
  * (`dropped_iterations`), vì vậy số VU dựng sẵn phải tính từ kế hoạch thay vì đặt tay.
  * Đối chiếu run `w14-t04-moodle-r1`: đo được 176 phiên đồng thời, hàm cho 191 với overhead 2 s.
  */
-export function peakConcurrency(sessions, { actionOverheadS = 2, preludeActions = 2 } = {}) {
+export function peakConcurrency(sessions, options = {}) {
   const events = [];
   for (let index = 0; index < sessions.length; index += 1) {
-    const session = sessions[index];
-    let busy = actionOverheadS * (session.actions.length + preludeActions);
-    for (let step = 1; step < session.actions.length; step += 1) {
-      busy += session.actions[step].think_s;
-    }
-    events.push([session.start_s, 1], [session.start_s + busy, -1]);
+    const [start, end] = sessionSpan(sessions[index], options);
+    events.push([start, 1], [end, -1]);
   }
   events.sort((a, b) => a[0] - b[0] || a[1] - b[1]);
   let current = 0;
@@ -181,25 +187,82 @@ export function navigationThink(rng, { mu, sigma, clamp_s: [low, high] }) {
 }
 
 /**
- * Gán tài khoản seed không trùng: hoán vị Fisher–Yates có seed của các chỉ số 1..accounts, người dùng
- * thứ i (theo thứ tự xuất hiện trong kế hoạch) nhận phần tử thứ i. Chỉ dùng lại tài khoản khi số người
- * dùng vượt số tài khoản (vòng lại từ đầu hoán vị).
+ * Gán tài khoản seed cho từng phiên của kế hoạch (mục 13.4) sao cho không có hai phiên chạy cùng lúc
+ * trên một tài khoản. Hai phiên cùng lúc trên một tài khoản làm hỏng trạng thái chung: phiên này "tiếp
+ * tục" lượt làm quiz mà phiên kia đang mở rồi nộp, phiên kia lưu câu trả lời nhận 409
+ * `QUIZ_ATTEMPT_ALREADY_SUBMITTED` (run `w14-t03-healthy-spike-r2`, `-r3`). Việc này xảy ra cả với
+ * phiên của **cùng** người dùng Moodle: lịch bắt đầu phiên bị nén (một ngày còn 48 phút) còn think time
+ * thì không, nên hai phiên cách nhau ≥ 30 phút ngoài đời vẫn chạy chồng nhau khi phát lại.
+ *
+ * Duyệt phiên theo giờ bắt đầu (tô màu đồ thị khoảng tham lam, tối ưu: số tài khoản cần bằng số phiên
+ * đồng thời lớn nhất tính cả khoảng đệm). Phiên giữ tài khoản của phiên trước cùng người dùng nếu tài
+ * khoản đó đã rảnh ít nhất `gapS` giây; không thì lấy tài khoản chưa dùng kế tiếp trong hoán vị
+ * Fisher–Yates có seed các chỉ số 1..accounts; hết tài khoản mới thì quét vòng từ con trỏ tìm tài
+ * khoản đã rảnh (`N_pop` > số tài khoản seed, mục 8.1). Không có tài khoản rảnh thì lấy tài khoản rảnh
+ * sớm nhất và đếm vào `overlapping`.
+ *
+ * `spans`: khoảng bận `[start_s, end_s]` của từng phiên (`sessionSpan`), cùng thứ tự với `userKeys`;
+ * không có thì mỗi người dùng một tài khoản, gán theo vòng. `gapS` = 30 đo từ run
+ * `w14-t03-healthy-spike-r3` (4.220 phiên): giờ bắt đầu thật lệch trong [−26,6; +4,6] s quanh `start_s`
+ * (lịch arrival theo ô 30 s), giờ kết thúc thật sớm hơn cuối `sessionSpan` ít nhất 2,8 s, nên hai phiên
+ * cách nhau ≥ 23,8 s trên kế hoạch không chồng nhau khi chạy. Kế hoạch `healthy-spike` k=4 với 1.000
+ * tài khoản: gap 30 cho `overlapping` 0, gap 35 cho 44 (đỉnh 914 phiên đồng thời đã sát số tài khoản).
+ *
+ * Trả `bySession` (tài khoản của phiên thứ i), `users` (số người dùng), `people` (số cặp người dùng –
+ * tài khoản, tức người ảo), `overlapping`.
  */
-export function accountAssignment(seed, userKeys, accounts) {
+export function accountAssignment(seed, userKeys, accounts, { spans = null, gapS = 30 } = {}) {
   const rng = createRng(hash32(seed, 'account-permutation'));
   const order = Array.from({ length: accounts }, (_, index) => index + 1);
   for (let index = order.length - 1; index > 0; index -= 1) {
     const swap = Math.floor(rng.next() * (index + 1));
     [order[index], order[swap]] = [order[swap], order[index]];
   }
-  const map = {};
+  const indices = userKeys.map((_, index) => index);
+  if (spans) indices.sort((a, b) => spans[a][0] - spans[b][0] || a - b);
+
+  const bySession = new Array(userKeys.length);
+  const lastAccount = new Map();
+  const freeAt = new Map();
+  const people = new Set();
+  let overlapping = 0;
   let next = 0;
-  for (const key of userKeys) {
-    if (map[key] !== undefined) continue;
-    map[key] = order[next % accounts];
-    next += 1;
+  const isFree = (account, start) => !freeAt.has(account) || freeAt.get(account) + gapS <= start;
+  for (const index of indices) {
+    const key = userKeys[index];
+    const [start, end] = spans ? spans[index] : [0, 0];
+    let account = lastAccount.get(key);
+    if (account === undefined || (spans && !isFree(account, start))) {
+      if (!spans) {
+        account = order[next % accounts];
+        next += 1;
+      } else if (next < accounts) {
+        account = order[next];
+        next += 1;
+      } else {
+        account = undefined;
+        let earliest = null;
+        for (let tries = 0; tries < accounts; tries += 1) {
+          const candidate = order[(next + tries) % accounts];
+          if (isFree(candidate, start)) {
+            account = candidate;
+            next += tries + 1;
+            break;
+          }
+          if (earliest === null || freeAt.get(candidate) < freeAt.get(earliest)) earliest = candidate;
+        }
+        if (account === undefined) {
+          account = earliest;
+          overlapping += 1;
+        }
+      }
+    }
+    bySession[index] = account;
+    lastAccount.set(key, account);
+    freeAt.set(account, Math.max(freeAt.get(account) ?? -Infinity, end));
+    people.add(`${key}\u0000${account}`);
   }
-  return map;
+  return { bySession, users: lastAccount.size, people: people.size, overlapping };
 }
 
 /**
