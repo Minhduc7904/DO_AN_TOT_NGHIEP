@@ -75,7 +75,11 @@ export function kneeStart(step, k) {
 
 /**
  * Gán tài khoản theo lịch tìm điểm gãy (cùng thuật toán với kế hoạch phát lại, mục 13.4) và đỉnh đồng
- * thời ước tính. Trả `{ bySession, overlapping, peak }` theo chỉ số toàn cục.
+ * thời ước tính. Trả `{ bySession, overlapping, withinGap, overlapByStep, peak }` theo chỉ số toàn cục:
+ * `overlapping` là số phiên chạy cùng lúc với phiên khác trên một tài khoản (tổng `overlapByStep`);
+ * `withinGap` là số phiên chỉ không giữ được khoảng đệm 30 s của `accountAssignment` mà không chồng
+ * nhau. Khoảng đệm bù độ lệch giờ bắt đầu của lịch ô 30 s khi phát lại; knee chia đều giờ bắt đầu
+ * trong bậc nên `withinGap` khác 0 vẫn không có hai phiên cùng lúc.
  */
 export function kneeAccounts(seed, planSessions, steps, accounts, { preludeActions = 2 } = {}) {
   const keys = [];
@@ -111,7 +115,8 @@ export function kneeAccounts(seed, planSessions, steps, accounts, { preludeActio
     }
     lastEnd.set(account, Math.max(lastEnd.get(account) ?? -Infinity, spans[i][1]));
   }
-  return { bySession: assignment.bySession, overlapping: assignment.overlapping, overlapByStep, peak };
+  const overlapping = Object.values(overlapByStep).reduce((sum, n) => sum + n, 0);
+  return { bySession: assignment.bySession, overlapping, withinGap: assignment.overlapping, overlapByStep, peak };
 }
 
 /**

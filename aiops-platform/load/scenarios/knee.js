@@ -111,6 +111,7 @@ export function handleSummary(data) {
     student_pre_vus: PRE_VUS,
     student_max_vus: MAX_VUS,
     accounts_overlapping: accounts.overlapping,
+    accounts_within_gap: accounts.withinGap,
     workload_start: data.setup_data?.startedAt ?? null,
     workload_end: finishedAt,
     started_at: data.setup_data?.startedAt ?? null,

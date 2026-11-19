@@ -215,7 +215,7 @@ Tiêu chí "khỏe" mục 8.4 của run r4 (`docker stats` mỗi 15 s; p95 Gatew
 - **Quy mô:** normal-mixed 1.349 phiên (học viên 1.245, giảng viên 90, admin 14), 13.866 request; healthy-spike 4.324 phiên (học viên 4.220), 51.260 request. Cả sáu scenario có traffic ở cả hai profile. `plan_reproducible = true`, `accounts_overlapping` = 0 (spike: 2.153 người dùng, 3.692 người ảo trên 1.000 tài khoản).
 - **VU và k6:** VU dựng sẵn 230 (normal, đỉnh ước lượng 191) và 1.062 (spike, đỉnh 914). RAM của k6 ở đỉnh 396 MiB và 3,07 GiB; RAM trống của máy thấp nhất 6,5 GB và 5,1 GB (≥ 4 GB theo mục 8.4 bước 3). CPU của k6 vượt 80% chỉ lúc khởi tạo VU, trước `workload_start`.
 - **Lỗi còn lại đều có nguyên nhân đã biết:** 401 `SERVICE_TOKEN_INVALID` rải rác (token service–service TTL 60 s đặt cho mọi run để run healthy và fault cùng cấu hình; gây các phiên `auth_failed`); status 0 (EOF) ở `PUT …/progress`, `POST …/submit`, thử lại thành công; 1 lần 503 `DEPENDENCY_UNAVAILABLE` ở `POST …/ai-jobs` (job AI giảng viên).
-- Grafana đứng sát ngưỡng 85% (giới hạn 512 MiB) dù không ai mở dashboard trong run; cần theo dõi ở pilot tuần 15.
+- Grafana đứng sát ngưỡng 85% (giới hạn 512 MiB) dù không ai mở dashboard trong run. Pilot tuần 15 thấy nó vượt ngưỡng trong 30 phút đầu; giới hạn đã nâng lên 768 MiB (mục "Kết quả tìm điểm gãy").
 
 ## Chấm tiêu chí "khỏe" (`tools/health-check.mjs`)
 
@@ -245,9 +245,28 @@ RUN_ID=w15-t02-knee-r1 WORKLOAD_SEED=21 aiops-platform/load/run-k6.sh knee --qui
 kill %1
 node aiops-platform/load/tools/health-check.mjs aiops-platform/load/results/w15-t02-knee-r1 \
   --stats aiops-platform/load/results/w15-t02-knee-r1-stats.jsonl --steps --out knee-health.json
+# Đo tiếp trên 5 phiên/s: nạp thêm học viên seed để không dùng chung tài khoản
+node lms/scripts/seed-data.mjs --environment local --compose-env-file docker-compose/.env --non-interactive --yes \
+  --profile small --seed 42 --count identity.students=1500
+RUN_ID=w15-t02-knee-r2 WORKLOAD_SEED=22 SEED_STUDENTS=1500 KNEE_START_RATE=4 KNEE_MAX_RATE=5.6 \
+  aiops-platform/load/run-k6.sh knee --quiet
 ```
 
-`--steps` chấm từng bậc đã chạy hết (bỏ 60 s đầu mỗi bậc làm khoảng chuyển tiếp; bậc không có request ghi nguyên nhân `no_data`) và in `λ_knee` = tốc độ của bậc khỏe cuối cùng trước bậc đầu tiên không khỏe, tiêu chí bị vi phạm và nguyên nhân: `client` (k6 bỏ iteration, container k6 hết CPU, RAM máy dưới 1,5 GB) hoặc `system` (stack). Phiên trung bình bận khoảng 208 s, nên trên khoảng 4,6 phiên/s số phiên đồng thời vượt 1.000 tài khoản học viên của seed `small`; tóm tắt ghi `accounts_overlapping` theo bậc và bậc có 409 do dùng chung tài khoản được xếp nguyên nhân `client` (`seed_accounts_exhausted`). Muốn đo cao hơn thì nạp thêm học viên seed và đặt `SEED_STUDENTS` tương ứng, ghi rõ vì dữ liệu lớn hơn làm phép đo thận trọng hơn. Lưới an toàn: lỗi tích lũy quá 30% thì k6 tự dừng; bộ lấy mẫu dừng k6 khi RAM trống của máy dưới ngưỡng.
+`--steps` chấm từng bậc đã chạy hết (bỏ 60 s đầu mỗi bậc làm khoảng chuyển tiếp; bậc không có request ghi nguyên nhân `no_data`) và in `λ_knee` = tốc độ của bậc khỏe cuối cùng trước bậc đầu tiên không khỏe, tiêu chí bị vi phạm và nguyên nhân: `client` (k6 bỏ iteration, container k6 hết CPU, RAM máy dưới 1,5 GB) hoặc `system` (stack). Phiên trung bình bận khoảng 208 s: lịch 0,2 → 5,0 phiên/s có đỉnh 978 phiên đồng thời, vừa đủ 1.000 tài khoản học viên của seed `small`; từ khoảng 5,2 phiên/s phải dùng chung tài khoản. Tóm tắt ghi `accounts_overlapping` theo bậc và cả run (số phiên chạy cùng lúc với phiên khác trên một tài khoản), bậc có 409 do dùng chung tài khoản được xếp nguyên nhân `client` (`seed_accounts_exhausted`). `accounts_within_gap` đếm phiên chỉ không giữ được khoảng đệm 30 s của mục 13.4 mà không chồng nhau; knee chia đều giờ bắt đầu trong bậc nên số này khác 0 không làm sai phép đo. Muốn đo cao hơn thì nạp thêm học viên seed và đặt `SEED_STUDENTS` tương ứng, ghi rõ vì dữ liệu lớn hơn làm phép đo thận trọng hơn. Lưới an toàn: lỗi tích lũy quá 30% thì k6 tự dừng; bộ lấy mẫu dừng k6 khi RAM trống của máy dưới ngưỡng.
+
+### Kết quả tìm điểm gãy (19/11/2026)
+
+Stack đầy đủ + lớp fault, TTL token 60 s, máy Linux ~15 GB RAM, 12 core. Chấm bằng `health-check.mjs --steps`.
+
+| Run | Cấu hình | Kết quả |
+| --- | --- | --- |
+| `w15-t02-knee-r1` | 0,2 → 5,0 phiên/s, 25 bậc, seed 21, 1.000 học viên, commit `1fe8bdf` | 11.699 phiên, 0 iteration bị bỏ, 1.135 VU dựng sẵn. Học viên khỏe ở mọi bậc: p95 Gateway 37–40 ms, phản hồi ngoài mong đợi ≤ 0,24%, không phiên bỏ ngang, không chồng tài khoản (`accounts_overlapping` 0). **Bậc 1–8 không khỏe vì bộ nhớ Grafana** 93–99% giới hạn 512 MiB (cgroup ghi 11.397 lần chạm trần, không OOM, không restart): Grafana 13 dùng ~400 MiB khi rảnh và lên 505 MiB trong 30 phút đầu dù không ai mở UI. Nguyên nhân `system`, nằm ở stack observability chứ không ở LMS. Đã nâng Grafana lên 768 MiB (commit `8530e52`); tiêu chí không đổi |
+| `w15-t02-knee-r2` | 4,0 → 5,6 phiên/s, 9 bậc, seed 22, 1.500 học viên, Grafana 768 MiB, commit `8530e52` | 7.775 phiên, 0 iteration bị bỏ, 1.261 VU dựng sẵn, `accounts_overlapping` 0. **Cả 9 bậc khỏe:** p95 Gateway 37–40 ms, phản hồi ngoài mong đợi ≤ 0,07%, Grafana cao nhất 74% (571 MiB) |
+
+- **`λ_knee` ≥ 5,6 phiên/s** (cận dưới: stack chưa gãy ở bậc cao nhất đã đo). Không đo cao hơn vì đã đủ để quyết định mức tải (bên dưới) và k6 cần ~4 GB RAM cho ~1.260 VU (cao nhất 4,1 GiB ở r2, 4,4 GiB ở r1); RAM trống của máy thấp nhất 4,2 GB (r1, lúc dựng VU) và 4,4 GB (r2).
+- Ở 5,6 phiên/s CPU cả máy chỉ ~11%. Vượt 80% CPU (theo giới hạn, mẫu 15 s) chỉ có từng mẫu đơn lẻ, không kéo dài quá 1 phút: RabbitMQ (không đặt giới hạn CPU) lên ~2 core một mẫu ở gần như mọi bậc, kể cả 0,2 phiên/s, nên không theo tải; Tempo một mẫu ở bậc 5,0 (r1); container k6 một mẫu ở bậc 3,8 và 4,0 (r1). p95 Gateway không tăng theo tải.
+- **Kiểm mức tải** (`node tools/check-profile-load.mjs --knee 5.6`, đỉnh tốc độ bắt đầu phiên trên ô 60 s): `normal-mixed` 1,18 phiên/s ≤ 0,35 × 5,6 = 1,96 (0,21 × `λ_knee`); `healthy-spike` 4,3 phiên/s ≤ 0,8 × 5,6 = 4,48 (0,77 × `λ_knee`). **Giữ `k` = 4** cho cả hai profile. Phần dư của `normal-mixed` được ghi lại, không tự tăng (workload-design-v1 mục 8.4).
+- **Mức tải chốt:** `normal-mixed@v1` = kế hoạch `moodle-normal-mixed-k4-v1`, `healthy-spike@v1` = `moodle-healthy-spike-k4-v1`, cùng lịch giảng viên/admin `params/staff-assumed-v1.json`. Số VU dựng sẵn không thuộc nội dung tải nên đổi số VU (task-02 tuần 15) không đổi phiên bản.
 
 ## Bằng chứng (17/11/2026)
 

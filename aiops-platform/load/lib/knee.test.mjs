@@ -40,6 +40,13 @@ test('gán tài khoản theo lịch bậc: đủ tài khoản thì không trùng
   assert.equal(enough.peak, 6);
   const scarce = kneeAccounts(1, plan, steps, 2);
   assert.ok(scarce.overlapping > 0);
+  assert.equal(scarce.overlapping, Object.values(scarce.overlapByStep).reduce((a, b) => a + b, 0));
+  // Đỉnh 6 phiên, 8 tài khoản: không phiên nào chạy cùng lúc trên một tài khoản, nhưng tài khoản được
+  // dùng lại chưa đủ khoảng đệm 30 s → chỉ `withinGap` khác 0.
+  const tight = kneeAccounts(1, plan, steps, 8);
+  assert.equal(tight.overlapping, 0);
+  assert.deepEqual(tight.overlapByStep, {});
+  assert.ok(tight.withinGap > 0);
 });
 
 test('đỉnh tốc độ bắt đầu phiên của kế hoạch theo ô 60 s và kiểm theo λ_knee', async () => {
