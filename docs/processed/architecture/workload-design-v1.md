@@ -807,7 +807,7 @@ Máy chạy ~15 GB RAM, stack 11 runtime + observability chiếm 3,5–5 GB (pla
 | --- | --- |
 | Run | `w15-t02-knee-r1` (0,2 → 5,0 phiên/s, 1.000 học viên seed), `w15-t02-knee-r2` (4,0 → 5,6 phiên/s, 1.500 học viên seed để không dùng chung tài khoản) |
 | Tiêu chí bị vi phạm đầu tiên | r1, bậc 1: bộ nhớ Grafana 96% giới hạn 512 MiB (nguyên nhân `system`, ở stack observability). LMS khỏe ở mọi bậc. Sửa cấu hình: Grafana 768 MiB, giữ nguyên tiêu chí; r2 không còn vi phạm (Grafana cao nhất 74%) |
-| `λ_knee` | **≥ 5,6 phiên/s** (cận dưới: không bậc nào của r2 vi phạm). p95 Gateway 37–40 ms ở mọi bậc, CPU cả máy ≤ 11%; điểm gãy thật chưa tới. Giới hạn đo là RAM của k6 (~4 GB cho ~1.260 VU), không phải stack |
+| `λ_knee` | **≥ 5,6 phiên/s** (cận dưới: không bậc nào của r2 vi phạm; các bậc thấp hơn suy từ r1, nơi chỉ Grafana vi phạm). p95 Gateway 37–40 ms ở mọi bậc, CPU cả máy ≤ 11%; điểm gãy thật chưa tới. Giới hạn đo là RAM của k6 (~4 GB cho ~1.260 VU), không phải stack. LMS không đặt giới hạn bộ nhớ nên tiêu chí bộ nhớ chỉ có tác dụng với container observability; giới hạn khác của phép đo ở README |
 | Kiểm mức tải | `normal-mixed` đỉnh 1,18 ≤ 0,35 × 5,6 = 1,96; `healthy-spike` đỉnh 4,3 ≤ 0,8 × 5,6 = 4,48. Cả hai đạt |
 | Quyết định | **Giữ `k` = 4.** Chốt `normal-mixed@v1` = `moodle-normal-mixed-k4-v1` và `healthy-spike@v1` = `moodle-healthy-spike-k4-v1` (mục 8.1–8.2). `normal-mixed` chỉ dùng 0,21 × `λ_knee`; ghi lại, không tăng |
 | RAM của k6 ở đỉnh spike (bước 3) | 3,07 GiB, RAM trống của máy thấp nhất 5,1 GB ≥ 4 GB (run `w14-t03-healthy-spike-r4`, cùng kế hoạch k=4 và cùng 1.062 VU học viên dựng sẵn) |

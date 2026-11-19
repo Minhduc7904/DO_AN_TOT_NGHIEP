@@ -38,9 +38,16 @@ const TAIL_S = 120;
 const steps = kneeSteps({ rateStep: RATE_STEP, maxRate: MAX_RATE, stepS: STEP_S, startRate: START_RATE });
 const TOTAL_S = steps.length * STEP_S;
 const preludeActions = (meta.prelude ?? []).length;
-const accounts = new SharedArray('knee-accounts', () => [
-  kneeAccounts(WORKLOAD_SEED, sessions, steps, config.seedStudents, { preludeActions }),
-])[0];
+// Tính một lần; số liệu tóm tắt và tài khoản theo phiên tách hai `SharedArray` để VU không giữ bản sao
+// của cả mảng tài khoản (k6 giải tuần tự hóa phần tử mỗi lần đọc).
+let computedAccounts = null;
+const computeAccounts = () =>
+  (computedAccounts ??= kneeAccounts(WORKLOAD_SEED, sessions, steps, config.seedStudents, { preludeActions }));
+const accounts = new SharedArray('knee-accounts-meta', () => {
+  const { bySession: _bySession, ...rest } = computeAccounts();
+  return [rest];
+})[0];
+const accountOf = new SharedArray('knee-accounts-of', () => computeAccounts().bySession);
 
 const sizing = vuSizing(accounts.peak);
 const PRE_VUS = Number(__ENV.STUDENT_PRE_VUS || sizing.preAllocated);
@@ -83,7 +90,7 @@ export function knee(setupData) {
   playPlanSession(setupData, {
     session,
     index,
-    accountIndex: accounts.bySession[index],
+    accountIndex: accountOf[index],
     deadlineMs: Date.parse(setupData.startedAt) + (TOTAL_S + TAIL_S - 5) * 1000,
     stream: 'knee',
   });

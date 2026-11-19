@@ -10,6 +10,9 @@
  * | CPU từng container (theo giới hạn CPU của nó, không giới hạn thì theo 1 core) | < 80% kéo dài quá 1 phút |
  * | Bộ nhớ từng container | < 85% giới hạn; không restart, không OOM |
  * | Dòng `unexpected_status` | 0 |
+ *
+ * Container k6 (bộ sinh tải) không đặt giới hạn CPU và được dùng nhiều core: CPU của nó so với số core
+ * của máy (`hostCpus`), chỉ dùng để xếp nguyên nhân.
  */
 
 export const HEALTH_LIMITS = Object.freeze({
@@ -74,7 +77,7 @@ export function trafficStats({ actions, sessions, from, to }) {
  * (`{ ts, name, cpu_perc, cpu_limit, mem_perc }`; dòng `name = "HOST"` có `mem_available_mb`, `cpu_perc`).
  * CPU quy theo giới hạn: `cpu_perc / cpu_limit` (Docker báo % của một core).
  */
-export function resourceStats(samples, from, to, { sampleS = 15 } = {}) {
+export function resourceStats(samples, from, to, { sampleS = 15, hostCpus = 1 } = {}) {
   const byName = new Map();
   let hostMinAvailableMb = null;
   let hostCpuMax = null;
@@ -98,7 +101,7 @@ export function resourceStats(samples, from, to, { sampleS = 15 } = {}) {
     let cpuMax = 0;
     let memMax = 0;
     for (const sample of list) {
-      const cpu = sample.cpu_perc / (sample.cpu_limit || 1);
+      const cpu = sample.cpu_perc / (sample.cpu_limit || (isClientContainer(name, sample) ? hostCpus : 1));
       cpuMax = Math.max(cpuMax, cpu);
       memMax = Math.max(memMax, sample.mem_perc ?? 0);
       run = cpu > HEALTH_LIMITS.cpu_perc ? run + 1 : 0;
@@ -131,11 +134,13 @@ export function evaluateHealth({
   dropped,
   restarts = [],
   systemPrefix = DEFAULT_SYSTEM_PREFIX,
+  sampleS = 15,
+  hostCpus = 1,
 }) {
   const p95Limit = HEALTH_LIMITS.p95_s[phase === 'deadline' ? 'deadline' : 'normal'];
   const windows = p95.filter(([t]) => t * 1000 > from && t * 1000 <= to).map(([, v]) => v);
   const traffic = trafficStats({ actions, sessions, from, to });
-  const resources = resourceStats(samples, from, to);
+  const resources = resourceStats(samples, from, to, { sampleS, hostCpus });
   const systemContainers = Object.entries(resources.containers).filter(([name]) => name.startsWith(systemPrefix));
   const cpuOffenders = systemContainers
     .filter(([, s]) => s.cpu_over_limit_longest_s > HEALTH_LIMITS.cpu_sustain_s)
@@ -168,10 +173,11 @@ export function evaluateHealth({
 }
 
 /**
- * Nguyên nhân khi một bậc không khỏe: phía máy/bộ sinh tải (k6 bỏ iteration, container k6 hết CPU, RAM
- * máy cạn) hay phía hệ thống được đo.
+ * Nguyên nhân khi một bậc không khỏe: phía máy/bộ sinh tải (`client`: k6 bỏ iteration, container k6 hết
+ * CPU, CPU hoặc RAM của máy cạn, hết tài khoản seed), phía hệ thống được đo (`system`), hay cả hai
+ * (`mixed`: có lý do phía máy nhưng còn tiêu chí khác của hệ thống bị vi phạm, không tách được).
  */
-export function classifyCause(result, { hostMinMb = 1500, accountsOverlapping = 0 } = {}) {
+export function classifyCause(result, { hostMinMb = 1500, hostCpuMaxPerc = 90, accountsOverlapping = 0 } = {}) {
   // Không có request hoặc không có cửa sổ p95 trong khoảng chấm: không kết luận được bên nào.
   if (result.criteria.gateway_p95.windows === 0 || result.criteria.unexpected_rate.value === null) {
     return { side: 'unknown', reasons: ['no_data'] };
@@ -187,7 +193,30 @@ export function classifyCause(result, { hostMinMb = 1500, accountsOverlapping = 
   }
   const host = result.resources.host_min_available_mb;
   if (host !== null && host < hostMinMb) reasons.push(`host_ram ${host} MB`);
-  return { side: reasons.length > 0 ? 'client' : 'system', reasons };
+  const hostCpu = result.resources.host_cpu_max_perc;
+  if (hostCpu !== null && hostCpu >= hostCpuMaxPerc) reasons.push(`host_cpu ${hostCpu.toFixed(0)}%`);
+  if (reasons.length === 0) return { side: 'system', reasons };
+  // Tiêu chí mà lý do phía máy đã giải thích: iteration bị bỏ, và 409 do dùng chung tài khoản.
+  const explained = new Set(['dropped_iterations']);
+  if (reasons.includes('seed_accounts_exhausted')) explained.add('unexpected_status');
+  const systemFailed = result.failed.filter((name) => !explained.has(name));
+  return { side: systemFailed.length > 0 ? 'mixed' : 'client', reasons, ...(systemFailed.length > 0 ? { system_failed: systemFailed } : {}) };
+}
+
+/**
+ * Restart/OOM của container trong project, kèm thời điểm: OOM theo lúc container chết (`FinishedAt`),
+ * restart theo lúc khởi động lại (`StartedAt`). Bỏ sự kiện trước `sinceMs` (container hỏng từ run trước
+ * không bị tính cho run này). `rows`: `{ name, oom, startedAt, finishedAt }` (mili giây).
+ */
+export function restartEvents(rows, sinceMs) {
+  const events = [];
+  for (const row of rows) {
+    const times = [];
+    if (row.oom && row.finishedAt >= sinceMs) times.push(row.finishedAt);
+    if (row.startedAt > sinceMs) times.push(row.startedAt);
+    if (times.length > 0) events.push({ name: row.name, at: Math.min(...times), oom: row.oom });
+  }
+  return events;
 }
 
 /**
@@ -218,9 +247,21 @@ export function droppedByStep(summary, sessions, { tolerance = 1, prefix = 'knee
 
 /**
  * Chấm từng bậc của run tìm điểm gãy. `λ_knee` là tốc độ của bậc khỏe cuối cùng trước bậc đầu tiên
- * không khỏe (bậc 1 đã hỏng thì không xác định). Cửa sổ của bậc lùi 60 s đầu để bỏ phần chuyển tiếp.
+ * không khỏe (bậc 1 đã hỏng thì không xác định); `lambda_knee_lower_bound` cho biết đó chỉ là cận dưới
+ * (stack chưa gãy). Cửa sổ của bậc lùi 60 s đầu để bỏ phần chuyển tiếp.
  */
-export function evaluateSteps({ summary, p95, actions, sessions, samples, restartsInRange = () => [], settleS = 60, overlapByStep = {} }) {
+export function evaluateSteps({
+  summary,
+  p95,
+  actions,
+  sessions,
+  samples,
+  restartsInRange = () => [],
+  settleS = 60,
+  overlapByStep = {},
+  sampleS = 15,
+  hostCpus = 1,
+}) {
   if (summary.steps.some((step) => settleS >= step.duration_s)) {
     throw new RangeError(`settleS (${settleS} s) phải nhỏ hơn thời lượng bậc`);
   }
@@ -242,17 +283,25 @@ export function evaluateSteps({ summary, p95, actions, sessions, samples, restar
       phase: summary.phase,
       dropped: step.dropped_iterations ?? dropped[step.index],
       restarts: restartsInRange(from, to),
+      sampleS,
+      hostCpus,
     });
     const cause = result.pass ? null : classifyCause(result, { accountsOverlapping: overlapByStep[step.index] ?? 0 });
     return { step: step.index, rate_per_s: step.rate_per_s, ...result, cause };
   });
   const firstFail = results.findIndex((r) => !r.pass);
   const lastHealthy = firstFail === -1 ? (results.at(-1) ?? null) : firstFail === 0 ? null : results[firstFail - 1];
+  const lambda = lastHealthy?.rate_per_s ?? null;
+  // Iteration bị bỏ mà không gán được cho bậc nào (lệch biên trong dung sai): phải bằng 0.
+  const attributed = complete.reduce((sum, step) => sum + (step.dropped_iterations ?? dropped[step.index] ?? 0), 0);
   return {
-    lambda_knee_per_s: lastHealthy?.rate_per_s ?? null,
+    lambda_knee_per_s: lambda,
+    // Cận dưới khi stack chưa gãy trong các bậc đã đo: mọi bậc khỏe, hoặc bậc hỏng đầu tiên do máy/không rõ.
+    lambda_knee_lower_bound: lambda !== null && (firstFail === -1 || results[firstFail].cause.side !== 'system'),
     reached_max_rate: firstFail === -1 && complete.length === summary.steps.length,
     steps_not_run: summary.steps.length - complete.length,
     k6_dropped_iterations: summary.dropped_iterations ?? null,
+    k6_dropped_unattributed: summary.dropped_iterations > 0 ? Math.max(0, summary.dropped_iterations - attributed) : 0,
     first_unhealthy: firstFail === -1 ? null : { step: results[firstFail].step, rate_per_s: results[firstFail].rate_per_s, failed: results[firstFail].failed, cause: results[firstFail].cause },
     steps: results,
   };

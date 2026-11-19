@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { classifyCause, droppedByStep, evaluateHealth, evaluateSteps, resourceStats, trafficStats } from './health.mjs';
+import { classifyCause, droppedByStep, evaluateHealth, evaluateSteps, resourceStats, restartEvents, trafficStats } from './health.mjs';
 import { parseSize, parseStatsLine } from './sample-docker-stats.mjs';
 
 const T0 = Date.parse('2026-11-19T10:00:00Z');
@@ -72,6 +72,13 @@ test('chấm một khoảng: khỏe; p95 1,2 s trượt ở normal nhưng đạt
   const withK6 = evaluateHealth(healthyInput({ samples: k6Busy }));
   assert.equal(withK6.criteria.cpu_sustained.pass, true);
   assert.deepEqual(classifyCause(withK6).reasons, ['k6_cpu brave_wing']);
+  // k6 không có giới hạn CPU: so với số core của máy, 300% trên 12 core chỉ là 25%.
+  const withK6On12 = evaluateHealth(healthyInput({ samples: k6Busy, hostCpus: 12 }));
+  assert.equal(withK6On12.resources.containers.brave_wing.cpu_max_perc_of_limit, 25);
+  assert.deepEqual(classifyCause(withK6On12).reasons, []);
+  // Chu kỳ lấy mẫu khác 15 s: thời lượng vượt ngưỡng theo chu kỳ thật.
+  const busyGateway = [0, 5, 10].map((s) => sample(s, 'aiops-lms-gateway-1', 90));
+  assert.equal(evaluateHealth(healthyInput({ samples: busyGateway, sampleS: 5 })).resources.containers['aiops-lms-gateway-1'].cpu_over_limit_longest_s, 15);
   const failures = Array.from({ length: 3 }, (_, i) => action(i, 'failed'));
   const errors = evaluateHealth(healthyInput({ actions: [...healthyInput().actions, ...failures] }));
   assert.deepEqual(errors.failed, ['unexpected_rate']); // 3/403 ≈ 0,74% ≥ 0,5%
@@ -106,9 +113,59 @@ test('chấm từng bậc: λ_knee là bậc khỏe cuối trước bậc đầu
   assert.equal(client.lambda_knee_per_s, 0.2);
   assert.equal(client.first_unhealthy.cause.side, 'client');
 
+  assert.equal(result.lambda_knee_lower_bound, false);
+  assert.equal(client.lambda_knee_lower_bound, true); // gãy do máy: stack chưa gãy
+
   const allHealthy = evaluateSteps({ summary, p95: p95.map(([t]) => [t, 0.1]), actions, sessions, samples: [] });
   assert.equal(allHealthy.reached_max_rate, true);
   assert.equal(allHealthy.lambda_knee_per_s, 0.6);
+  assert.equal(allHealthy.lambda_knee_lower_bound, true);
+});
+
+test('nguyên nhân: lý do phía máy không che tiêu chí hệ thống; CPU máy cạn là phía máy', () => {
+  const base = evaluateHealth(healthyInput({ dropped: 2 }));
+  assert.deepEqual(classifyCause(base), { side: 'client', reasons: ['k6_dropped_iterations'] });
+  const both = evaluateHealth(healthyInput({ dropped: 2, p95: [[T0 / 1000 + 60, 1.5]] }));
+  assert.deepEqual(classifyCause(both), {
+    side: 'mixed',
+    reasons: ['k6_dropped_iterations'],
+    system_failed: ['gateway_p95'],
+  });
+  const hostBusy = evaluateHealth(healthyInput({ dropped: 1, samples: [{ ts: at(0), name: 'HOST', cpu_perc: 97 }] }));
+  assert.deepEqual(classifyCause(hostBusy).reasons, ['k6_dropped_iterations', 'host_cpu 97%']);
+});
+
+test('restart/OOM: OOM gán theo lúc container chết, restart theo lúc khởi động lại, bỏ sự kiện trước run', () => {
+  const since = T0;
+  const rows = [
+    { name: 'a', oom: true, startedAt: T0 - 60_000, finishedAt: T0 + 500_000 }, // OOM ở giây 500, không restart
+    { name: 'b', oom: false, startedAt: T0 + 200_000, finishedAt: T0 + 199_000 }, // restart ở giây 200
+    { name: 'c', oom: true, startedAt: T0 - 120_000, finishedAt: T0 - 60_000 }, // OOM từ trước run
+    { name: 'd', oom: false, startedAt: T0 - 10_000, finishedAt: 0 },
+  ];
+  assert.deepEqual(restartEvents(rows, since), [
+    { name: 'a', at: T0 + 500_000, oom: true },
+    { name: 'b', at: T0 + 200_000, oom: false },
+  ]);
+});
+
+test('iteration bị bỏ không gán được cho bậc nào (lệch trong dung sai) được báo riêng', () => {
+  const summary = {
+    workload_start: at(0),
+    phase: 'normal',
+    dropped_iterations: 1,
+    steps: [1, 2].map((index) => ({ index, rate_per_s: 0.5, start_s: (index - 1) * 180, duration_s: 180, planned: 90 })),
+  };
+  // Đủ 90 phiên mỗi bậc trừ 1 phiên ở bậc 2 (trong dung sai ±1).
+  const sessions = [
+    ...Array.from({ length: 90 }, (_, i) => ({ session_key: `knee-${i}`, start: at(i * 2), end_reason: 'exit' })),
+    ...Array.from({ length: 89 }, (_, i) => ({ session_key: `knee-${90 + i}`, start: at(180 + i * 2), end_reason: 'exit' })),
+  ];
+  const p95 = Array.from({ length: 6 }, (_, i) => [T0 / 1000 + 60 * (i + 1), 0.1]);
+  const actions = Array.from({ length: 360 }, (_, i) => action(i));
+  const result = evaluateSteps({ summary, p95, actions, sessions, samples: [] });
+  assert.equal(result.k6_dropped_unattributed, 1);
+  assert.equal(result.lambda_knee_per_s, 0.5);
 });
 
 test('iteration bị bỏ theo bậc: suy từ số phiên bắt đầu trong bậc, bỏ lệch biên; tổng k6 bằng 0 thì 0', () => {

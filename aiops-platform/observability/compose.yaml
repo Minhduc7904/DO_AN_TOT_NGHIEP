@@ -118,7 +118,7 @@ services:
       timeout: 3s
       retries: 24
       start_period: 20s
-    # Grafana 13 dùng ~400 MiB khi rảnh và chạm 505/512 MiB trong 30 phút đầu (run tìm điểm gãy
+    # Grafana 13 dùng ~400 MiB khi rảnh và chạm 508/512 MiB trong 30 phút đầu (run tìm điểm gãy
     # w15-t02-knee-r1), vượt ngưỡng 85% của workload-design-v1 mục 8.4 dù không ai mở UI.
     mem_limit: 768m
     cpus: 0.5
