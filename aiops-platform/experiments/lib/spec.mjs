@@ -21,6 +21,8 @@ export const PROFILES = Object.freeze(['normal-mixed', 'healthy-spike']);
 export const CASES = Object.freeze(['C2', 'C3', 'C4', 'C6']);
 export const RUN_ID_PATTERN = /^[a-z0-9][a-z0-9-]{2,95}$/u;
 export const DEFAULT_SERVICE_TOKEN_TTL_S = 60;
+/** Dữ liệu seed R-10 mặc định (aiops-platform/load/README.md mục chuẩn bị). */
+export const DEFAULT_DATA_SEED = Object.freeze({ profile: 'small', seed: 42 });
 
 function isInteger(value) {
   return Number.isInteger(value);
@@ -73,6 +75,12 @@ export function validateSpec(spec) {
   if (ttl !== undefined && (!isInteger(ttl) || ttl <= 0)) {
     errors.push('environment.service_token_ttl_s phải là số nguyên dương');
   }
+  const dataSeed = spec.data_seed;
+  if (dataSeed !== undefined) {
+    if (typeof dataSeed?.profile !== 'string' || !isInteger(dataSeed?.seed)) {
+      errors.push('data_seed cần { profile: chuỗi, seed: số nguyên }');
+    }
+  }
   if (spec.replacement_for_run_id !== undefined && !RUN_ID_PATTERN.test(spec.replacement_for_run_id)) {
     errors.push('replacement_for_run_id không hợp lệ');
   }
@@ -90,6 +98,7 @@ export function normalizeSpec(spec, now = new Date()) {
     run_id:
       spec.run_id ?? `${spec.split}-${kind}-${spec.workload.profile}-s${spec.workload.seed}-${stamp}`,
     fault: spec.fault ?? null,
+    data_seed: { ...DEFAULT_DATA_SEED, ...(spec.data_seed ?? {}) },
     environment: {
       service_token_ttl_s: DEFAULT_SERVICE_TOKEN_TTL_S,
       ...(spec.environment ?? {}),
