@@ -64,5 +64,5 @@ Theo [workload-realism-report-v1](../../../architecture/workload-realism-report-
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 19/11/2026 — lập card.
+- Cập nhật gần nhất: 19/11/2026 — tiêu chí v2 và mã chấm push ở commit `602230b` (15:18 +07) trước khi chấm; chấm lại `r2`: bán thực đạt v2 (điểm 0,490, `tau` 0,986), mức 2 thuần và mức 1 không đạt (báo cáo v1 mục 10). Còn chấm run dataset v0 (task-04).
 - Ghi chú/tồn đọng: 19/11/2026 — đổi cách làm: bỏ 3 run nhiều seed trên cùng kế hoạch (không đo được dao động), thay bằng tiêu chí v2 lấy mốc từ dao động của nhóm ngày thật và chấm trên run dataset v0.

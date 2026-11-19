@@ -2,7 +2,7 @@
 
 > **Task:** `task-04_validate-workload-realism` (tuần 14).
 >
-> **Trạng thái:** v1, cập nhật 19/11/2026. Số đo ở mục 0, 2, 4 và 5 lấy từ ba run `r2` chạy trên code workload đã merge (`main` `ba2d7da`, gồm PR #85 sau review và PR #90) với TTL service token mặc định 600 s. Lần đo pilot ngày 18/11/2026 (run `r1`, code trước review, TTL 60 s) giữ ở mục 7 để đối chiếu. Ngưỡng ở mục 1 không đổi giữa hai lần đo.
+> **Trạng thái:** v1, cập nhật 19/11/2026. Số đo ở mục 0, 2, 4 và 5 lấy từ ba run `r2` chạy trên code workload đã merge (`main` `ba2d7da`, gồm PR #85 sau review và PR #90) với TTL service token mặc định 600 s. Lần đo pilot ngày 18/11/2026 (run `r1`, code trước review, TTL 60 s) giữ ở mục 7 để đối chiếu. Ngưỡng ở mục 1 không đổi giữa hai lần đo. Mục 10 (thêm ngày 19/11/2026, task-07 tuần 15) chấm lại `r2` theo [tiêu chí v2](workload-realism-criteria-v2.md).
 >
 > **Tài liệu liên quan:** [ADR-007](../adr/adr-007-semi-real-workload-and-ai-evidence-v1.md) mục 2 và 4, [workload-design-v1](workload-design-v1.md) mục 10.4 và 13. Công cụ nằm ở `aiops-platform/load/tools/realism.mjs` và `validate-realism.mjs`.
 
@@ -12,6 +12,7 @@
 - **Về thứ hạng, bán thực gần hold-out nhất trên mọi đại lượng.** Ví dụ JSD tỉ lệ thao tác: bán thực 0,019, mức 2 thuần 0,132, mức 1 0,300. Pearson dáng theo giờ lần lượt là 0,96, 0,68 và −0,02. Mức 2 thuần đạt 1/7 tiêu chí (trung vị số thao tác); mức 1 không đạt tiêu chí nào.
 - **Khoảng lệch thời lượng không do cơ chế phát lại.** Run bán thực khớp kế hoạch của nó: KS D thời lượng giữa run và kế hoạch là 0,020. Phần lệch có sẵn trong dữ liệu xây: chính 60 ngày đầu của log Moodle so với 31 ngày hold-out đã lệch trung vị thời lượng −37% (mục 5).
 - **Số đo gần như không đổi so với pilot** (mục 7). Các đại lượng đo ở phía client do kế hoạch phiên quyết định; code sửa sau review chủ yếu đổi phía server (khóa seed đúng, không trùng tài khoản). Run `r2` không còn phiên `auth_failed` hay `unexpected_status`.
+- **Theo tiêu chí v2** (đăng ký 19/11/2026, [workload-realism-criteria-v2](workload-realism-criteria-v2.md)): bán thực **đạt**, mức 2 thuần và mức 1 không đạt (mục 10). Đây là chấm lại `r2` sau khi đã xem dữ liệu; bằng chứng chính của v2 là run dataset v0 (tuần 15).
 - **Hai lỗi đo được sửa sau lần chạy pilot đầu tiên** (mục 6). Cả hai làm công cụ đo sai đại lượng, không phải ngưỡng.
 
 ## 1. Tiêu chí chốt trước
@@ -166,7 +167,34 @@ node tools/validate-realism.mjs \
   --run level1=results/w14-t04-level1-r2 \
   --run assumed=results/w14-t04-assumed-r2 \
   --run moodle=results/w14-t04-moodle-r2 --out results/realism-report-r2.json
+# Từ 19/11/2026 lệnh này in thêm điểm theo tiêu chí v2 (cần data/sessions/moodle-build-v1.json); mục 10.
 ```
+
+## 10. Chấm lại `r2` theo tiêu chí v2 (19/11/2026, sau khi xem dữ liệu)
+
+Tiêu chí v2 hỏi nguồn có lệch hold-out nhiều hơn mức các nhóm ngày thật của log thường lệch hay không: 1.000 nhóm 4 ngày rút từ 31 ngày thường của phần xây (số phiên trong [204, 576]), mỗi nhóm rút đúng số phiên của nguồn, đổi bảy khoảng cách thành thứ hạng trong phân phối của các nhóm thật; nguồn đạt khi thứ hạng lớn nhất ≤ `tau` (phân vị 95% của chính các nhóm thật). Mốc thời gian của run làm tròn theo giây như log Moodle. Định nghĩa đầy đủ và thiên lệch "nghĩ ra sau khi xem v1" ở [workload-realism-criteria-v2](workload-realism-criteria-v2.md); tiêu chí và mã chấm được push (commit `602230b`) trước khi chạy bảng dưới.
+
+| Đại lượng (khoảng cách; thứ hạng trong nhóm ngày thật) | (a) Mức 1 | (b) Mức 2 thuần | (c) Bán thực | Phân vị 95% của nhóm ngày thật |
+| --- | --- | --- | --- | --- |
+| KS D thao tác/phiên | 0,423; 1,00 | 0,158; 0,94 | 0,087; 0,45 | 0,16 |
+| Lệch trung vị thao tác/phiên | 133%; 1,00 | 0%; 0,39 | 0%; 0,38 | 33% |
+| KS D thời lượng | 0,680; 1,00 | 0,288; 1,00 | 0,099; 0,49 | 0,17 |
+| Lệch trung vị thời lượng | 88%; 1,00 | 43%; 0,45 | 42%; 0,42 | 65% |
+| KS D think time | 0,912; 1,00 | 0,118; 1,00 | 0,029; 0,35 | 0,05 |
+| Lệch trung vị think time | 86%; 1,00 | 21%; 1,00 | 0%; 0,20 | 14% |
+| JSD tỉ lệ thao tác | 0,300; 1,00 | 0,132; 1,00 | 0,019; 0,15 | 0,09 |
+| **Điểm (thứ hạng lớn nhất) / `tau`** | 1,000 / 0,987 | 1,000 / 0,987 | **0,490 / 0,986** | |
+| **Đạt v2** | không | không | **có** | |
+
+Quá trình đến (không có ngưỡng; khoảng 2,5–97,5% của nhóm ngày thật): Pearson dáng theo giờ 0,74–0,97 (bán thực 0,96, mức 2 thuần 0,68, mức 1 0,05); đỉnh/trung bình 2,98–10,58 (3,16; 1,99; 1,25); index of dispersion 9,5–29,9 (10,0; 5,0; 0,14); Hurst 0,82–0,99 (0,98; 0,99; 0,27). Bán thực nằm trong khoảng ở cả bốn đại lượng; mức 2 thuần ngoài khoảng ở Pearson, đỉnh/trung bình, dispersion; mức 1 ngoài khoảng ở cả bốn.
+
+Đọc kết quả:
+
+- **Ngưỡng cố định của v1 chặt hơn dao động của chính dữ liệu thật.** Phân vị 95% của nhóm ngày thật cho KS D thời lượng là 0,17 và lệch trung vị thời lượng 65%, so với 0,1 và 10% của v1. Lệch −42% của bán thực nằm ở thứ hạng 0,42: gần một nửa nhóm ngày thật lệch hold-out nhiều hơn thế.
+- **V2 vẫn phân biệt được nguồn.** Mức 2 thuần, dù trung vị số thao tác khớp, vẫn trượt rõ ở think time (KS D 0,118 so với 0,05) và tỉ lệ thao tác (JSD 0,132 so với 0,09): tham số giả định không tái tạo được hành vi thật. Mức 1 xa ngoài dải ở mọi đại lượng.
+- **Làm tròn theo giây đưa KS D think time của bán thực từ 0,075 về 0,029**, đúng như chẩn đoán độ phân giải ở mục 5.
+- Với bán thực, đạt v2 nghĩa là bộ phát giữ được hình dạng phiên của kế hoạch và 4 ngày đã chọn không bất thường; v2 không chứng minh thêm điều gì về log Moodle so với người dùng của LMS này (criteria-v2 mục 3).
+- Kết luận "giống thật" theo v2 chưa được viết ở đây vì đây là chấm sau khi xem dữ liệu. Nó chỉ được viết khi các run dataset v0 (chạy sau thời điểm đăng ký, trên nhóm ngày chưa ai xem) đạt v2.
 
 ## Tài liệu tham khảo
 
