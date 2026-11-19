@@ -168,7 +168,7 @@ test('mốc workload_start đọc từ dòng phase; môi trường k6 bỏ biế
   assert.deepEqual(env, { PATH: '/bin', PROFILE: 'normal-mixed' });
 });
 
-test('execution gate: k6 thoát 99 vẫn đạt; không reset, dropped, fault không gỡ được thì không', () => {
+test('execution gate: k6 thoát 99 vẫn đạt; không reset, dropped (kể cả fault run), fault không gỡ được thì không', () => {
   const base = {
     resetResult: 'succeeded',
     seedResult: 'succeeded',
@@ -182,6 +182,7 @@ test('execution gate: k6 thoát 99 vẫn đạt; không reset, dropped, fault kh
   };
   assert.equal(executionGate(base).result, 'pass');
   assert.deepEqual(executionGate({ ...base, resetResult: 'skipped', seedResult: 'skipped' }).reasons, ['reset_skipped']);
+  // Fault run (base có fault) vẫn trượt khi k6 bỏ iteration: lỗi của bộ sinh tải, không phải triệu chứng.
   assert.deepEqual(executionGate({ ...base, summary: { ...base.summary, dropped_iterations: 3 } }).reasons, [
     'dropped_iterations_3',
   ]);
@@ -230,6 +231,8 @@ test('fault run trọn vẹn: reset + seed + TTL, lịch fault theo mốc worklo
   assert.equal(fault.env.COMPOSE_PROJECT_NAME, 'aiops-lms');
   assert.ok(order.indexOf('cleanup-clear') > order.indexOf('fault-schedule'));
   assert.deepEqual(order.slice(-4), ['export', 'quality', 'ground-truth', 'features']);
+  const exported = ctx.calls.find((call) => call.name === 'export');
+  assert.equal(exported.args[exported.args.indexOf('--timeout-seconds') + 1], '60');
   const truth = ctx.calls.find((call) => call.name === 'ground-truth');
   assert.equal(truth.args[truth.args.indexOf('--case') + 1], 'C2');
   assert.ok(truth.args.includes('--artifact'));

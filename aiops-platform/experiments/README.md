@@ -50,7 +50,7 @@ Ví dụ ở [`specs/`](specs/).
 
 `run-manifest.json` → `gates`:
 
-- `execution` (evaluation-protocol-v1 mục 8.1): `pass` khi reset và nạp dữ liệu seed thành công (run `--no-reset` không bao giờ đạt), môi trường đúng spec, k6 thoát 0 hoặc 99 (99 là threshold của profile không đạt, bình thường ở fault run), có `k6-summary.json` với cửa sổ workload và `dropped_iterations` = 0, lịch fault thoát 0, bước gỡ fault thành công. Lý do không đạt ghi ở `reasons`.
+- `execution` (evaluation-protocol-v1 mục 8.1): `pass` khi reset và nạp dữ liệu seed thành công (run `--no-reset` không bao giờ đạt), môi trường đúng spec, k6 thoát 0 hoặc 99 (99 là threshold của profile không đạt, bình thường ở fault run), có `k6-summary.json` với cửa sổ workload và `dropped_iterations` = 0 (kể cả fault run: iteration bị bỏ nghĩa là k6 hết VU dựng sẵn, kế hoạch phiên lệch và `plan_reproducible = false`, xem [load/README](../load/README.md); fault làm phiên dài ra nên fault run cần VU dựng sẵn nhiều hơn run healthy), lịch fault thoát 0, bước gỡ fault thành công. Lý do không đạt ghi ở `reasons`.
 - `data_quality`: `overall_status` của quality report (`pass | partial | fail`).
 - `ground_truth`: `run_status` của `RunGroundTruth` (`valid | invalid | failed`).
 
@@ -95,6 +95,7 @@ node aiops-platform/experiments/run-experiment.mjs aiops-platform/experiments/sp
 | `--min-disk-mb` | 5000 | Đĩa trống tối thiểu ở thư mục `runs/` |
 | `--setup-timeout-s` | 600 | Chờ mốc `workload_start` trong log k6 |
 | `--fault-grace-s` | 300 | Chờ lịch fault kết thúc sau khi k6 xong |
+| `--export-timeout-s` | 60 | Timeout mỗi lời gọi HTTP của bước export (Prometheus, Tempo, Loki); mặc định của `aiops-training export` là 15 s, quá ngắn cho truy vấn log cả run khi máy thiếu RAM. Timeout áp cho từng lần tải trace nên khi Tempo treo, export chờ lâu hơn trước khi bỏ (vẫn trong giới hạn 3 giờ của bước) |
 | `--runs-dir`, `--ledger` | `aiops-platform/experiments/runs`, `ledger.jsonl` | Đổi nơi ghi |
 
 Runner không chuyển biến cấu hình k6 của shell (`PLAN`, `VUS`, `DURATION`…) vào k6: mọi tham số workload lấy từ spec. Một run 48 phút cộng reset (2–5 phút), setup k6 (1–2 phút), export (15–25 phút cho trace): khoảng 1,2–1,5 giờ. Lệnh in một dòng JSON tóm tắt; mã thoát 0 khi `completed`.

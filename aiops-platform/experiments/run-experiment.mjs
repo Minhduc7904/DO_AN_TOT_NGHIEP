@@ -126,6 +126,8 @@ export function executionGate({
   if (![0, 99].includes(k6Exit)) reasons.push(`k6_exit_${k6Exit}`);
   if (!summary) reasons.push('k6_summary_missing');
   else {
+    // Kể cả fault run: iteration bị bỏ là giới hạn của bộ sinh tải (hết VU dựng sẵn), không phải người dùng
+    // thật; kế hoạch phiên lệch và không tái lập được (`plan_reproducible`, load/README mục mức 2+).
     if (summary.dropped_iterations !== 0) reasons.push(`dropped_iterations_${summary.dropped_iterations}`);
     if (!summary.workload_start || !summary.workload_end) reasons.push('workload_window_missing');
   }
@@ -455,6 +457,7 @@ export async function runExperiment(rawSpec, options, ctx) {
           workload_start: summary.workload_start,
           workload_end: summary.workload_end,
           dropped_iterations: summary.dropped_iterations,
+          plan_reproducible: summary.plan_reproducible ?? null,
           summary_sha256: sha256File(summaryPath),
         }
       : null;
@@ -480,7 +483,17 @@ export async function runExperiment(rawSpec, options, ctx) {
           const { code: exit } = await exec(
             'export',
             'uv',
-            ['run', 'aiops-training', 'export', '--k6-summary', summaryPath, '--out', telRoot],
+            [
+              'run',
+              'aiops-training',
+              'export',
+              '--k6-summary',
+              summaryPath,
+              '--out',
+              telRoot,
+              '--timeout-seconds',
+              String(options.exportTimeoutS ?? 60),
+            ],
             { cwd: paths.trainingDir, timeoutMs: 3 * 60 * 60_000 },
           );
           if (existsSync(join(telRoot, runId))) renameSync(join(telRoot, runId), telemetryDir);
@@ -730,8 +743,14 @@ async function main(argv) {
       'min-disk-mb': { type: 'string', default: '5000' },
       'setup-timeout-s': { type: 'string', default: '600' },
       'fault-grace-s': { type: 'string', default: '300' },
+      'export-timeout-s': { type: 'string', default: '60' },
     },
   });
+  const positiveNumber = (vals, name) => {
+    const value = Number(vals[name]);
+    if (!Number.isFinite(value) || value <= 0) throw new Error(`--${name} phải là số dương, nhận "${vals[name]}"`);
+    return value;
+  };
   if (positionals.length !== 1) {
     throw new Error('Dùng: run-experiment.mjs <run-spec.json> --compose-env-file <file> --confirm-reset <project>');
   }
@@ -750,10 +769,11 @@ async function main(argv) {
       composeEnvFile: resolve(values['compose-env-file']),
       confirmReset: values['confirm-reset'],
       noReset: values['no-reset'],
-      minAvailableMb: Number(values['min-available-mb']),
-      minDiskMb: Number(values['min-disk-mb']),
-      setupTimeoutMs: Number(values['setup-timeout-s']) * 1000,
-      faultGraceMs: Number(values['fault-grace-s']) * 1000,
+      minAvailableMb: positiveNumber(values, 'min-available-mb'),
+      minDiskMb: positiveNumber(values, 'min-disk-mb'),
+      setupTimeoutMs: positiveNumber(values, 'setup-timeout-s') * 1000,
+      faultGraceMs: positiveNumber(values, 'fault-grace-s') * 1000,
+      exportTimeoutS: positiveNumber(values, 'export-timeout-s'),
       signal: controller.signal,
     },
     realContext(paths),
