@@ -7,7 +7,7 @@
 | Tuần | `week-14_2026-11-01_to_2026-11-07` |
 | Nguồn plan canonical | [Plan v0.4 — Tuần 14](../../plan-v0.4-24-weeks.md#tuần-14--workload-bán-thực-mức-2-fault-manifest-và-ground-truth) |
 | Mục tiêu tuần | Phát lại phiên học viên thật từ log Moodle (mức 2+) và mức 2 cho giảng viên/admin/job lịch; hai profile healthy bắt buộc; báo cáo kiểm chứng độ thực so với hold-out và hai nguồn tải đơn giản; fault manifest cho C2, C3, C4, C6; `RunGroundTruth` tối thiểu có validation; feature pipeline v0. |
-| Trạng thái tuần | Đang thực hiện — sáu task đã hoàn thành và merge (PR #83–#87, #89; bảng task ở PR #82); task-03 chờ review PR thứ hai (hai profile cả ngày đã đạt tiêu chí khỏe mục 8.4); Gate R điều kiện 5 vẫn mở (ngoại lệ ở dưới) |
+| Trạng thái tuần | Đang thực hiện — sáu task đã hoàn thành và merge (PR #83–#87, #89; bảng task ở PR #82); task-03 chờ review PR #90 (hai profile cả ngày đã đạt tiêu chí khỏe mục 8.4); Gate R điều kiện 5 vẫn mở (ngoại lệ ở dưới) |
 
 > Tuần canonical là 01/11/2026–07/11/2026. Kế hoạch được lập ngày 18/11/2026 (tuần lịch 17) để bù tiến độ; hạn task bên dưới là mốc bù tiến độ, không đổi phạm vi milestone.
 
@@ -46,4 +46,4 @@
 - [x] Các task ưu tiên cao có trạng thái và bằng chứng được cập nhật.
 - [x] Các task hoàn thành đã liên kết đến PR và bằng chứng DoD.
 - [ ] Gate R điều kiện 5 có bằng chứng của Bách (đóng ngoại lệ của tuần 13 và tuần 14).
-- [ ] Tồn đọng và việc chuyển sang tuần 15 đã được ghi rõ. Đã biết: task-03 (merge PR thứ hai); chạy lại kiểm chứng độ thực trên code cuối (task-04); Gate R điều kiện 5.
+- [ ] Tồn đọng và việc chuyển sang tuần 15 đã được ghi rõ. Đã biết: task-03 (merge PR #90); chạy lại kiểm chứng độ thực trên code cuối (task-04); Gate R điều kiện 5.
