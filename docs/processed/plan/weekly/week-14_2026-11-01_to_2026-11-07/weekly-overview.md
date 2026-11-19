@@ -46,4 +46,4 @@
 - [x] Các task ưu tiên cao có trạng thái và bằng chứng được cập nhật.
 - [x] Các task hoàn thành đã liên kết đến PR và bằng chứng DoD.
 - [ ] Gate R điều kiện 5 có bằng chứng của Bách (đóng ngoại lệ của tuần 13 và tuần 14).
-- [ ] Tồn đọng và việc chuyển sang tuần 15 đã được ghi rõ. Đã biết: chạy lại kiểm chứng độ thực trên code cuối (task-04); Gate R điều kiện 5.
+- [ ] Tồn đọng và việc chuyển sang tuần 15 đã được ghi rõ. Đã biết: Gate R điều kiện 5. Kiểm chứng độ thực đã chạy lại trên code cuối ngày 19/11/2026 (task-04).

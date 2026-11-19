@@ -11,7 +11,7 @@
 | Collaborator | Không có |
 | Ưu tiên | Cao |
 | Hạn dự kiến | 24/11/2026 (mốc bù tiến độ) |
-| Nhánh thực hiện | `feat/week-14/task-04-validate-workload-realism` |
+| Nhánh thực hiện | `feat/week-14/task-04-validate-workload-realism` (PR #89), `feat/week-14/task-04-realism-rerun` (đo lại trên code cuối) |
 
 ## Yêu cầu và phạm vi
 
@@ -59,5 +59,5 @@ Theo [ADR-007](../../../adr/adr-007-semi-real-workload-and-ai-evidence-v1.md) m�
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 18/11/2026 — đã merge PR #89; ghi nhận hậu kiểm, chuyển Hoàn thành.
-- Ghi chú/tồn đọng: Báo cáo [workload-realism-report-v1](../../../architecture/workload-realism-report-v1.md) là lần đo pilot: chưa nguồn nào đạt đủ ngưỡng chốt trước (bán thực 5/7). Phải chạy lại ba run trên code workload cuối cùng (TTL token mặc định) trước khi thu dữ liệu tuần 15.
+- Cập nhật gần nhất: 19/11/2026 — chạy lại ba run trên code workload đã merge (`ba2d7da`, TTL token 600 s; run `w14-t04-*-r2`) và cập nhật báo cáo. 18/11/2026: đã merge PR #89; ghi nhận hậu kiểm, chuyển Hoàn thành.
+- Ghi chú/tồn đọng: Báo cáo [workload-realism-report-v1](../../../architecture/workload-realism-report-v1.md) là lần đo pilot: chưa nguồn nào đạt đủ ngưỡng chốt trước (bán thực 5/7). Lần đo lại 19/11/2026 trên code cuối cho số đo gần như trùng pilot: bán thực đạt 6/7 (chỉ trung vị thời lượng lệch −42% không đạt; KS D thời lượng 0,099 sát ngưỡng), vẫn chưa được kết luận "giống thật". Bản pilot ghi nhầm mức 2 thuần đạt 2/7, đúng là 1/7; đã sửa trong báo cáo.
