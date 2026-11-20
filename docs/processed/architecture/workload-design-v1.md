@@ -953,7 +953,7 @@ Theo [ADR-007](../adr/adr-007-semi-real-workload-and-ai-evidence-v1.md) mục 2:
 | Final test (healthy và fault) | 3000–3999 | Không trùng train/validation; freeze danh sách trước final test |
 
 - `run_id` không bao giờ dùng lại; chạy lại là run mới với seed mới trong cùng khoảng.
-- Đề xuất (chờ xác nhận khi viết campaign manifest): fault run của các case khác nhau có cùng `repeat_index` dùng **cùng** `workload_seed`, để khác biệt giữa các case đến từ fault chứ không từ workload; các lần lặp khác nhau dùng seed khác để báo cáo được dao động do workload.
+- **Đã chốt** (task-04 tuần 15, [dataset v0](dataset-v0.md) mục 3; trước đó là đề xuất): fault run của các case khác nhau có cùng `repeat_index` dùng **cùng** `workload_seed`, để khác biệt giữa các case đến từ fault chứ không từ workload; các lần lặp khác nhau dùng seed khác để báo cáo được dao động do workload. Run thay thế (evaluation-protocol-v1 mục 8.6) dùng seed mới trong cùng khoảng.
 - Dữ liệu seed (seeder R-10) dùng **một** phiên bản cố định (`--profile small`, `--seed` cố định, fingerprint ghi vào manifest campaign) cho mọi run cùng split; đây là seed dữ liệu, độc lập với `workload_seed`.
 
 ---
