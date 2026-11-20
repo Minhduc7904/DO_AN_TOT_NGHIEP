@@ -280,10 +280,19 @@ export function setup() {
     },
   }).data.id;
   const mediaIds = mediaPool();
+  // Ánh xạ khóa gọi API, nên chạy trước khi lấy mốc bắt đầu workload (trước đây chạy sau mốc).
+  const courseMap = courseMapSetup();
+  const startedAt = new Date().toISOString();
+  // In mốc bắt đầu workload ngay khi setup xong để experiment runner bật lịch fault theo đúng mốc này
+  // trong lúc run đang chạy (k6-summary.json chỉ có sau khi run kết thúc). Dòng này rơi vào
+  // k6-other.log, không lẫn vào actions.jsonl/sessions.jsonl.
+  console.log(
+    JSON.stringify({ kind: 'phase', phase: 'workload_start', ts: startedAt, run_id: config.runId }),
+  );
   return {
     setupStartedAt,
-    startedAt: new Date().toISOString(),
-    courseMap: courseMapSetup(),
+    startedAt,
+    courseMap,
     mediaIds,
     providerId,
     cleanupJobId,
