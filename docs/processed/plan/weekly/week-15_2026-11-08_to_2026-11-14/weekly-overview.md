@@ -7,7 +7,7 @@
 | Tuần | `week-15_2026-11-08_to_2026-11-14` |
 | Nguồn plan canonical | [Plan v0.4 — Tuần 15](../../plan-v0.4-24-weeks.md#tuần-15--experiment-runner-pilot-và-dataset-v0) |
 | Mục tiêu tuần | Runner một lệnh (reset-and-seed → workload → fault → ground truth → export → kiểm chất lượng) có ledger theo run; pilot tìm `λ_knee` và chốt mức tải của hai profile; pilot 4 case MVP (C2, C3, C4, C6) tới khi chuỗi nhân quả xảy ra thật, kể cả fault trùng cao điểm; thu tập train healthy và tập validation thành dataset v0 có manifest split theo run; feature pipeline v1 có kiểm tra chống leakage; cập nhật evaluation protocol bằng số đo pilot; kiểm chứng độ thực v2 (đăng ký tiêu chí trước, nhiều seed); Gate M3. |
-| Trạng thái tuần | Đang thực hiện — bảng task lập ngày 19/11/2026; task-01 đã hoàn thành và merge (PR #93); Gate R điều kiện 5 vẫn mở (ngoại lệ ở dưới) |
+| Trạng thái tuần | Đang thực hiện — bảng task lập ngày 19/11/2026; task-01, task-02 đã hoàn thành và merge (PR #93, #94); Gate R điều kiện 5 vẫn mở (ngoại lệ ở dưới) |
 
 > Tuần canonical là 08/11/2026–14/11/2026. Kế hoạch được lập ngày 19/11/2026 (tuần lịch 17) để bù tiến độ; hạn task bên dưới là mốc bù tiến độ. Theo quyết định của Bách (19/11/2026), phạm vi MVP của tuần làm đầy đủ, không áp dụng phương án nén lịch của plan v0.4 mục 9 chỉ vì trễ lịch.
 
@@ -18,7 +18,7 @@
 | Mã task | Task | Người phụ trách | Collaborator | Ưu tiên | Trạng thái |
 | --- | --- | --- | --- | --- | --- |
 | [task-01_build-experiment-runner](task-01_build-experiment-runner.md) | Experiment runner một lệnh theo run, ledger, run manifest và experiment runbook | Bách | Không có | Cao | Hoàn thành |
-| [task-02_find-load-knee-and-freeze-profiles](task-02_find-load-knee-and-freeze-profiles.md) | Pilot tìm `λ_knee`, chốt mức tải hai profile healthy theo workload-design-v1 mục 8.4 | Bách | Không có | Cao | Đã giao |
+| [task-02_find-load-knee-and-freeze-profiles](task-02_find-load-knee-and-freeze-profiles.md) | Pilot tìm `λ_knee`, chốt mức tải hai profile healthy theo workload-design-v1 mục 8.4 | Bách | Không có | Cao | Hoàn thành |
 | [task-03_pilot-mvp-fault-cases](task-03_pilot-mvp-fault-cases.md) | Pilot 4 case MVP (kể cả fault trùng cao điểm): chuỗi nhân quả, tín hiệu bắt buộc, độ trễ triệu chứng; chốt cường độ và thời lượng fault | Bách | Không có | Cao | Đã giao |
 | [task-04_collect-dataset-v0](task-04_collect-dataset-v0.md) | Dataset v0: kế hoạch phiên theo split, tập train healthy, tập validation, kiểm label/ground truth, manifest split theo run | Bách | Không có | Cao | Đã giao |
 | [task-05_build-feature-pipeline-v1](task-05_build-feature-pipeline-v1.md) | Feature pipeline v1 trên dữ liệu pilot/dataset v0, có kiểm tra chống leakage | Bách | Không có | Cao | Đã giao |

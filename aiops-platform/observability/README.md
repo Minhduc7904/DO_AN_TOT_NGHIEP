@@ -22,7 +22,7 @@ Năm image dẫn xuất chỉ thêm executable `/health-probe` (Go static, build
 | Prometheus | 512 MiB      | 0.5 | `prometheus-data`, retention 24 giờ hoặc 512 MB tùy ngưỡng đến trước |
 | Tempo      | 1 GiB        | 0.5 | `tempo-data`, WAL/blocks local, retention 24 giờ                     |
 | Loki       | 512 MiB      | 0.5 | `loki-data`, filesystem/TSDB v13, retention 24 giờ                   |
-| Grafana    | 512 MiB      | 0.5 | `grafana-data`, cấu hình/UI state local                              |
+| Grafana    | 768 MiB      | 0.5 | `grafana-data`, cấu hình/UI state local                              |
 
 Retention là chính sách xóa bất đồng bộ, không phải hard disk quota; khi đầy disk hoặc vượt RAM, telemetry có thể mất dù request nghiệp vụ vẫn chạy. Đây là MVP một node, chưa có HA, TLS, SSO hay lưu trữ dài hạn. Tempo 3 dùng `backend_worker.compaction`, không dùng cấu hình `compactor` của Tempo 2. Cấu hình Loki native OTLP theo [tài liệu chính thức](https://grafana.com/docs/loki/latest/send-data/otel/); cấu hình Tempo theo [ví dụ v3.1.0](https://github.com/grafana/tempo/blob/v3.1.0/example/docker-compose/single-binary/tempo.yaml).
 

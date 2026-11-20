@@ -636,7 +636,7 @@ Schroeder và cs. (2006) chỉ ra website giống mô hình **partly-open**: ng�
 - **Số phiên bắt đầu** theo lịch (executor `ramping-arrival-rate` của k6, mô hình mở);
 - **Bên trong phiên** là hành vi tuần tự có think time (phần "đóng" của partly-open).
 
-Khi fault làm phiên dài ra, số VU đang chạy tăng lên (vì phiên mới vẫn đến), đúng như người thật. Nếu hết VU dự trữ, k6 bỏ phiên và tăng `dropped_iterations`; con số này được ghi lại như một triệu chứng phía người dùng.
+Khi fault làm phiên dài ra, số VU đang chạy tăng lên (vì phiên mới vẫn đến), đúng như người thật. Nếu hết VU dựng sẵn, k6 bỏ phiên và tăng `dropped_iterations`. Đó là giới hạn của bộ sinh tải chứ không phải hành vi người dùng (người thật vẫn đến); kế hoạch phiên bị lệch nên run như vậy không dùng làm dữ liệu ([README `load/`](../../../aiops-platform/load/README.md)). Vì vậy VU dựng sẵn phải đủ cho phiên dài ra khi có fault (mục 8.4).
 
 ### 7.2. Nén một ngày
 
@@ -751,12 +751,12 @@ Mỗi profile là một **cấu hình có phiên bản** (ví dụ `normal-mixed
 | Ý nghĩa | Một ngày học bình thường, đủ W1–W7 |
 | Thời lượng | `setup` (≈ 1–2 phút, ngoài cửa sổ phân tích) + 48 phút + `gracefulStop` 2 phút |
 | Pha | `normal` |
-| Học viên | `N_pop` = 3.000 → 720 phiên/run; đỉnh ≈ 25 phiên/phút (≈ 53 VU bận, ≈ 3,6 request/s) lúc 20:00–21:00 |
-| Tỉ lệ profile phiên | P1 0,69 · P2 0,22 · P3 0,09; 1% phiên là người mới đăng ký |
+| Học viên | Mức 2+ (mục 13): phát lại kế hoạch `moodle-normal-mixed-k4-v1`, bốn ngày gần trung vị của log Moodle (ngày 30, 43, 52, 42) chồng với `k` = 4 → 1.246 phiên, 5.557 thao tác/run; đỉnh 1,18 phiên/s (ô 60 s). Chốt ở task-02 tuần 15 (mục 8.4). Số `N_pop` = 3.000 → 720 phiên ban đầu là của mức 2 thuần |
+| Tỉ lệ profile phiên | Mức 2 thuần: P1 0,69 · P2 0,22 · P3 0,09; 1% phiên là người mới đăng ký. Mức 2+ lấy theo log |
 | Giảng viên | 90 phiên/run; goal I1 0,45 · I2 0,30 · I3 0,20 · I4 0,05 |
 | Admin | ≈ 11 phiên rải rác (A1/A2), 2 đợt thông báo (08:00, 19:00), 1 lần dọn media (02:00) |
 | Workflow được chạm | W1 (mọi phiên), W2 (I1, I3, I4), W3 (học viên), W4 (I1, I2, I3 upload; học viên đọc media của kho), W5 (đợt thông báo, thông báo đơn, inbox học viên), W6 (I3), W7 (dọn media) |
-| VU k6 | `students`: `preAllocatedVUs` 64, `maxVUs` 160; `instructors`: 10 và 40; admin: 2–4 |
+| VU k6 | `students`: `preAllocatedVUs` 230, `maxVUs` 288 (theo đỉnh phiên đồng thời của kế hoạch); `instructors`: 30 và 60; `admin_adhoc`: 6 và 10 (`k6 inspect`, tuần 15) |
 
 ### 8.2. `healthy high-load spike` (bắt buộc)
 
@@ -765,12 +765,11 @@ Mỗi profile là một **cấu hình có phiên bản** (ví dụ `normal-mixed
 | Ý nghĩa | Ngày trước hạn quiz: tải cao hợp lệ, **không có fault**. Dùng để đo báo động nhầm khi tải tăng ([evaluation-protocol-v1 mục 5.4](evaluation-protocol-v1.md)) |
 | Thời lượng | Giống `normal mixed` để cửa sổ so sánh được |
 | Pha | `deadline` |
-| Học viên | `k_phase` = 1,60 cộng hệ số buổi tối 19:00–22:00 → 1.266 phiên/run; đỉnh ≈ 60 phiên/phút = **2,4 lần** ngày thường trong 8 phút (phút 40–44 ở mức đỉnh, ramp lên từ phút 38, ramp xuống tới phút 46) |
-| Tỉ lệ profile phiên | P1 0,53 · P2 0,38 · P3 0,09 |
+| Học viên | Mức 2+: phát lại `moodle-healthy-spike-k4-v1`, ngày đỉnh trước hạn quiz 40 cùng các ngày 46, 39, 26, `k` = 4 → 4.221 phiên, 26.373 thao tác/run; đỉnh 4,3 phiên/s (ô 60 s), 914 phiên đồng thời (mục 13.4). Thiết kế mức 2 thuần ban đầu: `k_phase` = 1,60 cộng hệ số buổi tối → 1.266 phiên/run, đỉnh ≈ 60 phiên/phút |
+| Tỉ lệ profile phiên | Mức 2 thuần: P1 0,53 · P2 0,38 · P3 0,09. Mức 2+ lấy theo log |
 | W1–W4 tăng | W1: mọi phiên đăng nhập; W3: dịch sang làm quiz; W4: trong cửa sổ 19:00–22:00 tốc độ phiên giảng viên goal I2 nhân 2 (giả định) và học viên vẫn đọc media |
-| Ước lượng | Đỉnh ≈ 1,0 phiên/s, ≈ 141 VU bận, ≈ 9,5 request/s từ học viên |
-| VU k6 | `students`: `preAllocatedVUs` 170, `maxVUs` 420 |
-| Điều kiện để run hợp lệ | Phải thỏa tiêu chí "khỏe" ở mục 8.4 suốt run, kể cả đỉnh. Nếu pilot cho thấy đỉnh 2,4 lần làm stack quá tải, hạ hệ số buổi tối (khoảng cho phép: tổng 2,0–3,2 lần) hoặc hạ `N_pop` cho cả hai profile, và ghi lại |
+| VU k6 | `students`: `preAllocatedVUs` 1.062, `maxVUs` 1.337; giảng viên và admin như 8.1 (`k6 inspect`, tuần 15) |
+| Điều kiện để run hợp lệ | Phải thỏa tiêu chí "khỏe" ở mục 8.4 suốt run, kể cả đỉnh. Nếu stack quá tải ở đỉnh thì hạ hệ số chồng phiên `k` cho cả hai profile (mức 2 thuần: hạ hệ số buổi tối, khoảng cho phép tổng 2,0–3,2 lần, hoặc `N_pop`), và ghi lại |
 
 ### 8.3. Profile healthy đối chứng (tùy chọn, theo evaluation-protocol-v1 mục 5.4)
 
@@ -787,7 +786,7 @@ Cả ba chạy **trên nền `normal mixed traffic`** và chỉ thêm một thà
 Máy chạy ~15 GB RAM, stack 11 runtime + observability chiếm 3,5–5 GB (plan v0.3 mục 8); k6 cũng cần RAM (mỗi VU là một môi trường JavaScript riêng). Nguyên tắc: **tải đủ để có tín hiệu nhưng run healthy phải thật sự khỏe**. Mọi số ở mục 8.1–8.2 là điểm khởi đầu, **chốt sau pilot**:
 
 1. **Tìm điểm gãy:** chạy riêng scenario học viên pha `normal` với tốc độ đến không đổi, tăng dần 0,2 phiên/s mỗi 3 phút cho tới khi vi phạm một tiêu chí "khỏe" bên dưới. Tốc độ cuối cùng còn khỏe là `λ_knee`.
-2. **Chọn mức:** đỉnh `normal mixed` ≤ 0,35 × `λ_knee`; đỉnh `healthy high-load spike` ≤ 0,8 × `λ_knee` (giả định: chừa biên cho fault làm phiên dài ra). Nếu mức ở 8.1–8.2 vượt thì hạ `N_pop` cho cả hai profile.
+2. **Chọn mức:** đỉnh `normal mixed` ≤ 0,35 × `λ_knee`; đỉnh `healthy high-load spike` ≤ 0,8 × `λ_knee` (giả định: chừa biên cho fault làm phiên dài ra). Nếu mức ở 8.1–8.2 vượt thì hạ `N_pop` (mức 2 thuần) hoặc hệ số chồng phiên `k` (mức 2+) cho cả hai profile.
 3. **Đo RAM của k6** ở đỉnh spike; nếu RAM còn trống (`free -h`, cột available) dưới 4 GB thì hạ `maxVUs` hoặc `N_pop`.
 
 **Tiêu chí "khỏe"** (giả định, neo vào Nielsen: dưới 1 s người dùng không bị ngắt mạch suy nghĩ):
@@ -801,6 +800,17 @@ Máy chạy ~15 GB RAM, stack 11 runtime + observability chiếm 3,5–5 GB (pla
 | CPU từng container | < 80% kéo dài quá 1 phút |
 | Bộ nhớ từng container | < 85% giới hạn; không có container bị khởi động lại hoặc OOM |
 | Dòng `unexpected_status` (lỗi của chính workload) | 0 |
+
+**Kết quả pilot (task-02 tuần 15, 19/11/2026).** Công cụ chấm: `aiops-platform/load/tools/health-check.mjs --steps`; scenario: `scenarios/knee.js`; chi tiết từng run ở [README `load/`](../../../aiops-platform/load/README.md#kết-quả-tìm-điểm-gãy-19112026). Đơn vị là tốc độ bắt đầu phiên học viên (phiên/s); đỉnh của profile tính trên ô 60 s.
+
+| Mục | Kết quả |
+| --- | --- |
+| Run | `w15-t02-knee-r1` (0,2 → 5,0 phiên/s, 1.000 học viên seed), `w15-t02-knee-r2` (4,0 → 5,6 phiên/s, 1.500 học viên seed để không dùng chung tài khoản) |
+| Tiêu chí bị vi phạm đầu tiên | r1, bậc 1: bộ nhớ Grafana 96% giới hạn 512 MiB (nguyên nhân `system`, ở stack observability). LMS khỏe ở mọi bậc. Sửa cấu hình: Grafana 768 MiB, giữ nguyên tiêu chí; r2 không còn vi phạm (Grafana cao nhất 74%) |
+| `λ_knee` | **≥ 5,6 phiên/s** (cận dưới: không bậc nào của r2 vi phạm; các bậc thấp hơn suy từ r1, nơi chỉ Grafana vi phạm). p95 Gateway 37–40 ms ở mọi bậc, CPU cả máy ≤ 11%; điểm gãy thật chưa tới. Giới hạn đo là RAM của k6 (~4 GB cho ~1.260 VU), không phải stack. LMS không đặt giới hạn bộ nhớ nên tiêu chí bộ nhớ chỉ có tác dụng với container observability; giới hạn khác của phép đo ở README |
+| Kiểm mức tải | `normal-mixed` đỉnh 1,18 ≤ 0,35 × 5,6 = 1,96; `healthy-spike` đỉnh 4,3 ≤ 0,8 × 5,6 = 4,48. Cả hai đạt |
+| Quyết định | **Giữ `k` = 4.** Chốt `normal-mixed@v1` = `moodle-normal-mixed-k4-v1` và `healthy-spike@v1` = `moodle-healthy-spike-k4-v1` (mục 8.1–8.2). `normal-mixed` chỉ dùng 0,21 × `λ_knee`; ghi lại, không tăng |
+| RAM của k6 ở đỉnh spike (bước 3) | 3,07 GiB, RAM trống của máy thấp nhất 5,1 GB ≥ 4 GB (run `w14-t03-healthy-spike-r4`, cùng kế hoạch k=4 và cùng 1.062 VU học viên dựng sẵn) |
 
 ### 8.5. Dùng làm tải nền cho fault run
 
