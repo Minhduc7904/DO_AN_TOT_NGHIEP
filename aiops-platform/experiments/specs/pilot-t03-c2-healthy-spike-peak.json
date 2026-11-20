@@ -1,0 +1,8 @@
+{
+  "schema": "run-spec.v1",
+  "split": "pilot",
+  "repeat_index": 0,
+  "workload": { "profile": "healthy-spike", "seed": 26 },
+  "fault": { "case": "C2", "align_peak": true },
+  "notes": "Pilot task-03 tuần 15: C2, cửa sổ fault trùng cao điểm của profile healthy-spike (đỉnh trước hạn quiz)."
+}

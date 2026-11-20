@@ -1,0 +1,8 @@
+{
+  "schema": "run-spec.v1",
+  "split": "pilot",
+  "repeat_index": 0,
+  "workload": { "profile": "normal-mixed", "seed": 25 },
+  "fault": { "case": "C4", "align_peak": false },
+  "notes": "Pilot task-03 tuần 15: C4, lịch mặc định của fault manifest v1."
+}
