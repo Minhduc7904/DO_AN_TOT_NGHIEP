@@ -1,0 +1,12 @@
+{
+  "schema": "run-spec.v1",
+  "split": "train",
+  "repeat_index": 0,
+  "workload": {
+    "profile": "normal-mixed",
+    "seed": 1002,
+    "plan": "data/plans/moodle-normal-mixed-k4-train-v1.json"
+  },
+  "fault": null,
+  "notes": "dataset-v0, slot train-healthy-normal-mixed-2 (task-04 tuần 15)."
+}
