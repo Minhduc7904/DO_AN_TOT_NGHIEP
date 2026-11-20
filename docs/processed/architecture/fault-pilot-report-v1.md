@@ -2,7 +2,7 @@
 
 > **Task:** `task-03_pilot-mvp-fault-cases` (tuần 15).
 >
-> **Trạng thái:** bản nháp, cập nhật 20/11/2026. Đợt 1 đã chạy C6, C2, C3 và đang chạy C4, đều theo lịch mặc định của fault manifest v1. Đợt 2 chưa chạy: run healthy, bốn run trùng cao điểm, trong đó C2 trên `healthy-spike`. Các mục ghi "chờ đợt 2" sẽ điền sau.
+> **Trạng thái:** bản nháp, cập nhật 20/11/2026. Đợt 1 đã chạy xong C6, C2, C3, C4, đều theo lịch mặc định của fault manifest v1. Đợt 2 chưa chạy: run healthy, bốn run trùng cao điểm, trong đó C2 trên `healthy-spike`. Các mục ghi "chờ đợt 2" sẽ điền sau.
 >
 > **Tài liệu liên quan:** [evaluation-protocol-v1](evaluation-protocol-v1.md) mục 5.2, 5.3, 6.1, 7.3, 8.3, 8.4; [case catalogue v0](complex-case-catalogue-and-rca-result-v0.md) mục C2, C3, C4, C6; [workload-design-v1](workload-design-v1.md) mục 8.3, 8.5. Fault manifest: `aiops-platform/faults/manifests/`.
 
@@ -13,7 +13,7 @@
 | C6 | pass / valid / partial | 15 s (đăng nhập qua gateway lỗi); 20 s (gateway không lấy được token dịch vụ) | Có: mọi route qua gateway lỗi 5xx, request không tới service đích (892/892 trace lỗi) |
 | C2 | pass / valid / partial | 10 s (`course-postgres`, `gateway → course`) | Chỉ khi có job AI: `ai-worker → course` chậm tới 1,6 s/lời gọi |
 | C3 | pass / valid / partial | 275 s (job dồn ở `ai-worker`); 305 s (lời gọi LLM 32 s) | Có: job AI chờ ở `ai-worker` (message chưa ack) |
-| C4 | chờ (đang chạy) | | |
+| C4 | pass / valid / partial | 100 s (`media → MinIO`); 105 s (`gateway → media`) | Có: `media-worker` (tạo thumbnail, bất đồng bộ) gọi MinIO chậm từ 155 s. Chuỗi job dọn media không lộ |
 
 ## 1. Thiết lập
 
@@ -80,20 +80,34 @@ Run `pilot-c3-normal-mixed-s24-20261120t090256z`. Fault 600 s, `llm-stub` trễ 
 
 ### 2.4. C4 — trễ `media` → MinIO (FA)
 
-Chờ (run đang chạy). Dự kiến chuỗi "media `PENDING` kẹt → job dọn xóa media" không lộ được trong run 48 phút:
+Run `pilot-c4-normal-mixed-s25-20261120t095927z`. Fault 600 s, toxic `latency` 300 ± 30 ms trên `media-to-minio` và `media-worker-to-minio`.
 
-- Job dọn media (W7) chạy lúc 02:00 của ngày nén (phút 4 của run), trước cửa sổ fault.
-- Media chỉ bị coi là upload bỏ dở sau `MEDIA_UPLOAD_EXPIRES_SECONDS` 900 s cộng 15 phút ân hạn.
-- Trễ 300 ms làm upload chậm đi chứ khó làm hỏng.
+- **Traffic tới MinIO thưa:** upload là thao tác hiếm của giảng viên. 300 s trước fault có 4 lượt upload; trong fault có 27 lượt (mỗi lượt gồm `stat`, `hash`, `copy`, `remove` và `get`).
+- **Chuỗi nhân quả:**
+  - Mọi operation của `media` tới MinIO chậm khoảng 300 ms/lời gọi (trung bình 1–3 ms → 299–308 ms; `get-object` 598 ms vì đọc hai lần). `presign-upload` không đổi (0,15 ms) vì chỉ ký URL tại chỗ, không gọi MinIO.
+  - Span CLIENT `media → MinIO`: p50 1,2 ms → 302 ms, 171 span trong fault, không span lỗi.
+  - Triệu chứng đầu tiên ở 100 s, `gateway → media` ở 105 s (đỉnh 0,94 s). Độ trễ này do lượt upload đầu tiên trong fault đến muộn, không do fault.
+- **Lan ra ngoài đường request:** `media-worker` tạo thumbnail sau khi upload xong (bất đồng bộ qua hàng đợi) và cũng gọi MinIO chậm: `get-object` 2 ms → 603 ms, `put-object` 2,6 ms → 301 ms, lộ ở 155 s. Span p50 2,2 ms → 453 ms.
+- **Chuỗi "media `PENDING` kẹt → job dọn xóa media" không lộ, đúng như dự kiến:**
+  - Job dọn media (W7) chạy lúc 02:00 của ngày nén, tức phút 4 của run (span `POST /internal/v1/media/cleanup` lúc 10:04:18Z), trước cửa sổ fault 10:18–10:28Z.
+  - Media chỉ bị coi là upload bỏ dở sau `MEDIA_UPLOAD_EXPIRES_SECONDS` 900 s cộng 15 phút ân hạn, dài hơn phần run còn lại.
+  - Trễ 300 ms làm upload chậm đi nhưng không làm hỏng: không span lỗi, không phiên nào kết thúc bất thường trong cửa sổ fault.
+  - Vì vậy mô tả kỳ vọng của C4 cần sửa thành "upload chậm và worker thumbnail chậm" (mục 5).
+- **Probe cũng chậm:** `ping` của health probe tới MinIO chậm 294–299 ms ngay từ đầu fault. Probe là traffic hạ tầng nên bị loại khỏi phép đo (`noise.v1`, `exclude_operations`), không tính là triệu chứng.
+- **Tín hiệu bảng 8.4:** đủ.
+  - `lms_dependency_duration_seconds{media-minio}` theo từng operation, ở cả `media` và `media-worker`.
+  - Span CLIENT tới MinIO của cả hai service.
+  - Không có log lỗi vì fault chỉ làm chậm.
+- **Phía người dùng:** tỉ lệ request lỗi cả run 0,12%, p95 43 ms; 5 phiên `auth_failed` cả run, không phiên nào trong cửa sổ fault. Đỉnh học viên đồng thời 176/230 VU dựng sẵn, k6 không bỏ iteration nào.
 
 ## 3. Điều kiện vào campaign (mục 5.2) và `case_verification_status`
 
 | Điều kiện | C2 | C3 | C4 | C6 |
 | --- | --- | --- | --- | --- |
-| 1. Injector chạy và tái lập được | Đạt | Đạt | Chờ | Đạt |
-| 2. Triệu chứng ngoài đường request | Chỉ khi có job AI (case đối chứng dễ theo ADR-006) | Đạt (job dồn ở `ai-worker`) | Chờ | Đạt |
-| 3. Tín hiệu bảng 8.4 | Đạt; pool là giới hạn | Metric đạt; span chờ đợt 2 | Chờ | Đạt |
-| 4. `RunGroundTruth` hợp lệ | Đạt | Đạt | Chờ | Đạt |
+| 1. Injector chạy và tái lập được | Đạt | Đạt | Đạt | Đạt |
+| 2. Triệu chứng ngoài đường request | Chỉ khi có job AI (case đối chứng dễ theo ADR-006) | Đạt (job dồn ở `ai-worker`) | Đạt (`media-worker` tạo thumbnail chậm); chuỗi job dọn không lộ | Đạt |
+| 3. Tín hiệu bảng 8.4 | Đạt; pool là giới hạn | Metric đạt; span chờ đợt 2 | Đạt | Đạt |
+| 4. `RunGroundTruth` hợp lệ | Đạt | Đạt | Đạt | Đạt |
 | 5. Pilot đã đo và freeze tham số | Chờ fault manifest v2 | Chờ | Chờ | Chờ |
 
 `case_verification_status` chốt sau đợt 2.
@@ -105,7 +119,7 @@ Chờ (run đang chạy). Dự kiến chuỗi "media `PENDING` kẹt → job d�
   - Page cache lúc khởi động đẩy working set lên 88–90% giới hạn trong khoảng 12 phút đầu, rồi tự giảm. Bộ nhớ không thu hồi được (`anon`) chỉ 220–420 MiB.
   - Tiêu chí bộ nhớ của mục 8.4 nay so bằng `anon` của cgroup (`load/README`). Ngưỡng 85% không đổi.
   - Các run đợt 1 còn đo theo working set.
-- **Tempo bị OOM-kill khi export run C3:** tải 14.016 trace, đỉnh 1.018/1.024 MiB. Đây là source outage theo mục 8.3, không phải degradation. Giới hạn đã nâng lên 1,5 GiB: với run C4 đang chạy bằng `docker update`, với các run sau trong compose.
+- **Tempo bị OOM-kill khi export run C3:** tải 14.016 trace, đỉnh 1.018/1.024 MiB. Đây là source outage theo mục 8.3, không phải degradation. Giới hạn đã nâng lên 1,5 GiB: với run C4 bằng `docker update` lúc run đang chạy, với các run sau trong compose. Run C4 export đủ 13.894/13.894 trace đã chọn, không lỗi fetch, Tempo không bị kill.
 - **Trace `truncated` ở mọi run:** 16/129 truy vấn tìm kiếm chạm giới hạn kết quả, phần thiếu rơi vào các lát thời gian đông. Đây là giới hạn đã biết của export (protocol mục 8.3). Feature pipeline v1 của task-05 gắn cờ `traces_truncated`.
 
 ## 5. Tham số chốt (fault manifest v2)
@@ -115,6 +129,7 @@ Chờ đợt 2. Hướng đang cân nhắc:
 - **C3:** thời lượng fault 900 s thay vì 600 s. Job AI đầu tiên đến sau `fault_start` tới 264 s, nên 600 s chỉ dư ít so với độ trễ + window 60 s + persistence. Giữ workload hiện tại, không tăng I3 cho mọi run.
 - **C6:** 300 s đủ (triệu chứng ở 20 s).
 - **C2:** 600 s đủ (triệu chứng ở 10 s).
+- **C4:** 600 s đủ (triệu chứng ở 100–155 s). Sửa mô tả kỳ vọng: bỏ chuỗi "media `PENDING` kẹt → job dọn xóa media" khỏi đường lan truyền kỳ vọng; giữ "upload chậm qua `gateway → media`" và "`media-worker` tạo thumbnail chậm" ngoài đường request.
 
 ## 6. Profile healthy đối chứng (workload-design-v1 mục 8.3)
 
@@ -127,3 +142,4 @@ Chờ đợt 2.
 | `pilot-c6-normal-mixed-s22-20261120t065500z` | C6, `normal-mixed` | `bb63c77` | pass | valid | partial (trace truncated, `identity` silent) | Trước khi tắt tự nâng plugin của Grafana |
 | `pilot-c2-normal-mixed-s23-20261120t075709z` | C2, `normal-mixed` | `fecb1fe` | pass | valid | partial (trace truncated) | |
 | `pilot-c3-normal-mixed-s24-20261120t090256z` | C3, `normal-mixed` | `367574e` | pass | valid | partial (trace partial: Tempo OOM) | |
+| `pilot-c4-normal-mixed-s25-20261120t095927z` | C4, `normal-mixed` | `367574e` | pass | valid | partial (trace truncated) | Tempo nâng 1,5 GiB lúc run đang chạy; Grafana working set tối đa 62,5% |
