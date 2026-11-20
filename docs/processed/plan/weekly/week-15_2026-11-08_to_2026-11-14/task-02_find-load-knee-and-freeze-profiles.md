@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-02_find-load-knee-and-freeze-profiles` |
 | Tuần | `week-15_2026-11-08_to_2026-11-14` |
-| Trạng thái | Chờ review |
+| Trạng thái | Hoàn thành |
 | Người phụ trách | Bách |
 | Collaborator | Không có |
 | Ưu tiên | Cao |
@@ -54,13 +54,13 @@ Theo [workload-design-v1](../../../architecture/workload-design-v1.md) mục 8.4
 - Input workspace: Không tạo (giai đoạn tự bắt kịp; bằng chứng nằm trong PR).
 - Output workspace: Không tạo.
 - Pull request: [#94](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/94)
-- Kết quả review: Chưa review.
+- Kết quả review: Không có GitHub `APPROVED` (giai đoạn tự bắt kịp; CI GitHub bị khóa thanh toán, unit test `load/` 55/55 chạy cục bộ, kết quả trong PR). Không có review ngoài GitHub; đã review bằng agent riêng. Bách (người phụ trách) xác nhận merge ngày 20/11/2026, card chuyển `Hoàn thành` trên chính nhánh của PR #94 trước khi merge.
 
 > URL/số PR và `Chờ review` phải được commit/push vào PR head trước review. Thành viên còn lại phải gửi `APPROVED` hợp lệ trên GitHub; sau đó người phụ trách finalization metadata, ghi `Hoàn thành` trên chính branch/PR và tự merge task của mình. Card chỉ canonically hoàn thành khi commit đó vào nhánh canonical; xem [vòng đời task canonical](../../../rules/git-and-pull-request-rules.md#vòng-đời-task-canonical).
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 19/11/2026 — xong hai run tìm điểm gãy, chốt mức tải, mở PR.
+- Cập nhật gần nhất: 20/11/2026 — finalization, gộp `main` sau khi merge PR #93 (unit test `load/` 55/55, `experiments/` 15/15), merge PR #94. 19/11/2026: xong hai run tìm điểm gãy, chốt mức tải, mở PR.
 - Kết quả:
   - `w15-t02-knee-r1` (0,2 → 5,0 phiên/s, 25 bậc, 1.000 học viên): LMS khỏe ở mọi bậc (p95 Gateway 37–40 ms, phản hồi ngoài mong đợi ≤ 0,24%, 0 iteration bị bỏ). Tiêu chí bị vi phạm đầu tiên: **bộ nhớ Grafana** 93–99% giới hạn 512 MiB ở bậc 1–8 (nguyên nhân `system`, stack observability, không ai mở UI). Nâng Grafana lên 768 MiB; tiêu chí giữ nguyên.
   - `w15-t02-knee-r2` (4,0 → 5,6 phiên/s, 9 bậc, 1.500 học viên để không dùng chung tài khoản): cả 9 bậc khỏe; Grafana cao nhất 74%.
