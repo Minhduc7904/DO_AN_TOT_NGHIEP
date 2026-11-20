@@ -7,7 +7,7 @@
 | Tuần | `week-15_2026-11-08_to_2026-11-14` |
 | Nguồn plan canonical | [Plan v0.4 — Tuần 15](../../plan-v0.4-24-weeks.md#tuần-15--experiment-runner-pilot-và-dataset-v0) |
 | Mục tiêu tuần | Runner một lệnh (reset-and-seed → workload → fault → ground truth → export → kiểm chất lượng) có ledger theo run; pilot tìm `λ_knee` và chốt mức tải của hai profile; pilot 4 case MVP (C2, C3, C4, C6) tới khi chuỗi nhân quả xảy ra thật, kể cả fault trùng cao điểm; thu tập train healthy và tập validation thành dataset v0 có manifest split theo run; feature pipeline v1 có kiểm tra chống leakage; cập nhật evaluation protocol bằng số đo pilot; kiểm chứng độ thực v2 (đăng ký tiêu chí trước, nhiều seed); Gate M3. |
-| Trạng thái tuần | Đang thực hiện — bảng task lập ngày 19/11/2026; Gate R điều kiện 5 vẫn mở (ngoại lệ ở dưới) |
+| Trạng thái tuần | Đang thực hiện — bảng task lập ngày 19/11/2026; task-01 đã hoàn thành và merge (PR #93); Gate R điều kiện 5 vẫn mở (ngoại lệ ở dưới) |
 
 > Tuần canonical là 08/11/2026–14/11/2026. Kế hoạch được lập ngày 19/11/2026 (tuần lịch 17) để bù tiến độ; hạn task bên dưới là mốc bù tiến độ. Theo quyết định của Bách (19/11/2026), phạm vi MVP của tuần làm đầy đủ, không áp dụng phương án nén lịch của plan v0.4 mục 9 chỉ vì trễ lịch.
 
@@ -17,7 +17,7 @@
 
 | Mã task | Task | Người phụ trách | Collaborator | Ưu tiên | Trạng thái |
 | --- | --- | --- | --- | --- | --- |
-| [task-01_build-experiment-runner](task-01_build-experiment-runner.md) | Experiment runner một lệnh theo run, ledger, run manifest và experiment runbook | Bách | Không có | Cao | Đã giao |
+| [task-01_build-experiment-runner](task-01_build-experiment-runner.md) | Experiment runner một lệnh theo run, ledger, run manifest và experiment runbook | Bách | Không có | Cao | Hoàn thành |
 | [task-02_find-load-knee-and-freeze-profiles](task-02_find-load-knee-and-freeze-profiles.md) | Pilot tìm `λ_knee`, chốt mức tải hai profile healthy theo workload-design-v1 mục 8.4 | Bách | Không có | Cao | Đã giao |
 | [task-03_pilot-mvp-fault-cases](task-03_pilot-mvp-fault-cases.md) | Pilot 4 case MVP (kể cả fault trùng cao điểm): chuỗi nhân quả, tín hiệu bắt buộc, độ trễ triệu chứng; chốt cường độ và thời lượng fault | Bách | Không có | Cao | Đã giao |
 | [task-04_collect-dataset-v0](task-04_collect-dataset-v0.md) | Dataset v0: kế hoạch phiên theo split, tập train healthy, tập validation, kiểm label/ground truth, manifest split theo run | Bách | Không có | Cao | Đã giao |
@@ -37,6 +37,8 @@
   - Chuỗi nhân quả có thể không xảy ra dưới tải bán thực (C3 ít job AI trong cửa sổ fault; C4 lộ muộn ở `scheduler-worker`). Theo plan v0.4 mục 8: sửa mô tả case hoặc loại và ghi ledger, không âm thầm bỏ.
   - Run kiểm chứng độ thực dùng TTL token 600 s, run thí nghiệm dùng 60 s (lớp fault): đổi TTL phải tạo lại `identity`, không chạy chồng hai loại run.
   - Grafana ở 83–84% giới hạn bộ nhớ (task-03 tuần 14), sát ngưỡng "khỏe" 85%.
+  - **Đổi máy giữa các tập dữ liệu (ghi ngày 19/11/2026).** Bách dự định chuyển sang máy Windows cá nhân (16 GB RAM) về sau. Train/validation thu ở tuần 15 trên máy Linux hiện tại; nếu test (campaign tuần 19–20) thu trên máy khác thì CPU, độ trễ, Docker/WSL2 và độ trễ nền khác nhau, detector học "bình thường" ở máy này có thể báo động nhầm ở máy kia, và kết quả lẫn hiệu ứng đổi máy (evaluation-protocol-v1: các split chỉ được khác nhau ở seed/slot; runner ghi `environment_profile` vào run manifest để kiểm). Quyết định: thu toàn bộ dữ liệu thí nghiệm (train, validation, test) trên cùng một máy; máy Windows dùng cho demo và gói tái lập (M6, tuần 22–23). Nếu bắt buộc chuyển máy trước campaign thì chuyển trước tuần 19 và thu lại train/validation trên máy mới.
+  - **Chạy trên Windows chưa kiểm chứng.** Runner hiện đọc RAM trống từ `/proc/meminfo` (chỉ có trên Linux); `run-k6.sh` là bash; k6 dùng `--network host` để upload thẳng lên MinIO; Docker Desktop mặc định cấp WSL2 khoảng 50% RAM (≈ 8 GB) trong khi stack có tải 3,5–5 GB, k6 đỉnh spike ≈ 3 GB và `up --build` mỗi run. Hướng xử lý (để sau): chạy trong WSL2 với Docker Engine trong WSL, `.wslconfig` khoảng `memory=10GB`, `swap=4GB`; runner đo RAM đa nền tảng, build image một lần mỗi commit, giới hạn bộ nhớ cho container LMS; thêm mục Windows vào runbook. Lịch: chạy thử một run ngắn trên Windows khoảng tuần 17–18 (không đưa vào dataset) để phát hiện lỗi sớm.
 - Quyết định đã chốt:
   - Giai đoạn tự bắt kịp: mọi task do Bách phụ trách, không collaborator; review/merge theo ngoại lệ Bách xác nhận. Gate M3 viết cho hai người được làm bằng cách chạy lại từ môi trường sạch theo checklist và ghi trung thực là ngoại lệ (plan v0.4 mục 0.1, dòng "Nhân sự").
   - Phạm vi: MVP làm đầy đủ; Target chỉ đưa vào khi triển khai được mà không phình phạm vi; Stretch chưa làm. Target duy nhất của tuần 15 trong plan là chốt người tham gia E7: Bách xác nhận (19/11/2026) không có người tham gia ngoài hai thành viên nhóm, mà người xây testbed không làm người tham gia hợp lệ, nên E7 ra khỏi kế hoạch (task-06 ghi vào protocol và plan). E6 (RCAEval) bắt đầu ở tuần 18 và biến thể case ở campaign tuần 19, nên không nằm trong tuần này. Ba profile healthy đối chứng (workload-design-v1 mục 8.3) chỉ thêm khi pilot cho thấy cần (task-03/task-04 ghi quyết định).
