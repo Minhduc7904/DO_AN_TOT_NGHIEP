@@ -34,3 +34,12 @@ NOISE_TRACE_ROOT_NAMES: frozenset[str] = frozenset(
 
 #: Route probe sinh access log mỗi 5 giây ở mọi runtime.
 PROBE_ROUTES: tuple[str, ...] = ("/ready", "/health")
+
+#: Thao tác dependency do probe sinh ra (readiness của `media`/`media-worker` gọi MinIO `ping` mỗi
+#: ~1 s), không phải traffic của người dùng (pilot task-03 tuần 15).
+PROBE_OPERATIONS: tuple[str, ...] = ("ping",)
+
+#: Dependency identity lệch đã biết (evaluation-protocol-v1 mục 8.5): khi `notification-worker`
+#: phát lại command từ outbox, identity là `notification-rabbitmq` thay vì
+#: `notification-worker-rabbitmq`.
+IDENTITY_ALIASES: dict[str, str] = {"notification-rabbitmq": "notification-worker-rabbitmq"}
