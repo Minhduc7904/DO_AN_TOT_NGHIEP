@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-01_build-experiment-runner` |
 | Tuần | `week-15_2026-11-08_to_2026-11-14` |
-| Trạng thái | Chờ review |
+| Trạng thái | Hoàn thành |
 | Người phụ trách | Bách |
 | Collaborator | Không có |
 | Ưu tiên | Cao |
@@ -62,13 +62,13 @@ Theo [plan v0.4 tuần 15](../../plan-v0.4-24-weeks.md#tuần-15--experiment-run
 - Input workspace: Không tạo (giai đoạn tự bắt kịp; bằng chứng nằm trong PR).
 - Output workspace: Không tạo.
 - Pull request: [#93](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/93)
-- Kết quả review: Chưa review.
+- Kết quả review: Không có GitHub `APPROVED` (giai đoạn tự bắt kịp; CI GitHub bị khóa thanh toán, unit test 15/15 chạy cục bộ, kết quả trong PR). Không có review ngoài GitHub; đã review bằng agent riêng hai vòng. Bách (người phụ trách) xác nhận merge ngày 20/11/2026, card chuyển `Hoàn thành` trên chính nhánh của PR #93 trước khi merge.
 
 > URL/số PR và `Chờ review` phải được commit/push vào PR head trước review. Thành viên còn lại phải gửi `APPROVED` hợp lệ trên GitHub; sau đó người phụ trách finalization metadata, ghi `Hoàn thành` trên chính branch/PR và tự merge task của mình. Card chỉ canonically hoàn thành khi commit đó vào nhánh canonical; xem [vòng đời task canonical](../../../rules/git-and-pull-request-rules.md#vòng-đời-task-canonical).
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 19/11/2026 — runner, runbook, unit test 15/15; ba run thật qua runner trên stack đầy đủ (máy Linux), review bằng agent riêng, đã sửa các lỗi review tìm ra.
+- Cập nhật gần nhất: 20/11/2026 — finalization, merge PR #93. 19/11/2026: runner, runbook, unit test 15/15; ba run thật qua runner trên stack đầy đủ (máy Linux), review bằng agent riêng, đã sửa các lỗi review tìm ra.
 - Bằng chứng (chi tiết trong mô tả PR):
   - `pilot-healthy-normal-mixed-s11-20261119t084224z`: đủ bước reset → seed → k6 → export → quality → ground truth → feature (68 phút). Gate thực thi `pass` (1.349 phiên, lỗi 0,08%, p95 38 ms, `dropped_iterations` 0); `RunGroundTruth` `valid`. Chất lượng dữ liệu `fail`: export log từ Loki hết thời gian chờ 15 s khi máy đang dùng hết swap. Đã sửa: runner truyền timeout 60 s (`--export-timeout-s`).
   - `pilot-c2-normal-mixed-s12-20261119t095053z`: fault bật đúng mốc (lệch 31 ms so với `workload_start` + 1.080 s), kéo dài 600 s; kiểm chứng của `RunGroundTruth` đạt (latency `course-postgres` từ 1,1 ms lên 288 ms); chất lượng `partial` (trace theo ngân sách 20.000 trace). Gate thực thi `fail` vì k6 bỏ 1 iteration: đúng quy tắc của load/README, run không dùng làm dữ liệu. Iteration bị bỏ là một phiên `admin_adhoc` (10 phiên so với 11 ở run healthy; scenario chỉ dựng sẵn 2 VU và đã có 2 phiên đồng thời); học viên đủ 1.245 phiên, đỉnh đồng thời 176 < 230 VU dựng sẵn.
