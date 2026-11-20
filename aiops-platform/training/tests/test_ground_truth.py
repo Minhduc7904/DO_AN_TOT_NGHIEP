@@ -125,17 +125,32 @@ def _artifact(tmp_path: Path, rows: list[dict]) -> Path:
     return tmp_path
 
 
-def latency_rows(component: str, fault_mean: float, calls_per_step: int = 2) -> list[dict]:
+def latency_rows(
+    component: str, fault_mean: float, calls_per_step: int = 2, **extra_labels
+) -> list[dict]:
     """Histogram sum/count tích lũy mỗi 5 s; trước fault 5 ms/lời gọi, khi fault `fault_mean` s."""
     rows, total, count = [], 0.0, 0
     for step in range(0, 1800, 5):
         mean = fault_mean if 1000 <= step < 1300 else 0.005
         total += mean * calls_per_step
         count += calls_per_step
-        labels = {"service_name": "course", "dependency_identity": component}
+        labels = {"service_name": "course", "dependency_identity": component, **extra_labels}
         rows.append(_metric("lms_dependency_duration_seconds_sum", step, total, **labels))
         rows.append(_metric("lms_dependency_duration_seconds_count", step, count, **labels))
     return rows
+
+
+def test_verify_ignores_probe_calls(tmp_path):
+    record = build("C4", fault_log("C4", 1000, 1300))
+    probe = latency_rows("media-minio", 0.3, service_name="media", operation_name="ping")
+    idle = latency_rows("media-minio", 0.005, service_name="media", operation_name="get-object")
+    checks = verify(record, _artifact(tmp_path, probe + idle))
+    # Chỉ ping chậm: workload không chạm fault, kiểm chứng phải trượt.
+    assert checks[0]["result"] == "fail"
+    assert checks[0]["observed_value"]["fault_mean_s"] == pytest.approx(0.005)
+
+    hit = latency_rows("media-minio", 0.3, service_name="media", operation_name="get-object")
+    assert verify(record, _artifact(tmp_path, probe + hit))[0]["result"] == "pass"
 
 
 def test_verify_latency_case_pass_and_fail(tmp_path):
