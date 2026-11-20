@@ -244,7 +244,10 @@ def _evaluate(signal, all_series, fault_start, fault_end, config) -> dict[str, A
         "lag_s": None,
     }
     if not primary.points:
-        return {**result, "status": "no_data"}
+        # Counter có nhãn chỉ sinh series sau lần tăng đầu tiên: không có series là 0 lỗi cả run
+        # (không phải thiếu dữ liệu). Các loại khác không có series là không quan sát được.
+        status = "not_observed" if signal.kind == "counter" else "no_data"
+        return {**result, "status": status, "series_absent": True}
 
     if count_series is not None:
         calls = count_series.increase(*base)

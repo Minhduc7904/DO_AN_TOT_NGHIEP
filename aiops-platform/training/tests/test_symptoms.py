@@ -155,7 +155,9 @@ def test_c6_stall_errors_and_after_fault_end(tmp_path):
     assert signals["identity:cpu:stall"]["lag_s"] == 15
     assert signals["gateway:gateway-identity-token:errors"]["lag_s"] == 75
     assert signals["gateway:http:5xx"]["lag_s"] == 80
-    assert signals["gateway:gateway-identity:errors"]["status"] == "no_data"
+    # Counter lỗi không có series = 0 lỗi cả run (series chỉ sinh sau lần tăng đầu tiên).
+    absent = signals["gateway:gateway-identity:errors"]
+    assert absent["status"] == "not_observed" and absent["series_absent"] is True
     assert result["outside_request_path_lag_s"] == 75
 
 
