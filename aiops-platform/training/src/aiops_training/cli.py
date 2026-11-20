@@ -16,6 +16,7 @@ import httpx
 
 from .features.pipeline import write_features
 from .ground_truth.build import build_ground_truth, read_jsonl
+from .ground_truth.symptoms import SymptomConfig, measure_from_ground_truth, measure_symptoms
 from .ground_truth.validate import apply_verification, verify
 from .telemetry.adapters.loki import LokiAdapter
 from .telemetry.adapters.prometheus import PrometheusAdapter
@@ -174,6 +175,54 @@ def _run_ground_truth(args: argparse.Namespace) -> int:
     return 0 if record["run_status"] == "valid" else 1
 
 
+def _symptoms_parser(sub: argparse._SubParsersAction) -> None:
+    parser = sub.add_parser(
+        "symptoms",
+        help="Đo độ trễ từ fault_start tới triệu chứng đầu tiên của case (pilot, mục 7.3)",
+    )
+    parser.add_argument("artifact_dir", type=Path, help="Thư mục artifact (có metrics.parquet)")
+    parser.add_argument("--ground-truth", type=Path, help="ground-truth.json (case, khoảng fault)")
+    parser.add_argument("--case", help="C2 | C3 | C4 | C6 khi tự khai báo khoảng (đối chứng)")
+    parser.add_argument("--fault-start", help="ISO-8601 có múi giờ, đi cùng --case")
+    parser.add_argument("--fault-end", help="ISO-8601 có múi giờ, đi cùng --case")
+    parser.add_argument("--window-seconds", type=float, default=SymptomConfig.window_s)
+    parser.add_argument("--out", type=Path, help="Ghi kết quả JSON vào đường dẫn này")
+
+
+def _run_symptoms(args: argparse.Namespace) -> int:
+    config = SymptomConfig(window_s=args.window_seconds)
+    if args.ground_truth:
+        record = json.loads(args.ground_truth.read_text(encoding="utf-8"))
+        result = measure_from_ground_truth(record, args.artifact_dir, config)
+    elif args.case and args.fault_start and args.fault_end:
+        result = measure_symptoms(
+            args.case,
+            parse_utc(args.fault_start),
+            parse_utc(args.fault_end),
+            args.artifact_dir,
+            config,
+        )
+    else:
+        raise SystemExit("Cần --ground-truth, hoặc --case kèm --fault-start và --fault-end")
+    text = json.dumps(result, indent=2, ensure_ascii=False) + "\n"
+    if args.out:
+        args.out.parent.mkdir(parents=True, exist_ok=True)
+        args.out.write_text(text, encoding="utf-8")
+    keys = (
+        "case_id",
+        "root_cause_lag_s",
+        "first_symptom_lag_s",
+        "outside_request_path_lag_s",
+        "outside_request_path_observed",
+    )
+    brief = {key: result[key] for key in keys}
+    brief["signals"] = {
+        s["signal_id"]: s["lag_s"] if s["observed"] else s["status"] for s in result["signals"]
+    }
+    print(json.dumps(brief, ensure_ascii=False))
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="aiops-training")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -181,7 +230,10 @@ def main(argv: list[str] | None = None) -> int:
     _quality_parser(sub)
     _features_parser(sub)
     _ground_truth_parser(sub)
+    _symptoms_parser(sub)
     args = parser.parse_args(argv)
+    if args.command == "symptoms":
+        return _run_symptoms(args)
     if args.command == "export":
         return _run_export(args)
     if args.command == "quality":
