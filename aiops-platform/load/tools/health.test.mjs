@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { classifyCause, droppedByStep, evaluateHealth, evaluateSteps, resourceStats, restartEvents, trafficStats } from './health.mjs';
-import { parseSize, parseStatsLine } from './sample-docker-stats.mjs';
+import { anonMib, parseSize, parseStatsLine } from './sample-docker-stats.mjs';
 
 const T0 = Date.parse('2026-11-19T10:00:00Z');
 const at = (s) => new Date(T0 + s * 1000).toISOString();
@@ -41,6 +41,7 @@ test('tài nguyên: CPU quy theo giới hạn, chuỗi vượt ngưỡng dài nh
   assert.equal(stats.containers['aiops-lms-tempo-1'].cpu_max_perc_of_limit, 90);
   assert.equal(stats.containers['aiops-lms-tempo-1'].cpu_over_limit_longest_s, 60);
   assert.equal(stats.containers['aiops-lms-course-1'].mem_max_perc, 86);
+  assert.equal(stats.containers['aiops-lms-course-1'].mem_basis, 'working_set');
   assert.equal(stats.host_min_available_mb, 3000);
   assert.equal(stats.host_cpu_max_perc, 70);
 });
@@ -222,4 +223,21 @@ test('đọc docker stats: đơn vị bộ nhớ và phần trăm', () => {
     mem_limit_mib: 1024,
     mem_perc: 25,
   });
+});
+
+test('bộ nhớ: dùng anon của cgroup khi có (page cache thu hồi được không tính), mẫu cũ dùng mem_perc', () => {
+  assert.equal(anonMib('anon 1048576\nfile 524288000\nanon_thp 0\n'), 1);
+  assert.equal(anonMib('file 10\n'), null);
+  const samples = [
+    // Grafana: working set 88% do page cache lúc khởi động, anon chỉ 54%.
+    sample(0, 'aiops-lms-grafana-1', 5, { mem_perc: 88, mem_anon_perc: 54 }),
+    sample(15, 'aiops-lms-grafana-1', 5, { mem_perc: 60, mem_anon_perc: 55 }),
+    sample(0, 'aiops-lms-tempo-1', 5, { mem_perc: 90, mem_anon_perc: 87 }),
+  ];
+  const stats = resourceStats(samples, T0, T0 + 120_000);
+  assert.equal(stats.containers['aiops-lms-grafana-1'].mem_max_perc, 55);
+  assert.equal(stats.containers['aiops-lms-grafana-1'].mem_basis, 'anon');
+  const { criteria } = evaluateHealth(healthyInput({ samples }));
+  assert.equal(criteria.memory.pass, false);
+  assert.deepEqual(criteria.memory.value, ['aiops-lms-tempo-1 87.0%']);
 });

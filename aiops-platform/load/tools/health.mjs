@@ -9,6 +9,9 @@
  * | `dropped_iterations` của k6 | 0 |
  * | CPU từng container (theo giới hạn CPU của nó, không giới hạn thì theo 1 core) | < 80% kéo dài quá 1 phút |
  * | Bộ nhớ từng container | < 85% giới hạn; không restart, không OOM |
+ *
+ * Bộ nhớ so bằng `mem_anon_perc` (bộ nhớ không thu hồi được, phần quyết định OOM) khi bộ lấy mẫu đọc
+ * được cgroup; mẫu cũ không có trường này thì dùng `mem_perc` của `docker stats` (gồm page cache).
  * | Dòng `unexpected_status` | 0 |
  *
  * Container k6 (bộ sinh tải) không đặt giới hạn CPU và được dùng nhiều core: CPU của nó so với số core
@@ -103,7 +106,7 @@ export function resourceStats(samples, from, to, { sampleS = 15, hostCpus = 1 } 
     for (const sample of list) {
       const cpu = sample.cpu_perc / (sample.cpu_limit || (isClientContainer(name, sample) ? hostCpus : 1));
       cpuMax = Math.max(cpuMax, cpu);
-      memMax = Math.max(memMax, sample.mem_perc ?? 0);
+      memMax = Math.max(memMax, sample.mem_anon_perc ?? sample.mem_perc ?? 0);
       run = cpu > HEALTH_LIMITS.cpu_perc ? run + 1 : 0;
       longest = Math.max(longest, run);
     }
@@ -113,6 +116,7 @@ export function resourceStats(samples, from, to, { sampleS = 15, hostCpus = 1 } 
       // n mẫu liên tiếp trên ngưỡng phủ khoảng n × chu kỳ lấy mẫu.
       cpu_over_limit_longest_s: longest * sampleS,
       mem_max_perc: memMax,
+      mem_basis: list.some((sample) => sample.mem_anon_perc != null) ? 'anon' : 'working_set',
       samples: list.length,
     };
   }

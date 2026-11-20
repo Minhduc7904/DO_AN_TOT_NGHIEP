@@ -6,7 +6,11 @@
  *   node aiops-platform/load/tools/sample-docker-stats.mjs --out results/<run_id>/docker-stats.jsonl \
  *     [--interval-s 15] [--min-available-mb 1500 --stop-image grafana/k6:1.3.0]
  *
- * Mỗi dòng container: `{ ts, name, image, cpu_perc, cpu_limit, mem_used_mib, mem_limit_mib, mem_perc }`
+ * Mỗi dòng container: `{ ts, name, image, cpu_perc, cpu_limit, mem_used_mib, mem_limit_mib, mem_perc,
+ * mem_anon_mib, mem_anon_perc }`. `mem_used_mib` của `docker stats` là working set (gồm page cache đang
+ * "active"); `mem_anon_*` đọc `anon` trong `memory.stat` của cgroup v2: bộ nhớ không thu hồi được, phần
+ * quyết định OOM. Grafana dùng ~220–420 MiB anon nhưng page cache lúc khởi động (cài plugin) đẩy working
+ * set lên 88–90% giới hạn trong ~12 phút đầu (pilot task-03 tuần 15). Không đọc được cgroup thì `null`.
  * (`cpu_perc` là % của một core như `docker stats`; `cpu_limit` là số core giới hạn, 0 nếu không đặt).
  * Dòng máy: `{ ts, name: "HOST", mem_available_mb, cpu_perc }` (đọc /proc, chỉ Linux).
  * `--min-available-mb` kèm `--stop-image`: RAM trống của máy dưới ngưỡng thì dừng container của image đó
@@ -26,6 +30,22 @@ export function parseSize(text) {
   const match = String(text).trim().match(/^([\d.]+)\s*([A-Za-z]+)$/u);
   if (!match || !(match[2] in UNITS)) return null;
   return Number(match[1]) * UNITS[match[2]];
+}
+
+/** `memory.stat` của cgroup v2 → MiB `anon` (null khi không có dòng `anon`). */
+export function anonMib(memoryStat) {
+  const match = String(memoryStat).match(/^anon (\d+)$/mu);
+  return match ? Number(match[1]) / 1024 / 1024 : null;
+}
+
+/** Đường dẫn cgroup v2 của container (driver systemd, mặc định của Docker trên Linux). */
+function readAnonMib(containerId) {
+  const path = `/sys/fs/cgroup/system.slice/docker-${containerId}.scope/memory.stat`;
+  try {
+    return anonMib(readFileSync(path, 'utf8'));
+  } catch {
+    return null;
+  }
 }
 
 /** Một dòng `docker stats --format '{{json .}}'` → mẫu (chưa có image/cpu_limit). */
@@ -79,15 +99,20 @@ async function main(argv) {
         const { stdout: inspected } = await run('docker', [
           'inspect',
           '--format',
-          '{{.Name}}\t{{.Config.Image}}\t{{.HostConfig.NanoCpus}}',
+          '{{.Name}}\t{{.Config.Image}}\t{{.HostConfig.NanoCpus}}\t{{.Id}}',
           ...unknown,
         ]);
         for (const line of inspected.split('\n').filter(Boolean)) {
-          const [name, image, nano] = line.split('\t');
-          meta.set(name.replace(/^\//u, ''), { image, cpu_limit: Number(nano) / 1e9 });
+          const [name, image, nano, id] = line.split('\t');
+          meta.set(name.replace(/^\//u, ''), { image, cpu_limit: Number(nano) / 1e9, id });
         }
       }
-      const lines = samples.map((s) => JSON.stringify({ ...s, ...(meta.get(s.name) ?? {}) }));
+      const lines = samples.map((s) => {
+        const { id, ...info } = meta.get(s.name) ?? {};
+        const anon = id ? readAnonMib(id) : null;
+        const anonPerc = anon !== null && s.mem_limit_mib ? (100 * anon) / s.mem_limit_mib : null;
+        return JSON.stringify({ ...s, ...info, mem_anon_mib: anon, mem_anon_perc: anonPerc });
+      });
       if (previousCpu) {
         const host = hostSample({ idle: previousCpu.idle, total: previousCpu.total });
         previousCpu = host.cpu;
