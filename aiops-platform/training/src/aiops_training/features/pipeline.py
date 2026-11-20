@@ -6,7 +6,7 @@ Thay đổi so với v0 (task-05 tuần 15, sau khi chạy trên run 48 phút c�
   (`/ready`, `/health`) khỏi metric HTTP của service và thao tác probe (`ping` tới MinIO) khỏi
   metric dependency. Trace/log probe đã bị lọc ở bước export; bộ lọc của export được ghi lại trong
   `features-manifest.json`.
-- **Ánh xạ identity lệch** (`IDENTITY_ALIASES`) áp cho cạnh và span.
+- **Ánh xạ identity lệch** (`IDENTITY_ALIASES`) áp cho cạnh (metric dependency).
 - **Không dùng dữ liệu tương lai** (mục 7.2): metric và log chỉ lấy mẫu có thời điểm < `window_end`;
   span được tính vào cửa sổ chứa thời điểm **kết thúc** (trạng thái lỗi chỉ biết khi span xong), v0
   tính theo lúc bắt đầu. Độ trễ thu thập theo modality ghi ở `available_after_s`: một cửa sổ chỉ

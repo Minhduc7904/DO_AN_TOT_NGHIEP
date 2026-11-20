@@ -76,13 +76,23 @@ uv run aiops-training ground-truth \
 
 Bỏ `--case`, `--fault-log` cho run healthy. Bản ghi theo [telemetry-and-ground-truth-schema-v1](../../docs/processed/architecture/telemetry-and-ground-truth-schema-v1.md) mục 8; `fault_start`/`fault_end` lấy từ nhật ký của `fault-schedule.mjs` (không suy ra từ bất thường). Có `--artifact` thì chạy `verification_checks` (mục 9.2 của tài liệu): fault bật thành công mà không thấy triệu chứng tối thiểu thì `run_status = invalid`. Mã thoát 0 khi `valid`.
 
-## Đặc trưng theo cửa sổ (feature pipeline v0)
+## Đặc trưng theo cửa sổ (feature pipeline v1)
 
 ```bash
 uv run aiops-training features artifacts/<RUN_ID>          # → artifacts/<RUN_ID>/features/
+# Baseline healthy: fit chỉ trên run train của dataset, áp cho mọi run, kiểm leakage
+uv run aiops-training fit-baseline --dataset ../experiments/datasets/dataset-v0.json --runs-dir ../experiments/runs --out baselines/dataset-v0.json
+uv run aiops-training apply-baseline ../experiments/runs/<RUN_ID>/telemetry/features --baseline baselines/dataset-v0.json
+uv run aiops-training check-leakage --dataset ../experiments/datasets/dataset-v0.json --runs-dir ../experiments/runs --baseline baselines/dataset-v0.json
 ```
 
-Cửa sổ 60 s bước 15 s; `service_windows.parquet` (RED, CPU, bộ nhớ, trace/log error rate, cờ thiếu modality, `telemetry_silent`) và `edge_windows.parquet` (số lời gọi, tỉ lệ lỗi/timeout, độ trễ trung bình/p95/p99 theo cạnh). Cột và cách tính: [telemetry-data-dictionary-v2](../../docs/processed/architecture/telemetry-data-dictionary-v2.md) mục 9.
+Cửa sổ 60 s bước 15 s:
+
+- `service_windows.parquet`: RED, CPU, bộ nhớ, tỉ lệ lỗi trace/log, cờ thiếu modality, `traces_truncated`, `telemetry_silent`, `warmup`;
+- `edge_windows.parquet`: số lời gọi, tỉ lệ lỗi/timeout, độ trễ trung bình/p95/p99 theo cạnh;
+- `queue_windows.parquet`: message sẵn sàng/chưa ack và consumer theo hàng đợi RabbitMQ (cạnh async).
+
+`feature_config_version` (`feature.v1`) và `noise_filter_version` (`noise.v1`) ghi trong `features-manifest.json`, áp như nhau cho mọi run. Cột, bộ lọc nhiễu, quy tắc thời điểm, baseline và kiểm leakage: [telemetry-data-dictionary-v2](../../docs/processed/architecture/telemetry-data-dictionary-v2.md) mục 9.
 
 ## Cách export bảo vệ Tempo
 

@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-05_build-feature-pipeline-v1` |
 | Tuần | `week-15_2026-11-08_to_2026-11-14` |
-| Trạng thái | Đã giao |
+| Trạng thái | Đang thực hiện |
 | Người phụ trách | Bách |
 | Collaborator | Không có |
 | Ưu tiên | Cao |
@@ -61,5 +61,8 @@ Theo [evaluation-protocol-v1](../../../architecture/evaluation-protocol-v1.md) m
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 19/11/2026 — lập card.
+- Cập nhật gần nhất: 20/11/2026 — xong phần không cần dataset (làm song song với pilot của task-03): feature pipeline v1 (lọc nhiễu `noise.v1`, ánh xạ identity lệch, span theo `end_time`, đặc trưng rỗng khi modality thiếu, cột `warmup`/`traces_truncated`, bảng `queue_windows`), `fit-baseline`/`apply-baseline` (median/MAD chỉ trên run train), `check-leakage` có test cố ý vi phạm; unit test `training` đạt. Chạy thử trên artifact pilot C6: 194 cửa sổ, 66 s, RSS 1,7 GB (đo khi máy đang chạy run k6, chưa phải số chính thức).
 - Ghi chú/tồn đọng:
+  - Chờ dataset v0 (task-04): chạy pipeline trên mọi run, fit baseline trên run train, `check-leakage` trên dataset manifest thật.
+  - Đo lại thời gian/RAM trên một run 48 phút khi máy rảnh.
+  - Nhánh này tách từ `main`; lệnh `symptoms` của task-03 cũng sửa `cli.py`, gộp khi merge.
