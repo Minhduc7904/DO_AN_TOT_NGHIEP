@@ -105,6 +105,10 @@ services:
       GF_USERS_ALLOW_SIGN_UP: "false"
       GF_ANALYTICS_REPORTING_ENABLED: "false"
       GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
+      # Mỗi lần reset (xóa volume) Grafana 13 tải lại và tự nâng ~16 plugin đi kèm (Tempo, Loki,
+      # Pyroscope…) lên bản mới nhất: phiên bản đổi giữa các run và page cache của lần tải làm
+      # `docker stats` báo 486–692 MiB trong khi bộ nhớ tiến trình chỉ ~370 MiB (pilot task-03 tuần 15).
+      GF_PLUGINS_PREINSTALL_AUTO_UPDATE: "false"
     ports:
       - "127.0.0.1:${GRAFANA_PORT:-3008}:3000"
     volumes:
