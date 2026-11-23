@@ -87,4 +87,11 @@ Số run healthy test và slot cao điểm của test chốt khi freeze (tuần 
 
 ## 6. Kết quả
 
-Chưa có. Mục này ghi run theo slot, gate, chất lượng, run bị thay và giới hạn sau khi chạy.
+Bảng run theo slot ghi khi hàng đợi chạy xong. Sự kiện trong lúc chạy:
+
+### 6.1. Ngân sách export trace (23/11/2026)
+
+- Run `validation-healthy-healthy-spike-s2003-20261123t123352z` (export với ngân sách mặc định 20.000 trace) có 56.701 trace ứng viên, 18.602 trace nhiễu, 38.099 trace còn lại; export giữ 20.000 (mẫu đều theo thời gian, `_evenly_spaced`) và bỏ 18.099 (`dropped_by_budget`), giữ 52,5%. Không lỗi tải (`fetch_errors`, `not_found`, `parse_errors` = 0), không `aborted`.
+- **Độ phủ ứng viên** (trace ứng viên không nhiễu ÷ request k6 trong cửa sổ) của mọi run pilot `normal-mixed` và dataset v0 tới thời điểm này là 0,990–0,996, kể cả run trên (0,995). 16 lần chạm giới hạn kết quả tìm kiếm của Tempo lặp lại ở mọi run, không theo tải, và không làm mất trace đáng kể; nguồn mất trace duy nhất là ngân sách. Run pilot `c2-spike` (fault cộng đỉnh tải) là ngoại lệ: 0,687, 291 lần chạm giới hạn.
+- Quyết định: nâng ngân sách mặc định lên 60.000 (commit `ebbae7f`) để run còn lại có `dropped_by_budget` = 0. Run `train-healthy-healthy-spike-s1003-20261123t134927z` đang chạy với ngân sách cũ được ngắt có chủ đích lúc 14:04Z (`aborted`, giữ trong ledger) và chạy lại bằng spec `train-healthy-healthy-spike-1-r2.json` (cùng seed, `replacement_for_run_id`).
+- Run s2003 đã đạt gate thực thi và chất lượng (`partial`), nên theo mục 8.6 không được thay; nó giữ slot validation `healthy-spike` với trace là mẫu 52,5%. Cách nhận run này cho primary evaluation và giới hạn đi kèm ở [evaluation-protocol-v1](evaluation-protocol-v1.md) mục 6.1.1 bảng F (task-06).
