@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-03_pilot-mvp-fault-cases` |
 | Tuần | `week-15_2026-11-08_to_2026-11-14` |
-| Trạng thái | Đang thực hiện |
+| Trạng thái | Chờ review |
 | Người phụ trách | Bách |
 | Collaborator | Không có |
 | Ưu tiên | Cao |
@@ -57,14 +57,14 @@ Theo [plan v0.4 tuần 15](../../plan-v0.4-24-weeks.md#tuần-15--experiment-run
 - [x] Mỗi case có `case_verification_status` theo năm điều kiện mục 5.2, kèm bằng chứng (truy vấn, số đo) hoặc lý do loại/mô tả lại.
 - [x] Độ trễ triệu chứng của từng case được đo; thời lượng fault active đã chốt lớn hơn độ trễ đó cộng window và persistence.
 - [x] Fault manifest v2 có tham số đã chốt và test; quyết định về profile đối chứng có lý do.
-- [ ] PR mở vào `main`; URL PR ghi vào card.
+- [x] PR mở vào `main`; URL PR ghi vào card.
 
 ## Liên kết hồ sơ thực hiện
 
 - Input workspace: Không tạo (giai đoạn tự bắt kịp; bằng chứng nằm trong PR).
 - Output workspace: Không tạo.
-- Pull request: Chưa tạo.
-- Kết quả review: Chưa review.
+- Pull request: [#95](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/95).
+- Kết quả review: Chờ review. Đã review bằng agent riêng hai vòng và sửa các điểm nêu (xem mô tả PR).
 
 > URL/số PR và `Chờ review` phải được commit/push vào PR head trước review. Thành viên còn lại phải gửi `APPROVED` hợp lệ trên GitHub; sau đó người phụ trách finalization metadata, ghi `Hoàn thành` trên chính branch/PR và tự merge task của mình. Card chỉ canonically hoàn thành khi commit đó vào nhánh canonical; xem [vòng đời task canonical](../../../rules/git-and-pull-request-rules.md#vòng-đời-task-canonical).
 
