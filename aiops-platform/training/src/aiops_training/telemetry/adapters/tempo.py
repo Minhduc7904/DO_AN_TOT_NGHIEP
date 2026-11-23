@@ -97,7 +97,8 @@ class TraceExport:
 
 @dataclass(frozen=True)
 class TempoExportOptions:
-    max_traces: int = 20_000
+    # Run healthy-spike của dataset v0 có ~38.000 trace không nhiễu; 20.000 (trước 23/11) bỏ 47%.
+    max_traces: int = 60_000
     fetch_delay_ms: int = 20
     slice_seconds: int = 30
     min_slice_seconds: int = 2

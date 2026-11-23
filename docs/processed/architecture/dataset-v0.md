@@ -2,7 +2,7 @@
 
 > **Task:** `task-04_collect-dataset-v0` (tuần 15).
 >
-> **Trạng thái:** bản nháp, cập nhật 20/11/2026. Đã chốt luật chia ngày, kế hoạch phiên của ba split và các slot run (khai báo trước khi chạy). **Chưa có run nào.** Các run dataset chạy sau khi pilot của task-03 tuần 15 xong, vì cần fault manifest v2, quyết định profile đối chứng và slot trùng cao điểm của task-03.
+> **Trạng thái:** bản nháp, cập nhật 23/11/2026. Đã chốt luật chia ngày, kế hoạch phiên của ba split, các slot run (khai báo trước khi chạy) và các quyết định từ pilot task-03. Run dataset chạy từ 23/11/2026 (mục 6).
 >
 > **Tài liệu liên quan:** [evaluation-protocol-v1](evaluation-protocol-v1.md) mục 5, 6.1, 8; [workload-design-v1](workload-design-v1.md) mục 11.4, 13.5. Manifest máy đọc được: [`aiops-platform/experiments/datasets/dataset-v0.json`](../../../aiops-platform/experiments/datasets/dataset-v0.json); kiểm tra: `aiops-platform/experiments/check-dataset.mjs`.
 
@@ -36,6 +36,7 @@ Phiên học viên mức 2+ lấy từ **đoạn xây** của log Moodle (ngày 
 - Nguyên nhân: ngày 6 và ngày 13 cùng thứ trong tuần, cùng có một đợt đăng nhập dồn khoảng 12:00. Chồng hai ngày làm hai đợt trùng giờ.
 - Kế hoạch được giữ, không đổi luật chọn ngày sau khi xem kết quả. `λ_knee` ≥ 5,6 là cận dưới (task-02), và đỉnh chỉ kéo dài một ô 60 s.
 - Điều kiện kèm theo: run healthy validation `normal-mixed` phải đạt tiêu chí "khỏe" mục 8.4. Nếu trượt, hạ `k` của kế hoạch này và ghi lại ở đây.
+- **Kết quả (23/11/2026):** run `validation-healthy-normal-mixed-s2002-20261123t091816z` đạt mọi tiêu chí: p95 Gateway lớn nhất theo cửa sổ 60 s là 0,091 s, phản hồi ngoài mong đợi 0,16%, phiên bỏ ngang 0,47%, 0 iteration bị bỏ, không container nào vượt ngưỡng CPU/bộ nhớ. Kế hoạch giữ nguyên `k` = 4.
 
 ## 3. Seed và dữ liệu seed
 
@@ -64,11 +65,11 @@ Phiên học viên mức 2+ lấy từ **đoạn xây** của log Moodle (ngày 
 - **Train có hai run mỗi profile**, thay vì mức tối thiểu một run. Một run chỉ có một seed nên không thấy được dao động của baseline theo workload.
 - Tổng số run cần chạy cho v0: 10, khoảng 13 giờ máy.
 
-**Còn chờ task-03:**
+**Đã chốt sau pilot task-03** ([fault-pilot-report-v1](fault-pilot-report-v1.md)):
 
-- **Fault manifest v2:** cường độ, thời lượng fault, slot cao điểm.
-- **Run validation trùng cao điểm:** chọn slot nào đặt `align_peak` (ít nhất một cho cả campaign, mục 5.3), và nó chạy trên profile nào.
-- **Profile healthy đối chứng** (`upload media peak healthy`, `AI job healthy`): nếu task-03 quyết định cần, thêm slot train và validation cho chúng.
+- **Fault manifest v2** (`aiops-platform/faults/manifests/fault-manifest-v2.json`): cường độ như v1, C3 fault 900 s, các case khác như v1. Spec fault run ghim manifest này.
+- **Slot validation trùng cao điểm:** `validation-c2-normal-mixed-r1` (`align_peak: true`). C2 là case nhạy với tải nhất (ở cao điểm có thể cạn pool của `course`), nên validation có tổ hợp fault cùng tải cao hợp lệ để chỉnh ngưỡng. C3, C4, C6 theo lịch mặc định, đúng điều kiện đã đo khi freeze thời lượng (với 900 s, align-peak của C3 chỉ đặt được tới giây 1380).
+- **Không thêm profile healthy đối chứng** (`upload media peak healthy`, `AI job healthy`): run healthy `normal-mixed` đã có job AI và upload media trong đúng các cửa sổ fault, và bộ đo triệu chứng không vượt ngưỡng trên các cửa sổ đó (báo cáo pilot mục 6).
 
 Số run healthy test và slot cao điểm của test chốt khi freeze (tuần 19).
 
@@ -86,4 +87,11 @@ Số run healthy test và slot cao điểm của test chốt khi freeze (tuần 
 
 ## 6. Kết quả
 
-Chưa có. Mục này ghi run theo slot, gate, chất lượng, run bị thay và giới hạn sau khi chạy.
+Bảng run theo slot ghi khi hàng đợi chạy xong. Sự kiện trong lúc chạy:
+
+### 6.1. Ngân sách export trace (23/11/2026)
+
+- Run `validation-healthy-healthy-spike-s2003-20261123t123352z` (export với ngân sách mặc định 20.000 trace) có 56.701 trace ứng viên, 18.602 trace nhiễu, 38.099 trace còn lại; export giữ 20.000 (mẫu đều theo thời gian, `_evenly_spaced`) và bỏ 18.099 (`dropped_by_budget`), giữ 52,5%. Không lỗi tải (`fetch_errors`, `not_found`, `parse_errors` = 0), không `aborted`.
+- **Độ phủ ứng viên** (trace ứng viên không nhiễu ÷ request k6 trong cửa sổ) của mọi run pilot `normal-mixed` và dataset v0 tới thời điểm này là 0,990–0,996, kể cả run trên (0,995). 16 lần chạm giới hạn kết quả tìm kiếm của Tempo lặp lại ở mọi run, không theo tải, và không làm mất trace đáng kể; nguồn mất trace duy nhất là ngân sách. Run pilot `c2-spike` (fault cộng đỉnh tải) là ngoại lệ: 0,687, 291 lần chạm giới hạn.
+- Quyết định: nâng ngân sách mặc định lên 60.000 (commit `ebbae7f`) để run còn lại có `dropped_by_budget` = 0. Run `train-healthy-healthy-spike-s1003-20261123t134927z` đang chạy với ngân sách cũ được ngắt có chủ đích lúc 14:04Z (`aborted`, giữ trong ledger) và chạy lại bằng spec `train-healthy-healthy-spike-1-r2.json` (cùng seed, `replacement_for_run_id`).
+- Run s2003 đã đạt gate thực thi và chất lượng (`partial`), nên theo mục 8.6 không được thay; nó giữ slot validation `healthy-spike` với trace là mẫu 52,5%. Cách nhận run này cho primary evaluation và giới hạn đi kèm ở [evaluation-protocol-v1](evaluation-protocol-v1.md) mục 6.1.1 bảng F (task-06).
