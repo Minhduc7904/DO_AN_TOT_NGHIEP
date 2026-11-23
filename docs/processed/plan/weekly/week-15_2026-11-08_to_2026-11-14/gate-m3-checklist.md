@@ -17,8 +17,8 @@
 
 | # | Mục kiểm | Tiêu chí đạt | Kết quả | Bằng chứng |
 | --- | --- | --- | --- | --- |
-| 1 | Chuẩn bị theo runbook mục 1 | `cp docker-compose/.env.example docker-compose/.env`, `uv sync`, `pnpm install --frozen-lockfile` chạy không lỗi | | |
-| 2 | Dữ liệu phiên Moodle dựng lại từ nguồn công khai | `fetch-moodle-log.sh` khớp md5 + sha256; `moodle-to-sessions.mjs`, `build-replay-plan.mjs` cho kế hoạch có sha256 trùng `plan_sha256` trong ledger của các run trước | | |
+| 1 | Chuẩn bị theo runbook mục 1 | `cp docker-compose/.env.example docker-compose/.env`, `uv sync`, `pnpm install --frozen-lockfile` chạy không lỗi | Đạt | 23/11/2026, worktree `wt-w15-t08` từ `eeeb714`: ba lệnh của runbook mục 1 chạy không lỗi, không dùng `node_modules`/`.venv` của worktree khác |
+| 2 | Dữ liệu phiên Moodle dựng lại từ nguồn công khai | `fetch-moodle-log.sh` khớp md5 + sha256; `moodle-to-sessions.mjs`, `build-replay-plan.mjs` cho kế hoạch có sha256 trùng `plan_sha256` trong ledger của các run trước | Đạt | Tải lại zip từ Zenodo: md5 `cdec50cd…`, sha256 `1b6abee4…` khớp script. Kế hoạch dựng lại: `moodle-normal-mixed-k4-v1.json` sha256 `471ef74a…` trùng `plan_sha256` của các run pilot `normal-mixed` trong ledger nhánh task-03; `moodle-healthy-spike-k4-v1.json` `7d4a2bcf…` trùng run `pilot-healthy-healthy-spike` |
 | 3 | Preflight | `free -h` available ≥ 4 GB trước mỗi run; runner không từ chối | | |
 | 4 | Reset sạch mỗi run | `reset.json` ghi `down --volumes`, `up --build --wait` thành công, fingerprint stack có đủ service | | |
 | 5 | Dữ liệu seed | `seed-report.json` có; gate thực thi không có `seed_data_failed` | | |
