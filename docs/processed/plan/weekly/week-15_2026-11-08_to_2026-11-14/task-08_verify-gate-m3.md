@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-08_verify-gate-m3` |
 | Tuần | `week-15_2026-11-08_to_2026-11-14` |
-| Trạng thái | Đang thực hiện |
+| Trạng thái | Chờ review |
 | Người phụ trách | Bách |
 | Collaborator | Không có |
 | Ưu tiên | Cao |
@@ -47,14 +47,14 @@ Theo [plan v0.4](../../plan-v0.4-24-weeks.md) tuần 15 (Gate M3: hai thành vi�
 - [x] Checklist được commit trước khi chạy; mỗi mục có kết quả đạt/không đạt và bằng chứng.
 - [x] Bốn case chạy được từ môi trường sạch chỉ theo runbook; mỗi run có ground truth được đối chiếu độc lập với telemetry thô.
 - [x] Ngoại lệ một người của Gate M3 được ghi trung thực trong overview tuần.
-- [ ] PR mở vào `main`; URL PR ghi vào card.
+- [x] PR mở; URL PR ghi vào card (PR #96 xếp chồng trên nhánh task-03 vì PR #95 chưa merge; đổi base sang `main` sau khi #95 merge).
 
 ## Liên kết hồ sơ thực hiện
 
 - Input workspace: Không tạo (giai đoạn tự bắt kịp; bằng chứng nằm trong PR).
 - Output workspace: Không tạo.
-- Pull request: Chưa tạo.
-- Kết quả review: Chưa review.
+- Pull request: [#96](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/96).
+- Kết quả review: Chờ review.
 
 > URL/số PR và `Chờ review` phải được commit/push vào PR head trước review. Thành viên còn lại phải gửi `APPROVED` hợp lệ trên GitHub; sau đó người phụ trách finalization metadata, ghi `Hoàn thành` trên chính branch/PR và tự merge task của mình. Card chỉ canonically hoàn thành khi commit đó vào nhánh canonical; xem [vòng đời task canonical](../../../rules/git-and-pull-request-rules.md#vòng-đời-task-canonical).
 

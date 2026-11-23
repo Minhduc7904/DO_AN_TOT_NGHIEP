@@ -26,7 +26,7 @@
 | [task-05_build-feature-pipeline-v1](task-05_build-feature-pipeline-v1.md) | Feature pipeline v1 trên dữ liệu pilot/dataset v0, có kiểm tra chống leakage | Bách | Không có | Cao | Đã giao |
 | [task-06_update-evaluation-protocol-after-pilot](task-06_update-evaluation-protocol-after-pilot.md) | Cập nhật evaluation protocol bằng số đo pilot (không đụng test); chốt E7 | Bách | Không có | Cao | Đã giao |
 | [task-07_validate-workload-realism-v2](task-07_validate-workload-realism-v2.md) | Kiểm chứng độ thực v2: đăng ký tiêu chí thời lượng trước, nhiều seed, báo cáo song song v1/v2 | Bách | Không có | Cao | Đã giao |
-| [task-08_verify-gate-m3](task-08_verify-gate-m3.md) | Gate M3: chạy lại từng case từ môi trường sạch theo runbook, export và xác nhận ground truth độc lập | Bách | Không có | Cao | Đã giao |
+| [task-08_verify-gate-m3](task-08_verify-gate-m3.md) | Gate M3: chạy lại từng case từ môi trường sạch theo runbook, export và xác nhận ground truth độc lập | Bách | Không có | Cao | Chờ review |
 
 > Khi đọc tiến độ project-wide, chỉ coi hàng có trạng thái `Hoàn thành` trên nhánh canonical là hoàn thành; trạng thái đã finalization trên task branch chưa thay thế nguồn này.
 
