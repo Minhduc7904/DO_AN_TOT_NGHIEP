@@ -823,7 +823,7 @@ Mọi fault run chạy `normal mixed traffic` cùng phiên bản (ADR-002: mọi
 | Case MVP | Thành phần bị lỗi | Traffic đi qua (theo mô hình) | Ước lượng trong cửa sổ fault 10 phút ban ngày |
 | --- | --- | --- | --- |
 | C2 | `course` → `course-postgres` | Gần như mọi thao tác W3 của học viên, W2 của giảng viên | Hàng nghìn request |
-| C3 | `ai-llm-provider` (LLM stub) | Goal I3: trích xuất tài liệu và job AI | 10 phút ban ngày ≈ 5 "giờ" × 6–7 phiên giảng viên ≈ 33 phiên; × 0,20 ≈ 6–7 phiên AI, mỗi phiên 1–2 job; có thể ít — xem mục 13. Pilot tuần 15: 9 job AI trong cửa sổ fault 600 s của run C3 lịch mặc định; trên 7 run `normal-mixed` của pilot, job đầu tiên sau phút 18 đến ở giây 14–329 |
+| C3 | `ai-llm-provider` (LLM stub) | Goal I3: trích xuất tài liệu và job AI | 10 phút ban ngày ≈ 5 "giờ" × 6–7 phiên giảng viên ≈ 33 phiên; × 0,20 ≈ 6–7 phiên AI, mỗi phiên 1–2 job; có thể ít — xem mục 13. Pilot tuần 15: 9 job AI trong cửa sổ fault 600 s của run C3 lịch mặc định; trên 8 run `normal-mixed` của pilot, job đầu tiên sau phút 18 đến ở giây 14–329, trừ run C6 lịch mặc định (458 s, fault chặn đăng nhập nên giảng viên tạo job muộn; báo cáo pilot mục 5) |
 | C4 | `media-minio` | Upload của I1/I2/I3 và `VIEW_MEDIA` của học viên | Vài chục upload + vài chục lượt đọc |
 | C6 | `identity` | Đăng nhập đầu mọi phiên, refresh, xác thực service token/JWKS | Mọi phiên mới |
 

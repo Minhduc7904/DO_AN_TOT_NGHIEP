@@ -11,7 +11,7 @@
 | Collaborator | Không có |
 | Ưu tiên | Cao |
 | Hạn dự kiến | 29/11/2026 (mốc bù tiến độ) |
-| Nhánh thực hiện | `docs/week-15/task-06-update-evaluation-protocol-after-pilot` |
+| Nhánh thực hiện | `feat/week-15/task-06-update-evaluation-protocol-after-pilot` (bảng task ghi tiền tố `docs/`; nhánh tạo với `feat/` vì có file cấu hình ứng viên `aiops-platform/training/configs/`) |
 
 ## Yêu cầu và phạm vi
 

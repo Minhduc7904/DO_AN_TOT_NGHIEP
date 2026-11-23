@@ -6,7 +6,7 @@
 >
 > **Cập nhật 17/11/2026 ([ADR-007](../adr/adr-007-semi-real-workload-and-ai-evidence-v1.md)):** traffic học viên là **bán thực** (mức 2+, phát lại phiên thật từ log Moodle Unistudium 2022), giảng viên/admin/job lịch dùng mức 2; healthy profile nối với workload này (mục 5.4). Bộ bằng chứng E1–E8 thay cách đọc RQ cũ (bảng ánh xạ ở mục 1.4): E1 phát hiện dưới tải bán thực so với ngưỡng cố định (mục 17.8); E2 bảng chính thêm **SimpleRCA** và **BARO** (mục 15.2.1), chỉ số chính Top-1 và MRR kèm random/xếp hạng hằng, bootstrap CI 95% và McNemar exact (mục 20.7); E3 thay RQ4 "bỏ 50% trace" bằng quan sát suy giảm gồm giữ 50% và 10% trace, log mất `trace_id`, mất một modality (mục 13); E4 chi phí chẩn đoán (mục 15.4); E6 đối chứng ngoài RCAEval RE2 (mục 15.7, Target); E7 thử nghiệm người (mục 15.3, Target, chốt người tham gia trước tuần 15 của [plan-v0.4](../plan/plan-v0.4-24-weeks.md)); mỗi case MVP có ít nhất một run test đặt fault trùng cao điểm tải (mục 5.3); đăng ký trước ở mốc freeze tuần 19 (mục 6.3). Nguồn tham khảo dùng mã khóa của [literature-matrix-v1](../plan/literature-matrix-v1.md). Khi đoạn chi tiết mâu thuẫn, ADR-007 được ưu tiên, sau đó tới ADR-006.
 >
-> **Cập nhật 23/11/2026 (task-06 tuần 15, sau pilot):** giá trị chốt bằng số đo pilot của task-02 và task-03 ở mục 6.1.1, mỗi giá trị trỏ về `run_id` hoặc file nguồn; tập ứng viên window, persistence, ngưỡng robust z cho validation khai báo ở mục 6.1.2, trước khi chạy validation. E7 ra khỏi kế hoạch (mục 15.3). Các mục 1.3, 4.2, 5.2, 7.2, 7.3, 8.3, 8.5, 26, 27, 28 sửa theo số đo này.
+> **Cập nhật 23/11/2026 (task-06 tuần 15, sau pilot):** giá trị chốt bằng số đo pilot của task-02 và task-03 ở mục 6.1.1, mỗi giá trị trỏ về `run_id` hoặc file nguồn; tập ứng viên window, persistence, ngưỡng robust z và luật chọn cho validation khai báo ở mục 6.1.2, trước khi chấm bất kỳ detector nào trên validation. E7 ra khỏi kế hoạch (mục 15.3). Các mục 1.3, 4.2, 5.2, 5.4, 6.3, 7.2, 7.3, 8.3, 8.4, 8.5, 15.3, 17.5, 20.7, 25, 26, 27, 28, 29 sửa theo số đo này.
 >
 > **Trạng thái:** Đề xuất. Ban đầu ghi "chờ Đức tự xác nhận (refactor do một mình Đức làm, không cần Bách review)"; từ 17/11/2026 Bách tự quyết các điểm còn mở trong giai đoạn bắt kịp tiến độ (ADR-006, ADR-007), Đức xác nhận khi repo ổn định tới phase RCA. Đã có ở tuần 13 (PR đang mở, chưa merge): cơ chế gây lỗi cho C2, C3, C4 ([PR #75](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/75)), workload k6 mức 1 ([PR #76](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/76)), export telemetry theo run ([PR #77](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/77)), kiểm chất lượng telemetry ([PR #79](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/79)). Bản đầu viết khi chưa có run nào chạy theo protocol này. Từ tuần 15 có 9 run pilot của task-03 và 2 run tìm điểm gãy của task-02 (mục 6.1.1); chưa có RCA engine. Mọi con số đo ghi trong tài liệu đều lấy từ các artifact đã có (mục 1.3, 6.1.1).
 >
@@ -61,6 +61,8 @@ Khi có khác biệt về concern đã thuộc ownership của artifact trước
 ### 1.3. Hiện trạng: đã đo thật và dự kiến
 
 Bảng này tách điều đã có bằng chứng khỏi điều mới là thiết kế. Bất kỳ con số nào ở các mục sau không nằm trong cột "Đã có" đều là giá trị đề xuất hoặc thừa kế từ v0 và phải được pilot/Đức xác nhận.
+
+Bảng giữ trạng thái ngày 16/11/2026. Sau pilot tuần 15 (23/11/2026): workload mức 2+ và mức 2 đã có (mục 6.1.1 bảng B), dataset v0 đang chạy ([dataset-v0](dataset-v0.md)), feature pipeline v1 và baseline robust z fit trên train ở task-05 (mục 6.1.1 bảng F, G); trạng thái tổng hợp ở mục 26.
 
 | Hạng mục | Đã có (bằng chứng) | Chưa có (dự kiến, chưa kiểm chứng) |
 | --- | --- | --- |
@@ -290,8 +292,8 @@ Ground truth root cause của campaign chỉ theo fault matrix/catalogue canonic
 | --- | --- | --- | --- | --- | --- | --- |
 | C1 (Target) | FB | `queue_backlog` | `notification-worker` | `notification-worker-rabbitmq` | `upload-complete` của `media` chậm/timeout | **Đã đo tín hiệu**; chuỗi lan sang `media-worker` là **giả thuyết** |
 | C2 (MVP) | FC | `dependency_latency` (viết lại theo ADR-006; bản cũ `db_connection_hold`) | `course` | `course-postgres` | enroll/quiz submit chậm; span `course-postgres` chậm, không span lỗi | **Đã pilot** tuần 15, `case_verification_status = run` (mục 6.1.1). Vai trò case đối chứng dễ (ADR-006); ở profile `healthy-spike` cùng cường độ thành cạn pool và 504 tại gateway |
-| C3 (MVP) | FD | `dependency_latency` | `ai` | `ai-llm-provider` | job AI mãi `RUNNING` rồi `WORKER_INTERRUPTED`, tài liệu `EXTRACTING`; với `error_rate = 1`: job `FAILED` (`AI_PROVIDER_ERROR`) | **Đã pilot** tuần 15, `case_verification_status = run` (mục 6.1.1). Với cường độ đã chốt (30 s < `AI_COMPLETION_TIMEOUT_MS` 240 s), triệu chứng thật là job chậm và dồn ở `ai-worker`, không `WORKER_INTERRUPTED`; mô tả ở cột trước chỉ đúng khi trễ vượt timeout |
-| C4 (MVP) | FA | `dependency_latency` | `media` | `media-minio` | media `PENDING` kẹt, thumbnail mất, cleanup xóa media | **Đã pilot** tuần 15, `case_verification_status = run` (mục 6.1.1). Triệu chứng thật: upload chậm và `media-worker` tạo thumbnail chậm; chuỗi `PENDING` kẹt → cleanup xóa không lộ trong run 48 phút; upload client → MinIO không qua proxy |
+| C3 (MVP) | FD | `dependency_latency` | `ai` | `ai-llm-provider` | lời gọi provider chậm 30–35 s, job AI chậm và dồn (chưa ack) ở `ai-worker`; job vẫn hoàn tất. Chỉ khi trễ vượt `AI_COMPLETION_TIMEOUT_MS` (240 s) mới thành `WORKER_INTERRUPTED`; với `error_rate = 1`: job `FAILED` (`AI_PROVIDER_ERROR`) | **Đã pilot** tuần 15, `case_verification_status = run` (mục 6.1.1). Cường độ đã chốt không vượt timeout |
+| C4 (MVP) | FA | `dependency_latency` | `media` | `media-minio` | upload chậm (`media → MinIO`, `gateway → media`), `media-worker` tạo thumbnail chậm | **Đã pilot** tuần 15, `case_verification_status = run` (mục 6.1.1). Chuỗi "media `PENDING` kẹt → cleanup xóa media" của bản trước không lộ trong run 48 phút và bị bỏ; upload client → MinIO không qua proxy |
 | C5 (Target) | FE | `dependency_latency` | `identity` | `identity-postgres` | batch `PARTIAL_FAILED`, số item lệch | **Đã đo tín hiệu**; chèn trễ chưa chạy |
 | C6 (MVP) | FG | `dependency_unavailable` | `identity` | `identity` | mọi route qua gateway lỗi 504 sau khoảng yên lặng | **Đã chạy** (tracing-smoke, 70–74 giây với TTL 60 giây) và **đã pilot** tuần 15 (khoảng yên lặng 1,2–20 giây), `case_verification_status = run` (mục 6.1.1); cơ chế `docker pause identity` |
 | C7 (Target) | FH | `config_drift` | `identity` | `identity-jwks` | 401 đồng loạt ở nhiều service | **Đã đo tín hiệu**; cơ chế đổi khóa chưa chạy |
@@ -409,7 +411,7 @@ Healthy dataset phải tách run/seed giữa ba split. Các profile dưới đâ
 
 **Final-test healthy coverage tối thiểu:** `bán thực ngày thường` và `bán thực cao điểm trước hạn quiz`. Để có đủ "giờ khỏe" cho chỉ số báo động giả/giờ của E1, tổng thời lượng healthy final test được ghi trong manifest trước khi chạy.
 
-Final-test healthy run phải dùng `run_id` và workload seed chưa xuất hiện ở train/validation. Mục tiêu là đo false alarm và workload-shift behavior. Số run healthy mỗi profile chốt sau pilot (bản trước ghi "do Đức chốt"; giai đoạn hiện tại Bách chốt và ghi vào bản đăng ký trước, mục 6.3); chưa có số đề xuất ngoài "ít nhất một" của v0. Phiên Moodle dùng cho train, validation và test lấy từ các đoạn log khác nhau, và không trùng phần hold-out dùng kiểm chứng độ thực.
+Final-test healthy run phải dùng `run_id` và workload seed chưa xuất hiện ở train/validation. Mục tiêu là đo false alarm và workload-shift behavior. Số run healthy mỗi profile chốt sau pilot (bản trước ghi "do Đức chốt"; giai đoạn hiện tại Bách chốt và ghi vào bản đăng ký trước, mục 6.3); dataset v0 chốt train 2, validation 1, test 1 mỗi profile (mục 6.1.1 bảng B); số run healthy của test cuối chốt trong bản đăng ký trước. Phiên Moodle dùng cho train, validation và test lấy từ các đoạn log khác nhau, và không trùng phần hold-out dùng kiểm chứng độ thực.
 
 ### 5.5. Seed rule và dữ liệu seed
 
@@ -448,7 +450,9 @@ Kết quả pilot tuần 15: giá trị đã chốt ở mục 6.1.1, tập ứng
 
 ### 6.1.1. Giá trị đã chốt sau pilot (tuần 15)
 
-Chốt ngày 23/11/2026 (task-06 tuần 15), trước khi chạy bất kỳ phép chọn nào trên validation. Chưa có detector hay RCA engine, nên không giá trị nào được chọn bằng kết quả phát hiện hoặc khoanh vùng. Nguồn là số đo pilot ([fault-pilot-report-v1](fault-pilot-report-v1.md)) và file cấu hình, mã đã dùng khi chạy pilot. Giá trị còn mở ghi lý do. Thay đổi sau mốc này phải ghi thành phiên bản mới (mục 6.3).
+Chốt ngày 23/11/2026 (task-06 tuần 15), trước khi chấm bất kỳ detector, RCA hay baseline nào trên validation. Run validation đầu tiên của dataset v0 chạy lúc 09:18Z cùng ngày, chỉ để kiểm tiêu chí khỏe của workload (bảng B). Chưa có detector hay RCA engine, nên không giá trị nào được chọn bằng kết quả phát hiện hoặc khoanh vùng. Nguồn là số đo pilot ([fault-pilot-report-v1](fault-pilot-report-v1.md)) và file cấu hình, mã đã dùng khi chạy pilot. Giá trị còn mở ghi lý do. Thay đổi sau mốc này phải ghi thành phiên bản mới (mục 6.3).
+
+**Phụ thuộc thứ tự merge:** các tham chiếu tới `features/pipeline.py`, `features/baseline.py` và `PROBE_OPERATIONS`, `IDENTITY_ALIASES` trong `telemetry/identity.py` là code của task-05 (nhánh `feat/week-15/task-05-build-feature-pipeline-v1`); ngân sách export trace 60.000 là commit `ebbae7f` của task-04. PR task-04 và task-05 merge trước PR này.
 
 Run pilot dùng trong các bảng (không thuộc dataset, không vào final metric, mục 6.1):
 
@@ -503,17 +507,17 @@ Run pilot của task-03 ghim fault manifest v1 (cùng cường độ với v2, C
 
 **D. Độ trễ triệu chứng, khoảng yên lặng và quy tắc mục 7.3**
 
-Cột "Cần tối thiểu" = độ trễ lớn nhất đo được + 10 s độ trễ thu thập metric + `late_tolerance` lớn nhất trong tập ứng viên ở mục 6.1.2 (90 s). Fault active phải lớn hơn giá trị này (mục 7.3).
+Cột "Cần tối thiểu" = độ trễ lớn nhất đo được + 10 s độ trễ thu thập metric + `late_tolerance` lớn nhất trong tập ứng viên ở mục 6.1.2 (135 s). Fault active phải lớn hơn giá trị này (mục 7.3).
 
 | Case | Lịch mặc định | Trùng cao điểm | Nguồn | Fault active | Cần tối thiểu |
 | --- | --- | --- | --- | --- | --- |
-| C2 | 10 s (`course-postgres`, `gateway → course`). Ngoài đường request: `ai-worker → course` 300 s, chỉ khi có job AI | 10 s; `ai-worker → course` 15 s | `c2`, `c2-spike` | 600 s | 300 + 10 + 90 = 400 s: đạt |
-| C3 | 275 s (job chưa ack ở `ai-worker`), 305 s (lời gọi provider) | 70 s, 100 s | `c3`, `c3-peak`. Job AI đầu tiên sau phút 18 đến ở giây 14–329 trên 7 run `normal-mixed` không bị chặn đăng nhập (báo cáo pilot mục 5) | 900 s | 329 + 30 (lời gọi LLM) + 10 + 90 = 459 s: đạt |
-| C4 | 100 s (`media → MinIO`), 110 s (`gateway → media`), 155 s (`media-worker → MinIO`) | 25 s, 35 s, 25 s | `c4`, `c4-peak` | 600 s | 155 + 10 + 90 = 255 s: đạt |
-| C6 | 15 s (đăng nhập qua gateway), 20 s (token dịch vụ của gateway; span lỗi đầu tiên ở 10 s) | 10 s (span lỗi đầu tiên ở 1,2 s) | `c6`, `c6-peak` | 300 s | 20 + 10 + 90 = 120 s: đạt |
+| C2 | 10 s (`course-postgres`, `gateway → course`). Ngoài đường request: `ai-worker → course` 300 s, chỉ khi có job AI | 10 s; `ai-worker → course` 15 s | `c2`, `c2-spike` | 600 s | 300 + 10 + 135 = 445 s: đạt |
+| C3 | 275 s (job chưa ack ở `ai-worker`), 305 s (lời gọi provider) | 70 s, 100 s | `c3`, `c3-peak`. Job AI đầu tiên sau phút 18 đến ở giây 14–329 trên 7 run `normal-mixed` không bị chặn đăng nhập (báo cáo pilot mục 5) | 900 s | 329 + 35 (lời gọi LLM tối đa) + 10 + 135 = 509 s: đạt |
+| C4 | 100 s (`media → MinIO`), 110 s (`gateway → media`), 155 s (`media-worker → MinIO`) | 25 s, 35 s, 25 s | `c4`, `c4-peak` | 600 s | 155 + 10 + 135 = 300 s: đạt |
+| C6 | 15 s (đăng nhập qua gateway), 20 s (token dịch vụ của gateway; span lỗi đầu tiên ở 10 s) | 10 s (token dịch vụ; span lỗi đầu tiên ở 1,2 s), 15 s (gateway trả 5xx, CPU `identity` đứng yên) | `c6`, `c6-peak` | 300 s | 20 + 10 + 135 = 165 s: đạt |
 
-- **C3** còn đạt khi job AI đầu tiên đến trước giây 770 của cửa sổ fault (900 − 30 − 10 − 90). Run có job đến muộn hơn thì triệu chứng không kịp lộ; ghi trong ledger, không nới interval (mục 7.3).
-- **Khoảng yên lặng C6:** `c6` đo 10 s theo span lỗi token đầu tiên, 20 s theo bộ đo metric; `c6-peak` đo 1,2 s theo span, 10 s theo metric. Smoke trước đó đo 70–74 s. Lý do: token dịch vụ của gateway (TTL 60 s) làm mới theo chu kỳ, nên lúc token hết hạn sau `pause` rơi vào khoảng 0–60 s tùy pha. Cận kỳ vọng `expected_symptom_lag` = [0, TTL + 30] = [0, 90] s (`ground_truth/cases.py`); cả hai run nằm trong cận, giữ biên 30 s. Detection Delay của C6 vẫn báo riêng (mục 7.3).
+- **C3** còn đạt khi job AI đầu tiên đến trước giây 720 của cửa sổ fault (900 − 35 − 10 − 135). Run có job đến muộn hơn thì triệu chứng không kịp lộ; ghi trong ledger, không nới interval (mục 7.3).
+- **Khoảng yên lặng C6:** `c6` đo 10 s theo span lỗi token đầu tiên, 20 s theo bộ đo metric; `c6-peak` đo 1,2 s theo span, 10 s theo metric (gateway trả 5xx ở 15 s). Smoke trước đó đo 70–74 s. Lý do: token dịch vụ của gateway (TTL 60 s) làm mới theo chu kỳ, nên lúc token hết hạn sau `pause` rơi vào khoảng 0–60 s tùy pha. Cận kỳ vọng `expected_symptom_lag` = [0, TTL + 30] = [0, 90] s (`ground_truth/cases.py`); cả hai run nằm trong cận, giữ biên 30 s. Detection Delay của C6 vẫn báo riêng (mục 7.3).
 - **Nhánh worker mất token của C6** chưa xác nhận ở cả hai run (`ai-worker` lỗi đúng một lần ở `c6-peak`); không thuộc đường lan truyền kỳ vọng.
 
 **E. Timeout và biên so với cường độ fault**
@@ -535,11 +539,11 @@ LMS đóng băng (ADR-006) nên timeout không chỉnh theo pilot. Bảng ghi gi
 | --- | --- | --- | --- |
 | Bước export metric | 5 s | `--step-seconds` của `aiops-training export` (mặc định 5, `cli.py`); `QualityConfig.expected_scrape_interval_s` | |
 | Độ trễ thu thập (`available_after_s`) | Metric 10 s · trace 3 s · log 2 s | `AVAILABLE_AFTER_S` trong `features/pipeline.py` (task-05, nhánh `feat/week-15/task-05-build-feature-pipeline-v1`); số đo ở catalogue case mục 1.4: log ≈ 2 s, trace ≈ 2,5 s, counter 4–10 s, backlog queue ≈ 9 s | Pilot không đo lại; giá trị là cận trên của số đo ngày 29/10/2026. Cửa sổ chỉ được dùng sau `window_end` + 10 s (mục 7.2) |
-| Ngân sách export trace | 20.000 trace mỗi run (`--max-traces`) | `cli.py`; báo cáo pilot mục 4 | 8 run `normal-mixed`: 16/129 truy vấn tìm kiếm chạm giới hạn kết quả, không trace nào bị bỏ vì ngân sách. `c2-spike`: 14.828 trace bị bỏ vì ngân sách, mất khoảng 43% trace. Run `healthy-spike` của dataset: chưa có số. <!-- TODO task-04: ngân sách export đã dùng và số trace bị bỏ vì ngân sách (dropped_by_budget) của các run healthy-spike train/validation --> |
+| Ngân sách export trace | 60.000 trace mỗi run (`--max-traces`, `TempoExportOptions.max_traces`) từ commit `ebbae7f` (23/11/2026, task-04); trước đó 20.000. Giá trị đã dùng ghi ở `export_config.tempo.max_traces` của manifest export | `cli.py`, `telemetry/adapters/tempo.py`; báo cáo pilot mục 4 | Pilot (20.000): 8 run `normal-mixed` có 16/129 truy vấn tìm kiếm chạm giới hạn kết quả, không trace nào bị bỏ vì ngân sách; `c2-spike` bỏ 14.828/34.828 trace ứng viên vì ngân sách và còn 291 lần chạm giới hạn tìm kiếm, nên mất **≥ 43%** trace. Dataset v0: `validation-healthy-healthy-spike-s2003-20261123t123352z` (20.000) bỏ 18.099/38.099 trace (giữ 52,5%) nên ngân sách được nâng; run sau dùng 60.000. **Độ phủ ứng viên** (trace ứng viên không nhiễu ÷ request k6 của run) là 0,990–0,996 ở mọi run pilot `normal-mixed` và dataset v0 tới 23/11/2026 (`c2-spike`: 0,687), nên 16 lần chạm giới hạn tìm kiếm cố định ở mọi run không làm mất trace đáng kể. <!-- TODO task-04: dropped_by_budget và độ phủ ứng viên của các run còn lại của dataset v0 --> |
 | Ngưỡng `telemetry_silent` | Nhịp tim `process_cpu_time_seconds_total` không tăng quá 30 s; khoảng chạm mép cửa sổ ≤ 35 s không tính | `silent_threshold_s`, `edge_tolerance_s` của `QualityConfig` (`telemetry/validation/quality.py`) | Trong 9 run pilot, chỉ `c6`, `c6-peak` gắn `telemetry_silent:identity`, đúng runtime bị pause; 7 run còn lại không gắn nhầm |
 | Ngưỡng tương quan log–trace | ≥ 0,95 | `QualityConfig.min_log_correlation_ratio` | Không run pilot nào có lý do `low_log_trace_correlation`. Log `dependency.failure` của C6 khớp `span_id` 892/892 (`c6`) và 1.163/1.163 (`c6-peak`) |
-| `overall_status` | `fail`: thiếu hoặc lỗi modality, `service_name` lạ hoặc thiếu, runtime không có metric. `partial`: có lý do khác. Còn lại `pass` | `quality.py` | 9/9 run pilot `partial`: trace bị cắt ở mọi run (`c3` còn bị Tempo OOM giữa export), cộng `telemetry_silent` ở hai run C6 và log trùng ở 3 run |
-| Loại `partial` được nhận cho primary evaluation (mục 8.3) | Nhận: (1) `truncated_modality:traces` khi chỉ chạm giới hạn tìm kiếm, `dropped_by_budget` = 0; (2) `duplicates`; (3) `telemetry_silent` của đúng `identity` trong run C6. Không nhận: `partial_modality:traces` (export trace bị ngắt, ví dụ Tempo OOM), vì là source outage (mục 8.3) | `quality.py`; `dropped_by_budget`, `search_limit_hit` trong manifest export (`telemetry/export.py`); báo cáo pilot mục 4, 7 | Không nhận (1) thì không run nào đủ điều kiện, vì mọi run pilot đều chạm giới hạn tìm kiếm. Feature v1 gắn `traces_truncated` và không dùng số span làm tín hiệu tải. Run có `dropped_by_budget` > 0 còn mở: <!-- TODO task-04: nếu run healthy-spike của dataset bỏ trace vì ngân sách thì quyết định nhận hay chuyển diagnostic_only cho variant có trace, trước khi chấm validation --> |
+| `overall_status` | `fail`: modality lỗi hoặc không có file, `service_name` lạ hoặc thiếu, runtime không có metric. `partial`: có lý do khác. Còn lại `pass`. Modality `empty` (có file, 0 dòng) không tự làm `fail` và không thành lý do; luật nhận run ở dòng dưới loại trường hợp này | `quality.py` | 9/9 run pilot `partial`: trace bị cắt ở mọi run (`c3` còn bị Tempo OOM giữa export), cộng `telemetry_silent` ở hai run C6 và log trùng ở 3 run |
+| Run `partial` được nhận cho primary evaluation (mục 8.3) | Luật đọc **`stats.traces` của manifest export** và `quality-report.json`, không chỉ danh sách `reasons` (lỗi tải lẻ tẻ không `aborted` không sinh lý do nào). Mọi run phải có: không modality nào `empty`; `stats.traces`: `aborted` = false, `fetch_errors` = `not_found` = `parse_errors` = 0; độ phủ ứng viên ≥ 0,98. Khi đó nhận các lý do: (1) `truncated_modality:traces` với `dropped_by_budget` = 0; (2) `truncated_modality:traces` với `dropped_by_budget` > 0 **chỉ ở run healthy** (không chấm RCA trên run khỏe), trace là mẫu hệ thống đều theo thời gian (`_evenly_spaced`), tỉ lệ giữ ghi vào dataset; (3) `duplicates` khi `duplicate_metric_record_count` = 0, `duplicate_span_id_count` = 0 và log trùng ≤ 0,1% số log; (4) `telemetry_silent:identity` trong run C6 khi mọi khoảng im lặng nằm trong `[fault_start, fault_end + 30 s]`. Không nhận: `partial_modality:traces` (export trace bị ngắt, ví dụ Tempo OOM), vì là source outage (mục 8.3); fault run có `dropped_by_budget` > 0 (export lại trong hạn retention 24 giờ, hoặc `diagnostic_only` cho variant có trace) | `quality.py`; `stats.traces` trong manifest export (`telemetry/export.py`, `telemetry/adapters/tempo.py`); báo cáo pilot mục 4, 7 | Không nhận (1) thì không run nào đủ điều kiện, vì mọi run đều chạm giới hạn tìm kiếm. Pilot: mọi run C6 có khoảng im lặng 305–310 s bắt đầu khoảng 5 s sau `fault_start`; mọi run có đúng 1 log trùng. Hệ quả của (2): (a) báo động giả trên `healthy-spike` của validation cho detector dùng trace đo trên mẫu 52,5%, ghi thành giới hạn; (b) điều kiện "full" của E3 chỉ dùng run `dropped_by_budget` = 0; (c) không detector nào dùng số đếm tuyệt đối từ trace (`span_count`, số span lỗi, số cạnh đếm từ trace); đặc trưng trace chỉ là tỉ lệ (`trace_error_rate`, null khi cửa sổ có ít hơn 5 span) và `span_count` không vào baseline (`FEATURE_COLUMNS` của `features/baseline.py`) |
 | Ngưỡng kiểm chứng `RunGroundTruth` | Đoạn mốc 300 s trước fault; bỏ 15 s đầu fault; latency trung bình ≥ 2 × mốc và ≥ 3 lời gọi; bỏ `ping`. C6: CPU `identity` đứng yên và `lms_dependency_error_count_total{gateway-identity-token}` tăng trong `[fault_start, fault_start + TTL + 30 s]` | `ValidationConfig` trong `ground_truth/validate.py`; [telemetry-and-ground-truth-schema-v1](telemetry-and-ground-truth-schema-v1.md) mục 9.2 | 9/9 run pilot `valid` |
 
 **G. Luật lọc nhiễu**
@@ -555,7 +559,7 @@ LMS đóng băng (ADR-006) nên timeout không chỉnh theo pilot. Bảng ghi gi
 
 | Giá trị | Chốt | Nguồn | Ghi chú |
 | --- | --- | --- | --- |
-| Cách đặt slot | Cửa sổ fault có nhiều lần bắt đầu phiên nhất trong kế hoạch phát lại, quét bước 30 s trong [giây 360, 2.880 − 600 − thời lượng fault] | `peakAlignedStart` trong `aiops-platform/faults/fault-schedule.mjs` | C3 (900 s) chỉ bắt đầu muộn nhất ở giây 1.380 |
+| Cách đặt slot | Cửa sổ fault có nhiều lần bắt đầu phiên nhất trong kế hoạch phát lại, quét bước 30 s trong [giây 360, 2.880 − 600 − thời lượng fault] | `peakAlignedStart` trong `aiops-platform/faults/fault-schedule.mjs` | C3 (900 s) chỉ bắt đầu muộn nhất ở giây 1.380, nên slot giây 1.620 của `c3-peak` (fault 600 s, manifest v1) không đặt lại được với v2. Độ trễ "trùng cao điểm" 70/100 s của C3 ở bảng D lấy từ slot đó; slot cao điểm test của C3 là cửa sổ tốt nhất trong [360, 1.380] (mục 27) |
 | Validation | `validation-c2-normal-mixed-r1` (`align_peak` = true), fault ở giây 1.260–1.860; C3, C4, C6 theo lịch mặc định | `decisions` trong `dataset-v0.json`; `fault-schedule.mjs plan` (bảng A) | Run: chưa có kết quả. <!-- TODO task-04: run_id của slot validation-c2-normal-mixed-r1, fault_start thật và kết quả gate --> |
 | Test | Mỗi case MVP ít nhất 1 run trùng cao điểm (mục 5.3) | — | Slot cụ thể chưa chốt; chốt khi freeze tuần 19, trước khi chạy test (mục 6.3) |
 | Pilot đã chạy trùng cao điểm | `c6-peak` (281 phiên bắt đầu trong cửa sổ 300 s); `c3-peak`, `c4-peak` (538 phiên); `c2-spike` (1.877 phiên) | Báo cáo pilot mục 2 | C3, C4 lộ sớm hơn lịch mặc định vì có nhiều job AI và upload hơn |
@@ -571,26 +575,29 @@ LMS đóng băng (ADR-006) nên timeout không chỉnh theo pilot. Bảng ghi gi
 
 ### 6.1.2. Giá trị để validation chọn và tập ứng viên
 
-Khai báo ngày 23/11/2026, trước khi chạy bất kỳ phép chọn nào trên validation. Validation của dataset v0 chỉ có 4 fault run (một mỗi case) và 2 healthy run (`normal-mixed` seed 2002, `healthy-spike` seed 2003; dataset-v0 mục 4). Recall trên validation chỉ nhận 5 giá trị (0/4 tới 4/4), báo động giả đo trên khoảng 2 × 42 phút sau warm-up. Vì vậy tập ứng viên giữ nhỏ: càng nhiều tổ hợp càng dễ chọn trúng nhiễu của 6 run.
+Khai báo ngày 23/11/2026, trước khi chấm bất kỳ detector nào trên validation; phiên bản `detection-candidates.v1`, file [`detection-candidates-v1.json`](../../../aiops-platform/training/configs/detection-candidates-v1.json). Validation của dataset v0 chỉ có 4 fault run (một mỗi case) và 2 healthy run (`normal-mixed` seed 2002, `healthy-spike` seed 2003; dataset-v0 mục 4). Run `healthy-spike` validation có trace là mẫu 52,5% (bảng F). Recall trên validation chỉ nhận 5 giá trị (0/4 tới 4/4), báo động giả đo trên khoảng 2 × 42 phút sau warm-up. Vì vậy tập ứng viên giữ nhỏ: càng nhiều tổ hợp càng dễ chọn trúng nhiễu của 6 run.
 
 | Tham số | Ứng viên | Lý do (từ số đo) |
 | --- | --- | --- |
 | Bước cửa sổ | **Cố định 15 s**, không chọn | Bằng `align_s` của feature v1 và bằng 3 mẫu metric 5 s. Bước nhỏ hơn không làm phát hiện sớm hơn vì metric chỉ đủ sau 10 s (bảng F). Giữ công thức `late_tolerance` mục 17.3 như v0 |
 | Độ dài cửa sổ | {30 s, 60 s} | 60 s thừa kế v0, là mặc định của feature v1 (`FeatureConfig.window_s`). 30 s là cửa sổ ngắn nhất còn gồm hai bước: C2 và C6 lộ sau 10–20 s, cửa sổ ngắn bớt pha loãng triệu chứng sớm và giảm `late_tolerance`. Không dưới 30 s vì cạnh thưa: C3 chỉ có 11–15 lời gọi provider trong cả cửa sổ fault (`c3`, `c3-peak`), C4 có 27–42 lượt upload trong 600 s (`c4`, `c4-peak`), cửa sổ 15 s phần lớn không có lời gọi nào. Không trên 60 s vì độ trễ dài của C3 (275–305 s) do job đến muộn; cửa sổ dài không rút ngắn được độ trễ này mà chỉ tăng `late_tolerance` |
-| Persistence | {2, 3} cửa sổ liên tiếp | 2: bộ đo triệu chứng của pilot cần persistence 2 để một mẫu đơn lẻ không thành triệu chứng (ví dụ `ai-worker` lỗi lấy token đúng một lần ở `c6-peak`). 3: giá trị minh họa ở [analysis blueprint](analysis-anomaly-rca-blueprint-v1.md) mục 17.4. Không dùng 1 vì lý do của giá trị 2 |
-| Ngưỡng robust z | {3, 4, 5} | 3 bằng mặc định `k_sigma` của SimpleRCA (mục 15.2.1), để detector thống kê và baseline xuất phát cùng mức. 4 và 5 vì tải bán thực có nhịp giờ và cao điểm: bộ đo triệu chứng của pilot phải ghép ngưỡng tương đối với ngưỡng tuyệt đối (latency ≥ 2 × trước fault **và** tăng ≥ 50 ms; lỗi > 3 × tốc độ trước fault **và** > cửa sổ đông nhất trước fault) mới không báo nhầm trên `healthy` (36/38 tín hiệu `not_observed`, 2 `no_traffic`) |
+| Persistence | Cửa sổ 30 s: {3, 4}; cửa sổ 60 s: {5, 6} cửa sổ liên tiếp | Cửa sổ chồng nhau (bước 15 s), nên một sự kiện đơn lẻ nằm trong `window / 15` cửa sổ liên tiếp (2 với 30 s, 4 với 60 s). Persistence nhỏ nhất lọc được sự kiện đơn lẻ là `window / 15 + 1`, tức bất thường kéo dài ít nhất một bước (15 s); ứng viên thứ hai đòi kéo dài hai bước (30 s). Pilot có ví dụ sự kiện đơn lẻ phải lọc: `ai-worker` lỗi lấy token đúng một lần ở `c6-peak`. Bản nháp trước dùng {2, 3}, không lọc được sự kiện đơn lẻ ở cửa sổ nào (review task-06) |
+| Ngưỡng robust z | {3, 4, 5} | 3 bằng mặc định `k_sigma` của SimpleRCA (mục 15.2.1), để detector thống kê và baseline xuất phát cùng mức. 4 và 5 vì tải bán thực có nhịp giờ và cao điểm, dao động trên train lớn hơn tải hằng. Đây là lý do thiết kế: bộ đo triệu chứng của pilot ghép ngưỡng tương đối với ngưỡng tuyệt đối (latency ≥ 2 × trước fault **và** tăng ≥ 50 ms) và không báo nhầm trên `healthy` (36/38 tín hiệu `not_observed`, 2 `no_traffic`), nhưng pilot không thử ngưỡng tương đối đơn lẻ nên không chứng minh ngưỡng 3 sẽ báo nhầm |
 
-Tổng 2 × 2 × 3 = 12 tổ hợp. `late_tolerance` theo mục 17.3: 45 s (30 s, 2), 60 s (30 s, 3), 75 s (60 s, 2), 90 s (60 s, 3). Giá trị lớn nhất 90 s đã dùng khi kiểm thời lượng fault ở bảng D, nên tổ hợp nào được chọn cũng không làm fault run thành FN do thiết kế.
+Tổng 4 cặp (window, persistence) × 3 ngưỡng = 12 tổ hợp. `late_tolerance` theo mục 17.3 (`window + (persistence − 1) × 15 s`): 60 s (30 s, 3), 75 s (30 s, 4), 120 s (60 s, 5), 135 s (60 s, 6). Giá trị lớn nhất 135 s đã dùng khi kiểm thời lượng fault ở bảng D: với độ trễ triệu chứng đo ở pilot, không tổ hợp nào làm fault run thành FN do thiết kế. Điều này có điều kiện: C3 chỉ đạt khi job AI đầu tiên đến trước giây 720 của cửa sổ fault, và độ trễ đo bằng bộ đo triệu chứng chứ không bằng chính detector.
+
+**Định nghĩa dùng chung cho mọi tổ hợp** (khai báo cùng tập ứng viên):
+
+- **Cửa sổ không có dữ liệu:** đặc trưng null (không có lời gọi, modality thiếu, runtime `telemetry_silent`) không tính là vượt ngưỡng và **không làm đứt** chuỗi persistence; chuỗi tính trên các cửa sổ có dữ liệu liên tiếp nhau. Nhờ vậy cạnh thưa (C3: 11–15 lời gọi provider trong 900 s) vẫn tích lũy được persistence. `telemetry_silent` là tín hiệu riêng của detector, không đi qua robust z.
+- **Thang đo khi MAD = 0:** robust z = (x − median) / scale, với scale = 1,4826 × MAD; nếu MAD = 0 thì scale = 1,2533 × MeanAD (modified z-score của Iglewicz và Hoaglin); nếu MeanAD cũng bằng 0 (đặc trưng hằng trên train) thì scale bằng sàn theo đơn vị: tỉ lệ 0,01; giây (latency, duration) 0,01 s; request/s 0,05; số lời gọi và số message 1; consumer 0,2; CPU 0,01 giây CPU/s; bộ nhớ 1 MiB. Sàn là thay đổi nhỏ nhất coi là có nghĩa với từng đơn vị (ví dụ z = 3 trên tỉ lệ lỗi hằng 0 là tăng 3 điểm phần trăm; mất một consumer là z = 5). Cài ở `features/baseline.py` (task-05).
+- **`detected_at`** = `window_end` của cửa sổ hoàn tất chuỗi persistence + độ trễ thu thập của modality chậm nhất mà detector dùng (metric 10 s, bảng F). Bảng D đã cộng 10 s này.
 
 **Luật chọn** (ghi cùng tập ứng viên để không chọn sau khi xem kết quả):
 
-1. Window và persistence chọn một lần cho detector của engine, rồi dùng chung cho mọi detector của E1 (mục 17.8: chỉ detector đổi). Ngưỡng chọn riêng cho từng detector.
-2. Thứ tự ưu tiên: nhiều fault run validation có incident khớp nhất (mục 17.4); hòa thì ít incident báo động giả trên 2 healthy run nhất (mục 17.7); hòa tiếp thì `late_tolerance` nhỏ hơn; cuối cùng là ngưỡng lớn hơn.
+1. Window và persistence chọn **bằng detector robust z** trên lưới 12 tổ hợp ở trên, rồi cố định cho mọi detector của E1, kể cả Isolation Forest, điểm hợp nhất (fused) và ngưỡng tĩnh (mục 17.8: chỉ detector đổi). Ngưỡng của từng detector khác chọn sau đó với window/persistence đã cố định, trong tập ứng viên khai báo trước (danh sách dưới).
+2. Báo động giả đếm theo incident (mục 17.4, 17.7): incident trên 2 healthy run cộng incident có `detected_at` ngoài `[fault_start, fault_end + late_tolerance]` trên 4 fault run, chia cho tổng thời gian đánh giá không có fault (sau warm-up). **Điều kiện:** báo động giả ≤ 1 incident/giờ. Trong các tổ hợp đạt điều kiện: nhiều fault run có incident khớp nhất; hòa thì ít báo động giả hơn; hòa tiếp thì `late_tolerance` nhỏ hơn; cuối cùng là ngưỡng lớn hơn. Không tổ hợp nào đạt điều kiện thì chọn tổ hợp ít báo động giả nhất (hòa theo thứ tự trên) và ghi là không đạt điều kiện.
 
-Hai lưu ý khi đọc kết quả (không đổi pipeline):
-
-- Cửa sổ chồng nhau (bước 15 s), nên một sự kiện đơn lẻ nằm trong 2 cửa sổ liên tiếp (cửa sổ 30 s) hoặc 4 cửa sổ (cửa sổ 60 s). Persistence tính theo cửa sổ vì vậy chỉ tự lọc được sự kiện đơn lẻ khi số cửa sổ yêu cầu lớn hơn số đó; còn lại phải nhờ ngưỡng.
-- Robust z của feature v1 là (x − median) / max(1,4826 × MAD, 0,001) (`features/baseline.py`). Đặc trưng thưa có MAD = 0 trên train nên lệch nhỏ cũng cho z rất lớn; ở các đặc trưng này ngưỡng 3, 4, 5 cho cùng kết quả.
+Lưu ý khi đọc kết quả (không đổi pipeline): với recall chỉ có 5 mức (0/4 tới 4/4) và báo động giả đo trên khoảng 2 giờ, chênh lệch giữa các tổ hợp gần nhau không có ý nghĩa thống kê; validation chỉ dùng để chọn, kết luận lấy ở test (mục 6.3).
 
 **Còn lại cho validation, khai báo trong versioned config trước khi dùng.** Các giá trị dưới đây vẫn do validation chọn (mục 6.2, 9.2) nhưng chưa có tập ứng viên, vì detector, RCA engine và baseline chưa cài. Không gian ứng viên của từng giá trị phải được commit trong versioned config **trước** lần chạy validation đầu tiên dùng nó (tuần 16–18 của [plan-v0.4](../plan/plan-v0.4-24-weeks.md)):
 
@@ -654,15 +661,15 @@ E3 degradation types/config/tỉ lệ giữ trace/seed rule
 data-quality/eligibility gates
 metric definitions + tolerance rule
 rca_result_schema_version
-protocol thử nghiệm người (mục 15.3): số người, phân công case × điều kiện, time cap, câu hỏi, brief, thang đo
+protocol thử nghiệm người (mục 15.3): không áp dụng, E7 ra khỏi kế hoạch
 giả thuyết E1–E5 (hướng kỳ vọng, chỉ số chính)
-cách tính CI (bootstrap) và kiểm định (McNemar exact, Wilcoxon), hiệu chỉnh đa so sánh (mục 20.7)
+cách tính CI (bootstrap) và kiểm định (McNemar exact; Wilcoxon chỉ cho E7, không áp dụng), hiệu chỉnh đa so sánh (mục 20.7)
 aggregation/reporting rule
 analysis code commit
 output artifact schema/version
 ```
 
-`frozen_at` phải có trước final evaluation output **và** trước khi người tham gia thấy bất kỳ run nào thuộc final test.
+`frozen_at` phải có trước final evaluation output. Vế "trước khi người tham gia thấy run final test" của bản trước không còn áp dụng vì E7 ra khỏi kế hoạch (mục 15.3).
 
 **Đăng ký trước (pre-registration, ADR-007 mục 4).** Ở mốc freeze protocol (tuần 19 của [plan-v0.4](../plan/plan-v0.4-24-weeks.md)), manifest trên cùng giả thuyết E1–E5, cấu hình engine và baseline (đã chọn trên validation), ngưỡng độ thực của workload (JSD < 0,05; KS D < 0,1; trung vị lệch < ±10%), cách tính CI và kiểm định được **commit vào repo trước khi chạy run test**. Commit này là mốc `frozen_at`. Không đổi sau khi xem kết quả test; mọi thay đổi bắt buộc ghi thành phiên bản mới kèm lý do và được báo cáo như sai lệch so với bản đăng ký. Các điểm còn mở trong tài liệu này (trước đây ghi "chờ Đức xác nhận") được chốt trong chính bản đăng ký này. Mục đích là chống nghi ngờ "tự ra đề tự chấm" khi nhóm vừa thiết kế case vừa thiết kế engine.
 
@@ -717,7 +724,7 @@ Feature windows giữ `[window_start, window_end)` và cùng alignment policy c�
 
 Các case của v2 cố ý có triệu chứng xuất hiện **muộn và xa** nguyên nhân. Hệ quả cho evaluation interval:
 
-- **C6 (FG):** khi dừng `identity`, lỗi `gateway-identity-token` chỉ xuất hiện sau khoảng yên lặng (smoke đo 70–74 giây với TTL 60 giây; pilot tuần 15 đo 10–20 giây ở lịch mặc định và 1,2–10 giây khi trùng cao điểm, vì lúc token hết hạn sau `pause` rơi vào 0–60 giây tùy pha làm mới; mặc định TTL 600 giây, giá trị tương ứng chưa đo; mục 6.1.1 bảng D). Request có token người dùng còn hạn vẫn thành công trong khoảng này. `fault_start` do đó **trước** triệu chứng đầu tiên một khoảng tối thiểu bằng khoảng yên lặng; Detection Delay của C6 chứa khoảng này và phải báo riêng theo case, không gộp vào delay trung bình mà không ghi chú.
+- **C6 (FG):** khi dừng `identity`, lỗi `gateway-identity-token` chỉ xuất hiện sau khoảng yên lặng (smoke đo 70–74 giây với TTL 60 giây; pilot tuần 15 đo 10–20 giây ở lịch mặc định và 1,2–15 giây khi trùng cao điểm, vì lúc token hết hạn sau `pause` rơi vào 0–60 giây tùy pha làm mới; mặc định TTL 600 giây, giá trị tương ứng chưa đo; mục 6.1.1 bảng D). Request có token người dùng còn hạn vẫn thành công trong khoảng này. `fault_start` do đó **trước** triệu chứng đầu tiên một khoảng tối thiểu bằng khoảng yên lặng; Detection Delay của C6 chứa khoảng này và phải báo riêng theo case, không gộp vào delay trung bình mà không ghi chú.
 - **C4 (FA):** fault matrix v2 mục 6 dự kiến lỗi lộ muộn ở `scheduler-worker`, cách nguyên nhân nhiều bước và nhiều phút. Pilot tuần 15 không thấy chuỗi này trong run 48 phút; triệu chứng đo được: `media → MinIO` 100 giây, `gateway → media` 110 giây, `media-worker` 155 giây theo lịch mặc định, 25–35 giây khi trùng cao điểm. Độ trễ do lượt upload đầu tiên trong fault đến muộn, không do fault (mục 6.1.1 bảng D).
 - **C3:** pilot tuần 15 đo job dồn ở `ai-worker` sau 275 giây và lời gọi provider chậm sau 305 giây theo lịch mặc định (70 và 100 giây khi trùng cao điểm). Độ trễ do lúc job AI đến quyết định; `ai`, `course` không có triệu chứng ở cường độ 30 giây. **C2:** `course-postgres` và `gateway → course` lộ sau 10 giây; `ai-worker → course` sau 300 giây, chỉ khi có job AI.
 - **C1, C5 (Target):** độ trễ từ chèn lỗi tới triệu chứng ở `media`/batch chưa đo (cơ chế chưa chạy).
@@ -783,7 +790,7 @@ Required signal/evidence lấy từ [catalogue case mục 1 và 3](complex-case-
 | C1 (FB) | `rabbitmq_detailed_queue_messages_ready{service_name="notification-worker"}`, `consumers`, span CLIENT `notification-smtp smtp.send`, khoảng PRODUCER → CONSUMER của `media-worker` trong cùng trace | tuổi message cũ nhất (suy từ span), độ trễ outbox, log consumer |
 | C2 (FC) | `lms_dependency_duration_seconds` của `course-postgres` theo mọi `operation_name`, `process_cpu_time_seconds_total`, RSS của `course` | độ sử dụng pool: không phân biệt "pool cạn" với "DB chậm" |
 | C3 (FD) | span CLIENT `ai-llm-provider POST chat/completions`, `lms_dependency_duration_seconds{dependency_identity="ai-llm-provider"}`, CONSUMER `ai-worker--run-ai-job-v1` kéo dài | log consumer của worker |
-| C4 (FA) | span `media-minio *`, `lms_dependency_*{dependency_identity="media-minio"}` ở cả `media` và `media-worker`, trace "Dọn media theo lịch" | `scheduler` và `scheduler-worker` không cùng trace |
+| C4 (FA) | span `media-minio *`, `lms_dependency_*{dependency_identity="media-minio"}` ở cả `media` và `media-worker` | chuỗi "Dọn media theo lịch" bỏ sau pilot (mục 6.1.1 bảng I); `scheduler` và `scheduler-worker` không cùng trace |
 | C5 (FE) | span `notification-worker-identity GET /internal/v1/students`, span `identity-postgres student.list`, `lms_dependency_duration_seconds{dependency_identity="notification-worker-identity"}` | log lỗi (log không có lỗi theo thiết kế của case) |
 | C6 (FG) | span CLIENT lỗi `gateway-identity-token POST /internal/v1/auth/service-token`, `gateway-identity POST`, `lms_dependency_error_count_total{dependency_identity="gateway-identity-token"}`, log `dependency.failure` khớp `span_id`; `process_cpu_time_seconds_total` của `identity` ngừng tăng (dấu hiệu runtime ngừng, vì Collector vẫn xuất giá trị cuối của mọi series thêm khoảng 5 phút sau `docker pause`) | giới hạn tốc độ `service-token` chưa làm (board); metric RED của `identity` trông "còn sống" trong khoảng 5 phút đầu, cờ `telemetry_silent` của quality report (PR #79) là nguồn bằng chứng chính |
 | C7 (FH) | tăng `SERVICE_TOKEN_INVALID`/401 nhiều service cùng lúc, span `*-identity-jwks` refetch, 4xx ở `http_server_request_count_total` | — |
@@ -1373,7 +1380,7 @@ Chỉ tính cho matched TP:
 Detection Delay = matched_incident.detected_at - fault_start
 ```
 
-Vì early tolerance = 0, delay primary không âm. FN không được gán delay giả; report `null` và denominator riêng. Delay báo kèm theo case vì khoảng yên lặng/độ trễ lan truyền khác nhau (C6: tối thiểu bằng khoảng yên lặng đã đo 70–74 giây ở TTL 60 giây).
+Vì early tolerance = 0, delay primary không âm. FN không được gán delay giả; report `null` và denominator riêng. Delay báo kèm theo case vì khoảng yên lặng/độ trễ lan truyền khác nhau (C6: Delay chứa khoảng yên lặng; ở TTL 60 giây, pilot tuần 15 đo 1,2–20 giây, smoke trước đó 70–74 giây; mục 6.1.1 bảng D).
 
 ### 17.6. Precision/Recall/F1
 
@@ -1917,15 +1924,16 @@ Protocol chốt **cách chọn, nơi lưu và freeze**, không hard-code numeric
 | Fault intensity (C2, C3, C4, C6) | **Đã chốt** (fault manifest v2). C1 (batch 100000 recipient) vẫn là gợi ý, C1 không vào campaign | Mục 6.1.1 bảng C |
 | Dependency timeout | **Giữ cấu hình Compose** (LMS đóng băng); biên so với cường độ fault đã kiểm | Mục 6.1.1 bảng E |
 | Scrape interval, ngưỡng data-quality, độ trễ thu thập | **Đã chốt** | Mục 6.1.1 bảng F |
-| Loại `partial` được nhận khi trace bị bỏ vì ngân sách export | **Còn mở**: chỉ run `healthy-spike` gặp; phụ thuộc cách export của dataset v0 <!-- TODO task-04: chốt sau khi biết dropped_by_budget của run healthy-spike dataset v0 --> | Mục 6.1.1 bảng F |
+| Run `partial` được nhận, trace bị bỏ vì ngân sách export | **Đã chốt**: ngân sách 60.000; trace lấy mẫu chỉ nhận ở run healthy, kèm điều kiện độ phủ và lỗi tải | Mục 6.1.1 bảng F |
 | Luật lọc nhiễu | **Đã chốt** `noise.v1` | Mục 6.1.1 bảng G |
 | Window size/step | **Tập ứng viên** {30 s, 60 s}, bước cố định 15 s; validation chọn | Mục 6.1.2 |
-| Persistence | **Tập ứng viên** {2, 3}; validation chọn | Mục 6.1.2 |
+| Persistence | **Tập ứng viên** {3, 4} (cửa sổ 30 s), {5, 6} (cửa sổ 60 s); validation chọn bằng detector robust z | Mục 6.1.2 |
 | Ngưỡng robust z | **Tập ứng viên** {3, 4, 5}; validation chọn | Mục 6.1.2 |
 | Ngưỡng/hyperparameter Isolation Forest, fused; fusion/RCA weight; merge gap, recovery | **Còn mở**: chưa có detector, engine; không gian ứng viên commit trước validation (tuần 16–18) | Mục 6.1.2 |
 | Luật `base-manual-auto`, cách đếm artifact | **Còn mở**: chưa cài baseline; chốt trước validation | Mục 6.1.2, 15.2 |
 | Tham số SimpleRCA/BARO | **Không gian đã khai báo**; validation chọn | Mục 15.2.1 |
 | Slot trùng cao điểm | **Validation đã chốt** (C2, giây 1.260–1.860). **Test còn mở**: chốt khi freeze tuần 19 | Mục 6.1.1 bảng H |
+| Slot cao điểm test của C3 | **Còn mở**: fault 900 s chỉ bắt đầu được trong [360, 1.380]; chọn cửa sổ nhiều phiên nhất trong khoảng đó và ghi số phiên khi freeze tuần 19 | Mục 6.1.1 bảng H |
 | Pre-fault tối thiểu của slot trùng cao điểm | **Còn mở**: `--align-peak` không ép giá trị tối thiểu. Khi freeze tuần 19, slot test phải đủ cho đoạn tham chiếu đã chọn của SimpleRCA/BARO (tối đa 10 phút) hoặc ghi giới hạn | Mục 6.1.1 bảng A |
 | Time cap, số lượt, brief của thử nghiệm người | **Không còn áp dụng**: E7 ra khỏi kế hoạch | Mục 15.3 |
 
@@ -1980,7 +1988,7 @@ Không có requirement nào trong protocol này yêu cầu đổi service topolo
 | Đối chứng thủ công | không có | mục 15: baseline thủ công tự động (định nghĩa lại theo ADR-006), SimpleRCA, BARO, thử nghiệm người within-subject (Target), thời gian và chi phí chẩn đoán, RCAEval (Target), case study C6; agent MCP Out-of-scope |
 | Prediction artifact | `prediction.json` không có schema cụ thể | `RcaIncidentResult` (`rca_result_schema_version = "0"`), mục 16 |
 | `insufficient_evidence` | không có | tính end-to-end miss, đếm riêng, không vào conditional metric |
-| Độ trễ lan truyền | không có | mục 7.3: khoảng yên lặng C6 (đã đo 70–74 giây ở TTL 60 giây), fault active phải dài hơn độ trễ triệu chứng |
+| Độ trễ lan truyền | không có | mục 7.3: khoảng yên lặng C6 (ở TTL 60 giây: smoke 70–74 giây, pilot tuần 15 1,2–20 giây), fault active phải dài hơn độ trễ triệu chứng |
 | Tín hiệu theo case | fault-to-telemetry requirement của W4-T4 | bảng 8.4 từ catalogue: tín hiệu có thật và tín hiệu chưa có |
 | Nhiễu telemetry | không có | mục 8.5: lọc trace `/ready` và thăm dò scheduler-worker, `noise_filter_version` |
 | Identity | `scenario_id` F1–F5 | `scenario_id` FA–FH + `case_id` C1–C7 + `analyst_kind`, `case_verification_status` |
