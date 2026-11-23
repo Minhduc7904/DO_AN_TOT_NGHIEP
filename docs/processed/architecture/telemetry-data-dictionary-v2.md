@@ -343,6 +343,6 @@ Artifact `w14-t05-fault-trial` (15 phút, tải nền k6 mức 1, bốn case b�
 ## 10. Giới hạn và việc tiếp theo
 
 - Chưa có `phase_coverage`, `workflow_trace_coverage_ratio` và các trường async của schema v1 mục 7.2 (cần nhật ký thao tác k6 mức 2 và fault manifest, tuần 14).
-- Ngưỡng (`silent_threshold_s` 30 s, mép 35 s, tương quan log 95%) là giá trị khởi đầu, chốt sau pilot.
+- Ngưỡng `silent_threshold_s` 30 s, mép 35 s và tương quan log–trace 95% đã **chốt sau pilot tuần 15** ([evaluation-protocol-v1](evaluation-protocol-v1.md) mục 6.1.1, bảng F): trong 9 run pilot chỉ hai run C6 gắn `telemetry_silent:identity`, đúng runtime bị pause; không run nào có `low_log_trace_correlation`. Đổi ngưỡng sau mốc này là đổi `telemetry_quality_version`.
 - `notification-worker` khi phát lại command từ outbox đang dùng identity `notification-rabbitmq` thay vì `notification-worker-rabbitmq` (lệch so với schema v1 mục 3.2.4; `lms/services/notification/src/adapters/messaging/outbox-relay.service.ts`). Feature v1 ánh xạ lại khi dựng cạnh (`IDENTITY_ALIASES`, ghi trong `features-manifest.json`); cột `dependency_identity` của span trong artifact vẫn giữ giá trị gốc.
 - Bộ đếm lỗi xuất hiện lần đầu giữa cửa sổ là series mới; `increase()` của Prometheus bỏ mẫu đầu. Artifact giữ giá trị thô nên feature pipeline coi giá trị trước đó là 0 (đã làm ở mục 9).
