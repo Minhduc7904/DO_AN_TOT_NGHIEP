@@ -2,7 +2,7 @@
 
 > **Task:** `task-03_pilot-mvp-fault-cases` (tuần 15).
 >
-> **Trạng thái:** bản nháp, cập nhật 20/11/2026. Đợt 1 đã chạy xong C6, C2, C3, C4, đều theo lịch mặc định của fault manifest v1. Đợt 2 (23/11/2026) đã chạy xong run healthy và C2 trên `healthy-spike`; đang chạy ba run trùng cao điểm, trong đó C2 trên `healthy-spike`. Các mục ghi "chờ đợt 2" sẽ điền sau.
+> **Trạng thái:** bản nháp, cập nhật 20/11/2026. Đợt 1 đã chạy xong C6, C2, C3, C4, đều theo lịch mặc định của fault manifest v1. Đợt 2 (23/11/2026) đã chạy xong run healthy, C2 trên `healthy-spike` và C3 cao điểm; đang chạy hai run trùng cao điểm, trong đó C2 trên `healthy-spike`. Các mục ghi "chờ đợt 2" sẽ điền sau.
 >
 > **Tài liệu liên quan:** [evaluation-protocol-v1](evaluation-protocol-v1.md) mục 5.2, 5.3, 6.1, 7.3, 8.3, 8.4; [case catalogue v0](complex-case-catalogue-and-rca-result-v0.md) mục C2, C3, C4, C6; [workload-design-v1](workload-design-v1.md) mục 8.3, 8.5. Fault manifest: `aiops-platform/faults/manifests/`.
 
@@ -10,9 +10,9 @@
 
 | Case | Gate (thực thi / ground truth / chất lượng) | Triệu chứng đầu tiên sau `fault_start` | Lan ra ngoài đường request của nguyên nhân |
 | --- | --- | --- | --- |
-| C6 | pass / valid / partial | 15 s (đăng nhập qua gateway lỗi); 20 s (gateway không lấy được token dịch vụ) | Có: mọi route qua gateway lỗi 5xx, request không tới service đích (892/892 trace lỗi) |
+| C6 | pass / valid / partial | 15 s (đăng nhập qua gateway lỗi); 20 s (gateway không lấy được token dịch vụ) | Có: mọi route qua gateway lỗi 5xx, 889/892 trace lỗi không tới service đích |
 | C2 | pass / valid / partial (cả 2 run) | 10 s (`course-postgres`, `gateway → course`) | Chỉ khi có job AI: `ai-worker → course` chậm tới 1,6 s/lời gọi. Ở cao điểm spike: cạn pool, 75–81% request lỗi 504 |
-| C3 | pass / valid / partial | 275 s (job dồn ở `ai-worker`); 305 s (lời gọi LLM 32 s) | Có: job AI chờ ở `ai-worker` (message chưa ack) |
+| C3 | pass / valid / partial (cả 2 run) | Lịch mặc định: 275 s (job dồn ở `ai-worker`), 305 s (lời gọi LLM 32 s). Cao điểm: 70 s và 100 s | Có: job AI chờ ở `ai-worker` (message chưa ack) |
 | C4 | pass / valid / partial | 100 s (`media → MinIO`); 105 s (`gateway → media`) | Có: `media-worker` (tạo thumbnail, bất đồng bộ) gọi MinIO chậm từ 155 s. Chuỗi job dọn media không lộ |
 
 ## 1. Thiết lập
@@ -33,7 +33,11 @@ Run `pilot-c6-normal-mixed-s22-20261120t065500z`. Fault 300 s, `docker pause ide
 - **Chuỗi nhân quả quan sát được:** `identity` ngừng chạy. CPU ngừng tăng từ 20 s; series vẫn còn mẫu và quality report gắn `telemetry_silent:identity`.
 - **Đăng nhập** qua gateway timeout 5 s (`gateway-identity`: 64 span lỗi, p50 5.000 ms), lỗi đầu tiên ở 15 s.
 - **Token dịch vụ của gateway:** lỗi ở 20 s (`gateway-identity-token`: 890 span lỗi, trả lỗi ngay, p50 0,17 ms). Sau đó mọi route qua gateway trả 5xx.
-- **Request dừng ở gateway:** cả 892 trace lỗi không có span của service đích.
+- **Request dừng ở gateway:** 889/892 trace lỗi không có span SERVER của service đích.
+  - 853 trace chỉ có span của gateway.
+  - 36 trace có thêm span của chính `identity`, ghi lúc 07:18:41Z, ngay sau `fault_end`: request token đã nằm chờ trong socket của `identity` suốt lúc bị `pause` và được xử lý khi chạy lại, sau khi gateway đã bỏ cuộc.
+  - 3 trace sớm (17–36 s sau `fault_start`) có span `course`: lần làm mới token timeout 3 s nhưng request vẫn tới `course` bằng token cũ còn hạn, nên không bị chặn.
+  - Bản nháp trước ghi 892/892 do script đối chiếu so `span_kind` phân biệt hoa thường (artifact lưu `server`, script so `SERVER`); đã sửa script và đếm lại.
 - **Phía người dùng:** 295 phiên kết thúc `auth_failed`, 13 phiên `too_many_errors`; tỉ lệ request lỗi cả run 9,7%.
 - **Tín hiệu bảng 8.4:** đủ.
   - Span CLIENT lỗi `gateway-identity-token`.
@@ -87,8 +91,20 @@ Run `pilot-c3-normal-mixed-s24-20261120t090256z`. Fault 600 s, `llm-stub` trễ 
 - **Độ trễ triệu chứng:** do lúc job đến quyết định, không do fault. Từ khi có job, triệu chứng lộ sau khoảng 10 s (message chưa ack) và 30 s (lời gọi provider).
 - **Tín hiệu bảng 8.4:** chưa kiểm được ở run này.
   - Metric `lms_dependency_duration_seconds{ai-llm-provider}` có.
-  - Span CLIENT `ai-llm-provider` và CONSUMER `run-ai-job` **không có trong artifact**: Tempo bị OOM-kill giữa bước export (mục 4), artifact chỉ còn 2.722/14.016 trace.
-  - Kiểm lại ở run C3 cao điểm của đợt 2.
+  - Span CLIENT `ai-llm-provider` và CONSUMER `run-ai-job` **không có trong artifact**: Tempo bị OOM-kill giữa bước export (mục 4), artifact chỉ còn 2.722/14.016 trace. Đã đếm lại sau khi sửa lỗi so `span_kind` của script: vẫn 0 span, chỉ có 2 span CONSUMER `extract-ai-document`.
+  - Run C3 cao điểm của đợt 2 có đủ (bên dưới).
+
+**Run cao điểm** (`pilot-c3-normal-mixed-s27-20261123t052639z`, seed 27). Cửa sổ fault trùng cao điểm của `normal-mixed`: 538 phiên bắt đầu trong cửa sổ.
+
+- **Triệu chứng lộ sớm hơn nhiều:** job dồn ở `ai-worker` (`run-ai-job` chưa ack) ở 70 s, lời gọi provider chậm ở 100 s. Ở run lịch mặc định là 275 s và 305 s. Cao điểm của phiên học viên trùng lúc giảng viên đang tạo job AI, nên job đến sớm hơn.
+- **Chuỗi nhân quả:** 15 lời gọi `POST chat/completions` hoàn tất trong cửa sổ fault, trung bình 32,1 s (trước fault chỉ 1 lời gọi, 1,4 ms). Không lỗi, job vẫn hoàn tất.
+- **Tín hiệu bảng 8.4:** đủ.
+  - Tempo không bị kill (giới hạn 1,5 GiB): export đủ 14.079/14.079 trace.
+  - Span CLIENT `ai-llm-provider`: 18 span trong fault, p50 32,0 s.
+  - Span CONSUMER `run-ai-job`: 14 span trong fault, p50 33,3 s (trước fault 1 span, 53 ms). CONSUMER `extract-ai-document` không đổi (42 ms) vì bước trích văn bản không gọi LLM, đúng kỳ vọng.
+  - Metric `lms_dependency_duration_seconds{ai-llm-provider}` có.
+- **Phía người dùng:** request lỗi 0,08%, p95 43 ms, không phiên nào bỏ ngang trong cửa sổ fault.
+- `ai-worker → course` không vượt ngưỡng ở run này. Tín hiệu ngoài đường request của C3 là job chưa ack.
 
 ### 2.4. C4 — trễ `media` → MinIO (FA)
 
@@ -118,7 +134,7 @@ Run `pilot-c4-normal-mixed-s25-20261120t095927z`. Fault 600 s, toxic `latency` 3
 | --- | --- | --- | --- | --- |
 | 1. Injector chạy và tái lập được | Đạt | Đạt | Đạt | Đạt |
 | 2. Triệu chứng ngoài đường request | Chỉ khi có job AI (case đối chứng dễ theo ADR-006) | Đạt (job dồn ở `ai-worker`) | Đạt (`media-worker` tạo thumbnail chậm); chuỗi job dọn không lộ | Đạt |
-| 3. Tín hiệu bảng 8.4 | Đạt; pool là giới hạn | Metric đạt; span chờ đợt 2 | Đạt | Đạt |
+| 3. Tín hiệu bảng 8.4 | Đạt; pool là giới hạn | Đạt (span đủ ở run cao điểm) | Đạt | Đạt |
 | 4. `RunGroundTruth` hợp lệ | Đạt | Đạt | Đạt | Đạt |
 | 5. Pilot đã đo và freeze tham số | Chờ fault manifest v2 | Chờ | Chờ | Chờ |
 
@@ -138,7 +154,7 @@ Run `pilot-c4-normal-mixed-s25-20261120t095927z`. Fault 600 s, toxic `latency` 3
 
 Chờ đợt 2. Hướng đang cân nhắc:
 
-- **C3:** thời lượng fault 900 s thay vì 600 s. Job AI đầu tiên đến sau `fault_start` tới 264 s, nên 600 s chỉ dư ít so với độ trễ + window 60 s + persistence. Giữ workload hiện tại, không tăng I3 cho mọi run.
+- **C3:** thời lượng fault 900 s thay vì 600 s. Độ trễ triệu chứng do lúc job AI đến quyết định: 70–100 s khi fault trùng cao điểm, 275–305 s theo lịch mặc định. Dataset v0 dùng lịch mặc định (`align_peak: null`), nên 600 s chỉ dư ít so với độ trễ + window 60 s + persistence. Giữ workload hiện tại, không tăng I3 cho mọi run.
 - **C6:** 300 s đủ (triệu chứng ở 20 s).
 - **C2:** 600 s đủ (triệu chứng ở 10 s, cả ở cao điểm spike). Giữ cường độ 200 ± 20 ms cho mọi profile, không chỉnh theo tải. Ghi trong manifest v2 rằng ở profile spike, triệu chứng kỳ vọng gồm cả 504 `DEPENDENCY_TIMEOUT` tại gateway.
 - **C4:** 600 s đủ (triệu chứng ở 100–155 s). Sửa mô tả kỳ vọng: bỏ chuỗi "media `PENDING` kẹt → job dọn xóa media" khỏi đường lan truyền kỳ vọng; giữ "upload chậm qua `gateway → media`" và "`media-worker` tạo thumbnail chậm" ngoài đường request.
@@ -166,3 +182,4 @@ Run `pilot-healthy-normal-mixed-s21-20261123t025936z`: `normal-mixed`, seed 21, 
 | `pilot-c4-normal-mixed-s25-20261120t095927z` | C4, `normal-mixed` | `367574e` | pass | valid | partial (trace truncated) | Tempo nâng 1,5 GiB lúc run đang chạy; Grafana working set tối đa 62,5% |
 | `pilot-healthy-normal-mixed-s21-20261123t025936z` | không fault, `normal-mixed` | `af1bc86` | pass | valid | partial (trace truncated, 1 log trùng) | Đối chứng: 0/38 tín hiệu báo nhầm |
 | `pilot-c2-healthy-spike-s26-20261123t040552z` | C2, `healthy-spike`, cao điểm | `af1bc86` | pass | valid | partial (trace truncated) | 75–81% request lỗi 504 trong fault, hồi phục sau 1–2 phút |
+| `pilot-c3-normal-mixed-s27-20261123t052639z` | C3, `normal-mixed`, cao điểm | `ca0975b` | pass | valid | partial (trace truncated) | Đủ span LLM và CONSUMER; Grafana `anon` tối đa 52% |
