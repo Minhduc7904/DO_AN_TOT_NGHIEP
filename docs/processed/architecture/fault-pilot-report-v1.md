@@ -2,7 +2,7 @@
 
 > **Task:** `task-03_pilot-mvp-fault-cases` (tuần 15).
 >
-> **Trạng thái:** bản nháp, cập nhật 20/11/2026. Đợt 1 đã chạy xong C6, C2, C3, C4, đều theo lịch mặc định của fault manifest v1. Đợt 2 (23/11/2026) đã chạy xong run healthy, C2 trên `healthy-spike` C3 và C4 cao điểm; đang chạy run C6 cao điểm trùng cao điểm, trong đó C2 trên `healthy-spike`. Các mục ghi "chờ đợt 2" sẽ điền sau.
+> **Trạng thái:** hoàn tất, cập nhật 23/11/2026. Đợt 1 (20/11/2026) chạy C6, C2, C3, C4 theo lịch mặc định của fault manifest v1. Đợt 2 (23/11/2026) chạy run healthy đối chứng và bốn run có cửa sổ fault trùng cao điểm tải, trong đó C2 trên `healthy-spike`. Tham số chốt ở fault manifest v2 (mục 5).
 >
 > **Tài liệu liên quan:** [evaluation-protocol-v1](evaluation-protocol-v1.md) mục 5.2, 5.3, 6.1, 7.3, 8.3, 8.4; [case catalogue v0](complex-case-catalogue-and-rca-result-v0.md) mục C2, C3, C4, C6; [workload-design-v1](workload-design-v1.md) mục 8.3, 8.5. Fault manifest: `aiops-platform/faults/manifests/`.
 
@@ -10,7 +10,7 @@
 
 | Case | Gate (thực thi / ground truth / chất lượng) | Triệu chứng đầu tiên sau `fault_start` | Lan ra ngoài đường request của nguyên nhân |
 | --- | --- | --- | --- |
-| C6 | pass / valid / partial | 15 s (đăng nhập qua gateway lỗi); 20 s (gateway không lấy được token dịch vụ) | Có: mọi route qua gateway lỗi 5xx, 889/892 trace lỗi không tới service đích |
+| C6 | pass / valid / partial (cả 2 run) | Lịch mặc định: 15 s (đăng nhập qua gateway lỗi), 20 s (gateway không lấy được token dịch vụ). Cao điểm: 10 s | Có: mọi route qua gateway lỗi 5xx, 889/892 và 1.158/1.163 trace lỗi không tới service đích; ở cao điểm `ai-worker` cũng lỗi token (40 s) |
 | C2 | pass / valid / partial (cả 2 run) | 10 s (`course-postgres`, `gateway → course`) | Chỉ khi có job AI: `ai-worker → course` chậm tới 1,6 s/lời gọi. Ở cao điểm spike: cạn pool, 75–81% request lỗi 504 |
 | C3 | pass / valid / partial (cả 2 run) | Lịch mặc định: 275 s (job dồn ở `ai-worker`), 305 s (lời gọi LLM 32 s). Cao điểm: 70 s và 100 s | Có: job AI chờ ở `ai-worker` (message chưa ack) |
 | C4 | pass / valid / partial (cả 2 run) | Lịch mặc định: 100 s (`media → MinIO`), 105 s (`gateway → media`). Cao điểm: 25 s | Có: `media-worker` (tạo thumbnail, bất đồng bộ) gọi MinIO chậm từ 155 s. Chuỗi job dọn media không lộ |
@@ -46,6 +46,14 @@ Run `pilot-c6-normal-mixed-s22-20261120t065500z`. Fault 300 s, `docker pause ide
   - CPU `identity` đứng yên, có `telemetry_silent`.
   - Worker không lỗi token trong 300 s: token của chúng chưa hết hạn, hoặc chúng không gọi tới `identity`.
 - **Khoảng yên lặng:** đo được 20 s, ngắn hơn mức 70–74 s ở smoke. Giải thích: token dịch vụ của gateway (TTL 60 s) được làm mới theo chu kỳ, nên thời gian từ lúc `pause` tới lúc token hết hạn phân bố trong khoảng 0–60 s, tùy pha của chu kỳ. Mức 20 s nằm trong giới hạn kỳ vọng tối đa TTL + 30 s = 90 s của `RunGroundTruth`.
+
+**Run cao điểm** (`pilot-c6-normal-mixed-s29-20261123t073605z`, seed 29). Cửa sổ fault trùng cao điểm của `normal-mixed`: 281 phiên bắt đầu trong cửa sổ 300 s.
+
+- **Cùng chuỗi nhân quả, lộ sớm hơn:** token dịch vụ của gateway lỗi ở 10 s (1.142 span lỗi, p50 0,15 ms); đăng nhập timeout 5 s, CPU `identity` đứng yên và gateway trả 5xx ở 15 s.
+- **Worker cũng lỗi token:** `ai-worker` lỗi lấy token dịch vụ ở 40 s (span lỗi đầu tiên ở 30 s). Đây là nhánh `<worker>-identity-token` của đường lan truyền kỳ vọng, chưa thấy ở run lịch mặc định. `notification-worker` và `scheduler-worker` không lỗi trong 300 s.
+- **Request dừng ở gateway:** 1.158/1.163 trace lỗi không có span SERVER của service đích. 39 trace có span của `identity` xử lý sau khi chạy lại (như run thường); 5 trace tới được `course`/`media` bằng token cũ còn hạn.
+- **Tín hiệu bảng 8.4:** đủ. 1.163 dòng log `dependency.failure` của `gateway-identity-token`, `span_id` khớp 1.163/1.163 span lỗi; quality report gắn `telemetry_silent:identity`.
+- **Phía người dùng:** 305 phiên `auth_failed` và 29 phiên `too_many_errors` trong cửa sổ fault; tỉ lệ request lỗi cả run 12,5%.
 
 ### 2.2. C2 — trễ kết nối `course` → PostgreSQL (FC)
 
@@ -144,9 +152,13 @@ Run `pilot-c4-normal-mixed-s25-20261120t095927z`. Fault 600 s, toxic `latency` 3
 | 2. Triệu chứng ngoài đường request | Chỉ khi có job AI (case đối chứng dễ theo ADR-006) | Đạt (job dồn ở `ai-worker`) | Đạt (`media-worker` tạo thumbnail chậm); chuỗi job dọn không lộ | Đạt |
 | 3. Tín hiệu bảng 8.4 | Đạt; pool là giới hạn | Đạt (span đủ ở run cao điểm) | Đạt | Đạt |
 | 4. `RunGroundTruth` hợp lệ | Đạt | Đạt | Đạt | Đạt |
-| 5. Pilot đã đo và freeze tham số | Chờ fault manifest v2 | Chờ | Chờ | Chờ |
+| 5. Pilot đã đo và freeze tham số | Đạt (manifest v2) | Đạt (manifest v2, 900 s) | Đạt (manifest v2) | Đạt (manifest v2) |
+| **`case_verification_status`** | `run` | `run` | `run` | `run` |
 
-`case_verification_status` chốt sau đợt 2.
+- `run` (evaluation-protocol-v1 mục 3.2, giá trị `run | signals_measured | hypothesis`): chuỗi nhân quả đã chạy thật trong pilot, tín hiệu đã đo, tham số đã freeze.
+- **C2** vào campaign với vai trò case đối chứng dễ (ADR-006): triệu chứng ngoài đường request chỉ có khi job AI rơi vào cửa sổ fault. Giới hạn: không phân biệt được "pool cạn" với "DB chậm" vì không có metric độ sử dụng pool (mục 8.4).
+- **C4** vào campaign với mô tả đã sửa: bỏ chuỗi "media `PENDING` kẹt → job dọn xóa media" (không lộ được trong run 48 phút); triệu chứng ngoài đường request là `media-worker` tạo thumbnail chậm. `RunGroundTruth` của C4 vốn không ghi chuỗi job dọn.
+- **C3** ghi giới hạn: độ trễ triệu chứng phụ thuộc lúc job AI đến; mô tả cũ "`course` lỗi muộn ở `ai-worker → course`" (case catalogue v0) chỉ đúng khi trễ provider vượt `AI_COMPLETION_TIMEOUT_MS` 240 s, không đúng với cường độ 30 s đã chốt. `expected_symptom` của C3 trong ground truth đã sửa theo số đo.
 
 ## 4. Sự cố môi trường trong pilot và cách xử lý
 
@@ -154,18 +166,20 @@ Run `pilot-c4-normal-mixed-s25-20261120t095927z`. Fault 600 s, toxic `latency` 3
   - Lúc khởi động, Grafana tải lại và tự nâng khoảng 16 plugin, nên phiên bản thay đổi giữa các run. Đã tắt `GF_PLUGINS_PREINSTALL_AUTO_UPDATE` từ run C2.
   - Page cache lúc khởi động đẩy working set lên 88–90% giới hạn trong khoảng 12 phút đầu, rồi tự giảm. Bộ nhớ không thu hồi được (`anon`) chỉ 220–420 MiB.
   - Tiêu chí bộ nhớ của mục 8.4 nay so bằng `anon` của cgroup (`load/README`). Ngưỡng 85% không đổi.
-  - Các run đợt 1 còn đo theo working set.
-- **Tempo bị OOM-kill khi export run C3:** tải 14.016 trace, đỉnh 1.018/1.024 MiB. Đây là source outage theo mục 8.3, không phải degradation. Giới hạn đã nâng lên 1,5 GiB: với run C4 bằng `docker update` lúc run đang chạy, với các run sau trong compose. Run C4 export đủ 13.894/13.894 trace đã chọn, không lỗi fetch, Tempo không bị kill.
+  - Các run đợt 1 còn đo theo working set. Ở đợt 2, `anon` của Grafana tối đa 51–53% dù working set có lúc chạm 91% (run C6 cao điểm).
+- **Lỗi của script đối chiếu tín hiệu (không thuộc repo):** script so `span_kind` phân biệt hoa thường; đã sửa và đếm lại mọi run. Ảnh hưởng duy nhất tới kết luận là số trace lỗi C6 không tới service đích (mục 2.1).
+- **Tempo bị OOM-kill khi export run C3:** tải 14.016 trace, đỉnh 1.018/1.024 MiB. Đây là source outage theo mục 8.3, không phải degradation. Giới hạn đã nâng lên 1,5 GiB: với run C4 bằng `docker update` lúc run đang chạy, với các run sau trong compose. Từ run C4, mọi run export đủ trace đã chọn (13.894–14.079), không lỗi fetch, Tempo không bị kill.
 - **Trace `truncated` ở mọi run:** 16/129 truy vấn tìm kiếm chạm giới hạn kết quả, phần thiếu rơi vào các lát thời gian đông. Đây là giới hạn đã biết của export (protocol mục 8.3). Feature pipeline v1 của task-05 gắn cờ `traces_truncated`.
 
 ## 5. Tham số chốt (fault manifest v2)
 
-Chờ đợt 2. Hướng đang cân nhắc:
+File `aiops-platform/faults/manifests/fault-manifest-v2.json`, `manifest_version` 2.0.0, là mặc định của `fault-schedule.mjs` và runner. Cường độ giữ như v1; mỗi case có thêm trường `pilot` ghi số đo. Window 15 s × persistence 2 của bộ đo triệu chứng cộng độ trễ thu thập metric 10 s là khoảng 40 s; thời lượng phải lớn hơn độ trễ triệu chứng cộng khoảng đó.
 
-- **C3:** thời lượng fault 900 s thay vì 600 s. Độ trễ triệu chứng do lúc job AI đến quyết định: 70–100 s khi fault trùng cao điểm, 275–305 s theo lịch mặc định. Dataset v0 dùng lịch mặc định (`align_peak: null`), nên 600 s chỉ dư ít so với độ trễ + window 60 s + persistence. Giữ workload hiện tại, không tăng I3 cho mọi run.
-- **C6:** 300 s đủ (triệu chứng ở 20 s).
+- **C3:** thời lượng fault **900 s** thay vì 600 s. Độ trễ triệu chứng do lúc job AI đến quyết định: 70–100 s khi fault trùng cao điểm, 275–305 s theo lịch mặc định. Dataset v0 dùng lịch mặc định (`align_peak: null`): với 600 s, triệu chứng ở 305 s chỉ còn khoảng 4–5 phút fault đang active. 900 s giữ biên gần 10 phút. Giữ workload hiện tại, không tăng goal I3 cho mọi run: job AI đã có trong cửa sổ fault ở cả hai run. Với 900 s, cửa sổ align-peak của C3 bắt đầu muộn nhất ở giây 1380.
+- **C6:** 300 s đủ (triệu chứng ở 10–20 s).
 - **C2:** 600 s đủ (triệu chứng ở 10 s, cả ở cao điểm spike). Giữ cường độ 200 ± 20 ms cho mọi profile, không chỉnh theo tải. Ghi trong manifest v2 rằng ở profile spike, triệu chứng kỳ vọng gồm cả 504 `DEPENDENCY_TIMEOUT` tại gateway.
-- **C4:** 600 s đủ (triệu chứng ở 25 s khi trùng cao điểm, 100–155 s theo lịch mặc định). Sửa mô tả kỳ vọng: bỏ chuỗi "media `PENDING` kẹt → job dọn xóa media" khỏi đường lan truyền kỳ vọng; giữ "upload chậm qua `gateway → media`" và "`media-worker` tạo thumbnail chậm" ngoài đường request.
+- **C4:** 600 s đủ (triệu chứng ở 25 s khi trùng cao điểm, 100–155 s theo lịch mặc định). Chuỗi "media `PENDING` kẹt → job dọn xóa media" không thuộc đường lan truyền kỳ vọng (manifest v1 và `RunGroundTruth` vốn đã không ghi).
+- **Warm-up, recovery, slot:** giữ như v1 (warm-up 360 s, fault mặc định ở giây 1080, recovery ≥ 600 s). Slot cao điểm dùng `--align-peak` theo kế hoạch phát lại; dataset v0 đặt fault theo lịch mặc định.
 
 ## 6. Profile healthy đối chứng (workload-design-v1 mục 8.3)
 
@@ -180,6 +194,15 @@ Run `pilot-healthy-normal-mixed-s21-20261123t025936z`: `normal-mixed`, seed 21, 
   - Chưa kiểm được p95 theo từng cửa sổ 60 s: Prometheus của run đã bị reset bởi run sau.
 - **Chất lượng:** `partial` vì trace truncated như mọi run, cộng 1 bản ghi log trùng.
 
+**Quyết định: không thêm profile đối chứng `upload media peak healthy` (C4) và `AI job healthy` (C3).**
+
+- Mục đích của profile đối chứng là để run healthy cũng chứa đúng kiểu tải xuất hiện trong cửa sổ fault, tránh mô hình học nhầm "có upload/job AI = có fault".
+- Run healthy `normal-mixed` đã chứa cả hai kiểu tải đó, vì fault run và healthy run phát lại cùng một kiểu kế hoạch:
+  - Job AI: 7 lời gọi provider ở cửa sổ phút 18–28, 11 lời gọi ở cửa sổ cao điểm phút 27–37 (34 lời gọi cả run). Run C3 có 11–15 lời gọi trong cửa sổ fault.
+  - Upload media: 16 lượt ở phút 18–28, 31 lượt ở phút 27–37. Run C4 có 27–42 lượt trong cửa sổ fault.
+- Trên chính các cửa sổ đó, bộ đo triệu chứng của C3 và C4 không vượt ngưỡng ở run healthy (0/38 tín hiệu ở trên).
+- Dataset v0 đã có run healthy `healthy-spike` cho kiểu tải đột biến.
+
 ## 7. Run pilot
 
 | Run | Case, profile | Commit | Gate thực thi | Ground truth | Chất lượng | Ghi chú |
@@ -191,4 +214,5 @@ Run `pilot-healthy-normal-mixed-s21-20261123t025936z`: `normal-mixed`, seed 21, 
 | `pilot-healthy-normal-mixed-s21-20261123t025936z` | không fault, `normal-mixed` | `af1bc86` | pass | valid | partial (trace truncated, 1 log trùng) | Đối chứng: 0/38 tín hiệu báo nhầm |
 | `pilot-c2-healthy-spike-s26-20261123t040552z` | C2, `healthy-spike`, cao điểm | `af1bc86` | pass | valid | partial (trace truncated) | 75–81% request lỗi 504 trong fault, hồi phục sau 1–2 phút |
 | `pilot-c3-normal-mixed-s27-20261123t052639z` | C3, `normal-mixed`, cao điểm | `ca0975b` | pass | valid | partial (trace truncated) | Đủ span LLM và CONSUMER; Grafana `anon` tối đa 52% |
-| `pilot-c4-normal-mixed-s28-20261123t063033z` | C4, `normal-mixed`, cao điểm | `5d88761` | pass | valid | partial (trace truncated, log trùng) | |
+| `pilot-c4-normal-mixed-s28-20261123t063033z` | C4, `normal-mixed`, cao điểm | `5d88761` | pass | valid | partial (trace truncated, 1 log trùng) | |
+| `pilot-c6-normal-mixed-s29-20261123t073605z` | C6, `normal-mixed`, cao điểm | `dc6ed6d` | pass | valid | partial (trace truncated, `identity` silent, log trùng) | `ai-worker` lỗi token ở 40 s |
