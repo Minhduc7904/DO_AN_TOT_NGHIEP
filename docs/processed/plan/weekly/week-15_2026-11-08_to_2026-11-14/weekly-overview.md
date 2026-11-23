@@ -13,6 +13,8 @@
 
 > **Ngoại lệ Gate R kéo dài sang tuần 15 (19/11/2026).** Gate R điều kiện 5 (Bách tự dựng stack theo README và giải thích W1–W7) chưa có bằng chứng trên `main`; Bách sẽ tự làm sau và yêu cầu tiếp tục tuần 15. Lý do và rủi ro giống ngoại lệ tuần 13 và 14: điều kiện 5 kiểm chứng hiểu biết của người thực hiện, không thay đổi testbed. Gate R không bị cắt.
 
+> **Gate M3 làm theo ngoại lệ một người (23/11/2026).** Plan v0.4 tuần 15 yêu cầu hai thành viên đổi case cho nhau, đều chạy, reset, export và xác nhận ground truth độc lập. Trong giai đoạn tự bắt kịp (plan v0.4 mục 0.1, dòng "Nhân sự"), Bách làm một mình: dựng lại từ worktree sạch chỉ theo runbook, chạy mỗi case C2, C3, C4, C6 một fault run, và đối chiếu ground truth bằng công cụ JavaScript truy vấn thẳng Prometheus/Tempo/Loki, không qua code ground truth Python. Cả 4 run đạt ([checklist Gate M3](gate-m3-checklist.md)). Độc lập ở đây là độc lập về code, không về người; đây là ngoại lệ, không phải Gate M3 đầy đủ.
+
 ## Danh sách task
 
 | Mã task | Task | Người phụ trách | Collaborator | Ưu tiên | Trạng thái |
