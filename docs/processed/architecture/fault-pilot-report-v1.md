@@ -2,7 +2,7 @@
 
 > **Task:** `task-03_pilot-mvp-fault-cases` (tuần 15).
 >
-> **Trạng thái:** bản nháp, cập nhật 20/11/2026. Đợt 1 đã chạy xong C6, C2, C3, C4, đều theo lịch mặc định của fault manifest v1. Đợt 2 (23/11/2026) đã chạy xong run healthy, C2 trên `healthy-spike` và C3 cao điểm; đang chạy hai run trùng cao điểm, trong đó C2 trên `healthy-spike`. Các mục ghi "chờ đợt 2" sẽ điền sau.
+> **Trạng thái:** bản nháp, cập nhật 20/11/2026. Đợt 1 đã chạy xong C6, C2, C3, C4, đều theo lịch mặc định của fault manifest v1. Đợt 2 (23/11/2026) đã chạy xong run healthy, C2 trên `healthy-spike` C3 và C4 cao điểm; đang chạy run C6 cao điểm trùng cao điểm, trong đó C2 trên `healthy-spike`. Các mục ghi "chờ đợt 2" sẽ điền sau.
 >
 > **Tài liệu liên quan:** [evaluation-protocol-v1](evaluation-protocol-v1.md) mục 5.2, 5.3, 6.1, 7.3, 8.3, 8.4; [case catalogue v0](complex-case-catalogue-and-rca-result-v0.md) mục C2, C3, C4, C6; [workload-design-v1](workload-design-v1.md) mục 8.3, 8.5. Fault manifest: `aiops-platform/faults/manifests/`.
 
@@ -13,7 +13,7 @@
 | C6 | pass / valid / partial | 15 s (đăng nhập qua gateway lỗi); 20 s (gateway không lấy được token dịch vụ) | Có: mọi route qua gateway lỗi 5xx, 889/892 trace lỗi không tới service đích |
 | C2 | pass / valid / partial (cả 2 run) | 10 s (`course-postgres`, `gateway → course`) | Chỉ khi có job AI: `ai-worker → course` chậm tới 1,6 s/lời gọi. Ở cao điểm spike: cạn pool, 75–81% request lỗi 504 |
 | C3 | pass / valid / partial (cả 2 run) | Lịch mặc định: 275 s (job dồn ở `ai-worker`), 305 s (lời gọi LLM 32 s). Cao điểm: 70 s và 100 s | Có: job AI chờ ở `ai-worker` (message chưa ack) |
-| C4 | pass / valid / partial | 100 s (`media → MinIO`); 105 s (`gateway → media`) | Có: `media-worker` (tạo thumbnail, bất đồng bộ) gọi MinIO chậm từ 155 s. Chuỗi job dọn media không lộ |
+| C4 | pass / valid / partial (cả 2 run) | Lịch mặc định: 100 s (`media → MinIO`), 105 s (`gateway → media`). Cao điểm: 25 s | Có: `media-worker` (tạo thumbnail, bất đồng bộ) gọi MinIO chậm từ 155 s. Chuỗi job dọn media không lộ |
 
 ## 1. Thiết lập
 
@@ -128,6 +128,14 @@ Run `pilot-c4-normal-mixed-s25-20261120t095927z`. Fault 600 s, toxic `latency` 3
   - Không có log lỗi vì fault chỉ làm chậm.
 - **Phía người dùng:** tỉ lệ request lỗi cả run 0,12%, p95 43 ms; 5 phiên `auth_failed` cả run, không phiên nào trong cửa sổ fault. Đỉnh học viên đồng thời 176/230 VU dựng sẵn, k6 không bỏ iteration nào.
 
+**Run cao điểm** (`pilot-c4-normal-mixed-s28-20261123t063033z`, seed 28). Cửa sổ fault trùng cao điểm của `normal-mixed`: 538 phiên bắt đầu trong cửa sổ.
+
+- **Triệu chứng lộ ở 25 s cho cả ba tín hiệu:** `media → MinIO`, `gateway → media` và `media-worker → MinIO`. Ở run lịch mặc định là 100–155 s. Cao điểm có nhiều upload hơn: 42 lượt trong fault, so với 27.
+- **Cùng một kiểu chậm như run thường:** mọi operation tới MinIO khoảng 300 ms (`get-object` khoảng 600 ms), `presign-upload` không đổi. Span `media → MinIO` p50 1,1 ms → 303 ms (262 span); span `media-worker → MinIO` p50 2,2 ms → 440 ms (60 span). Không span lỗi.
+- **Job dọn media:** vẫn chạy ở phút 4, trước cửa sổ fault, như dự kiến.
+- **Tín hiệu bảng 8.4:** đủ. Tempo export đủ 14.036/14.036 trace.
+- **Phía người dùng:** request lỗi 0,07%, p95 43 ms, không phiên nào bỏ ngang trong cửa sổ fault.
+
 ## 3. Điều kiện vào campaign (mục 5.2) và `case_verification_status`
 
 | Điều kiện | C2 | C3 | C4 | C6 |
@@ -157,7 +165,7 @@ Chờ đợt 2. Hướng đang cân nhắc:
 - **C3:** thời lượng fault 900 s thay vì 600 s. Độ trễ triệu chứng do lúc job AI đến quyết định: 70–100 s khi fault trùng cao điểm, 275–305 s theo lịch mặc định. Dataset v0 dùng lịch mặc định (`align_peak: null`), nên 600 s chỉ dư ít so với độ trễ + window 60 s + persistence. Giữ workload hiện tại, không tăng I3 cho mọi run.
 - **C6:** 300 s đủ (triệu chứng ở 20 s).
 - **C2:** 600 s đủ (triệu chứng ở 10 s, cả ở cao điểm spike). Giữ cường độ 200 ± 20 ms cho mọi profile, không chỉnh theo tải. Ghi trong manifest v2 rằng ở profile spike, triệu chứng kỳ vọng gồm cả 504 `DEPENDENCY_TIMEOUT` tại gateway.
-- **C4:** 600 s đủ (triệu chứng ở 100–155 s). Sửa mô tả kỳ vọng: bỏ chuỗi "media `PENDING` kẹt → job dọn xóa media" khỏi đường lan truyền kỳ vọng; giữ "upload chậm qua `gateway → media`" và "`media-worker` tạo thumbnail chậm" ngoài đường request.
+- **C4:** 600 s đủ (triệu chứng ở 25 s khi trùng cao điểm, 100–155 s theo lịch mặc định). Sửa mô tả kỳ vọng: bỏ chuỗi "media `PENDING` kẹt → job dọn xóa media" khỏi đường lan truyền kỳ vọng; giữ "upload chậm qua `gateway → media`" và "`media-worker` tạo thumbnail chậm" ngoài đường request.
 
 ## 6. Profile healthy đối chứng (workload-design-v1 mục 8.3)
 
@@ -183,3 +191,4 @@ Run `pilot-healthy-normal-mixed-s21-20261123t025936z`: `normal-mixed`, seed 21, 
 | `pilot-healthy-normal-mixed-s21-20261123t025936z` | không fault, `normal-mixed` | `af1bc86` | pass | valid | partial (trace truncated, 1 log trùng) | Đối chứng: 0/38 tín hiệu báo nhầm |
 | `pilot-c2-healthy-spike-s26-20261123t040552z` | C2, `healthy-spike`, cao điểm | `af1bc86` | pass | valid | partial (trace truncated) | 75–81% request lỗi 504 trong fault, hồi phục sau 1–2 phút |
 | `pilot-c3-normal-mixed-s27-20261123t052639z` | C3, `normal-mixed`, cao điểm | `ca0975b` | pass | valid | partial (trace truncated) | Đủ span LLM và CONSUMER; Grafana `anon` tối đa 52% |
+| `pilot-c4-normal-mixed-s28-20261123t063033z` | C4, `normal-mixed`, cao điểm | `5d88761` | pass | valid | partial (trace truncated, log trùng) | |
