@@ -98,7 +98,7 @@ node aiops-platform/experiments/run-experiment.mjs aiops-platform/experiments/sp
 | `--export-timeout-s` | 60 | Timeout mỗi lời gọi HTTP của bước export (Prometheus, Tempo, Loki); mặc định của `aiops-training export` là 15 s, quá ngắn cho truy vấn log cả run khi máy thiếu RAM. Timeout áp cho từng lần tải trace nên khi Tempo treo, export chờ lâu hơn trước khi bỏ (vẫn trong giới hạn 3 giờ của bước) |
 | `--runs-dir`, `--ledger` | `aiops-platform/experiments/runs`, `ledger.jsonl` | Đổi nơi ghi |
 
-Runner không chuyển biến cấu hình k6 của shell (`PLAN`, `VUS`, `DURATION`…) vào k6: mọi tham số workload lấy từ spec. Một run 48 phút cộng reset (2–5 phút), setup k6 (1–2 phút), export (15–25 phút cho trace): khoảng 1,2–1,5 giờ. Lệnh in một dòng JSON tóm tắt; mã thoát 0 khi `completed`.
+Runner không chuyển biến cấu hình k6 của shell (`PLAN`, `VUS`, `DURATION`…) vào k6: mọi tham số workload lấy từ spec. Một run 48 phút cộng reset (2–5 phút), setup k6 (1–2 phút), export (15–25 phút cho trace với `normal-mixed`; ~38.000 trace của `healthy-spike` cần khoảng 60–80 phút): khoảng 1,2–1,5 giờ (`healthy-spike` tới ~2,3 giờ). Lệnh in một dòng JSON tóm tắt; mã thoát 0 khi `completed`.
 
 ### 3. Đọc kết quả
 
