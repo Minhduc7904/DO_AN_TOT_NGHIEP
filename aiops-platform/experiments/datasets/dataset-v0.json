@@ -9,8 +9,9 @@
     "seed": 42
   },
   "fault_manifest": {
-    "path": null,
-    "note": "fault manifest v2 chốt ở task-03 tuần 15 (pilot)"
+    "path": "aiops-platform/faults/manifests/fault-manifest-v2.json",
+    "manifest_version": "2.0.0",
+    "note": "Chốt ở pilot task-03 tuần 15 (docs/processed/architecture/fault-pilot-report-v1.md)."
   },
   "day_split": {
     "rule": "day-split-v1",
@@ -178,10 +179,6 @@
       }
     }
   },
-  "pending_decisions": [
-    "profile healthy đối chứng upload media peak / AI job (task-03 tuần 15)",
-    "slot validation trùng cao điểm (task-03 tuần 15)"
-  ],
   "slots": [
     {
       "slot_id": "train-healthy-normal-mixed-1",
@@ -256,7 +253,7 @@
       "case": "C2",
       "repeat_index": 1,
       "workload_seed": 2001,
-      "align_peak": null,
+      "align_peak": true,
       "run_id": null,
       "replaced_run_ids": []
     },
@@ -267,7 +264,7 @@
       "case": "C3",
       "repeat_index": 1,
       "workload_seed": 2001,
-      "align_peak": null,
+      "align_peak": false,
       "run_id": null,
       "replaced_run_ids": []
     },
@@ -278,7 +275,7 @@
       "case": "C4",
       "repeat_index": 1,
       "workload_seed": 2001,
-      "align_peak": null,
+      "align_peak": false,
       "run_id": null,
       "replaced_run_ids": []
     },
@@ -289,7 +286,7 @@
       "case": "C6",
       "repeat_index": 1,
       "workload_seed": 2001,
-      "align_peak": null,
+      "align_peak": false,
       "run_id": null,
       "replaced_run_ids": []
     },
@@ -490,6 +487,18 @@
       "align_peak": false,
       "run_id": null,
       "replaced_run_ids": []
+    }
+  ],
+  "decisions": [
+    {
+      "decision": "Không thêm profile healthy đối chứng upload media peak (C4) / AI job (C3)",
+      "source": "fault-pilot-report-v1 mục 6",
+      "why": "Run healthy normal-mixed đã có job AI và upload media trong đúng các cửa sổ fault; bộ đo triệu chứng không vượt ngưỡng trên các cửa sổ đó."
+    },
+    {
+      "decision": "Slot validation trùng cao điểm: validation-c2-normal-mixed-r1 (align_peak true); ba fault run validation còn lại theo lịch mặc định",
+      "source": "evaluation-protocol-v1 mục 5.3; fault-pilot-report-v1 mục 2.2, 5",
+      "why": "C2 là case nhạy với tải nhất (ở cao điểm có thể cạn pool), nên validation có cả tổ hợp fault + tải cao hợp lệ để chỉnh ngưỡng; C3 900 s chỉ đặt được align-peak tới giây 1380 nên giữ lịch mặc định như điều kiện đã freeze ở pilot."
     }
   ]
 }
