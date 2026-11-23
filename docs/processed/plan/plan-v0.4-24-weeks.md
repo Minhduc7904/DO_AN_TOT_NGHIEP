@@ -176,7 +176,7 @@ Một hạng mục chỉ hoàn thành khi:
 | **R — Testbed v2 đóng băng**           |                   12 | Testbed v2 theo ADR-001 → ADR-006 chạy được từ máy sạch, telemetry xuyên service đủ cho RCA, phạm vi đã thu gọn và đóng băng. |
 | **M3 — Workload, fault và dataset v0** |                   15 | Workload bán thực (mức 2+ cho học viên, mức 2 cho giảng viên/admin) đạt kiểm chứng hold-out, 4 case MVP tái lập được (kể cả fault trùng cao điểm), ground truth và dataset v0. |
 | **M4 — AI/RCA Integrated MVP**         |                   18 | Một lệnh từ `run_id` ra incident + Top-3 ứng viên nguyên nhân + evidence, kèm các baseline (gồm SimpleRCA, BARO) và `base-manual-auto`. |
-| **M5 — Evaluation Freeze**             |                   21 | Campaign chính đã đăng ký trước; RQ1–RQ6 và bằng chứng E1–E5, E8 (ADR-007), ablation, robustness, error analysis hoàn tất; E6/E7 nếu kịp. |
+| **M5 — Evaluation Freeze**             |                   21 | Campaign chính đã đăng ký trước; RQ1–RQ6 và bằng chứng E1–E5, E8 (ADR-007), ablation, robustness, error analysis hoàn tất; E6 nếu kịp (E7 đã ra khỏi kế hoạch ngày 19/11/2026). |
 | **M6 — Planned Final Release**         |                   23 | Source, reproducibility package, báo cáo, slide và demo đã hoàn tất.                                                          |
 | **B — Contingency**                    |                   24 | Buffer cho rủi ro; không có feature mới được lên lịch từ trước.                                                               |
 
@@ -654,7 +654,7 @@ Giai đoạn này đáp ứng góp ý giữa kỳ. Nguyên tắc: **quyết đ�
 - kiểm label và ground truth; manifest train/validation/test theo run;
 - feature pipeline v1 trên dữ liệu pilot, có kiểm tra chống leakage;
 - cập nhật evaluation protocol từ kinh nghiệm pilot, chưa đụng tới test;
-- chốt người tham gia thử nghiệm người E7 (Target): 6–10 người nếu có, không thì 2–3 người định tính; chưa có người thì E7 ra khỏi kế hoạch.
+- chốt người tham gia thử nghiệm người E7 (Target): 6–10 người nếu có, không thì 2–3 người định tính; chưa có người thì E7 ra khỏi kế hoạch. **Kết quả (19/11/2026):** không có người tham gia ngoài hai thành viên nhóm, nên E7 ra khỏi kế hoạch; RQ6 dựa trên E1, E2, E4 với `base-manual-auto` (evaluation-protocol-v1 mục 15.3).
 
 **Bàn giao**
 
@@ -798,7 +798,7 @@ Giai đoạn này đáp ứng góp ý giữa kỳ. Nguyên tắc: **quyết đ�
 **Công việc chung**
 
 - error analysis theo case; findings và limitations;
-- Target nếu còn thời gian: **E6** chạy RCA engine trên RCAEval RE2 và đặt cạnh số đã công bố; **E7** thử nghiệm người (within-subject, mỗi người 4 incident, có/không có báo cáo engine, đo thời gian, đúng/sai, số thứ đã mở, NASA-TLX rút gọn, SUS; mẫu `[L-LogAssist]` https://ece.uwaterloo.ca/~wshang/pubs/TSE2021_LogAssist.pdf); thêm case C1, C5, C7;
+- Target nếu còn thời gian: **E6** chạy RCA engine trên RCAEval RE2 và đặt cạnh số đã công bố; ~~**E7** thử nghiệm người (within-subject, mỗi người 4 incident, có/không có báo cáo engine, đo thời gian, đúng/sai, số thứ đã mở, NASA-TLX rút gọn, SUS; mẫu `[L-LogAssist]` https://ece.uwaterloo.ca/~wshang/pubs/TSE2021_LogAssist.pdf)~~ (E7 đã ra khỏi kế hoạch ngày 19/11/2026); thêm case C1, C5, C7;
 - Stretch: mức 3 offline (LLM sinh persona giảng viên và nội dung một lần, đóng băng JSON có hash).
 
 **Gate M5:** Kết quả đủ trả lời RQ1–RQ6 và E1–E5, E8 mà không cần thêm tính năng mới.
@@ -899,7 +899,7 @@ Các hạng mục sau là **MVP bắt buộc** trước khi xem xét extension:
 Extension chỉ được xem xét khi **M4 đã qua gate** và không đe dọa M5/M6:
 
 - E6 đối chứng ngoài trên RCAEval RE2 (Target);
-- E7 thử nghiệm người (Target; 6–10 người nếu có);
+- ~~E7 thử nghiệm người (Target; 6–10 người nếu có)~~: ra khỏi kế hoạch ngày 19/11/2026 (không có người tham gia hợp lệ);
 - biến thể case để có 32–40 incident test (Target);
 - mức 3 offline: LLM sinh persona/nội dung một lần (Stretch);
 - case C1, C5, C7; cạnh shared-resource;

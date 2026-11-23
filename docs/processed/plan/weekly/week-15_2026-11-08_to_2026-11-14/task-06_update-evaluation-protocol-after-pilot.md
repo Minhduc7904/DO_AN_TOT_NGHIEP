@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-06_update-evaluation-protocol-after-pilot` |
 | Tuần | `week-15_2026-11-08_to_2026-11-14` |
-| Trạng thái | Đã giao |
+| Trạng thái | Đang thực hiện |
 | Người phụ trách | Bách |
 | Collaborator | Không có |
 | Ưu tiên | Cao |

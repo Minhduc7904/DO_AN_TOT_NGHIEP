@@ -84,7 +84,7 @@ Lập luận trung tâm của ADR-007: khi quan sát đầy đủ và tải đơ
 | E4 | Chi phí chẩn đoán: số artifact `base-manual-auto` phải mở và thời gian, so với bằng chứng engine trả sẵn | MVP | RQ6, RQ5 | 15.4 |
 | E5 | Ablation: bỏ từng modality, bỏ graph, bỏ temporal, thay detector học máy bằng z-score | MVP | RQ1, RQ2, RQ3 | 10, 11, 12 |
 | E6 | Đối chứng ngoài trên RCAEval RE2 (Online Boutique, Train Ticket) | Target | RQ6 (tính tổng quát) | 15.7 |
-| E7 | Thử nghiệm người within-subject | Target | RQ6 | 15.3 |
+| E7 | Thử nghiệm người within-subject | Target, **ra khỏi kế hoạch** (19/11/2026, mục 15.3) | RQ6 | 15.3 |
 | E8 | Case study C6: chuỗi bằng chứng của engine đặt cạnh đường truy vết thủ công | MVP | RQ6 (tính diễn giải) | 15.8 |
 
 Bộ case vẫn là bốn case MVP của ADR-006 với `R = 5` làm sàn (mục 5.3); điều kiện tiên quyết về độ thực của workload (hold-out, so ba nguồn tải) thuộc [workload-design-v1](workload-design-v1.md) và ADR-007 mục 2, protocol này chỉ dùng kết quả của bước đó (mục 5.4, 6.3).
@@ -993,6 +993,8 @@ Trước khi dùng trên testbed, chạy lại BARO của RCAEval trên một ph
 
 ### 15.3. Thử nghiệm người (E7, Target)
 
+**Quyết định 19/11/2026: E7 ra khỏi kế hoạch.** Bách xác nhận không có người tham gia nào ngoài hai thành viên nhóm. Hai thành viên đã xây testbed, biết danh mục case, ground truth và cấu hình injector, nên không là người tham gia hợp lệ (mục *Người tham gia* bên dưới, invariant 15): kết quả sẽ thiên lệch. Theo điều kiện của plan-v0.4 tuần 15 ("chưa có người thì E7 ra khỏi kế hoạch"), E7 không chạy. RQ6 dựa trên E1 (phát hiện), E2 (khoanh vùng) và E4 (chi phí chẩn đoán) với `base-manual-auto` (mục 15.2, 15.4, 15.5). Thiết kế bên dưới giữ lại làm tài liệu tham khảo, không thuộc campaign; muốn khôi phục phải có người tham gia hợp lệ và ghi lại quyết định mới trước freeze (mục 6.3).
+
 **Mức và quyết định.** ADR-006 đưa thử nghiệm người xuống **Target** (2–3 người, minh họa định tính); ADR-007 (E7) giữ Target nhưng nâng thiết kế thành **within-subject** để đo được hiệu quả khi người có báo cáo engine. Số người: **6–10** nếu tìm được (bạn cùng khóa, kỹ sư quen Grafana); nếu không thì **2–3** người và chỉ trình bày định tính như ADR-006. Bản trước ghi số người, time cap và brief là "đề xuất chờ Đức"; trong giai đoạn tự bắt kịp, **Bách quyết định danh sách người tham gia trước tuần 15** của [plan-v0.4](../plan/plan-v0.4-24-weeks.md) và chốt các giá trị còn lại trong bản đăng ký trước (mục 6.3). Không có người tham gia thì E7 bị bỏ và báo cáo nêu rõ; MVP không phụ thuộc E7.
 
 **Cơ sở tham khảo.** Chưa tìm thấy nghiên cứu có kiểm soát nào đo kỹ sư làm RCA microservice có/không có công cụ (kết quả tra cứu ở [realism-and-ai-contribution-strategy-v1](../direction/realism-and-ai-contribution-strategy-v1.md) mục 2.1). Mẫu gần nhất là user study của LogAssist: 19 người, mỗi người 6 task (3 có công cụ, 3 không, cân bằng), tổng thời gian giảm 42,49%, nhưng hai task dễ nhất lại chậm hơn khi có công cụ và chỉ 2/6 task có ý nghĩa thống kê (Locke et al., IEEE TSE 48(9), 2022, bản early access 2021, [PDF](https://ece.uwaterloo.ca/~wshang/pubs/TSE2021_LogAssist.pdf), `[L-LogAssist]`). Ahmed et al. cho 25 incident owner chấm gợi ý root cause của LLM trên thang 5 điểm (ICSE 2023, [arXiv 2301.03797](https://arxiv.org/abs/2301.03797), `[L-Ahmed2023]`). Hai nghiên cứu này cho thấy với mẫu nhỏ chỉ nên kỳ vọng hiệu ứng mô tả và phải báo cả task mà công cụ làm chậm.
@@ -1464,7 +1466,7 @@ Mẫu nhỏ (16 incident test ở sàn `4 × 4`) nên mọi chỉ số chính đ
 | CI 95% của Top-1, Top-3, MRR (E2, E3) và Recall, báo động giả/giờ (E1) | Bootstrap percentile, lấy mẫu lại theo **incident/run** (phân tầng theo case), 10 000 lần, seed cố định ghi trong config |
 | So sánh Top-1 của engine với từng baseline trên cùng incident (E2, E3) | **McNemar exact** (kiểm định nhị thức trên các cặp bất đồng: engine đúng/baseline sai và ngược lại); báo số cặp bất đồng, p-value thô và p-value hiệu chỉnh Holm cho họ so sánh engine với các baseline của bảng chính |
 | Chênh lệch MRR ghép cặp (E2) và delta suy giảm (E3) | Bootstrap ghép cặp CI 95% của trung bình chênh lệch |
-| E7 (n ≥ 6) | Wilcoxon signed-rank ghép cặp theo người cho thời gian và số artifact giữa A và B, kèm effect size (rank-biserial) và bootstrap CI 95%; n < 6 chỉ mô tả |
+| E7 (n ≥ 6; E7 đã ra khỏi kế hoạch, mục 15.3) | Wilcoxon signed-rank ghép cặp theo người cho thời gian và số artifact giữa A và B, kèm effect size (rank-biserial) và bootstrap CI 95%; n < 6 chỉ mô tả |
 
 Random và xếp hạng hằng luôn được báo cạnh kết quả (mục 18.4). Với 16 cặp, McNemar exact chỉ phát hiện được khác biệt lớn; điều này được nêu như giới hạn của mẫu, không phải lý do để bỏ kiểm định.
 
@@ -1712,7 +1714,7 @@ Artifact này không tự coi review là hoàn tất. Bản đầu ghi "Đức c
 | RQ4/E3 | Có thể tạo derived artifact giữ 50% và 10% trace (whole-trace), log mất `trace_id`, mất một modality reproducibly trên trace v2, giữ source lineage/seed; xác nhận fallback `message_id` có đủ dữ liệu ở span PRODUCER. |
 | Baseline đã công bố | Adapter SimpleRCA/BARO đọc được export (PR #77); BARO của RCAEval tái lập được trên RE2 trước khi dùng. |
 | System metrics | Analysis timing/CPU/memory/artifact size và application throughput/p95 có đường đo khả thi; `OTEL_SDK_DISABLED=true` tắt export mà không đổi code path (chưa kiểm chứng). |
-| Đối chứng thủ công | Luật `base-manual-auto` và cách đếm artifact được thiết kế và freeze; danh sách người tham gia E7 chốt trước tuần 15 của plan-v0.4; time cap, brief, cách nạp lại telemetry (retention 24 giờ) được chốt; Bách và Đức không là người tham gia. |
+| Đối chứng thủ công | Luật `base-manual-auto` và cách đếm artifact được thiết kế và freeze; E7 đã ra khỏi kế hoạch vì không có người tham gia hợp lệ (mục 15.3); time cap, brief, cách nạp lại telemetry (retention 24 giờ) được chốt; Bách và Đức không là người tham gia. |
 | `RcaIncidentResult` | Schema `"0"` và nơi lưu đề xuất ở catalogue đủ để chấm; owner-level Top-K có được chấp nhận. |
 | Rerun | Invalid/quality-failed run có thể rerun bằng run ID mới trong khi original ledger vẫn giữ. |
 
@@ -1731,7 +1733,7 @@ Bảng này chỉ ghi điều đã viết trong protocol và điều đã có b�
 | Detection, RCA service-level, system metrics, `RcaIncidentResult` làm đầu ra | Đã viết | Mục 14, 16–22 |
 | Baseline/ablation/robustness (E2, E3, E5) | Đã viết; chưa chạy | Mục 10–13, 15.2.1 |
 | E1 phát hiện dưới tải bán thực | Đã viết; workload bán thực chưa có | Mục 5.4, 17.8 |
-| Đối chứng thủ công, chi phí chẩn đoán, E6, E7, E8 | Đã viết; chưa có luật baseline, chưa có người tham gia, chưa có số đo | Mục 15 |
+| Đối chứng thủ công, chi phí chẩn đoán, E6, E7, E8 | Đã viết; chưa có luật baseline, chưa có số đo; E7 ra khỏi kế hoạch (19/11/2026, không có người tham gia hợp lệ) | Mục 15 |
 | Khoảng tin cậy, kiểm định, đăng ký trước | Đã viết | Mục 6.3, 20.7 |
 | Telemetry đủ để chấm | **Đã đo** cho 9 luồng, 11 runtime, 38 cạnh, 24 queue; thiếu các tín hiệu ở mục 1.3 | [Catalogue case mục 1 và 4](complex-case-catalogue-and-rca-result-v0.md) |
 | Case chạy thật | **Chỉ C6** (smoke, một lần); C2, C3, C4 có cơ chế và đo đáp ứng (PR #75), chưa pilot; C1, C5, C7 mới đo tín hiệu | Mục 4.2 |
