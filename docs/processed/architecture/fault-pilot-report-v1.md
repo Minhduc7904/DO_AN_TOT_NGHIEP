@@ -2,7 +2,7 @@
 
 > **Task:** `task-03_pilot-mvp-fault-cases` (tuần 15).
 >
-> **Trạng thái:** bản nháp, cập nhật 20/11/2026. Đợt 1 đã chạy xong C6, C2, C3, C4, đều theo lịch mặc định của fault manifest v1. Đợt 2 (23/11/2026) đã chạy xong run healthy; đang chạy bốn run trùng cao điểm, trong đó C2 trên `healthy-spike`. Các mục ghi "chờ đợt 2" sẽ điền sau.
+> **Trạng thái:** bản nháp, cập nhật 20/11/2026. Đợt 1 đã chạy xong C6, C2, C3, C4, đều theo lịch mặc định của fault manifest v1. Đợt 2 (23/11/2026) đã chạy xong run healthy và C2 trên `healthy-spike`; đang chạy ba run trùng cao điểm, trong đó C2 trên `healthy-spike`. Các mục ghi "chờ đợt 2" sẽ điền sau.
 >
 > **Tài liệu liên quan:** [evaluation-protocol-v1](evaluation-protocol-v1.md) mục 5.2, 5.3, 6.1, 7.3, 8.3, 8.4; [case catalogue v0](complex-case-catalogue-and-rca-result-v0.md) mục C2, C3, C4, C6; [workload-design-v1](workload-design-v1.md) mục 8.3, 8.5. Fault manifest: `aiops-platform/faults/manifests/`.
 
@@ -11,7 +11,7 @@
 | Case | Gate (thực thi / ground truth / chất lượng) | Triệu chứng đầu tiên sau `fault_start` | Lan ra ngoài đường request của nguyên nhân |
 | --- | --- | --- | --- |
 | C6 | pass / valid / partial | 15 s (đăng nhập qua gateway lỗi); 20 s (gateway không lấy được token dịch vụ) | Có: mọi route qua gateway lỗi 5xx, request không tới service đích (892/892 trace lỗi) |
-| C2 | pass / valid / partial | 10 s (`course-postgres`, `gateway → course`) | Chỉ khi có job AI: `ai-worker → course` chậm tới 1,6 s/lời gọi |
+| C2 | pass / valid / partial (cả 2 run) | 10 s (`course-postgres`, `gateway → course`) | Chỉ khi có job AI: `ai-worker → course` chậm tới 1,6 s/lời gọi. Ở cao điểm spike: cạn pool, 75–81% request lỗi 504 |
 | C3 | pass / valid / partial | 275 s (job dồn ở `ai-worker`); 305 s (lời gọi LLM 32 s) | Có: job AI chờ ở `ai-worker` (message chưa ack) |
 | C4 | pass / valid / partial | 100 s (`media → MinIO`); 105 s (`gateway → media`) | Có: `media-worker` (tạo thumbnail, bất đồng bộ) gọi MinIO chậm từ 155 s. Chuỗi job dọn media không lộ |
 
@@ -58,6 +58,18 @@ Run `pilot-c2-normal-mixed-s23-20261120t075709z`. Fault 600 s, toxic `latency` 2
   - RSS có mẫu.
   - Thiếu độ sử dụng pool, là giới hạn đã biết.
 - **Phía người dùng:** không phiên nào bỏ ngang vì chậm (2 phiên `impatient` trong cửa sổ fault). Đỉnh học viên đồng thời 176/230 VU dựng sẵn, k6 không bỏ iteration nào.
+
+**Run cao điểm `healthy-spike`** (`pilot-c2-healthy-spike-s26-20261123t040552z`, seed 26). Cùng fault, cửa sổ fault đặt vào cao điểm: 1.877 phiên bắt đầu trong cửa sổ, đỉnh 685 học viên đồng thời.
+
+- **Fault biến thành sập `course` phía người dùng, không chỉ chậm:**
+  - Ngay phút đầu, 56% request lỗi; từ phút thứ 2 tới hết fault là 75–81%. Hầu hết là 504 `DEPENDENCY_TIMEOUT` (19.926 lần) khi gateway hết 5 s chờ `course`; p50 phía k6 5.001 ms.
+  - Lỗi tập trung ở route của `course`: danh sách bài, danh sách và tạo ghi danh, tiến độ học.
+  - 2.054 phiên kết thúc `too_many_errors`, đều trong cửa sổ fault.
+- **Cơ chế:** mỗi truy vấn chậm thêm khoảng 200 ms nên pool kết nối của `course` bão hòa. Truy vấn phải xếp hàng chờ kết nối: span `course → PostgreSQL` có p50 0,6 ms trước fault → 65 s trong fault, 352 span lỗi. `course` vẫn chạy tiếp truy vấn sau khi gateway đã bỏ cuộc, nên hàng đợi không giảm.
+- **Hồi phục nhanh:** phút đầu sau `fault_end` còn 15% lỗi, từ phút thứ 2 về 0–0,2% và p95 42 ms, như trước fault.
+- **Độ trễ triệu chứng:** `course-postgres` và `gateway → course` ở 10 s như run thường. `ai-worker → course` (ngoài đường request) lộ ở 15 s vì job AI đông hơn.
+- **Tín hiệu bảng 8.4:** đủ như run thường; CPU `course` 14,2 s → 35,1 s trong 300 s.
+- **Ý nghĩa:** với cùng cường độ, mức độ của C2 phụ thuộc tải. Ở `normal-mixed` C2 chỉ là trễ; ở cao điểm spike nó thành cạn pool và timeout lan tới gateway. Dataset v0 chỉ đặt fault trên `normal-mixed` nên không bị ảnh hưởng. Nếu sau này đặt fault trên profile spike thì phải ghi triệu chứng kỳ vọng theo profile (mục 5).
 
 ### 2.3. C3 — provider LLM chậm (FD)
 
@@ -128,7 +140,7 @@ Chờ đợt 2. Hướng đang cân nhắc:
 
 - **C3:** thời lượng fault 900 s thay vì 600 s. Job AI đầu tiên đến sau `fault_start` tới 264 s, nên 600 s chỉ dư ít so với độ trễ + window 60 s + persistence. Giữ workload hiện tại, không tăng I3 cho mọi run.
 - **C6:** 300 s đủ (triệu chứng ở 20 s).
-- **C2:** 600 s đủ (triệu chứng ở 10 s).
+- **C2:** 600 s đủ (triệu chứng ở 10 s, cả ở cao điểm spike). Giữ cường độ 200 ± 20 ms cho mọi profile, không chỉnh theo tải. Ghi trong manifest v2 rằng ở profile spike, triệu chứng kỳ vọng gồm cả 504 `DEPENDENCY_TIMEOUT` tại gateway.
 - **C4:** 600 s đủ (triệu chứng ở 100–155 s). Sửa mô tả kỳ vọng: bỏ chuỗi "media `PENDING` kẹt → job dọn xóa media" khỏi đường lan truyền kỳ vọng; giữ "upload chậm qua `gateway → media`" và "`media-worker` tạo thumbnail chậm" ngoài đường request.
 
 ## 6. Profile healthy đối chứng (workload-design-v1 mục 8.3)
@@ -153,3 +165,4 @@ Run `pilot-healthy-normal-mixed-s21-20261123t025936z`: `normal-mixed`, seed 21, 
 | `pilot-c3-normal-mixed-s24-20261120t090256z` | C3, `normal-mixed` | `367574e` | pass | valid | partial (trace partial: Tempo OOM) | |
 | `pilot-c4-normal-mixed-s25-20261120t095927z` | C4, `normal-mixed` | `367574e` | pass | valid | partial (trace truncated) | Tempo nâng 1,5 GiB lúc run đang chạy; Grafana working set tối đa 62,5% |
 | `pilot-healthy-normal-mixed-s21-20261123t025936z` | không fault, `normal-mixed` | `af1bc86` | pass | valid | partial (trace truncated, 1 log trùng) | Đối chứng: 0/38 tín hiệu báo nhầm |
+| `pilot-c2-healthy-spike-s26-20261123t040552z` | C2, `healthy-spike`, cao điểm | `af1bc86` | pass | valid | partial (trace truncated) | 75–81% request lỗi 504 trong fault, hồi phục sau 1–2 phút |
