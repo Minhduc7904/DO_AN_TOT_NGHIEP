@@ -2,7 +2,7 @@
 
 > **Task:** `task-03_pilot-mvp-fault-cases` (tuần 15).
 >
-> **Trạng thái:** bản nháp, cập nhật 20/11/2026. Đợt 1 đã chạy xong C6, C2, C3, C4, đều theo lịch mặc định của fault manifest v1. Đợt 2 chưa chạy: run healthy, bốn run trùng cao điểm, trong đó C2 trên `healthy-spike`. Các mục ghi "chờ đợt 2" sẽ điền sau.
+> **Trạng thái:** bản nháp, cập nhật 20/11/2026. Đợt 1 đã chạy xong C6, C2, C3, C4, đều theo lịch mặc định của fault manifest v1. Đợt 2 (23/11/2026) đã chạy xong run healthy; đang chạy bốn run trùng cao điểm, trong đó C2 trên `healthy-spike`. Các mục ghi "chờ đợt 2" sẽ điền sau.
 >
 > **Tài liệu liên quan:** [evaluation-protocol-v1](evaluation-protocol-v1.md) mục 5.2, 5.3, 6.1, 7.3, 8.3, 8.4; [case catalogue v0](complex-case-catalogue-and-rca-result-v0.md) mục C2, C3, C4, C6; [workload-design-v1](workload-design-v1.md) mục 8.3, 8.5. Fault manifest: `aiops-platform/faults/manifests/`.
 
@@ -133,7 +133,16 @@ Chờ đợt 2. Hướng đang cân nhắc:
 
 ## 6. Profile healthy đối chứng (workload-design-v1 mục 8.3)
 
-Chờ đợt 2.
+Run `pilot-healthy-normal-mixed-s21-20261123t025936z`: `normal-mixed`, seed 21, không fault.
+
+- **Bộ đo triệu chứng không báo nhầm:** chạy `aiops-training symptoms` của cả 4 case trên hai cửa sổ fault giả (lịch mặc định phút 18–28 và cửa sổ cao điểm phút 27–37; C6 dùng 300 s). Cả 38 tín hiệu đều `not_observed`. Vậy các độ trễ đo ở mục 2 không phải do dao động bình thường của workload vượt ngưỡng.
+- **Tiêu chí khỏe của workload-design-v1 mục 8.4:**
+  - p95 phía k6 cả run 43 ms; request lỗi 0,08%; 0 dòng `unexpected_status`; k6 không bỏ iteration nào.
+  - Phiên bỏ ngang: 3/1.349 phiên `auth_failed` (0,22% < 1%).
+  - Bộ nhớ (theo `anon`): Grafana tối đa 395 MiB, 51% giới hạn. Working set của `docker stats` vẫn chạm 83% vì page cache, đúng như lý do đổi cách đo ở mục 4.
+  - CPU: RabbitMQ (không đặt giới hạn CPU) có các mẫu đơn lẻ 110–218% một core, khoảng 2 phút một lần, không có hai mẫu liên tiếp nên không kéo dài quá 1 phút. Run C4 cũng có cùng nhịp này, nên đây là đặc tính ổn định của stack, không do fault.
+  - Chưa kiểm được p95 theo từng cửa sổ 60 s: Prometheus của run đã bị reset bởi run sau.
+- **Chất lượng:** `partial` vì trace truncated như mọi run, cộng 1 bản ghi log trùng.
 
 ## 7. Run pilot
 
@@ -143,3 +152,4 @@ Chờ đợt 2.
 | `pilot-c2-normal-mixed-s23-20261120t075709z` | C2, `normal-mixed` | `fecb1fe` | pass | valid | partial (trace truncated) | |
 | `pilot-c3-normal-mixed-s24-20261120t090256z` | C3, `normal-mixed` | `367574e` | pass | valid | partial (trace partial: Tempo OOM) | |
 | `pilot-c4-normal-mixed-s25-20261120t095927z` | C4, `normal-mixed` | `367574e` | pass | valid | partial (trace truncated) | Tempo nâng 1,5 GiB lúc run đang chạy; Grafana working set tối đa 62,5% |
+| `pilot-healthy-normal-mixed-s21-20261123t025936z` | không fault, `normal-mixed` | `af1bc86` | pass | valid | partial (trace truncated, 1 log trùng) | Đối chứng: 0/38 tín hiệu báo nhầm |
