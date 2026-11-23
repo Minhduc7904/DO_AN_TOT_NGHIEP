@@ -251,7 +251,10 @@ def test_spans_count_in_window_of_their_end_time(tmp_path):
         "schema_version": "telemetry.v2",
         "quality_flags": [],
     }
-    pq.write_table(to_table([span], SPAN_SCHEMA), artifact / "spans.parquet")
+    # Bốn span lỗi kết thúc ở giây 170, một span thành công kết thúc ở giây 200.
+    spans = [{**span, "span_id": f"s{i}"} for i in range(4)]
+    spans.append({**span, "span_id": "s4", "end_time": T0 + timedelta(seconds=200), "status": "ok"})
+    pq.write_table(to_table(spans, SPAN_SCHEMA), artifact / "spans.parquet")
     _rewrite(
         artifact,
         [],
@@ -261,9 +264,13 @@ def test_spans_count_in_window_of_their_end_time(tmp_path):
     # Cửa sổ [90, 150) chứa lúc bắt đầu nhưng span chưa xong: không được thấy lỗi.
     early = _row(rows, 90, service_name="course")
     assert early["span_count"] == 0 and early["trace_error_rate"] is None
-    late = _row(rows, 120, service_name="course")  # [120, 180) chứa end_time
-    assert late["span_count"] == 1 and late["trace_error_rate"] == 1.0
+    # [120, 180) chứa end_time của 4 span: dưới MIN_SPANS_FOR_RATE (5) nên tỉ lệ để rỗng.
+    late = _row(rows, 120, service_name="course")
+    assert late["span_count"] == 4 and late["trace_error_rate"] is None
     assert late["traces_truncated"] is True and late["missing_traces"] is False
+    # [150, 210) có đủ 5 span: 4 lỗi / 5.
+    full = _row(rows, 150, service_name="course")
+    assert full["span_count"] == 5 and full["trace_error_rate"] == pytest.approx(0.8)
 
 
 def test_queue_windows_and_warmup_flag(tmp_path):

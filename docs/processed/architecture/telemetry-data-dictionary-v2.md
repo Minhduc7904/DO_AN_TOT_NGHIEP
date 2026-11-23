@@ -288,7 +288,7 @@ Quy tắc chung: mức tăng counter/histogram trong cửa sổ = tổng hiệu 
 | `latency_p50`, `latency_p95`, `latency_p99` | float | s | Từ hiệu bucket `http_server_request_duration_seconds_bucket` của service |
 | `cpu_usage` | float | giây CPU/s | Mức tăng `process_cpu_time_seconds_total` ÷ 60 |
 | `memory_usage` | float | byte | Giá trị cuối trong cửa sổ của `process_memory_usage_bytes` (lớn nhất theo instance) |
-| `trace_error_rate` | float | tỉ lệ | Span có `status = error` ÷ số span của service **kết thúc** trong cửa sổ (trace export có giới hạn nên là ước lượng) |
+| `trace_error_rate` | float | tỉ lệ | Span có `status = error` ÷ số span của service **kết thúc** trong cửa sổ (trace export có giới hạn nên là ước lượng); rỗng khi cửa sổ có ít hơn 5 span (`MIN_SPANS_FOR_RATE`) |
 | `span_count` | int | span | Số span của service kết thúc trong cửa sổ; rỗng khi trace `missing` |
 | `downstream_latency_p95` | float | s | p95 từ hiệu bucket `lms_dependency_duration_seconds_bucket` với service là bên gọi |
 | `log_error_rate`, `log_count` | float, int | dòng/s, dòng | Log `level ∈ {error, fatal}` ÷ 60; tổng số dòng log; rỗng khi log `missing` |
@@ -326,7 +326,7 @@ Cạnh async (producer → hàng đợi → consumer) không có trong metric de
 ### 9.4. Baseline healthy và kiểm leakage (evaluation-protocol-v1 mục 3.3, 9.1)
 
 - `aiops-training fit-baseline --dataset <dataset manifest> --runs-dir <runs/> --out <baseline.json>`: đọc **chỉ** các run có split `train` trong dataset manifest. Bỏ cửa sổ `warmup` và cửa sổ runtime im lặng. Tính median và MAD theo (bảng, khóa, cột). Artifact `feature-baseline.v1` ghi `fit_runs`, sha256 manifest feature của từng run, `dataset_id` và sha256 của dataset manifest, phiên bản feature và lọc nhiễu. Thiếu feature của một run train thì từ chối, không âm thầm fit trên tập nhỏ hơn.
-- `aiops-training apply-baseline <features_dir> --baseline <baseline.json>`: ghi `<bảng>_windows_z.parquet` với robust z = (x − median) / max(1,4826 × MAD, `min_scale` = 0,001) cho mỗi cột đặc trưng. Nhóm chưa có trong baseline (ví dụ cạnh chỉ xuất hiện khi có fault) có `baseline_missing = true` và z rỗng. Validation và test chỉ áp tham số, không fit lại.
+- `aiops-training apply-baseline <features_dir> --baseline <baseline.json>`: ghi `<bảng>_windows_z.parquet` với robust z = (x − median) / thang đo cho mỗi cột đặc trưng. Thang đo (baseline `feature-baseline.v2`, `scale_rule` = `mad|meanad|unit_floor.v1`, [evaluation-protocol-v1](evaluation-protocol-v1.md) mục 6.1.2): 1,4826 × MAD; MAD = 0 thì 1,2533 × MeanAD (modified z-score); cả hai bằng 0 (đặc trưng hằng trên train) thì sàn theo đơn vị: tỉ lệ 0,01; giây 0,01; request/s và dòng log/s 0,05; lời gọi, message 1; consumer 0,2; giây CPU/s 0,01; bộ nhớ 1 MiB. Nhóm chưa có trong baseline (ví dụ cạnh chỉ xuất hiện khi có fault) có `baseline_missing = true` và z rỗng. Validation và test chỉ áp tham số, không fit lại.
 - `aiops-training check-leakage --dataset … --runs-dir … [--baseline …]` báo vi phạm (mã thoát 1):
   - một `run_id` ở hai split;
   - baseline fit trên run không thuộc train, hoặc trên dataset khác;

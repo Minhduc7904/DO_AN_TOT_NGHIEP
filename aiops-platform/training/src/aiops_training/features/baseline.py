@@ -1,9 +1,10 @@
 """Baseline healthy fit **chỉ trên run train** và áp cho mọi run (evaluation-protocol-v1 mục 9.1).
 
 - `fit_baseline`: đọc bảng feature của các run train, bỏ cửa sổ warm-up và cửa sổ runtime im lặng,
-  tính median và MAD theo (bảng, khóa, cột). Kết quả là một artifact JSON có phiên bản, ghi run đã
-  dùng, sha256 manifest feature của từng run và phiên bản feature/lọc nhiễu.
-- `apply_baseline`: tính robust z = (x − median) / max(1,4826 × MAD, `min_scale`) cho một run bất kỳ
+  tính median và thang đo theo (bảng, khóa, cột): 1,4826 × MAD; MAD = 0 thì 1,2533 × MeanAD;
+  cả hai bằng 0 thì sàn theo đơn vị (`UNIT_FLOOR`). Kết quả là một artifact JSON có phiên bản,
+  ghi run đã dùng, sha256 manifest feature của từng run và phiên bản feature/lọc nhiễu.
+- `apply_baseline`: tính robust z = (x − median) / thang đo đã fit cho một run bất kỳ
   (train, validation hay test) **chỉ bằng tham số đã fit**; không fit lại. Nhóm không có trong
   baseline (ví dụ cạnh chỉ xuất hiện khi có fault) cho z rỗng và `baseline_missing = true`.
 
@@ -25,8 +26,45 @@ import pyarrow.parquet as pq
 
 from .pipeline import TABLES
 
-BASELINE_SCHEMA = "feature-baseline.v1"
+BASELINE_SCHEMA = "feature-baseline.v2"
 MAD_TO_SIGMA = 1.4826
+#: Modified z-score (Iglewicz & Hoaglin): MAD = 0 thì dùng 1,2533 × độ lệch tuyệt đối trung bình.
+MEANAD_TO_SIGMA = 1.2533
+#: Quy tắc thang đo, khai báo trước validation (evaluation-protocol-v1 mục 6.1.2,
+#: `aiops-platform/training/configs/detection-candidates-v1.json`).
+SCALE_RULE = "mad|meanad|unit_floor.v1"
+#: Sàn thang đo theo đơn vị khi đặc trưng hằng trên train (MAD = MeanAD = 0): thay đổi nhỏ nhất
+#: coi là có nghĩa. z = 3 trên tỉ lệ lỗi hằng 0 là tăng 3 điểm phần trăm; mất một consumer là z = 5.
+UNIT_FLOOR: dict[str, float] = {
+    "ratio": 0.01,
+    "seconds": 0.01,
+    "per_second": 0.05,
+    "calls": 1.0,
+    "messages": 1.0,
+    "consumers": 0.2,
+    "cpu_seconds_per_second": 0.01,
+    "memory_bytes": 1_048_576.0,
+}
+COLUMN_UNIT: dict[str, str] = {
+    "request_rate": "per_second",
+    "error_rate": "ratio",
+    "latency_p50": "seconds",
+    "latency_p95": "seconds",
+    "latency_p99": "seconds",
+    "cpu_usage": "cpu_seconds_per_second",
+    "memory_usage": "memory_bytes",
+    "trace_error_rate": "ratio",
+    "downstream_latency_p95": "seconds",
+    "log_error_rate": "per_second",
+    "call_count": "calls",
+    "error_ratio": "ratio",
+    "timeout_ratio": "ratio",
+    "duration_mean": "seconds",
+    "duration_p95": "seconds",
+    "messages_ready": "messages",
+    "messages_unacked": "messages",
+    "consumers": "consumers",
+}
 
 FEATURE_COLUMNS: dict[str, tuple[str, ...]] = {
     "service": (
@@ -72,9 +110,29 @@ def read_feature_meta(features_dir: Path) -> dict[str, Any]:
     return json.loads((features_dir / "features-manifest.json").read_text(encoding="utf-8"))
 
 
-def fit_baseline(
-    feature_dirs: dict[str, Path], min_scale: float = 1e-3, provenance: dict | None = None
-) -> dict[str, Any]:
+def robust_scale(samples: list[float], column: str) -> dict[str, float]:
+    """Median và thang đo của robust z theo `SCALE_RULE`."""
+    median = statistics.median(samples)
+    deviations = [abs(value - median) for value in samples]
+    mad = statistics.median(deviations)
+    meanad = statistics.fmean(deviations)
+    if mad > 0:
+        scale, basis = MAD_TO_SIGMA * mad, "mad"
+    elif meanad > 0:
+        scale, basis = MEANAD_TO_SIGMA * meanad, "meanad"
+    else:
+        scale, basis = UNIT_FLOOR[COLUMN_UNIT[column]], "unit_floor"
+    return {
+        "median": median,
+        "mad": mad,
+        "meanad": meanad,
+        "scale": scale,
+        "scale_basis": basis,
+        "n": len(samples),
+    }
+
+
+def fit_baseline(feature_dirs: dict[str, Path], provenance: dict | None = None) -> dict[str, Any]:
     """`feature_dirs`: `run_id → thư mục feature` của các run train."""
     if not feature_dirs:
         raise BaselineError("Cần ít nhất một run train để fit")
@@ -111,24 +169,19 @@ def fit_baseline(
         for key, columns in sorted(groups.items()):
             stats[table][key] = {}
             for column, samples in columns.items():
-                median = statistics.median(samples)
-                mad = statistics.median(abs(value - median) for value in samples)
-                stats[table][key][column] = {"median": median, "mad": mad, "n": len(samples)}
+                stats[table][key][column] = robust_scale(samples, column)
     return {
         "schema": BASELINE_SCHEMA,
         "feature_config_version": feature_version,
         "noise_filter_version": noise_version,
         "fit_runs": sorted(feature_dirs),
         "fit_inputs_sha256": inputs,
-        "min_scale": min_scale,
+        "scale_rule": SCALE_RULE,
+        "unit_floor": UNIT_FLOOR,
         "excluded_windows": ["warmup", "telemetry_silent/caller_silent/consumer_silent"],
         **(provenance or {}),
         "stats": stats,
     }
-
-
-def _scale(entry: dict[str, float], min_scale: float) -> float:
-    return max(MAD_TO_SIGMA * entry["mad"], min_scale)
 
 
 def apply_baseline(
@@ -136,6 +189,8 @@ def apply_baseline(
 ) -> dict[str, Any]:
     """Ghi `<bảng>_windows_z.parquet` (cột gốc + `<cột>_z` + `baseline_missing`)."""
     meta = read_feature_meta(features_dir)
+    if baseline.get("schema") != BASELINE_SCHEMA:
+        raise BaselineError(f"Baseline schema {baseline.get('schema')}, cần {BASELINE_SCHEMA}")
     for field in ("feature_config_version", "noise_filter_version"):
         if meta[field] != baseline[field]:
             raise BaselineError(
@@ -157,7 +212,7 @@ def apply_baseline(
                 stat = (entry or {}).get(column)
                 value = row.get(column)
                 row[f"{column}_z"] = (
-                    (value - stat["median"]) / _scale(stat, baseline["min_scale"])
+                    (value - stat["median"]) / stat["scale"]
                     if stat is not None and value is not None
                     else None
                 )

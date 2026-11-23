@@ -67,6 +67,9 @@ QUEUE_METRICS = {
 #: Độ trễ thu thập theo modality (evaluation-protocol-v1 mục 1.3, 7.2): log ≈ 2 s, trace ≈ 2,5 s,
 #: counter 4–10 s. Cửa sổ chỉ đủ dữ liệu sau `window_end` + giá trị lớn nhất.
 AVAILABLE_AFTER_S = {"metrics": 10.0, "traces": 3.0, "logs": 2.0}
+#: Số span tối thiểu để tính `trace_error_rate` (evaluation-protocol-v1 mục 6.1.1 bảng F): trace có
+#: thể là mẫu (ngân sách export), tỉ lệ trên vài span quá nhiễu nên để rỗng.
+MIN_SPANS_FOR_RATE = 5
 
 METRICS_USED = (
     "http_server_request_count_total",
@@ -455,7 +458,9 @@ def build_features(
                     "memory_usage": max((v for v in memory if v is not None), default=None)
                     if live
                     else None,
-                    "trace_error_rate": _ratio(span_errors, span_total),
+                    "trace_error_rate": _ratio(span_errors, span_total)
+                    if span_total >= MIN_SPANS_FOR_RATE
+                    else None,
                     # Modality thiếu: để rỗng, không phải 0 (0 nghĩa là "không có sự kiện").
                     "span_count": span_total if span_available else None,
                     "downstream_latency_p95": histogram_quantile(0.95, downstream)

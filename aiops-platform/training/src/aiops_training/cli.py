@@ -204,7 +204,6 @@ def _baseline_parsers(sub: argparse._SubParsersAction) -> None:
     fit.add_argument("--dataset", type=Path, required=True, help="dataset manifest (JSON)")
     fit.add_argument("--runs-dir", type=Path, required=True, help="Thư mục runs/ của runner")
     fit.add_argument("--out", type=Path, required=True, help="File baseline JSON")
-    fit.add_argument("--min-scale", type=float, default=1e-3)
     apply = sub.add_parser("apply-baseline", help="Tính robust z của một run theo baseline đã fit")
     apply.add_argument("features_dir", type=Path)
     apply.add_argument("--baseline", type=Path, required=True)
@@ -227,7 +226,6 @@ def _run_fit_baseline(args: argparse.Namespace) -> int:
         raise SystemExit(f"Thiếu feature của run train: {missing}")
     baseline = fit_baseline(
         runs,
-        min_scale=args.min_scale,
         provenance={
             "dataset_id": manifest.get("dataset_id"),
             "dataset_manifest_sha256": hashlib.sha256(text.encode("utf-8")).hexdigest(),

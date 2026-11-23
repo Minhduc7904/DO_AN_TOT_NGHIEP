@@ -50,6 +50,8 @@ def test_fit_excludes_warmup_and_silent_windows_and_apply_uses_fitted_params(tmp
     assert baseline["fit_runs"] == ["train-a", "train-b"]
     course = baseline["stats"]["service"]["course"]["request_rate"]
     assert course["median"] == pytest.approx(2.0) and course["mad"] == 0
+    # Đặc trưng hằng trên train: thang đo là sàn theo đơn vị (request/s → 0,05).
+    assert course["scale_basis"] == "unit_floor" and course["scale"] == pytest.approx(0.05)
     # Cửa sổ warm-up (360 s đầu) và cửa sổ runtime im lặng không vào fit: identity bị "pause" từ
     # giây 300 nên mọi cửa sổ ngoài warm-up của nó đều im lặng → không có thống kê.
     assert "identity" not in baseline["stats"]["service"]
@@ -64,7 +66,7 @@ def test_fit_excludes_warmup_and_silent_windows_and_apply_uses_fitted_params(tmp
     assert result["baseline_fit_runs"] == ["train-a", "train-b"]
     rows = pq.read_table(other / "service_windows_z.parquet").to_pylist()
     late = [r for r in rows if r["service_name"] == "course" and not r["warmup"]]
-    assert late[0]["request_rate_z"] == pytest.approx((4.0 - 2.0) / 1e-3)
+    assert late[0]["request_rate_z"] == pytest.approx((4.0 - 2.0) / 0.05)
     gateway = next(r for r in rows if r["service_name"] == "gateway")
     assert gateway["baseline_missing"] is True and gateway["request_rate_z"] is None
 
@@ -150,3 +152,23 @@ def test_cli_fit_reads_only_train_runs_and_check_leakage(tmp_path, capsys):
         main(
             ["fit-baseline", "--dataset", str(dataset), "--runs-dir", str(runs), "--out", str(out)]
         )
+
+
+def test_robust_scale_falls_back_from_mad_to_meanad_to_unit_floor():
+    from aiops_training.features.baseline import robust_scale
+
+    spread = robust_scale([1.0, 2.0, 3.0, 4.0, 5.0], "latency_p95")
+    assert spread["scale_basis"] == "mad" and spread["scale"] == pytest.approx(1.4826 * 1.0)
+    # Phần lớn là 0, vài cửa sổ có lỗi: MAD = 0 nhưng MeanAD = 2/10 → modified z-score.
+    sparse = robust_scale([0.0] * 8 + [1.0, 1.0], "error_ratio")
+    assert sparse["mad"] == 0 and sparse["scale_basis"] == "meanad"
+    assert sparse["scale"] == pytest.approx(1.2533 * 0.2)
+    constant = robust_scale([1.0] * 6, "consumers")
+    assert constant["scale_basis"] == "unit_floor" and constant["scale"] == pytest.approx(0.2)
+
+
+def test_apply_refuses_baseline_of_other_schema(tmp_path):
+    features = _run(tmp_path, "a")
+    baseline = fit_baseline({"a": features})
+    with pytest.raises(BaselineError, match="schema"):
+        apply_baseline(features, {**baseline, "schema": "feature-baseline.v1"})
