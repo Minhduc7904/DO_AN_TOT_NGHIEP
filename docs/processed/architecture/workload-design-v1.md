@@ -4,7 +4,7 @@
 
 > **Task:** `task-01_design-user-behavior-workload` (tuần 13) — [card task](../plan/weekly/week-13_2026-10-25_to_2026-10-31/task-01_design-user-behavior-workload.md)
 >
-> **Trạng thái:** Đề xuất — v1, 17/11/2026; bổ sung cùng ngày theo ADR-007 (mức 2+, mức 3 offline, kiểm chứng hold-out). Thiết kế cho mức 2 và 2+; k6 mức 1 đã cài song song ở task-02 tuần 13 ([PR #76](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/76), `aiops-platform/load/`). Mọi con số tải (số người dùng, tốc độ đến, thời lượng, hệ số chồng phiên) là giá trị khởi đầu, **chốt sau pilot** ở tuần 14–15.
+> **Trạng thái:** Đề xuất — v1, 17/11/2026; bổ sung cùng ngày theo ADR-007 (mức 2+, mức 3 offline, kiểm chứng hold-out). Thiết kế cho mức 2 và 2+; k6 mức 1 đã cài song song ở task-02 tuần 13 ([PR #76](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/76), `aiops-platform/load/`). Mọi con số tải (số người dùng, tốc độ đến, thời lượng, hệ số chồng phiên) là giá trị khởi đầu, **chốt sau pilot** ở tuần 14–15. Cập nhật 23/11/2026: đã chốt ở pilot tuần 15 (mức tải và profile ở mục 8.1–8.4, lịch fault ở mục 8.5); bảng tổng hợp ở [evaluation-protocol-v1](evaluation-protocol-v1.md) mục 6.1.1.
 >
 > **Phạm vi:** workload mức 1, 2, 2+ theo gợi ý của giảng viên hướng dẫn: người dùng ảo có profile, mục tiêu, máy trạng thái, thời gian nghỉ, phản ứng với lỗi của hệ thống, nhịp tải theo giờ trong ngày; phát lại phiên học viên thật từ log Moodle; hai profile healthy bắt buộc; cách kiểm chứng phân phối, kiểm chứng độ thực và cách tái lập; mức 3 offline ở dạng thiết kế Stretch. Không thuộc phạm vi: LLM agent chạy online làm nguồn tải (ADR-007 đã loại), fault injector, export telemetry, thêm thao tác LMS mới (LMS đóng băng theo ADR-006).
 >
@@ -642,7 +642,7 @@ Khi fault làm phiên dài ra, số VU đang chạy tăng lên (vì phiên mới
 
 | Tham số | Giá trị | Ghi chú |
 | --- | --- | --- |
-| Độ dài run phần chính | **48 phút** | Nằm trong khoảng 30–60 phút của plan; analysis blueprint mục 18.1 yêu cầu không hard-code, nên là giá trị khởi đầu, chốt sau pilot |
+| Độ dài run phần chính | **48 phút** | Nằm trong khoảng 30–60 phút của plan; analysis blueprint mục 18.1 yêu cầu không hard-code. Đã chốt sau pilot tuần 15 (fault manifest v2 `run_seconds` = 2.880; evaluation-protocol-v1 mục 6.1.1) |
 | 1 giờ trong ngày | 2 phút chạy thật | Hệ số nén thời gian **30** |
 | Đơn vị lịch | Mỗi giờ là một stage của k6 | Executor tăng/giảm tuyến tính giữa hai stage, nên đường cong là đường gấp khúc trơn |
 | Khởi động | Bước `setup` trước giờ 00:00 (mục 12.2), không tính vào cửa sổ phân tích | Giờ 00:00–06:00 tải thấp, tự đóng vai trò hâm nóng |
@@ -775,6 +775,8 @@ Mỗi profile là một **cấu hình có phiên bản** (ví dụ `normal-mixed
 
 Cả ba chạy **trên nền `normal mixed traffic`** và chỉ thêm một thành phần. Chỉ làm khi pilot cho thấy cần hiệu chỉnh ngưỡng theo loại tải.
 
+**Kết quả pilot tuần 15:** không thêm `upload media peak healthy` và `AI job healthy`. Run healthy `normal-mixed` đã có 16–31 lượt upload và 7–11 lời gọi provider trong các cửa sổ fault giả, bộ đo triệu chứng không báo nhầm ([fault-pilot-report-v1](fault-pilot-report-v1.md) mục 6). `notification batch lớn healthy` chỉ cần khi C1 (Target) vào campaign.
+
 | Profile | Thêm gì | Đối chứng cho | Tham số khởi đầu (giả định) |
 | --- | --- | --- | --- |
 | `notification batch lớn healthy` | 3 đợt thông báo cách nhau 2 phút, `batch_size` 50, trong khoảng 09:00–12:00 | C1 (Target): detector không được học "đợt gửi lớn = bất thường" | ≈ 3.000 email trong 6 phút |
@@ -783,7 +785,7 @@ Cả ba chạy **trên nền `normal mixed traffic`** và chỉ thêm một thà
 
 ### 8.4. Giới hạn tài nguyên và pilot
 
-Máy chạy ~15 GB RAM, stack 11 runtime + observability chiếm 3,5–5 GB (plan v0.3 mục 8); k6 cũng cần RAM (mỗi VU là một môi trường JavaScript riêng). Nguyên tắc: **tải đủ để có tín hiệu nhưng run healthy phải thật sự khỏe**. Mọi số ở mục 8.1–8.2 là điểm khởi đầu, **chốt sau pilot**:
+Máy chạy ~15 GB RAM, stack 11 runtime + observability chiếm 3,5–5 GB (plan v0.3 mục 8); k6 cũng cần RAM (mỗi VU là một môi trường JavaScript riêng). Nguyên tắc: **tải đủ để có tín hiệu nhưng run healthy phải thật sự khỏe**. Mọi số ở mục 8.1–8.2 ban đầu là điểm khởi đầu, **chốt sau pilot** theo ba bước dưới đây; kết quả pilot ở cuối mục này:
 
 1. **Tìm điểm gãy:** chạy riêng scenario học viên pha `normal` với tốc độ đến không đổi, tăng dần 0,2 phiên/s mỗi 3 phút cho tới khi vi phạm một tiêu chí "khỏe" bên dưới. Tốc độ cuối cùng còn khỏe là `λ_knee`.
 2. **Chọn mức:** đỉnh `normal mixed` ≤ 0,35 × `λ_knee`; đỉnh `healthy high-load spike` ≤ 0,8 × `λ_knee` (giả định: chừa biên cho fault làm phiên dài ra). Nếu mức ở 8.1–8.2 vượt thì hạ `N_pop` (mức 2 thuần) hoặc hệ số chồng phiên `k` (mức 2+) cho cả hai profile.
@@ -816,16 +818,18 @@ Cách đo bộ nhớ đổi ở pilot task-03 tuần 15 (`aiops-platform/load/RE
 
 ### 8.5. Dùng làm tải nền cho fault run
 
-Mọi fault run chạy `normal mixed traffic` cùng phiên bản (ADR-002: mọi case chạy song song k6). Để fault luôn rơi vào lúc có đủ traffic, **cửa sổ fault nên nằm trong khoảng 09:00–22:00** (phút 18–46, `w(h)` ≥ 0,8); fault manifest ở tuần 14 chốt vị trí cụ thể.
+Mọi fault run chạy `normal mixed traffic` cùng phiên bản (ADR-002: mọi case chạy song song k6). Để fault luôn rơi vào lúc có đủ traffic, **cửa sổ fault nên nằm trong khoảng 09:00–22:00** (phút 18–46, `w(h)` ≥ 0,8). Fault manifest v2 (chốt sau pilot tuần 15) đặt fault mặc định ở phút 18 (giây 1.080), giữ warm-up 6 phút và recovery ≥ 10 phút; slot trùng cao điểm đặt bằng `--align-peak` theo kế hoạch phát lại ([faults README](../../../aiops-platform/faults/README.md), evaluation-protocol-v1 mục 6.1.1).
 
 | Case MVP | Thành phần bị lỗi | Traffic đi qua (theo mô hình) | Ước lượng trong cửa sổ fault 10 phút ban ngày |
 | --- | --- | --- | --- |
 | C2 | `course` → `course-postgres` | Gần như mọi thao tác W3 của học viên, W2 của giảng viên | Hàng nghìn request |
-| C3 | `ai-llm-provider` (LLM stub) | Goal I3: trích xuất tài liệu và job AI | 10 phút ban ngày ≈ 5 "giờ" × 6–7 phiên giảng viên ≈ 33 phiên; × 0,20 ≈ 6–7 phiên AI, mỗi phiên 1–2 job; có thể ít — xem mục 13 |
+| C3 | `ai-llm-provider` (LLM stub) | Goal I3: trích xuất tài liệu và job AI | 10 phút ban ngày ≈ 5 "giờ" × 6–7 phiên giảng viên ≈ 33 phiên; × 0,20 ≈ 6–7 phiên AI, mỗi phiên 1–2 job; có thể ít — xem mục 13. Pilot tuần 15: 9 job AI trong cửa sổ fault 600 s của run C3 lịch mặc định; trên 7 run `normal-mixed` của pilot, job đầu tiên sau phút 18 đến ở giây 14–329 |
 | C4 | `media-minio` | Upload của I1/I2/I3 và `VIEW_MEDIA` của học viên | Vài chục upload + vài chục lượt đọc |
 | C6 | `identity` | Đăng nhập đầu mọi phiên, refresh, xác thực service token/JWKS | Mọi phiên mới |
 
 Nếu pilot cho thấy C3 thiếu job AI trong cửa sổ, ưu tiên tăng tỉ lệ goal I3 hoặc số phiên giảng viên **cho mọi run** (healthy lẫn fault, để không tạo khác biệt workload giữa hai loại run), thay vì chỉ tăng trong fault run.
+
+**Kết quả pilot tuần 15:** giữ workload, không tăng goal I3. Mọi run pilot có job AI trong 900 s đầu từ phút 18 (3–15 job), nên thời lượng fault của C3 tăng từ 600 s lên 900 s thay vì đổi tải ([fault-pilot-report-v1](fault-pilot-report-v1.md) mục 5).
 
 ---
 
@@ -859,7 +863,7 @@ Cột "Nguồn" ghi nguồn đã mở và kiểm chứng, hoặc **giả định
 | P22 | Timeout request phía k6 | 15 s | **Giả định của đề tài**; mặc định của k6 là 60 s [S10] | Lớn hơn timeout Gateway 5 s và lớn hơn kiên nhẫn tối đa; cần cho bước POST thẳng MinIO |
 | P23 | Tỉ lệ phiên làm mới token giữa phiên | 3% | **Giả định của đề tài** | Giữ traffic nền cho `POST /auth/refresh` |
 | P24 | Đường cong theo giờ `w(h)`, `w_I(h)` | Bảng mục 7.3 | **Giả định của đề tài**, hình dạng theo [S6] Smarr và Schirmer (cửa sổ ngủ 23:00–06:00, hoạt động chia nửa đầu/nửa sau ngày) | Nguồn chỉ cho hình dạng định tính, không cho bảng số theo giờ |
-| P25 | Độ dài run, nén thời gian | 48 phút; 1 giờ = 2 phút; hệ số 30 | **Giả định của đề tài** trong khoảng 30–60 phút của plan v0.3 | Chốt sau pilot (blueprint v1 mục 18.1) |
+| P25 | Độ dài run, nén thời gian | 48 phút; 1 giờ = 2 phút; hệ số 30 | **Giả định của đề tài** trong khoảng 30–60 phút của plan v0.3 | Đã chốt sau pilot tuần 15 (fault manifest v2; blueprint v1 mục 18.1) |
 | P26 | Quần thể học viên ảo `N_pop` | 3.000 | **Giả định của đề tài** | Chọn để đỉnh ngày thường ≈ 3,6 request/s, an toàn cho máy; chốt theo `λ_knee` (mục 8.4) |
 | P27 | Hệ số đỉnh spike | 2,4 (khoảng cho phép 2,0–3,2) | [S1] OULAD (P05, P06) cho khoảng; hình dạng trong ngày là **giả định** | 1,60 × 1,5; nằm giữa ×2,11 (trung vị) và ×3,25 (lớn nhất) |
 | P28 | Cửa sổ spike | 19:00–22:00 (phút 38–46) | **Giả định của đề tài** | Giả hạn nộp 23:59; [S6] cho thấy ngày không có lớp hoạt động dồn nửa sau ngày |
@@ -872,7 +876,7 @@ Cột "Nguồn" ghi nguồn đã mở và kiểm chứng, hoặc **giả định
 | P35 | Profile dữ liệu seed | `small`, `--seed` cố định cho cả campaign | [seed-data-guide](../guides/seed-data-guide.md) của repo; lựa chọn là **giả định** | Đợt `ALL_STUDENTS` với `medium` là 20.000 email |
 | P36 | `preAllocatedVUs`, `maxVUs` | ≈ 1,2 × và ≈ 3 × số VU bận ước tính ở đỉnh | **Giả định của đề tài**; cơ chế `dropped_iterations` theo [S10] | Chừa chỗ cho phiên dài ra khi có fault |
 | P37 | Executor | `ramping-arrival-rate` (mô hình mở) cho phiên; tuần tự có think time bên trong phiên | [S4] Schroeder và cs. (partly-open); [S10] k6 (open model, coordinated omission) | — |
-| P38 | Ngưỡng tiêu chí "khỏe" và ngưỡng chọn mức tải | Mục 8.4 | **Giả định của đề tài**, p95 < 1 s neo vào [S7] | Chốt sau pilot |
+| P38 | Ngưỡng tiêu chí "khỏe" và ngưỡng chọn mức tải | Mục 8.4 | **Giả định của đề tài**, p95 < 1 s neo vào [S7] | Đã dùng ở pilot tuần 15, giữ nguyên ngưỡng; cách đo bộ nhớ đổi sang phần không thu hồi được (mục 8.4) |
 | P39 | Ngưỡng chấp nhận khi kiểm chứng phân phối | Mục 10.2 | **Giả định của đề tài**; phép kiểm theo [S11] NIST | — |
 
 ---
@@ -1112,12 +1116,12 @@ WESSBAS ghi nhận Markov bậc 1 có xu hướng sinh phiên dài hơn thật; 
 4. **Đường cong theo giờ** chỉ dựa vào hình dạng định tính của một nghiên cứu ở một trường đại học Mỹ; giá trị từng giờ là giả định.
 5. **Nén thời gian** dồn lưu lượng một ngày vào 48 phút; mức tải tuyệt đối không đại diện cho quy mô người dùng thật. Think time không nén nên đường cong tải bị làm trơn khoảng 1 "giờ".
 6. **Thời điểm đến cách đều** trong mỗi stage của k6, không phải Poisson. Nghiên cứu mạng kinh điển thường mô hình phiên đến theo Poisson với tốc độ theo giờ, nhưng tài liệu này chưa mở được toàn văn nguồn đó để kiểm chứng nên không dựa vào.
-7. **Ít job AI trong cửa sổ fault của C3** (ước lượng 6–7 phiên AI trong 10 phút): có thể phải tăng tỉ lệ I3 sau pilot (mục 8.5).
+7. **Ít job AI trong cửa sổ fault của C3** (ước lượng 6–7 phiên AI trong 10 phút): pilot tuần 15 không tăng tỉ lệ I3 mà tăng thời lượng fault C3 lên 900 s, vì trong pilot job đầu tiên đến muộn tới giây 329 sau `fault_start` (mục 8.5).
 8. **Tài khoản dùng lại:** số người ảo lớn hơn 1.000 tài khoản seed nên một tài khoản phục vụ nhiều người ảo ở các thời điểm khác nhau; mức 2+ không để hai phiên chạy cùng lúc trên một tài khoản (mục 13.4), nên không mô phỏng việc đăng nhập hai thiết bị cùng lúc. Dữ liệu của người trước (ghi danh, lượt làm bài) còn trên tài khoản khi người sau dùng.
 9. **Dữ liệu tăng trong run:** khóa nháp, media, lượt làm bài, người dùng mới tích lũy trong run; mỗi run bắt đầu từ trạng thái reset-and-seed nên không cộng dồn giữa các run.
-10. **Mức tải và tiêu chí "khỏe" chưa đo:** mọi con số tải, `maxVUs`, ngưỡng mục 8.4 và 10.2 chốt sau pilot.
+10. **Mức tải và tiêu chí "khỏe":** đã đo và chốt ở pilot tuần 15 (`λ_knee` ≥ 5,6 phiên/s, `k` = 4, số VU ở mục 8.1–8.2, ngưỡng mục 8.4 giữ nguyên). Ngưỡng mục 10.2 không thuộc pilot này.
 11. **Chi tiết k6 chưa thử:** cách chuyển console ra file, tag cho mỗi request, cách khai báo mã mong đợi theo từng request — mới đối chiếu tài liệu k6, chưa chạy thử; cài ở tuần 14 có thể phải điều chỉnh.
-12. **Tài nguyên máy:** spike ở mức đỉnh cần khoảng 140 VU bận và tới 420 VU tối đa; RAM của k6 ở mức này chưa đo.
+12. **Tài nguyên máy:** ước lượng ban đầu (mức 2 thuần) là spike cần khoảng 140 VU bận và tới 420 VU tối đa. Với mức 2+, RAM của k6 ở đỉnh spike đo được 3,07 GiB cho 1.062 VU học viên dựng sẵn (mục 8.4).
 13. **Sau ADR-007**, giới hạn 1, 4, 6 chỉ còn áp dụng cho mức 2 (giảng viên, admin) và nguồn "mức 2 thuần" dùng để so sánh. Giới hạn riêng của mức 2+: log Moodle là của một trường Ý, 4 khóa, 1 học kỳ năm 2022; múi giờ không ghi trong README và mốc thời gian đã bị dịch (chỉ dùng hình dạng theo giờ, không dùng giờ tuyệt đối); 4,8% dòng bị bỏ khi ánh xạ; tải phải khuếch đại bằng chồng phiên (mục 13.5); id bài học/quiz trong log không có nên bài học được chọn theo thứ tự.
 
 ---
