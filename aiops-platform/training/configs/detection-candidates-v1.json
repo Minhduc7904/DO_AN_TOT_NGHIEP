@@ -19,7 +19,7 @@
     "unit_floor": {
       "ratio": 0.01,
       "seconds": 0.01,
-      "requests_per_second": 0.05,
+      "per_second": 0.05,
       "calls": 1,
       "messages": 1,
       "consumers": 0.2,
