@@ -1,0 +1,14 @@
+{
+  "schema": "run-spec.v1",
+  "split": "pilot",
+  "repeat_index": 0,
+  "workload": {
+    "profile": "normal-mixed",
+    "seed": 32
+  },
+  "fault": {
+    "case": "C3",
+    "align_peak": false
+  },
+  "notes": "Gate M3 tuần 15 (task-08): C3 từ môi trường sạch theo runbook, lịch mặc định của fault manifest v2."
+}
