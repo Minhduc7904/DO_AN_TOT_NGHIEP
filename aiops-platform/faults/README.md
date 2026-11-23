@@ -82,16 +82,16 @@ Mỗi lệnh in **một dòng JSON** có `ts` (UTC), `ok`, hành động và k�
 
 ## Fault manifest và bộ chạy lịch
 
-[`manifests/fault-manifest-v1.json`](manifests/fault-manifest-v1.json) mô tả 4 case MVP theo [case catalogue v0](../../docs/processed/architecture/complex-case-catalogue-and-rca-result-v0.md) và [telemetry-and-ground-truth-schema-v1](../../docs/processed/architecture/telemetry-and-ground-truth-schema-v1.md) mục 9: nhãn ground truth (`fault_type`, `root_cause_service`, `root_cause_component`), lệnh bật/tắt (chính là tham số dòng lệnh của `fault-control.mjs`), thời lượng, điều kiện tiên quyết.
+[`manifests/fault-manifest-v2.json`](manifests/fault-manifest-v2.json) (mặc định của `fault-schedule.mjs` và runner) mô tả 4 case MVP theo [case catalogue v0](../../docs/processed/architecture/complex-case-catalogue-and-rca-result-v0.md) và [telemetry-and-ground-truth-schema-v1](../../docs/processed/architecture/telemetry-and-ground-truth-schema-v1.md) mục 9: nhãn ground truth (`fault_type`, `root_cause_service`, `root_cause_component`), lệnh bật/tắt (chính là tham số dòng lệnh của `fault-control.mjs`), thời lượng, điều kiện tiên quyết, và số đo pilot của từng case (`pilot`).
 
-| Case | Bật | Gỡ | Thời lượng khởi đầu |
+| Case | Bật | Gỡ | Thời lượng |
 | --- | --- | --- | --- |
 | C2 | `latency course-to-postgres 200 --jitter 20` | `clear course-to-postgres` | 600 s |
-| C3 | `llm set --latency-ms 30000 --jitter-ms 5000` | `llm reset` | 600 s |
+| C3 | `llm set --latency-ms 30000 --jitter-ms 5000` | `llm reset` | 900 s |
 | C4 | `latency media-to-minio 300 --jitter 30` và `media-worker-to-minio` như vậy | `clear` hai proxy | 600 s |
 | C6 | `container pause identity` (cần TTL token dịch vụ 60 s) | `container unpause identity` | 300 s |
 
-Mọi giá trị là **điểm khởi đầu trước pilot**; pilot tuần 15 chốt thời lượng và cường độ (evaluation-protocol-v1 mục 6.1, 7.3). Run 48 phút: phút 0–6 warm-up, fault mặc định bắt đầu ở phút 18, sau khi gỡ giữ ít nhất 10 phút recovery.
+v2 là giá trị **đã chốt sau pilot tuần 15** ([fault-pilot-report-v1](../../docs/processed/architecture/fault-pilot-report-v1.md) mục 5; evaluation-protocol-v1 mục 6.1, 7.3). Cường độ giữ như v1; chỉ C3 tăng từ 600 s lên 900 s vì triệu chứng chờ job AI đến (275 s theo lịch mặc định). [`fault-manifest-v1.json`](manifests/fault-manifest-v1.json) giữ lại vì các run pilot ghi `manifest_version` 1.0.0. Run 48 phút: phút 0–6 warm-up, fault mặc định bắt đầu ở phút 18, sau khi gỡ giữ ít nhất 10 phút recovery.
 
 ```bash
 S=aiops-platform/faults/fault-schedule.mjs

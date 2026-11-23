@@ -49,6 +49,9 @@ class ValidationConfig:
     min_latency_ratio: float = 2.0
     #: Số lời gọi tối thiểu trong cửa sổ fault để kết luận.
     min_calls: int = 3
+    #: Lời gọi của health probe (`ping` tới MinIO mỗi vài giây) không phải traffic của workload:
+    #: tính cả chúng thì C4 "đạt" dù không upload/đọc media nào chạm fault (pilot tuần 15).
+    exclude_operations: tuple[str, ...] = ("ping",)
 
 
 def _iso(value: datetime) -> str:
@@ -86,7 +89,9 @@ def counter_increase(points: list[tuple[datetime, float]], start: datetime, end:
     return total
 
 
-def _sum_increase(series, metric: str, start, end, **match) -> float:
+def _sum_increase(
+    series, metric: str, start, end, exclude_operations: tuple[str, ...] = (), **match
+) -> float:
     total = 0.0
     for key, points in series.items():
         fields = dict(zip(SERIES_KEY, key, strict=True))
@@ -94,17 +99,18 @@ def _sum_increase(series, metric: str, start, end, **match) -> float:
             continue
         if any(fields.get(name) != value for name, value in match.items()):
             continue
+        if fields.get("operation_name") in exclude_operations:
+            continue
         total += counter_increase(points, start, end)
     return total
 
 
-def _mean_latency(series, component: str, start, end) -> tuple[float | None, float]:
-    total = _sum_increase(
-        series, "lms_dependency_duration_seconds_sum", start, end, dependency_identity=component
-    )
-    calls = _sum_increase(
-        series, "lms_dependency_duration_seconds_count", start, end, dependency_identity=component
-    )
+def _mean_latency(
+    series, component: str, start, end, exclude_operations: tuple[str, ...] = ()
+) -> tuple[float | None, float]:
+    kwargs = {"dependency_identity": component, "exclude_operations": exclude_operations}
+    total = _sum_increase(series, "lms_dependency_duration_seconds_sum", start, end, **kwargs)
+    calls = _sum_increase(series, "lms_dependency_duration_seconds_count", start, end, **kwargs)
     return (total / calls if calls > 0 else None), calls
 
 
@@ -142,8 +148,9 @@ def verify(
             artifact_dir,
             {"lms_dependency_duration_seconds_sum", "lms_dependency_duration_seconds_count"},
         )
-        before, before_calls = _mean_latency(series, component, *baseline)
-        during, during_calls = _mean_latency(series, component, *active)
+        skip = config.exclude_operations
+        before, before_calls = _mean_latency(series, component, *baseline, skip)
+        during, during_calls = _mean_latency(series, component, *active, skip)
         observed = {
             "baseline_mean_s": before,
             "baseline_calls": before_calls,
@@ -163,7 +170,7 @@ def verify(
                 result,
                 observed,
                 f"mean latency trong fault ≥ {config.min_latency_ratio} × trước fault, "
-                f"≥ {config.min_calls} lời gọi",
+                f"≥ {config.min_calls} lời gọi (bỏ operation {', '.join(skip) or 'không'})",
                 now,
             )
         )

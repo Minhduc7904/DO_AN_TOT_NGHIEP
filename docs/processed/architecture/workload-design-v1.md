@@ -798,8 +798,10 @@ Máy chạy ~15 GB RAM, stack 11 runtime + observability chiếm 3,5–5 GB (pla
 | Phiên bỏ ngang vì `impatient`, `too_many_errors` hoặc `auth_failed` | < 1% số phiên |
 | `dropped_iterations` của k6 | 0 |
 | CPU từng container | < 80% kéo dài quá 1 phút |
-| Bộ nhớ từng container | < 85% giới hạn; không có container bị khởi động lại hoặc OOM |
+| Bộ nhớ từng container | < 85% giới hạn, tính theo phần không thu hồi được của cgroup v2 (`anon` + `shmem` + bộ nhớ kernel); không có container bị khởi động lại hoặc OOM |
 | Dòng `unexpected_status` (lỗi của chính workload) | 0 |
+
+Cách đo bộ nhớ đổi ở pilot task-03 tuần 15 (`aiops-platform/load/README.md`): `docker stats` báo working set, gồm page cache mà kernel thu hồi được trước khi OOM, nên Grafana từng chạm 88–90% chỉ vì page cache lúc khởi động. Kết quả tìm điểm gãy của task-02 bên dưới và đợt 1 của pilot (20/11/2026) đo theo working set, tức chặt hơn; đợt 2 của pilot (23/11/2026) đo theo `anon`; từ sau pilot đo theo phần không thu hồi được như bảng trên.
 
 **Kết quả pilot (task-02 tuần 15, 19/11/2026).** Công cụ chấm: `aiops-platform/load/tools/health-check.mjs --steps`; scenario: `scenarios/knee.js`; chi tiết từng run ở [README `load/`](../../../aiops-platform/load/README.md#kết-quả-tìm-điểm-gãy-19112026). Đơn vị là tốc độ bắt đầu phiên học viên (phiên/s); đỉnh của profile tính trên ô 60 s.
 
