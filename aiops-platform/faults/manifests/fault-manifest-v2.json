@@ -1,0 +1,169 @@
+{
+  "schema": "fault-manifest.v1",
+  "manifest_version": "2.0.0",
+  "status": "Chốt sau pilot task-03 tuần 15 (docs/processed/architecture/fault-pilot-report-v1.md). Cường độ giữ như v1; chỉ thời lượng fault của C3 đổi từ 600 s lên 900 s. v1 giữ lại vì các run pilot ghi manifest_version 1.0.0.",
+  "timeline": {
+    "run_seconds": 2880,
+    "warmup_s": 360,
+    "default_start_s": 1080,
+    "min_recovery_s": 600,
+    "note": "Run 48 phút (workload-design-v1 mục 7.2). Mặc định fault bắt đầu ở phút 18 (09:00 của ngày nén, workload-design-v1 mục 8.5); phút 0–6 là warm-up, sau khi gỡ fault giữ ít nhất 10 phút recovery. Với C3 900 s, cửa sổ align-peak chỉ được bắt đầu muộn nhất ở giây 1380 (run_seconds − min_recovery_s − 900)."
+  },
+  "cases": [
+    {
+      "case_id": "C2",
+      "fault_family": "FC",
+      "fault_type": "dependency_latency",
+      "root_cause_service": "course",
+      "root_cause_component": "course-postgres",
+      "injector": "toxiproxy",
+      "activate": [
+        [
+          "latency",
+          "course-to-postgres",
+          "200",
+          "--jitter",
+          "20"
+        ]
+      ],
+      "deactivate": [
+        [
+          "clear",
+          "course-to-postgres"
+        ]
+      ],
+      "fault_duration_s": 600,
+      "requires": [],
+      "source": "complex-case-catalogue-and-rca-result-v0 mục C2 (smoke 200 ms, PR #75); ADR-006",
+      "pilot": {
+        "fault_duration_s_v1": 600,
+        "first_symptom_lag_s": {
+          "default": 10,
+          "peak_healthy_spike": 10
+        },
+        "note": "Ở cao điểm healthy-spike (685 học viên đồng thời) cùng cường độ làm cạn pool kết nối của course: 75–81% request lỗi 504 DEPENDENCY_TIMEOUT tại gateway, hồi phục 1–2 phút sau fault_end. Cường độ không chỉnh theo profile; triệu chứng kỳ vọng ở profile spike gồm cả 504."
+      }
+    },
+    {
+      "case_id": "C3",
+      "fault_family": "FD",
+      "fault_type": "dependency_latency",
+      "root_cause_service": "ai",
+      "root_cause_component": "ai-llm-provider",
+      "injector": "llm-stub",
+      "activate": [
+        [
+          "llm",
+          "set",
+          "--latency-ms",
+          "30000",
+          "--jitter-ms",
+          "5000"
+        ]
+      ],
+      "deactivate": [
+        [
+          "llm",
+          "reset"
+        ]
+      ],
+      "fault_duration_s": 900,
+      "requires": [],
+      "source": "complex-case-catalogue-and-rca-result-v0 mục C3; trễ 30 s ± 5 s nhỏ hơn AI_COMPLETION_TIMEOUT_MS 240 s nên job chậm chứ không FAILED",
+      "pilot": {
+        "fault_duration_s_v1": 600,
+        "first_symptom_lag_s": {
+          "default": 275,
+          "peak": 70
+        },
+        "note": "Độ trễ do lúc job AI đến quyết định (lịch mặc định: job đầu tiên 264 s sau fault_start). 900 s giữ biên so với độ trễ + window + persistence ở lịch mặc định mà dataset v0 dùng. Trễ 30 s < AI_COMPLETION_TIMEOUT_MS 240 s nên job chậm, không lỗi."
+      }
+    },
+    {
+      "case_id": "C4",
+      "fault_family": "FA",
+      "fault_type": "dependency_latency",
+      "root_cause_service": "media",
+      "root_cause_component": "media-minio",
+      "injector": "toxiproxy",
+      "activate": [
+        [
+          "latency",
+          "media-to-minio",
+          "300",
+          "--jitter",
+          "30"
+        ],
+        [
+          "latency",
+          "media-worker-to-minio",
+          "300",
+          "--jitter",
+          "30"
+        ]
+      ],
+      "deactivate": [
+        [
+          "clear",
+          "media-to-minio"
+        ],
+        [
+          "clear",
+          "media-worker-to-minio"
+        ]
+      ],
+      "fault_duration_s": 600,
+      "requires": [],
+      "source": "complex-case-catalogue-and-rca-result-v0 mục C4 (smoke 300 ms, PR #75). Chuỗi 'media PENDING kẹt → cleanup xóa' cần fault dài hơn 30 phút nên không thuộc manifest này",
+      "pilot": {
+        "fault_duration_s_v1": 600,
+        "first_symptom_lag_s": {
+          "default": 100,
+          "peak": 25
+        },
+        "note": "Triệu chứng chờ lượt upload đầu tiên trong fault; media-worker (thumbnail) lộ ở 155 s (mặc định), 25 s (cao điểm). Chuỗi 'media PENDING kẹt → cleanup xóa' không lộ trong run 48 phút."
+      }
+    },
+    {
+      "case_id": "C6",
+      "fault_family": "FG",
+      "fault_type": "dependency_unavailable",
+      "root_cause_service": "identity",
+      "root_cause_component": "identity",
+      "injector": "docker",
+      "activate": [
+        [
+          "container",
+          "pause",
+          "identity"
+        ]
+      ],
+      "deactivate": [
+        [
+          "container",
+          "unpause",
+          "identity"
+        ]
+      ],
+      "fault_duration_s": 300,
+      "requires": [
+        {
+          "container_env": "identity",
+          "name": "IDENTITY_SERVICE_TOKEN_TTL_SECONDS",
+          "value": "60",
+          "why": "Rút ngắn khoảng yên lặng (đo 70–74 s với TTL 60 s); compose.faults.yaml đặt giá trị này cho MỌI run để healthy và fault run cùng cấu hình"
+        }
+      ],
+      "source": "complex-case-catalogue-and-rca-result-v0 mục C6; ADR-004; tracing-smoke",
+      "pilot": {
+        "fault_duration_s_v1": 300,
+        "first_symptom_lag_s": {
+          "default": 15,
+          "peak": 10
+        },
+        "note": "Đăng nhập lỗi ở 15 s, token dịch vụ của gateway lỗi ở 20 s (lịch mặc định) và 10 s (cao điểm); TTL 60 s nên khoảng yên lặng tùy pha làm mới. Ở cao điểm ai-worker cũng lỗi token (40 s)."
+      }
+    }
+  ],
+  "supersedes": "fault-manifest-v1.json"
+}

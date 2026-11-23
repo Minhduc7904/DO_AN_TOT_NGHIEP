@@ -77,8 +77,9 @@ CASE_TRUTH: dict[str, dict[str, Any]] = {
         "fault_target": "ai-llm-provider",
         "fault_target_kind": "dependency",
         "expected_symptom": (
-            "Job AI RUNNING lâu, tài liệu EXTRACTING lâu; lời gọi provider của ai-worker dài; "
-            "lỗi muộn ở cạnh ai-worker → course."
+            "Lời gọi provider của ai-worker dài khoảng 30 s; message run-ai-job chờ ack ở "
+            "ai-worker, job AI RUNNING lâu nhưng vẫn hoàn tất (30 s < AI_COMPLETION_TIMEOUT_MS "
+            "240 s), không lỗi. Triệu chứng chờ job AI đầu tiên trong cửa sổ fault (pilot tuần 15)."
         ),
         "expected_propagation_path": ["ai-llm-provider", "ai-worker", "ai", "course", "gateway"],
         "expected_evidence": [

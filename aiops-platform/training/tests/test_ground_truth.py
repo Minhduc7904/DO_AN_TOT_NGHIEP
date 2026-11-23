@@ -11,7 +11,7 @@ from aiops_training.ground_truth.validate import apply_verification, counter_inc
 from aiops_training.telemetry.schema import METRIC_SCHEMA, to_table
 
 MANIFEST_PATH = (
-    Path(__file__).resolve().parents[2] / "faults" / "manifests" / "fault-manifest-v1.json"
+    Path(__file__).resolve().parents[2] / "faults" / "manifests" / "fault-manifest-v2.json"
 )
 MANIFEST = json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))
 T0 = datetime(2026, 11, 18, 5, 0, tzinfo=UTC)

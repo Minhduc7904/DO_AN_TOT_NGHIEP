@@ -133,7 +133,7 @@ def _ground_truth_parser(sub: argparse._SubParsersAction) -> None:
     parser.add_argument("--repeat-index", type=int, default=0)
     parser.add_argument("--case", help="C2 | C3 | C4 | C6; bỏ trống là run healthy")
     parser.add_argument("--fault-log", type=Path, help="faults.jsonl của fault-schedule.mjs")
-    parser.add_argument("--fault-manifest", type=Path, help="fault-manifest-v1.json")
+    parser.add_argument("--fault-manifest", type=Path, help="fault-manifest-v2.json")
     parser.add_argument("--artifact", type=Path, help="Thư mục artifact export để kiểm chứng")
     parser.add_argument("--code-commit")
     parser.add_argument("--environment-profile", default="compose-full+faults")
