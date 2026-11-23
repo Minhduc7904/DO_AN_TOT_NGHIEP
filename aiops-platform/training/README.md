@@ -70,7 +70,7 @@ In bảng mỗi runtime một dòng (số metric, nhịp tim, gap, span, log, c�
 uv run aiops-training ground-truth \
   --k6-summary ../load/results/<RUN_ID>/k6-summary.json \
   --case C2 --fault-log ../load/results/<RUN_ID>/faults.jsonl \
-  --fault-manifest ../faults/manifests/fault-manifest-v1.json \
+  --fault-manifest ../faults/manifests/fault-manifest-v2.json \
   --artifact artifacts/<RUN_ID> --out artifacts/<RUN_ID>/ground-truth.json
 ```
 

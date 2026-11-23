@@ -16,12 +16,37 @@ import { createLlmStub } from './llm-stub/server.mjs';
 const manifest = JSON.parse(readFileSync(DEFAULT_MANIFEST, 'utf8'));
 
 describe('fault manifest', () => {
-  test('manifest v1 hợp lệ và có đủ bốn case MVP', () => {
+  test('manifest mặc định là v2 hợp lệ và có đủ bốn case MVP', () => {
+    assert.equal(manifest.manifest_version, '2.0.0');
     assert.deepEqual(validateManifest(manifest), []);
     assert.deepEqual(
       manifest.cases.map((item) => item.case_id),
       ['C2', 'C3', 'C4', 'C6'],
     );
+  });
+
+  test('v2 chốt sau pilot: giữ cường độ và lịch của v1, chỉ C3 dài 900 s, mỗi case có số đo pilot', () => {
+    const v1 = JSON.parse(readFileSync(new URL('./manifests/fault-manifest-v1.json', import.meta.url), 'utf8'));
+    assert.deepEqual(validateManifest(v1), []);
+    assert.deepEqual(manifest.timeline.run_seconds, v1.timeline.run_seconds);
+    for (const field of ['warmup_s', 'default_start_s', 'min_recovery_s']) {
+      assert.equal(manifest.timeline[field], v1.timeline[field], field);
+    }
+    const duration = Object.fromEntries(manifest.cases.map((item) => [item.case_id, item.fault_duration_s]));
+    assert.deepEqual(duration, { C2: 600, C3: 900, C4: 600, C6: 300 });
+    for (const item of manifest.cases) {
+      const old = v1.cases.find((entry) => entry.case_id === item.case_id);
+      assert.deepEqual(item.activate, old.activate, item.case_id);
+      assert.deepEqual(item.deactivate, old.deactivate, item.case_id);
+      assert.deepEqual(item.requires, old.requires, item.case_id);
+      assert.ok(item.pilot.first_signal_lag_s.default > 0, item.case_id);
+      // Thời lượng phải dài hơn độ trễ triệu chứng ở lịch mặc định cộng window × persistence và độ trễ thu thập (~40 s).
+      assert.ok(item.fault_duration_s > item.pilot.first_signal_lag_s.default + 40, item.case_id);
+    }
+    // C3 900 s vẫn đủ recovery khi bắt đầu ở lịch mặc định; align-peak bị giới hạn ở giây 1380.
+    const c3 = buildSchedule(manifest, 'C3');
+    assert.equal(c3.deactivate_at_s, 1980);
+    assert.equal(peakAlignedStart([2000, 2100], manifest.timeline, 900).start <= 1380, true);
   });
 
   test('báo lỗi khi thiếu trường, lệnh sai hoặc không đủ recovery', () => {

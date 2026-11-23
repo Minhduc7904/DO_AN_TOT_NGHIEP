@@ -107,7 +107,7 @@ node aiops-platform/load/tools/build-replay-plan.mjs --source assumed --profile 
 | --- | --- | --- |
 | `fetch-moodle-log.sh` | Tải `Unistudium_students_groups_logs_2022.zip` từ Zenodo; từ chối file khi md5 hoặc sha256 lệch | `data/moodle/` |
 | `moodle-to-sessions.mjs` | Cắt phiên khi nghỉ > 30 phút; ánh xạ sự kiện Moodle → trạng thái (mục 13.2); gộp sự kiện phụ, sự kiện trùng (Phụ lục B); chia **đoạn xây** ngày 0–59 và **hold-out** ngày 60–90 | `moodle-build-v1.json`, `moodle-holdout-v1.json` (định dạng `sessions.v1`), `moodle-stats-v1.json` |
-| `build-replay-plan.mjs` | Tạo kế hoạch phát lại cho k6 (`replay-plan.v1`): chọn ngày theo profile, chồng `k` ngày, nén lịch bắt đầu phiên (một ngày → `--run-seconds` 2.880), kẹp think time ở `--think-cap-s` 300 | `data/plans/<nguồn>-<profile>-k<k>-v1.json` |
+| `build-replay-plan.mjs` | Tạo kế hoạch phát lại cho k6 (`replay-plan.v1`): chọn ngày theo profile, chồng `k` ngày, nén lịch bắt đầu phiên (một ngày → `--run-seconds` 2.880), kẹp think time ở `--think-cap-s` 300. `--split train\|validation\|test` (chỉ `moodle`): chỉ chọn trong nhóm ngày của split, cho dataset | `data/plans/<nguồn>-<profile>-k<k>-v1.json`, `…-k<k>-<split>-v1.json` |
 
 Ba nguồn của `build-replay-plan.mjs` (dùng cho so sánh ở mục 10.4 của thiết kế):
 
@@ -129,6 +129,38 @@ Kết quả chuyển đổi trên log thật (18/11/2026, CSV sha256 `66bfe766�
 | `learned-normal-mixed` (seed 1) | — | 1.246 | 5.939 | 9,9% |
 
 `k` = 4 là giá trị khởi đầu; pilot ở tuần 15 chốt `k` theo tải mục tiêu (mục 13.5) và RAM của máy.
+
+### Kế hoạch phiên theo split cho dataset
+
+Ba kế hoạch ở trên là của pilot. Dataset (task-04 tuần 15, [evaluation-protocol-v1](../../docs/processed/architecture/evaluation-protocol-v1.md) mục 5.4) lấy phiên của train, validation và test từ **các nhóm ngày tách rời** của đoạn xây, theo luật `day-split-v1` (`DAY_SPLIT` trong `tools/replay-plan.mjs`), ghi trước khi sinh kế hoạch:
+
+- Xếp 60 ngày theo số phiên giảm dần (bằng nhau thì ngày nhỏ trước), chia kiểu rắn bò theo thứ tự test, validation, train, train, validation, test, …; mỗi split 20 ngày.
+- Lý do chia phân tầng: số phiên tăng dần theo học kỳ (ngày 0–19 cao nhất 832 phiên, ngày 40 có 1.376), nên cắt ba khối ngày liền nhau cho ba split có tải rất khác nhau.
+- Ngày đông nhất vào test, để E1 (báo động giả khi tải cao hợp lệ) được đo ở tải thật cao nhất. Train và validation thấy tải thấp hơn một chút, tức là lệch về phía bất lợi cho phương pháp, không phải có lợi.
+- Trong mỗi split, chọn ngày như trước nhưng chỉ trong nhóm ngày của split: `normal-mixed` lấy `k` ngày gần trung vị nhất, `healthy-spike` lấy `k` ngày đông nhất.
+- Hold-out (ngày 60–90) không thuộc đoạn xây nên không vào split nào.
+
+```bash
+for s in train validation test; do for p in normal-mixed healthy-spike; do
+  node aiops-platform/load/tools/build-replay-plan.mjs --source moodle --profile $p --k 4 --split $s
+done; done
+```
+
+Kết quả ngày 20/11/2026 (sha256 ghi trong [dataset manifest](../experiments/datasets/dataset-v0.json)); đỉnh là số phiên bắt đầu lớn nhất trong ô 60 s, so với `λ_knee` ≥ 5,6 phiên/s bằng `tools/check-profile-load.mjs`:
+
+| Split | Profile | Ngày | Phiên | Thao tác | Đỉnh (phiên/s) | Giới hạn |
+| --- | --- | --- | ---: | ---: | ---: | --- |
+| train | `normal-mixed` | 36, 42, 31, 48 | 1.266 | 6.026 | 1,63 | ≤ 1,96: đạt |
+| train | `healthy-spike` | 39, 26, 33, 20 | 3.372 | 17.490 | 3,83 | ≤ 4,48: đạt |
+| validation | `normal-mixed` | 6, 52, 29, 13 | 1.161 | 5.065 | **2,43** | ≤ 1,96: **trượt** |
+| validation | `healthy-spike` | 46, 41, 19, 44 | 3.400 | 17.666 | 3,53 | ≤ 4,48: đạt |
+| test | `normal-mixed` | 30, 43, 35, 28 | 1.151 | 5.305 | 1,22 | ≤ 1,96: đạt |
+| test | `healthy-spike` | 40, 32, 45, 37 | 3.748 | 21.443 | 4,02 | ≤ 4,48: đạt |
+
+Đỉnh của validation `normal-mixed` đến từ ngày 6 và ngày 13 (cách nhau đúng 7 ngày): cả hai có một đợt đăng nhập dồn khoảng 12:00 (81 và 49 phiên trong cùng ô 60 s sau nén), có lẽ là buổi học cố định trong tuần. Chồng hai ngày cùng thứ làm hai đợt trùng giờ. Kế hoạch được giữ nguyên, không đổi luật chọn ngày sau khi xem kết quả:
+
+- `λ_knee` ≥ 5,6 là cận dưới, stack khỏe ở 5,6 phiên/s duy trì 3 phút. Đỉnh 2,43 phiên/s chỉ kéo dài một ô 60 s và bằng 0,43 lần cận dưới đó.
+- Run healthy validation `normal-mixed` phải đạt tiêu chí "khỏe" của workload-design-v1 mục 8.4 (`tools/health-check.mjs`). Nếu trượt, hạ `k` của kế hoạch này và ghi lại.
 
 ## Mức 2+: phát lại phiên học viên (`scenarios/student-replay.js`)
 
@@ -269,6 +301,7 @@ Stack đầy đủ + lớp fault, TTL token 60 s, máy Linux ~15 GB RAM, 12 core
 - **Giới hạn của phép đo:**
   - `λ_knee` ≥ 5,6 dựa trên r2 (4,0–5,6 phiên/s). Các bậc 0,2–3,8 phiên/s với Grafana 768 MiB suy từ r1, nơi chỉ có Grafana vi phạm.
   - LMS không đặt giới hạn bộ nhớ, nên `mem_perc` của nó tính theo RAM cả máy và tiêu chí bộ nhớ trên thực tế chỉ có tác dụng với các container observability. LMS khỏe chủ yếu dựa trên p95, phản hồi ngoài mong đợi và phiên bỏ ngang.
+  - **Bộ nhớ đo theo phần không thu hồi được của cgroup (từ pilot task-03 tuần 15).** `docker stats` báo working set, gồm cả page cache đang "active". Trong pilot, Grafana có working set 88–90% giới hạn ở khoảng 12 phút đầu sau khi stack khởi động (do cài plugin lúc khởi động), rồi tự giảm về khoảng 55%, trong khi bộ nhớ không thu hồi được (`anon`) chỉ 220–420 MiB. Page cache được kernel thu hồi trước khi OOM, nên `sample-docker-stats.mjs` ghi thêm `mem_unreclaimable_mib`, `mem_unreclaimable_perc` (đọc `memory.stat` của cgroup v2: `anon` + `shmem` + bộ nhớ kernel; thử đường dẫn của driver systemd rồi cgroupfs, không đọc được thì ghi cảnh báo `SAMPLER`). `health.mjs` so tiêu chí bộ nhớ theo từng mẫu: `mem_unreclaimable_perc`, rồi `mem_anon_perc` (mẫu của đợt 2 pilot), rồi `mem_perc`; `mem_basis` ghi cách đo của mẫu lớn nhất. Ngưỡng 85% không đổi. Grafana cũng đã tắt tự cập nhật plugin lúc khởi động (`GF_PLUGINS_PREINSTALL_AUTO_UPDATE=false`), để phiên bản plugin không đổi giữa các run.
   - Phiên bận trung bình 208 s, dài hơn 60 s bỏ ở đầu bậc, nên cửa sổ chấm của mỗi bậc chưa ổn định hẳn ở tốc độ của bậc đó. Ảnh hưởng nhỏ vì hai bậc liền nhau chỉ cách 0,2 phiên/s.
   - Grafana ở r2 vẫn còn tăng chậm cuối run (564 → 569 MiB trong 16 phút cuối), còn run profile dài ~50 phút: kiểm lại bộ nhớ Grafana ở run đầu tiên của task-03.
 - **Mức tải chốt:** `normal-mixed@v1` = kế hoạch `moodle-normal-mixed-k4-v1`, `healthy-spike@v1` = `moodle-healthy-spike-k4-v1`, cùng lịch giảng viên/admin `params/staff-assumed-v1.json`. Số VU dựng sẵn không thuộc nội dung tải nên đổi số VU (task-02 tuần 15) không đổi phiên bản.

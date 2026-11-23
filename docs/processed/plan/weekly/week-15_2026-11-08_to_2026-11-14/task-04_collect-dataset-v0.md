@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-04_collect-dataset-v0` |
 | Tuần | `week-15_2026-11-08_to_2026-11-14` |
-| Trạng thái | Đã giao |
+| Trạng thái | Đang thực hiện |
 | Người phụ trách | Bách |
 | Collaborator | Không có |
 | Ưu tiên | Cao |
@@ -64,5 +64,8 @@ Theo [evaluation-protocol-v1](../../../architecture/evaluation-protocol-v1.md) m
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 19/11/2026 — lập card.
+- Cập nhật gần nhất: 20/11/2026 — xong phần không cần chạy stack (làm song song với pilot của task-03): luật chia ngày `day-split-v1`, kế hoạch phiên cho ba split, dataset manifest v0 với 28 slot, công cụ `check-dataset.mjs` có test, spec của 6 run healthy; bản nháp [dataset-v0](../../../architecture/dataset-v0.md).
 - Ghi chú/tồn đọng:
+  - Chờ task-03: fault manifest v2, slot validation trùng cao điểm, quyết định profile đối chứng; sau đó viết spec 4 fault run validation.
+  - Kế hoạch validation `normal-mixed` có đỉnh 2,43 phiên/s, vượt 0,35 × `λ_knee` (1,96). Giữ kế hoạch; run healthy validation phải đạt tiêu chí mục 8.4, nếu trượt thì hạ `k` (dataset-v0 mục 2).
+  - Còn chạy 10 run (khoảng 13 giờ máy) sau khi task-03 xong.

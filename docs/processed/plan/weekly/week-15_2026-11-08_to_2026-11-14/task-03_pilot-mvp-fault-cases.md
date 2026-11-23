@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-03_pilot-mvp-fault-cases` |
 | Tuần | `week-15_2026-11-08_to_2026-11-14` |
-| Trạng thái | Đã giao |
+| Trạng thái | Chờ review |
 | Người phụ trách | Bách |
 | Collaborator | Không có |
 | Ưu tiên | Cao |
@@ -53,22 +53,26 @@ Theo [plan v0.4 tuần 15](../../plan-v0.4-24-weeks.md#tuần-15--experiment-run
 
 ## Definition of Done
 
-- [ ] Mỗi case có fault run pilot ở lịch mặc định và ở cao điểm; mỗi run có `RunGroundTruth` và dòng ledger.
-- [ ] Mỗi case có `case_verification_status` theo năm điều kiện mục 5.2, kèm bằng chứng (truy vấn, số đo) hoặc lý do loại/mô tả lại.
-- [ ] Độ trễ triệu chứng của từng case được đo; thời lượng fault active đã chốt lớn hơn độ trễ đó cộng window và persistence.
-- [ ] Fault manifest v2 có tham số đã chốt và test; quyết định về profile đối chứng có lý do.
-- [ ] PR mở vào `main`; URL PR ghi vào card.
+- [x] Mỗi case có fault run pilot ở lịch mặc định và ở cao điểm; mỗi run có `RunGroundTruth` và dòng ledger.
+- [x] Mỗi case có `case_verification_status` theo năm điều kiện mục 5.2, kèm bằng chứng (truy vấn, số đo) hoặc lý do loại/mô tả lại.
+- [x] Độ trễ triệu chứng của từng case được đo; thời lượng fault active đã chốt lớn hơn độ trễ đó cộng window và persistence.
+- [x] Fault manifest v2 có tham số đã chốt và test; quyết định về profile đối chứng có lý do.
+- [x] PR mở vào `main`; URL PR ghi vào card.
 
 ## Liên kết hồ sơ thực hiện
 
 - Input workspace: Không tạo (giai đoạn tự bắt kịp; bằng chứng nằm trong PR).
 - Output workspace: Không tạo.
-- Pull request: Chưa tạo.
-- Kết quả review: Chưa review.
+- Pull request: [#95](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/95).
+- Kết quả review: Chờ review. Đã review bằng agent riêng hai vòng và sửa các điểm nêu (xem mô tả PR).
 
 > URL/số PR và `Chờ review` phải được commit/push vào PR head trước review. Thành viên còn lại phải gửi `APPROVED` hợp lệ trên GitHub; sau đó người phụ trách finalization metadata, ghi `Hoàn thành` trên chính branch/PR và tự merge task của mình. Card chỉ canonically hoàn thành khi commit đó vào nhánh canonical; xem [vòng đời task canonical](../../../rules/git-and-pull-request-rules.md#vòng-đời-task-canonical).
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 19/11/2026 — lập card.
+- Cập nhật gần nhất: 23/11/2026 — chạy xong 9 run pilot (20/11 và 23/11), chốt fault manifest v2, hoàn tất [báo cáo pilot](../../../architecture/fault-pilot-report-v1.md).
+- Kết quả: cả 4 case `case_verification_status = run`; C3 tăng thời lượng fault lên 900 s; C4 bỏ chuỗi job dọn media khỏi mô tả; không thêm profile healthy đối chứng.
+- Sửa môi trường trong lúc pilot: Tempo 1,5 GiB (OOM khi export), tắt tự nâng plugin của Grafana, tiêu chí bộ nhớ mục 8.4 đo bằng `anon` của cgroup; bộ đo triệu chứng `aiops-training symptoms`.
 - Ghi chú/tồn đọng:
+  - C2 ở cao điểm `healthy-spike` làm cạn pool `course` (75–81% request lỗi 504); dataset v0 không đặt fault trên profile spike nên chưa ảnh hưởng.
+  - Trace `truncated` ở mọi run (16/129 truy vấn chạm giới hạn) là giới hạn đã biết của export.

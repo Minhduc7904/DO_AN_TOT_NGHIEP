@@ -22,7 +22,7 @@ import {
   splitBuildHoldout,
   toActions,
 } from './moodle/sessionize.mjs';
-import { buildPlan, selectDays } from './replay-plan.mjs';
+import { assignDaySplits, buildPlan, DAY_SPLIT, selectDays } from './replay-plan.mjs';
 import { hourlyStarts, sessionsPerDay } from './session-stats.mjs';
 
 const params = JSON.parse(
@@ -233,4 +233,22 @@ test('selectDays và buildPlan: chọn ngày theo profile, nén lịch, kẹp th
   );
   assert.equal(plan.sessions[1].actions[1].think_s, 300);
   assert.equal(plan.summary.sessions, 2);
+});
+
+test('assignDaySplits: phân tầng rắn bò theo tải, mỗi ngày đúng một split, tái lập', () => {
+  // Số phiên theo ngày 0..8; xếp giảm dần: ngày 1, 3, 5, 7, 8, 6, 4, 2, 0.
+  const counts = [10, 90, 20, 80, 30, 70, 40, 60, 50];
+  const perDay = counts.map((sessions, day) => ({ day, sessions }));
+  const splits = assignDaySplits(perDay);
+  // Lượt 1 (ngày 1, 3, 5) → test, validation, train; lượt 2 đảo chiều (ngày 7, 8, 6) → train,
+  // validation, test; lượt 3 (ngày 4, 2, 0) → test, validation, train.
+  assert.deepEqual(splits, { test: [1, 4, 6], validation: [2, 3, 8], train: [0, 5, 7] });
+  assert.equal(DAY_SPLIT.rule, 'day-split-v1');
+  const all = Object.values(splits).flat().sort((a, b) => a - b);
+  assert.deepEqual(all, perDay.map((item) => item.day));
+  assert.deepEqual(assignDaySplits([...perDay].reverse()), splits);
+  // Bằng phiên: ngày nhỏ trước.
+  const tie = assignDaySplits([0, 1, 2].map((day) => ({ day, sessions: 5 })));
+  assert.deepEqual(tie, { test: [0], validation: [1], train: [2] });
+  assert.throws(() => assignDaySplits(perDay, ['a', 'a']), /khác nhau/u);
 });

@@ -11,6 +11,11 @@
  * | Bộ nhớ từng container | < 85% giới hạn; không restart, không OOM |
  * | Dòng `unexpected_status` | 0 |
  *
+ * Bộ nhớ của mỗi mẫu so bằng phần không thu hồi được của cgroup (`mem_unreclaimable_perc`: anon, shmem,
+ * bộ nhớ kernel) khi bộ lấy mẫu đọc được cgroup; mẫu ghi trong pilot task-03 có `mem_anon_perc`; mẫu cũ
+ * hơn chỉ có `mem_perc` của `docker stats` (working set, gồm page cache). `mem_basis` ghi cách đo của
+ * mẫu có giá trị lớn nhất.
+ *
  * Container k6 (bộ sinh tải) không đặt giới hạn CPU và được dùng nhiều core: CPU của nó so với số core
  * của máy (`hostCpus`), chỉ dùng để xếp nguyên nhân.
  */
@@ -83,6 +88,8 @@ export function resourceStats(samples, from, to, { sampleS = 15, hostCpus = 1 } 
   let hostCpuMax = null;
   for (const sample of samples) {
     if (!inWindow(Date.parse(sample.ts), from, to)) continue;
+    // Dòng của chính bộ lấy mẫu (lỗi `docker stats`, cảnh báo không đọc được cgroup), không phải container.
+    if (sample.name === 'SAMPLER') continue;
     if (sample.name === 'HOST') {
       if (sample.mem_available_mb !== undefined) {
         hostMinAvailableMb = Math.min(hostMinAvailableMb ?? Infinity, sample.mem_available_mb);
@@ -94,16 +101,23 @@ export function resourceStats(samples, from, to, { sampleS = 15, hostCpus = 1 } 
     byName.get(sample.name).push(sample);
   }
   const containers = {};
+  const memoryOf = (sample) => {
+    if (sample.mem_unreclaimable_perc != null) return [sample.mem_unreclaimable_perc, 'unreclaimable'];
+    if (sample.mem_anon_perc != null) return [sample.mem_anon_perc, 'anon'];
+    return [sample.mem_perc ?? 0, 'working_set'];
+  };
   for (const [name, list] of byName) {
     list.sort((a, b) => Date.parse(a.ts) - Date.parse(b.ts));
     let run = 0;
     let longest = 0;
     let cpuMax = 0;
-    let memMax = 0;
+    let memMax = -1;
+    let memBasis = 'working_set';
     for (const sample of list) {
       const cpu = sample.cpu_perc / (sample.cpu_limit || (isClientContainer(name, sample) ? hostCpus : 1));
       cpuMax = Math.max(cpuMax, cpu);
-      memMax = Math.max(memMax, sample.mem_perc ?? 0);
+      const [mem, basis] = memoryOf(sample);
+      if (mem > memMax) [memMax, memBasis] = [mem, basis];
       run = cpu > HEALTH_LIMITS.cpu_perc ? run + 1 : 0;
       longest = Math.max(longest, run);
     }
@@ -113,6 +127,7 @@ export function resourceStats(samples, from, to, { sampleS = 15, hostCpus = 1 } 
       // n mẫu liên tiếp trên ngưỡng phủ khoảng n × chu kỳ lấy mẫu.
       cpu_over_limit_longest_s: longest * sampleS,
       mem_max_perc: memMax,
+      mem_basis: memBasis,
       samples: list.length,
     };
   }
