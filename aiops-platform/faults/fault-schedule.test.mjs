@@ -39,9 +39,9 @@ describe('fault manifest', () => {
       assert.deepEqual(item.activate, old.activate, item.case_id);
       assert.deepEqual(item.deactivate, old.deactivate, item.case_id);
       assert.deepEqual(item.requires, old.requires, item.case_id);
-      assert.ok(item.pilot.first_symptom_lag_s.default > 0, item.case_id);
+      assert.ok(item.pilot.first_signal_lag_s.default > 0, item.case_id);
       // Thời lượng phải dài hơn độ trễ triệu chứng ở lịch mặc định cộng window × persistence và độ trễ thu thập (~40 s).
-      assert.ok(item.fault_duration_s > item.pilot.first_symptom_lag_s.default + 40, item.case_id);
+      assert.ok(item.fault_duration_s > item.pilot.first_signal_lag_s.default + 40, item.case_id);
     }
     // C3 900 s vẫn đủ recovery khi bắt đầu ở lịch mặc định; align-peak bị giới hạn ở giây 1380.
     const c3 = buildSchedule(manifest, 'C3');

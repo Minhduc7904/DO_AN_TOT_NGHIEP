@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { classifyCause, droppedByStep, evaluateHealth, evaluateSteps, resourceStats, restartEvents, trafficStats } from './health.mjs';
-import { anonMib, parseSize, parseStatsLine } from './sample-docker-stats.mjs';
+import { CGROUP_PATHS, parseSize, parseStatsLine, unreclaimableMib } from './sample-docker-stats.mjs';
 
 const T0 = Date.parse('2026-11-19T10:00:00Z');
 const at = (s) => new Date(T0 + s * 1000).toISOString();
@@ -225,18 +225,30 @@ test('đọc docker stats: đơn vị bộ nhớ và phần trăm', () => {
   });
 });
 
-test('bộ nhớ: dùng anon của cgroup khi có (page cache thu hồi được không tính), mẫu cũ dùng mem_perc', () => {
-  assert.equal(anonMib('anon 1048576\nfile 524288000\nanon_thp 0\n'), 1);
-  assert.equal(anonMib('file 10\n'), null);
+test('bộ nhớ: dùng phần không thu hồi được của cgroup, mẫu pilot dùng anon, mẫu cũ dùng mem_perc', () => {
+  const MiB = 1024 * 1024;
+  // anon + shmem + kernel; page cache (`file`) không tính.
+  assert.equal(unreclaimableMib(`anon ${2 * MiB}\nfile ${500 * MiB}\nshmem ${MiB}\nkernel ${MiB}\n`), 4);
+  // Kernel cũ không có dòng `kernel`: cộng các thành phần.
+  const old = `anon ${MiB}\nkernel_stack ${MiB}\npagetables ${MiB}\nslab_unreclaimable ${MiB}\nslab_reclaimable ${9 * MiB}\n`;
+  assert.equal(unreclaimableMib(old), 4);
+  assert.equal(unreclaimableMib('file 10\n'), null);
+  assert.ok(CGROUP_PATHS.some((path) => path('abc').includes('/docker/abc/')));
   const samples = [
-    // Grafana: working set 88% do page cache lúc khởi động, anon chỉ 54%.
-    sample(0, 'aiops-lms-grafana-1', 5, { mem_perc: 88, mem_anon_perc: 54 }),
-    sample(15, 'aiops-lms-grafana-1', 5, { mem_perc: 60, mem_anon_perc: 55 }),
+    // Grafana: working set 88% do page cache lúc khởi động, phần không thu hồi được chỉ 54%.
+    sample(0, 'aiops-lms-grafana-1', 5, { mem_perc: 88, mem_unreclaimable_perc: 54 }),
+    sample(15, 'aiops-lms-grafana-1', 5, { mem_perc: 60, mem_unreclaimable_perc: 55 }),
     sample(0, 'aiops-lms-tempo-1', 5, { mem_perc: 90, mem_anon_perc: 87 }),
+    // Mẫu thiếu cgroup (container vừa tạo lại) dùng working set; basis theo mẫu lớn nhất.
+    sample(0, 'aiops-lms-loki-1', 5, { mem_perc: 70, mem_unreclaimable_perc: 40 }),
+    sample(15, 'aiops-lms-loki-1', 5, { mem_perc: 72 }),
   ];
   const stats = resourceStats(samples, T0, T0 + 120_000);
   assert.equal(stats.containers['aiops-lms-grafana-1'].mem_max_perc, 55);
-  assert.equal(stats.containers['aiops-lms-grafana-1'].mem_basis, 'anon');
+  assert.equal(stats.containers['aiops-lms-grafana-1'].mem_basis, 'unreclaimable');
+  assert.equal(stats.containers['aiops-lms-tempo-1'].mem_basis, 'anon');
+  assert.equal(stats.containers['aiops-lms-loki-1'].mem_max_perc, 72);
+  assert.equal(stats.containers['aiops-lms-loki-1'].mem_basis, 'working_set');
   const { criteria } = evaluateHealth(healthyInput({ samples }));
   assert.equal(criteria.memory.pass, false);
   assert.deepEqual(criteria.memory.value, ['aiops-lms-tempo-1 87.0%']);

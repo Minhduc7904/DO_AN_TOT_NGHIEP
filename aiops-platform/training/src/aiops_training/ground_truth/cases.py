@@ -81,7 +81,8 @@ CASE_TRUTH: dict[str, dict[str, Any]] = {
             "ai-worker, job AI RUNNING lâu nhưng vẫn hoàn tất (30 s < AI_COMPLETION_TIMEOUT_MS "
             "240 s), không lỗi. Triệu chứng chờ job AI đầu tiên trong cửa sổ fault (pilot tuần 15)."
         ),
-        "expected_propagation_path": ["ai-llm-provider", "ai-worker", "ai", "course", "gateway"],
+        # Pilot tuần 15: ai, course và gateway không có triệu chứng với trễ 30 s (job không lỗi).
+        "expected_propagation_path": ["ai-llm-provider", "ai-worker"],
         "expected_evidence": [
             _evidence(
                 "dependency",

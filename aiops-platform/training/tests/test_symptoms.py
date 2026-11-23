@@ -88,14 +88,52 @@ def test_latency_onset_lag_and_roles(tmp_path):
     assert result["outside_request_path_observed"] is False
 
 
-def test_single_slow_window_is_not_a_symptom(tmp_path):
+def test_single_slow_sample_is_not_a_symptom_with_default_window(tmp_path):
+    # Cửa sổ 15 s trượt bước 5 s: mẫu 1200 nằm trong 3 cửa sổ trượt liền nhau, nhưng persistence
+    # đếm cửa sổ không chồng nhau nên một mẫu đơn lẻ không đủ.
     spike = lambda s: 0.25 if s == 1200 else 0.005  # noqa: E731
     rows = latency("course", "course-postgres", spike)
-    signal = by_id(run("C2", artifact(tmp_path, rows), window_s=5))[
-        "course:course-postgres:latency"
-    ]
+    signal = by_id(run("C2", artifact(tmp_path, rows)))["course:course-postgres:latency"]
     assert signal["observed"] is False
-    assert signal["peak_during_fault"] == pytest.approx(0.25)
+    assert signal["peak_during_fault"] > 0.05
+
+
+def test_single_error_is_not_a_symptom_but_two_spaced_errors_are(tmp_path):
+    def errors(steps_with_error):
+        rows, total = [], 0
+        for step in STEPS:
+            total += step in steps_with_error
+            rows.append(
+                metric(
+                    "lms_dependency_error_count_total",
+                    step,
+                    total,
+                    service_name="ai-worker",
+                    dependency_identity="ai-worker-identity-token",
+                )
+            )
+        return rows
+
+    key = "ai-worker:ai-worker-identity-token:errors"
+    one = by_id(run("C6", artifact(tmp_path, errors({1100}))))[key]
+    assert one["observed"] is False and one["status"] == "not_observed"
+    (tmp_path / "b").mkdir()
+    two = by_id(run("C6", artifact(tmp_path / "b", errors({1100, 1115}))))[key]
+    assert two["observed"] is True and two["lag_s"] == 100
+
+
+def test_no_traffic_and_missing_service_are_not_healthy(tmp_path):
+    # Không lời gọi nào trong khoảng tìm → no_traffic, không phải "không vượt ngưỡng".
+    calls = lambda s: 2 if s < FAULT[0] - 30 else 0  # noqa: E731
+    rows = latency("scheduler-worker", "scheduler-worker-media", lambda s: 0.01, calls_at=calls)
+    signals = by_id(run("C4", artifact(tmp_path, rows)))
+    assert signals["scheduler-worker:scheduler-worker-media:latency"]["status"] == "no_traffic"
+    # Counter lỗi vắng series mà service không export metric nào → no_data (mất dữ liệu).
+    signals = by_id(run("C6", artifact(tmp_path, rows)))
+    assert (
+        signals["notification-worker:notification-worker-identity-token:errors"]["status"]
+        == "no_data"
+    )
 
 
 def test_small_absolute_increase_is_ignored(tmp_path):

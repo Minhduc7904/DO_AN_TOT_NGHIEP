@@ -37,7 +37,7 @@
       "source": "complex-case-catalogue-and-rca-result-v0 mục C2 (smoke 200 ms, PR #75); ADR-006",
       "pilot": {
         "fault_duration_s_v1": 600,
-        "first_symptom_lag_s": {
+        "first_signal_lag_s": {
           "default": 10,
           "peak_healthy_spike": 10
         },
@@ -72,11 +72,11 @@
       "source": "complex-case-catalogue-and-rca-result-v0 mục C3; trễ 30 s ± 5 s nhỏ hơn AI_COMPLETION_TIMEOUT_MS 240 s nên job chậm chứ không FAILED",
       "pilot": {
         "fault_duration_s_v1": 600,
-        "first_symptom_lag_s": {
+        "first_signal_lag_s": {
           "default": 275,
           "peak": 70
         },
-        "note": "Độ trễ do lúc job AI đến quyết định (lịch mặc định: job đầu tiên 264 s sau fault_start). 900 s giữ biên so với độ trễ + window + persistence ở lịch mặc định mà dataset v0 dùng. Trễ 30 s < AI_COMPLETION_TIMEOUT_MS 240 s nên job chậm, không lỗi."
+        "note": "Độ trễ do lúc job AI đến quyết định: job đầu tiên sau phút 18 ở 14–329 s trên 7 run normal-mixed không bị fault chặn đăng nhập (458 s ở run C6). 900 s giữ biên so với độ trễ + LLM 30 s + window × persistence ở lịch mặc định mà dataset v0 dùng. Trễ 30 s < AI_COMPLETION_TIMEOUT_MS 240 s nên job chậm, không lỗi."
       }
     },
     {
@@ -117,11 +117,11 @@
       "source": "complex-case-catalogue-and-rca-result-v0 mục C4 (smoke 300 ms, PR #75). Chuỗi 'media PENDING kẹt → cleanup xóa' cần fault dài hơn 30 phút nên không thuộc manifest này",
       "pilot": {
         "fault_duration_s_v1": 600,
-        "first_symptom_lag_s": {
+        "first_signal_lag_s": {
           "default": 100,
           "peak": 25
         },
-        "note": "Triệu chứng chờ lượt upload đầu tiên trong fault; media-worker (thumbnail) lộ ở 155 s (mặc định), 25 s (cao điểm). Chuỗi 'media PENDING kẹt → cleanup xóa' không lộ trong run 48 phút."
+        "note": "Triệu chứng chờ lượt upload đầu tiên trong fault; gateway → media ở 110 s (mặc định) và 35 s (cao điểm), media-worker (thumbnail) ở 155 s và 25 s. Chuỗi 'media PENDING kẹt → cleanup xóa' không lộ trong run 48 phút."
       }
     },
     {
@@ -157,13 +157,14 @@
       "source": "complex-case-catalogue-and-rca-result-v0 mục C6; ADR-004; tracing-smoke",
       "pilot": {
         "fault_duration_s_v1": 300,
-        "first_symptom_lag_s": {
+        "first_signal_lag_s": {
           "default": 15,
           "peak": 10
         },
-        "note": "Đăng nhập lỗi ở 15 s, token dịch vụ của gateway lỗi ở 20 s (lịch mặc định) và 10 s (cao điểm); TTL 60 s nên khoảng yên lặng tùy pha làm mới. Ở cao điểm ai-worker cũng lỗi token (40 s)."
+        "note": "Đăng nhập lỗi ở 15 s; token dịch vụ của gateway: span lỗi đầu tiên ở 10 s (lịch mặc định) và 1,2 s (cao điểm), bộ đo metric thấy ở 20 s và 10 s; TTL 60 s nên khoảng yên lặng tùy pha làm mới. Nhánh worker mất token chưa xác nhận (chỉ 1 lỗi ở ai-worker)."
       }
     }
   ],
-  "supersedes": "fault-manifest-v1.json"
+  "supersedes": "fault-manifest-v1.json",
+  "pilot_fields": "first_signal_lag_s: độ trễ (s, làm tròn) từ fault_start tới tín hiệu sớm nhất ở mọi vai trò, kể cả nguyên nhân, đo bằng aiops-training symptoms (cận trên). default: lịch mặc định; peak: cửa sổ align-peak của manifest v1."
 }

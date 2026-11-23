@@ -17,9 +17,17 @@ Mỗi tín hiệu được tính trên lưới thời điểm của mẫu metric
 - `stall`: counter (ví dụ CPU của tiến trình) không tăng trong cả cửa sổ, trong khi trước fault
   luôn tăng: tiến trình ngừng chạy dù series vẫn còn mẫu.
 
-Thời điểm triệu chứng là **cuối** cửa sổ đầu tiên vượt ngưỡng và vượt tiếp ở `persistence` cửa sổ có
-dữ liệu kế tiếp, nên độ trễ đo được là cận trên với sai số tối đa `window_s` cộng độ trễ thu thập
-(counter 4–10 s, mục 7.2).
+Thời điểm triệu chứng là **cuối** cửa sổ đầu tiên vượt ngưỡng, với điều kiện `persistence − 1`
+cửa sổ **không chồng nhau** có dữ liệu kế tiếp (mỗi cửa sổ dài `window_s`, nối đuôi nhau) cũng
+vượt ngưỡng.
+Cửa sổ trượt theo bước 5 s nên mỗi mẫu nằm trong 3 cửa sổ trượt liền nhau; persistence phải đếm trên
+cửa sổ không chồng nhau thì một mẫu đơn lẻ (một lỗi, một lời gọi chậm) mới không đủ thành triệu
+chứng. Độ trễ đo được là cận trên với sai số tối đa `window_s` cộng độ trễ thu thập (counter 4–10 s,
+mục 7.2).
+
+Trạng thái mỗi tín hiệu: `observed`; `not_observed` (có dữ liệu, không vượt ngưỡng); `no_traffic`
+(trong khoảng tìm không cửa sổ nào có lời gọi, ví dụ không có job dùng dependency đó); `no_data`
+(không có series, hoặc counter vắng series mà service cũng không export metric nào trong khoảng đó).
 """
 
 from __future__ import annotations
@@ -31,6 +39,8 @@ from typing import Any, Literal
 
 from ..telemetry.window import parse_utc
 from .validate import SERIES_KEY, counter_increase, load_metrics
+
+HEARTBEAT_METRIC = "process_cpu_time_seconds_total"
 
 Kind = Literal["latency", "counter", "gauge", "stall"]
 #: `root_cause`: chính thành phần bị lỗi; `request_path`: service nằm trên đường request đi qua
@@ -163,7 +173,7 @@ CASE_SIGNALS: dict[str, list[SymptomSignal]] = {
 class SymptomConfig:
     baseline_s: float = 300.0
     window_s: float = 15.0
-    #: Số cửa sổ có dữ liệu liên tiếp (tính cả cửa sổ đầu) phải vượt ngưỡng.
+    #: Số cửa sổ không chồng nhau có dữ liệu liên tiếp (tính cả cửa sổ đầu) phải vượt ngưỡng.
     persistence: int = 2
     latency_ratio: float = 2.0
     #: Mức tăng tuyệt đối tối thiểu: tránh báo nhầm khi trước fault chỉ có vài lời gọi vài ms (trễ
@@ -244,9 +254,12 @@ def _evaluate(signal, all_series, fault_start, fault_end, config) -> dict[str, A
         "lag_s": None,
     }
     if not primary.points:
-        # Counter có nhãn chỉ sinh series sau lần tăng đầu tiên: không có series là 0 lỗi cả run
-        # (không phải thiếu dữ liệu). Các loại khác không có series là không quan sát được.
-        status = "not_observed" if signal.kind == "counter" else "no_data"
+        # Counter có nhãn chỉ sinh series sau lần tăng đầu tiên: không có series là 0 lỗi cả run,
+        # nhưng chỉ khi service vẫn export metric trong khoảng tìm (không thì là mất dữ liệu).
+        exported = signal.kind == "counter" and _service_exported(
+            all_series, signal.match.get("service_name"), base[0], search_end
+        )
+        status = "not_observed" if exported else "no_data"
         return {**result, "status": status, "series_absent": True}
 
     if count_series is not None:
@@ -303,11 +316,24 @@ def _evaluate(signal, all_series, fault_start, fault_end, config) -> dict[str, A
         if fault_start < ts <= search_end and (v := value_at(ts)) is not None
     ]
     result["peak_during_fault"] = max((v for _, v in during), default=None)
-    for index, (ts, value) in enumerate(during):
-        if not exceeds(value):
-            continue
-        following = during[index : index + config.persistence]
-        if len(following) == config.persistence and all(exceeds(v) for _, v in following):
+
+    def persists(ts: datetime) -> bool:
+        # `persistence − 1` cửa sổ nối đuôi (ts, ts + W], (ts + W, ts + 2W]… có dữ liệu cũng vượt.
+        needed, end = config.persistence - 1, ts
+        while needed > 0:
+            end += window
+            if end > search_end:
+                return False
+            value = value_at(end)
+            if value is None:
+                continue
+            if not exceeds(value):
+                return False
+            needed -= 1
+        return True
+
+    for ts, value in during:
+        if exceeds(value) and persists(ts):
             result.update(
                 observed=True,
                 onset=ts.isoformat().replace("+00:00", "Z"),
@@ -315,8 +341,19 @@ def _evaluate(signal, all_series, fault_start, fault_end, config) -> dict[str, A
                 after_fault_end=ts > fault_end,
             )
             break
-    result["status"] = "observed" if result["observed"] else "not_observed"
+    if result["observed"]:
+        result["status"] = "observed"
+    else:
+        result["status"] = "not_observed" if during else "no_traffic"
     return result
+
+
+def _service_exported(all_series, service: str | None, start: datetime, end: datetime) -> bool:
+    for key, points in all_series.items():
+        fields = dict(zip(SERIES_KEY, key, strict=True))
+        if fields.get("service_name") == service and any(start <= ts <= end for ts, _ in points):
+            return True
+    return False
 
 
 def measure_symptoms(
@@ -330,7 +367,8 @@ def measure_symptoms(
     if case_id not in CASE_SIGNALS:
         raise ValueError(f"Không có tín hiệu triệu chứng cho case {case_id}")
     signals = CASE_SIGNALS[case_id]
-    names = {name for signal in signals for name in _metrics_for(signal)}
+    # HEARTBEAT: để biết service còn export metric khi counter lỗi của nó vắng series.
+    names = {name for signal in signals for name in _metrics_for(signal)} | {HEARTBEAT_METRIC}
     all_series = load_metrics(artifact_dir, names)
     results = [_evaluate(s, all_series, fault_start, fault_end, config) for s in signals]
 
