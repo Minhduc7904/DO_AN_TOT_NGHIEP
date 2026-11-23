@@ -106,6 +106,7 @@ async function main(argv) {
   const intervalMs = Number(values['interval-s']) * 1000;
   const meta = new Map(); // tên container → { image, cpu_limit, id }
   const warned = new Set();
+  const unreadable = new Set(); // id đã inspect lại mà vẫn không đọc được cgroup: không inspect nữa
   let stopped = false;
   for (const name of ['SIGINT', 'SIGTERM']) process.on(name, () => (stopped = true));
   let previousCpu = existsSync('/proc/stat') ? hostSample(null).cpu : null;
@@ -117,9 +118,10 @@ async function main(argv) {
       const samples = stdout.split('\n').filter(Boolean).map((line) => parseStatsLine(line, ts));
       // Container bị tạo lại (runner reset stack khi bộ lấy mẫu đã chạy) đổi id: đọc cgroup theo id cũ
       // thất bại, nên inspect lại cả những tên đó.
+      const memory = new Map(samples.map((s) => [s.name, meta.has(s.name) ? readUnreclaimableMib(meta.get(s.name).id) : null]));
       const unknown = samples
         .map((s) => s.name)
-        .filter((name) => !meta.has(name) || readUnreclaimableMib(meta.get(name).id) === null);
+        .filter((name) => !meta.has(name) || (memory.get(name) === null && !unreadable.has(meta.get(name).id)));
       if (unknown.length > 0) {
         const { stdout: inspected } = await run('docker', [
           'inspect',
@@ -129,17 +131,20 @@ async function main(argv) {
         ]);
         for (const line of inspected.split('\n').filter(Boolean)) {
           const [name, image, nano, id] = line.split('\t');
-          meta.set(name.replace(/^\//u, ''), { image, cpu_limit: Number(nano) / 1e9, id });
+          const key = name.replace(/^\//u, '');
+          if (meta.get(key)?.id === id) unreadable.add(id);
+          meta.set(key, { image, cpu_limit: Number(nano) / 1e9, id });
+          memory.set(key, readUnreclaimableMib(id));
         }
       }
       const lines = samples.map((s) => {
-        const { id, ...info } = meta.get(s.name) ?? {};
-        const mib = id ? readUnreclaimableMib(id) : null;
+        const { id: _id, ...info } = meta.get(s.name) ?? {};
+        const mib = memory.get(s.name) ?? null;
         const perc = mib !== null && s.mem_limit_mib ? (100 * mib) / s.mem_limit_mib : null;
         return JSON.stringify({ ...s, ...info, mem_unreclaimable_mib: mib, mem_unreclaimable_perc: perc });
       });
       for (const s of samples) {
-        if (warned.has(s.name) || readUnreclaimableMib(meta.get(s.name)?.id ?? '') !== null) continue;
+        if (warned.has(s.name) || memory.get(s.name) != null) continue;
         warned.add(s.name);
         lines.push(
           JSON.stringify({ ts, name: 'SAMPLER', warning: `không đọc được memory.stat cgroup v2 của ${s.name}` }),

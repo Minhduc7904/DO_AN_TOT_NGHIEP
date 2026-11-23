@@ -88,6 +88,8 @@ export function resourceStats(samples, from, to, { sampleS = 15, hostCpus = 1 } 
   let hostCpuMax = null;
   for (const sample of samples) {
     if (!inWindow(Date.parse(sample.ts), from, to)) continue;
+    // Dòng của chính bộ lấy mẫu (lỗi `docker stats`, cảnh báo không đọc được cgroup), không phải container.
+    if (sample.name === 'SAMPLER') continue;
     if (sample.name === 'HOST') {
       if (sample.mem_available_mb !== undefined) {
         hostMinAvailableMb = Math.min(hostMinAvailableMb ?? Infinity, sample.mem_available_mb);

@@ -242,6 +242,7 @@ test('bộ nhớ: dùng phần không thu hồi được của cgroup, mẫu pil
     // Mẫu thiếu cgroup (container vừa tạo lại) dùng working set; basis theo mẫu lớn nhất.
     sample(0, 'aiops-lms-loki-1', 5, { mem_perc: 70, mem_unreclaimable_perc: 40 }),
     sample(15, 'aiops-lms-loki-1', 5, { mem_perc: 72 }),
+    { ts: new Date(T0).toISOString(), name: 'SAMPLER', warning: 'không đọc được memory.stat cgroup v2' },
   ];
   const stats = resourceStats(samples, T0, T0 + 120_000);
   assert.equal(stats.containers['aiops-lms-grafana-1'].mem_max_perc, 55);
@@ -249,6 +250,7 @@ test('bộ nhớ: dùng phần không thu hồi được của cgroup, mẫu pil
   assert.equal(stats.containers['aiops-lms-tempo-1'].mem_basis, 'anon');
   assert.equal(stats.containers['aiops-lms-loki-1'].mem_max_perc, 72);
   assert.equal(stats.containers['aiops-lms-loki-1'].mem_basis, 'working_set');
+  assert.equal(stats.containers.SAMPLER, undefined);
   const { criteria } = evaluateHealth(healthyInput({ samples }));
   assert.equal(criteria.memory.pass, false);
   assert.deepEqual(criteria.memory.value, ['aiops-lms-tempo-1 87.0%']);
