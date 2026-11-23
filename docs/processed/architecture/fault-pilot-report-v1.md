@@ -92,7 +92,7 @@ Run `pilot-c2-normal-mixed-s23-20261120t075709z`. Fault 600 s, toxic `latency` 2
 
 ### 2.3. C3 — provider LLM chậm (FD)
 
-Run `pilot-c3-normal-mixed-s24-20261120t090256z`. Fault 600 s, `llm-stub` trễ 30 ± 5 s.
+Run `pilot-c3-normal-mixed-s24-20261120t090256z`. Fault 600 s, `llm-stub` trễ 30 s cộng ngẫu nhiên trong [0, 5 s] (30–35 s; `--latency-ms 30000 --jitter-ms 5000`).
 
 - **Traffic tới provider thưa và đến muộn:**
   - 20 phiên giảng viên goal I3 trong cả run; 9 job AI được tạo trong cửa sổ fault.
