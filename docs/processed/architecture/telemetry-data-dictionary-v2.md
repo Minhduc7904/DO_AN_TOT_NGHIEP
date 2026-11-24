@@ -325,7 +325,7 @@ Cạnh async (producer → hàng đợi → consumer) không có trong metric de
 
 ### 9.4. Baseline healthy và kiểm leakage (evaluation-protocol-v1 mục 3.3, 9.1)
 
-- `aiops-training fit-baseline --dataset <dataset manifest> --runs-dir <runs/> --out <baseline.json>`: đọc **chỉ** các run có split `train` trong dataset manifest. Bỏ cửa sổ `warmup` và cửa sổ runtime im lặng. Tính median và MAD theo (bảng, khóa, cột). Artifact `feature-baseline.v1` ghi `fit_runs`, sha256 manifest feature của từng run, `dataset_id` và sha256 của dataset manifest, phiên bản feature và lọc nhiễu. Thiếu feature của một run train thì từ chối, không âm thầm fit trên tập nhỏ hơn.
+- `aiops-training fit-baseline --dataset <dataset manifest> --runs-dir <runs/> --out <baseline.json>`: đọc **chỉ** các run có split `train` trong dataset manifest. Bỏ cửa sổ `warmup` và cửa sổ runtime im lặng. Tính median và MAD theo (bảng, khóa, cột). Artifact baseline (`feature-baseline.v2`) ghi `fit_runs`, sha256 manifest feature của từng run, `dataset_id` và sha256 của dataset manifest, phiên bản feature và lọc nhiễu. Thiếu feature của một run train thì từ chối, không âm thầm fit trên tập nhỏ hơn.
 - `aiops-training apply-baseline <features_dir> --baseline <baseline.json>`: ghi `<bảng>_windows_z.parquet` với robust z = (x − median) / thang đo cho mỗi cột đặc trưng. Thang đo (baseline `feature-baseline.v2`, `scale_rule` = `mad|meanad|unit_floor.v1`, [evaluation-protocol-v1](evaluation-protocol-v1.md) mục 6.1.2): 1,4826 × MAD; MAD = 0 thì 1,2533 × MeanAD (modified z-score); cả hai bằng 0 (đặc trưng hằng trên train) thì sàn theo đơn vị: tỉ lệ 0,01; giây 0,01; request/s và dòng log/s 0,05; lời gọi, message 1; consumer 0,2; giây CPU/s 0,01; bộ nhớ 1 MiB. Nhóm chưa có trong baseline (ví dụ cạnh chỉ xuất hiện khi có fault) có `baseline_missing = true` và z rỗng. Validation và test chỉ áp tham số, không fit lại.
 - `aiops-training check-leakage --dataset … --runs-dir … [--baseline …]` báo vi phạm (mã thoát 1):
   - một `run_id` ở hai split;
@@ -339,6 +339,19 @@ Cạnh async (producer → hàng đợi → consumer) không có trong metric de
 ### 9.5. Kết quả của v0 trên run thử có fault (18/11/2026)
 
 Artifact `w14-t05-fault-trial` (15 phút, tải nền k6 mức 1, bốn case bật lần lượt): 59 cửa sổ, 649 dòng service, 2.360 dòng cạnh (40 cạnh), chạy trong ~47 s, bộ nhớ đỉnh ~1,2 GB (đọc từng metric theo cột; artifact 48 phút dự kiến gấp ~3 lần, kiểm `free -h` trước khi chạy). Trung vị đặc trưng của thành phần gốc trước → trong cửa sổ fault: C2 `course→course-postgres` `duration_mean` 1,3 ms → 377 ms; C4 `media→media-minio` 1,2 ms → 365 ms; C3 `ai-worker→ai-llm-provider` 1,2 ms → 31,7 s; C6 `gateway→gateway-identity-token` `error_ratio` 0 → 1,0 và `identity` có `telemetry_silent = true` ở 6 cửa sổ trong lúc bị pause (bắt đầu 05:18:00–05:19:15 UTC).
+
+### 9.6. Kết quả của v1 trên dataset v0 (24/11/2026)
+
+Chạy trên 10 run train/validation của [dataset v0](dataset-v0.md) (mục 6), artifact ở `aiops-platform/experiments/runs/<run_id>/telemetry/`:
+
+- `features`: 10/10 run thoát 0, `feature.v1` và `noise.v1` ở mọi run. Mỗi run có 193–194 cửa sổ, 2.134 dòng service, 7.372 dòng cạnh, 4.656 dòng hàng đợi. Chỉ run validation C6 có cửa sổ im lặng (16 cửa sổ của `identity` trong lúc bị pause).
+- **Thời gian và RAM trên một run 48 phút**, đo bằng `/usr/bin/time` khi máy rảnh (stack đã dừng, 12 nhân, RAM trống 11.704 MB):
+  - `train-healthy-healthy-spike-s1004-20261124t002521z`: 62,9 s, RSS đỉnh 1.787 MB;
+  - `train-healthy-normal-mixed-s1001-20261123t102740z`: 60,5 s, RSS đỉnh 1.883 MB.
+
+  Tám run còn lại đo khi một run k6 đang chạy song song: 58,6–69,5 s, RSS 1.582–1.672 MB. Pipeline chạy tuần tự từng run; mỗi lần chạy cần khoảng 2 GB RAM trống.
+- `fit-baseline` trên dataset manifest v0 đọc đúng 4 run train healthy (2 `normal-mixed`, 2 `healthy-spike`): 3,5 s, RSS 150 MB. Kết quả có 11 nhóm service, 38 cạnh, 24 hàng đợi, và bỏ cửa sổ `warmup` cùng cửa sổ im lặng. Artifact `aiops-platform/training/baselines/dataset-v0.json` ghi sha256 của dataset manifest và của manifest feature của từng run train.
+- `apply-baseline` chạy cho cả 10 run. `check-leakage` trên dataset manifest v0, với baseline trên, kiểm 10 run và không báo vi phạm nào (`errors` rỗng).
 
 ## 10. Giới hạn và việc tiếp theo
 

@@ -45,9 +45,9 @@ Theo [evaluation-protocol-v1](../../../architecture/evaluation-protocol-v1.md) m
 
 ## Definition of Done
 
-- [ ] Pipeline v1 chạy trên mọi run của dataset v0, ghi `feature_config_version` và tham số đã fit chỉ từ run train.
-- [ ] Kiểm tra leakage tự động chạy trên dataset manifest v0 và đạt; có test cố ý vi phạm (cùng `run_id` hai split, fit đọc run validation, cột ground truth trong feature) để chứng minh kiểm tra bắt được.
-- [ ] Unit test trên dữ liệu biết trước đáp án cho phần mới; thời gian/RAM trên một run 48 phút được ghi.
+- [x] Pipeline v1 chạy trên mọi run của dataset v0, ghi `feature_config_version` và tham số đã fit chỉ từ run train.
+- [x] Kiểm tra leakage tự động chạy trên dataset manifest v0 và đạt; có test cố ý vi phạm (cùng `run_id` hai split, fit đọc run validation, cột ground truth trong feature) để chứng minh kiểm tra bắt được.
+- [x] Unit test trên dữ liệu biết trước đáp án cho phần mới; thời gian/RAM trên một run 48 phút được ghi.
 - [ ] PR mở vào `main`; URL PR ghi vào card.
 
 ## Liên kết hồ sơ thực hiện
@@ -61,8 +61,11 @@ Theo [evaluation-protocol-v1](../../../architecture/evaluation-protocol-v1.md) m
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 20/11/2026 — xong phần không cần dataset (làm song song với pilot của task-03): feature pipeline v1 (lọc nhiễu `noise.v1`, ánh xạ identity lệch, span theo `end_time`, đặc trưng rỗng khi modality thiếu, cột `warmup`/`traces_truncated`, bảng `queue_windows`), `fit-baseline`/`apply-baseline` (median/MAD chỉ trên run train), `check-leakage` có test cố ý vi phạm; unit test `training` đạt. Chạy thử trên artifact pilot C6: 194 cửa sổ, 66 s, RSS 1,7 GB (đo khi máy đang chạy run k6, chưa phải số chính thức).
+- Cập nhật gần nhất: 24/11/2026 — chạy trên 10 run train/validation của dataset v0 ([telemetry-data-dictionary-v2](../../../architecture/telemetry-data-dictionary-v2.md) mục 9.6):
+  - `features` thoát 0 ở cả 10 run (`feature.v1`, `noise.v1`).
+  - `fit-baseline` đọc đúng 4 run train healthy. Baseline `aiops-platform/training/baselines/dataset-v0.json` được commit, có sha256 của dataset manifest.
+  - `apply-baseline` chạy cho cả 10 run. `check-leakage` trên dataset manifest v0 không báo vi phạm nào.
+  - Đo trên run 48 phút khi máy rảnh: 60,5–62,9 s, RSS đỉnh 1.787–1.883 MB.
 - Ghi chú/tồn đọng:
-  - Chờ dataset v0 (task-04): chạy pipeline trên mọi run, fit baseline trên run train, `check-leakage` trên dataset manifest thật.
-  - Đo lại thời gian/RAM trên một run 48 phút khi máy rảnh.
-  - Nhánh này tách từ `main`; lệnh `symptoms` của task-03 cũng sửa `cli.py`, gộp khi merge.
+  - Artifact feature nằm trong thư mục run (không commit), sinh lại được bằng lệnh ở README `training/`.
+  - Nhánh đã gộp task-04 để có dataset manifest có `run_id`.
