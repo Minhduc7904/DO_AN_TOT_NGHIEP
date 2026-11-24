@@ -63,9 +63,13 @@ const sizing = vuSizing(plannedPeakConcurrency);
 
 /**
  * Tài khoản seed của từng phiên trong kế hoạch (mục 13.4, `accountAssignment`): không có hai phiên chạy
- * cùng lúc trên một tài khoản. Tính một lần trong `SharedArray` thay vì ở init của từng VU.
+ * cùng lúc trên một tài khoản. Tính một lần (callback của `SharedArray` chỉ chạy ở init đầu tiên).
+ * `accountOf` là một `SharedArray` riêng mỗi phần tử một số: k6 giải tuần tự hóa phần tử mỗi lần đọc,
+ * nên để cả mảng trong một phần tử thì VU nào cũng giữ một bản sao của nó.
  */
-const assignment = new SharedArray('plan-accounts', () => {
+let computedAssignment = null;
+function computeAssignment() {
+  if (computedAssignment) return computedAssignment;
   const keys = [];
   const spans = [];
   const options = { preludeActions: (meta.prelude ?? []).length };
@@ -73,8 +77,14 @@ const assignment = new SharedArray('plan-accounts', () => {
     keys.push(sessions[index].user_key);
     spans.push(sessionSpan(sessions[index], options));
   }
-  return [accountAssignment(WORKLOAD_SEED, keys, config.seedStudents, { spans })];
+  computedAssignment = accountAssignment(WORKLOAD_SEED, keys, config.seedStudents, { spans });
+  return computedAssignment;
+}
+const assignment = new SharedArray('plan-accounts-meta', () => {
+  const { bySession: _bySession, ...rest } = computeAssignment();
+  return [rest];
 })[0];
+const accountOf = new SharedArray('plan-accounts-of', () => computeAssignment().bySession);
 
 /** Trường tóm tắt phần học viên dùng chung cho `k6-summary.json` của hai scenario. */
 export function studentSummary(droppedIterations, vusMax) {
@@ -114,18 +124,22 @@ export function courseMapSetup() {
   return seedCourseMap(catalogueIds(probe.token));
 }
 
-export function runStudentIteration(setupData) {
-  const index = exec.scenario.iterationInTest;
-  if (index >= sessions.length) return;
-  const session = sessions[index];
+/**
+ * Phát một phiên của kế hoạch với tài khoản đã gán. `stream` đặt tên bộ sinh số và khóa phiên
+ * (`students` cho kế hoạch phát lại, giữ nguyên để run cũ tái lập được; `knee` cho run tìm điểm gãy).
+ */
+export function playPlanSession(
+  setupData,
+  { session, index, accountIndex, deadlineMs, stream = 'students' },
+) {
   const plan = studentSessionPlan({
     session,
     phase: PHASE,
     params: reactionParams,
-    rng: createRng(hash32(WORKLOAD_SEED, 'students-plan', index)),
+    rng: createRng(hash32(WORKLOAD_SEED, `${stream}-plan`, index)),
     seed: WORKLOAD_SEED,
     accounts: config.seedStudents,
-    accountIndex: assignment.bySession[index],
+    accountIndex,
   });
   playStudentSession({
     session,
@@ -133,8 +147,19 @@ export function runStudentIteration(setupData) {
     plan,
     params: reactionParams,
     setupData,
-    rng: createRng(hash32(WORKLOAD_SEED, 'students-behavior', index)),
-    sessionKey: `students-${index}`,
+    rng: createRng(hash32(WORKLOAD_SEED, `${stream}-behavior`, index)),
+    sessionKey: `${stream}-${index}`,
+    deadlineMs,
+  });
+}
+
+export function runStudentIteration(setupData) {
+  const index = exec.scenario.iterationInTest;
+  if (index >= sessions.length) return;
+  playPlanSession(setupData, {
+    session: sessions[index],
+    index,
+    accountIndex: accountOf[index],
     deadlineMs: exec.scenario.startTime + (RUN_SECONDS + GRACE_S - 5) * 1000,
   });
 }

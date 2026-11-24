@@ -1,0 +1,15 @@
+{
+  "schema": "run-spec.v1",
+  "split": "pilot",
+  "repeat_index": 0,
+  "workload": {
+    "profile": "normal-mixed",
+    "seed": 29
+  },
+  "fault": {
+    "case": "C6",
+    "align_peak": true,
+    "manifest": "aiops-platform/faults/manifests/fault-manifest-v1.json"
+  },
+  "notes": "Pilot task-03 tuần 15: C6, cửa sổ fault trùng cao điểm tải."
+}

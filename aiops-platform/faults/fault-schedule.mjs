@@ -22,7 +22,7 @@ import { parseArgs, promisify } from 'node:util';
 import { execute, planCommand } from './fault-control.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-export const DEFAULT_MANIFEST = join(HERE, 'manifests/fault-manifest-v1.json');
+export const DEFAULT_MANIFEST = join(HERE, 'manifests/fault-manifest-v2.json');
 const REQUIRED_CASE_FIELDS = [
   'case_id',
   'fault_type',

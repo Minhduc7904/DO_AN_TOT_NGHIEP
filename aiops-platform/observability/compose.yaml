@@ -67,7 +67,9 @@ services:
       retries: 24
       start_period: 20s
     # 512m bị OOM khi truy vấn trace theo id lúc export (18/11/2026) và chạm 88% ở profile spike.
-    mem_limit: 1g
+    # 1g bị OOM-kill giữa bước export của run pilot C3 (20/11/2026: tải 14.016 trace, đỉnh 1.018 MiB),
+    # làm modality trace của run đó còn 2.722 trace.
+    mem_limit: 1536m
     cpus: 0.5
     networks: [aiops-net]
 
@@ -105,6 +107,10 @@ services:
       GF_USERS_ALLOW_SIGN_UP: "false"
       GF_ANALYTICS_REPORTING_ENABLED: "false"
       GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
+      # Mỗi lần reset (xóa volume) Grafana 13 tải lại và tự nâng ~16 plugin đi kèm (Tempo, Loki,
+      # Pyroscope…) lên bản mới nhất: phiên bản đổi giữa các run và page cache của lần tải làm
+      # `docker stats` báo 486–692 MiB trong khi bộ nhớ tiến trình chỉ ~370 MiB (pilot task-03 tuần 15).
+      GF_PLUGINS_PREINSTALL_AUTO_UPDATE: "false"
     ports:
       - "127.0.0.1:${GRAFANA_PORT:-3008}:3000"
     volumes:
@@ -118,7 +124,9 @@ services:
       timeout: 3s
       retries: 24
       start_period: 20s
-    mem_limit: 512m
+    # Grafana 13 dùng ~400 MiB khi rảnh và chạm 508/512 MiB trong 30 phút đầu (run tìm điểm gãy
+    # w15-t02-knee-r1), vượt ngưỡng 85% của workload-design-v1 mục 8.4 dù không ai mở UI.
+    mem_limit: 768m
     cpus: 0.5
     networks: [aiops-net]
 

@@ -69,8 +69,10 @@ function staffScenarios() {
     startRate: instructorRate.startRate,
     timeUnit: instructorRate.timeUnit,
     stages: instructorRate.stages,
-    preAllocatedVUs: Number(__ENV.INSTRUCTOR_PRE_VUS || 15),
-    maxVUs: Number(__ENV.INSTRUCTOR_MAX_VUS || 40),
+    // Dựng sẵn ≈ 2 × đỉnh đo được ở run healthy (14 phiên): VU dựng thêm giữa run làm k6 bỏ iteration,
+    // và fault làm phiên dài ra (task-02 tuần 15).
+    preAllocatedVUs: Number(__ENV.INSTRUCTOR_PRE_VUS || 30),
+    maxVUs: Number(__ENV.INSTRUCTOR_MAX_VUS || 60),
     gracefulStop: `${GRACE_S}s`,
   };
   const adhocPerHour = Array.from({ length: 24 }, (_, hour) =>
@@ -83,8 +85,10 @@ function staffScenarios() {
     startRate: adhoc.startRate,
     timeUnit: adhoc.timeUnit,
     stages: adhoc.stages,
-    preAllocatedVUs: 2,
-    maxVUs: 4,
+    // 2 VU dựng sẵn làm run C2 pilot bỏ 1 phiên admin (đã có 2 phiên đồng thời, phiên thứ ba phải chờ
+    // dựng VU); dựng sẵn 6.
+    preAllocatedVUs: 6,
+    maxVUs: 10,
     gracefulStop: `${GRACE_S}s`,
   };
   const oneShot = (fn, start, name) => {
@@ -115,6 +119,7 @@ const thresholds = { dropped_iterations: ['count==0'], http_req_failed: ['rate<0
 for (const name of Object.keys(scenarios)) {
   thresholds[`iterations{scenario:${name}}`] = ['count>=0'];
   thresholds[`http_reqs{scenario:${name}}`] = ['count>=0'];
+  thresholds[`dropped_iterations{scenario:${name}}`] = ['count>=0'];
 }
 
 export const options = {
@@ -275,10 +280,19 @@ export function setup() {
     },
   }).data.id;
   const mediaIds = mediaPool();
+  // Ánh xạ khóa gọi API, nên chạy trước khi lấy mốc bắt đầu workload (trước đây chạy sau mốc).
+  const courseMap = courseMapSetup();
+  const startedAt = new Date().toISOString();
+  // In mốc bắt đầu workload ngay khi setup xong để experiment runner bật lịch fault theo đúng mốc này
+  // trong lúc run đang chạy (k6-summary.json chỉ có sau khi run kết thúc). Dòng này rơi vào
+  // k6-other.log, không lẫn vào actions.jsonl/sessions.jsonl.
+  console.log(
+    JSON.stringify({ kind: 'phase', phase: 'workload_start', ts: startedAt, run_id: config.runId }),
+  );
   return {
     setupStartedAt,
-    startedAt: new Date().toISOString(),
-    courseMap: courseMapSetup(),
+    startedAt,
+    courseMap,
     mediaIds,
     providerId,
     cleanupJobId,
@@ -352,6 +366,9 @@ export function handleSummary(data) {
     byScenario[name] = {
       iterations: metricValue(data, `iterations{scenario:${name}}`, 'count') ?? 0,
       http_reqs: metricValue(data, `http_reqs{scenario:${name}}`, 'count') ?? 0,
+      dropped_iterations: metricValue(data, `dropped_iterations{scenario:${name}}`, 'count') ?? 0,
+      pre_allocated_vus: scenarios[name].preAllocatedVUs ?? scenarios[name].vus ?? null,
+      max_vus: scenarios[name].maxVUs ?? scenarios[name].vus ?? null,
     };
   }
   const profile = meta.profile ?? __ENV.PROFILE;
