@@ -90,6 +90,8 @@ def _artifact(tmp_path: Path) -> Path:
         "manifest_version": "telemetry-artifact.v1",
         "time_start": T0.isoformat().replace("+00:00", "Z"),
         "time_end": (T0 + timedelta(seconds=600)).isoformat().replace("+00:00", "Z"),
+        # Export chạy sau time_end + độ trễ thu thập, như runner (kiểm ở leakage).
+        "generated_at": (T0 + timedelta(seconds=660)).isoformat().replace("+00:00", "Z"),
         "modality_availability": {"metrics": "available", "traces": "missing", "logs": "missing"},
         "files": {},
     }
@@ -268,9 +270,29 @@ def test_spans_count_in_window_of_their_end_time(tmp_path):
     late = _row(rows, 120, service_name="course")
     assert late["span_count"] == 4 and late["trace_error_rate"] is None
     assert late["traces_truncated"] is True and late["missing_traces"] is False
+    # Log `missing`: đặc trưng log rỗng, không phải 0.
+    assert late["missing_logs"] is True
+    assert late["log_count"] is None and late["log_error_rate"] is None
     # [150, 210) có đủ 5 span: 4 lỗi / 5.
     full = _row(rows, 150, service_name="course")
     assert full["span_count"] == 5 and full["trace_error_rate"] == pytest.approx(0.8)
+
+
+def test_metric_sample_exactly_at_window_end_is_excluded(tmp_path):
+    artifact = _artifact(tmp_path)
+    table = pq.read_table(artifact / "metrics.parquet").to_pylist()
+    for row in table:
+        # Đúng giây 120 (window_end của cửa sổ [60, 120)), course nhận thêm 600 request.
+        if row["metric_name"] == "http_server_request_count_total" and row[
+            "timestamp"
+        ] >= T0 + timedelta(seconds=120):
+            row["value"] += 600
+    pq.write_table(to_table(table, METRIC_SCHEMA), artifact / "metrics.parquet")
+    rows = build_features(artifact).service_rows
+    # Cửa sổ [60, 120) không thấy mẫu ở giây 120: vẫn 2 req/s như artifact gốc.
+    assert _row(rows, 60, service_name="course")["request_rate"] == pytest.approx(2.0)
+    # Cửa sổ kế tiếp [75, 135) chứa giây 120 nên thấy 600 request thêm.
+    assert _row(rows, 75, service_name="course")["request_rate"] == pytest.approx(2.0 + 10.0)
 
 
 def test_queue_windows_and_warmup_flag(tmp_path):

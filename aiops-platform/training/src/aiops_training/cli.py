@@ -8,15 +8,14 @@ uv run aiops-training quality artifacts/<run_id>
 from __future__ import annotations
 
 import argparse
-import hashlib
 import json
 import sys
 from pathlib import Path
 
 import httpx
 
-from .features.baseline import apply_baseline, fit_baseline
-from .features.leakage import check_leakage
+from .features.baseline import apply_baseline, fit_baseline, sha256_file
+from .features.leakage import check_leakage, is_healthy
 from .features.pipeline import write_features
 from .ground_truth.build import build_ground_truth, read_jsonl
 from .ground_truth.symptoms import SymptomConfig, measure_from_ground_truth, measure_symptoms
@@ -191,16 +190,20 @@ def _features_of(runs_dir: Path, run_id: str) -> Path:
     return runs_dir / run_id / "telemetry" / "features"
 
 
-def _manifest_runs(manifest: dict, split: str | None = None) -> list[str]:
+def _manifest_runs(manifest: dict, split: str | None = None, healthy: bool = False) -> list[str]:
     return sorted(
         slot["run_id"]
         for slot in manifest.get("slots", [])
-        if slot.get("run_id") and (split is None or slot["split"] == split)
+        if slot.get("run_id")
+        and (split is None or slot["split"] == split)
+        and (not healthy or is_healthy(slot))
     )
 
 
 def _baseline_parsers(sub: argparse._SubParsersAction) -> None:
-    fit = sub.add_parser("fit-baseline", help="Fit median/MAD trên các run train của dataset")
+    fit = sub.add_parser(
+        "fit-baseline", help="Fit median/MAD trên các run train healthy của dataset"
+    )
     fit.add_argument("--dataset", type=Path, required=True, help="dataset manifest (JSON)")
     fit.add_argument("--runs-dir", type=Path, required=True, help="Thư mục runs/ của runner")
     fit.add_argument("--out", type=Path, required=True, help="File baseline JSON")
@@ -215,11 +218,11 @@ def _baseline_parsers(sub: argparse._SubParsersAction) -> None:
 
 
 def _run_fit_baseline(args: argparse.Namespace) -> int:
-    text = args.dataset.read_text(encoding="utf-8")
-    manifest = json.loads(text)
-    # Chỉ đọc run có split train (mục 9.1); kiểm tra leakage xác nhận lại sau.
+    manifest = json.loads(args.dataset.read_text(encoding="utf-8"))
+    # Chỉ đọc run train healthy (`case` rỗng, mục 9.1); kiểm tra leakage xác nhận lại sau.
     runs = {
-        run_id: _features_of(args.runs_dir, run_id) for run_id in _manifest_runs(manifest, "train")
+        run_id: _features_of(args.runs_dir, run_id)
+        for run_id in _manifest_runs(manifest, "train", healthy=True)
     }
     missing = [run_id for run_id, path in runs.items() if not path.exists()]
     if missing:
@@ -228,7 +231,7 @@ def _run_fit_baseline(args: argparse.Namespace) -> int:
         runs,
         provenance={
             "dataset_id": manifest.get("dataset_id"),
-            "dataset_manifest_sha256": hashlib.sha256(text.encode("utf-8")).hexdigest(),
+            "dataset_manifest_sha256": sha256_file(args.dataset),
         },
     )
     args.out.parent.mkdir(parents=True, exist_ok=True)
@@ -240,7 +243,10 @@ def _run_fit_baseline(args: argparse.Namespace) -> int:
 
 def _run_apply_baseline(args: argparse.Namespace) -> int:
     baseline = json.loads(args.baseline.read_text(encoding="utf-8"))
-    print(json.dumps(apply_baseline(args.features_dir, baseline, args.out), ensure_ascii=False))
+    result = apply_baseline(
+        args.features_dir, baseline, args.out, baseline_sha256=sha256_file(args.baseline)
+    )
+    print(json.dumps(result, ensure_ascii=False))
     return 0
 
 
@@ -252,7 +258,7 @@ def _run_check_leakage(args: argparse.Namespace) -> int:
         for run_id in _manifest_runs(manifest)
         if (path := _features_of(args.runs_dir, run_id)).exists()
     }
-    errors = check_leakage(manifest, baseline, dirs)
+    errors = check_leakage(manifest, baseline, dirs, manifest_sha256=sha256_file(args.dataset))
     print(
         json.dumps({"runs_checked": sorted(dirs), "errors": errors}, ensure_ascii=False, indent=2)
     )

@@ -8,8 +8,8 @@
   (train, validation hay test) **chỉ bằng tham số đã fit**; không fit lại. Nhóm không có trong
   baseline (ví dụ cạnh chỉ xuất hiện khi có fault) cho z rỗng và `baseline_missing = true`.
 
-Chọn run nào để fit do caller quyết định (CLI đọc split `train` từ dataset manifest); kiểm tra
-leakage (`leakage.py`) xác nhận lại sau.
+Chọn run nào để fit do caller quyết định (CLI đọc slot có split `train` và `case` rỗng, tức run
+healthy, từ dataset manifest); kiểm tra leakage (`leakage.py`) xác nhận lại sau.
 """
 
 from __future__ import annotations
@@ -27,6 +27,10 @@ import pyarrow.parquet as pq
 from .pipeline import TABLES
 
 BASELINE_SCHEMA = "feature-baseline.v2"
+FEATURE_MANIFEST = "features-manifest.json"
+#: Ghi cạnh `<bảng>_windows_z.parquet`: baseline nào (sha256) đã sinh ra z (evaluation-protocol-v1
+#: mục 21.1, lineage feature → baseline).
+APPLY_MANIFEST = "baseline-apply.json"
 MAD_TO_SIGMA = 1.4826
 #: Modified z-score (Iglewicz & Hoaglin): MAD = 0 thì dùng 1,2533 × độ lệch tuyệt đối trung bình.
 MEANAD_TO_SIGMA = 1.2533
@@ -102,12 +106,12 @@ def _key(row: dict[str, Any], table: str) -> str:
     return "|".join(str(row[column]) for column in KEYS[table])
 
 
-def _sha256(path: Path) -> str:
+def sha256_file(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
 def read_feature_meta(features_dir: Path) -> dict[str, Any]:
-    return json.loads((features_dir / "features-manifest.json").read_text(encoding="utf-8"))
+    return json.loads((features_dir / FEATURE_MANIFEST).read_text(encoding="utf-8"))
 
 
 def robust_scale(samples: list[float], column: str) -> dict[str, float]:
@@ -146,7 +150,7 @@ def fit_baseline(feature_dirs: dict[str, Path], provenance: dict | None = None) 
         if meta["run_id"] != run_id:
             raise BaselineError(f"{directory} là feature của {meta['run_id']}, không phải {run_id}")
         versions.add((meta["feature_config_version"], meta["noise_filter_version"]))
-        inputs[run_id] = _sha256(directory / "features-manifest.json")
+        inputs[run_id] = sha256_file(directory / FEATURE_MANIFEST)
         for table, (file_name, _) in TABLES.items():
             path = directory / file_name
             if not path.exists():
@@ -185,9 +189,14 @@ def fit_baseline(feature_dirs: dict[str, Path], provenance: dict | None = None) 
 
 
 def apply_baseline(
-    features_dir: Path, baseline: dict[str, Any], out_dir: Path | None = None
+    features_dir: Path,
+    baseline: dict[str, Any],
+    out_dir: Path | None = None,
+    baseline_sha256: str | None = None,
 ) -> dict[str, Any]:
-    """Ghi `<bảng>_windows_z.parquet` (cột gốc + `<cột>_z` + `baseline_missing`)."""
+    """Ghi `<bảng>_windows_z.parquet` (cột gốc + `<cột>_z` + `baseline_missing`) và
+    `baseline-apply.json` (lineage: sha256 của file baseline do caller truyền, schema, phiên bản,
+    run đã fit, sha256 manifest feature đầu vào)."""
     meta = read_feature_meta(features_dir)
     if baseline.get("schema") != BASELINE_SCHEMA:
         raise BaselineError(f"Baseline schema {baseline.get('schema')}, cần {BASELINE_SCHEMA}")
@@ -223,4 +232,18 @@ def apply_baseline(
         name = file_name.replace(".parquet", "_z.parquet")
         pq.write_table(pa.Table.from_pylist(rows, z_schema), target / name)
         counts[table] = len(rows)
-    return {"run_id": meta["run_id"], "baseline_fit_runs": baseline["fit_runs"], "rows": counts}
+    result = {
+        "run_id": meta["run_id"],
+        "features_manifest_sha256": sha256_file(features_dir / FEATURE_MANIFEST),
+        "baseline_sha256": baseline_sha256,
+        "baseline_schema": baseline["schema"],
+        "baseline_dataset_id": baseline.get("dataset_id"),
+        "baseline_fit_runs": baseline["fit_runs"],
+        "feature_config_version": baseline["feature_config_version"],
+        "noise_filter_version": baseline["noise_filter_version"],
+        "rows": counts,
+    }
+    (target / APPLY_MANIFEST).write_text(
+        json.dumps(result, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
+    )
+    return result

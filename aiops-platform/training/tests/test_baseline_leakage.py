@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import shutil
 from pathlib import Path
@@ -35,13 +36,30 @@ def _run(root: Path, run_id: str, rate_factor: float = 1.0) -> Path:
     return artifact / "features"
 
 
-def _manifest(**splits: list[str]) -> dict:
+def _manifest(cases: dict[str, str] | None = None, **splits: list[str]) -> dict:
+    """Dataset manifest giả; `cases`: `run_id → case` cho slot có fault, còn lại healthy."""
     slots = [
-        {"slot_id": f"{split}-{index}", "split": split, "run_id": run_id, "replaced_run_ids": []}
+        {
+            "slot_id": f"{split}-{index}",
+            "split": split,
+            "case": (cases or {}).get(run_id),
+            "run_id": run_id,
+            "replaced_run_ids": [],
+        }
         for split, runs in splits.items()
         for index, run_id in enumerate(runs)
     ]
     return {"schema": "dataset-manifest.v0", "dataset_id": "ds-test", "slots": slots}
+
+
+def _edit_json(path: Path, **changes) -> None:
+    data = json.loads(path.read_text(encoding="utf-8"))
+    data.update(changes)
+    path.write_text(json.dumps(data), encoding="utf-8")
+
+
+def _sha256(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
 def test_fit_excludes_warmup_and_silent_windows_and_apply_uses_fitted_params(tmp_path):
@@ -142,10 +160,25 @@ def test_cli_fit_reads_only_train_runs_and_check_leakage(tmp_path, capsys):
     )
     baseline = json.loads(out.read_text(encoding="utf-8"))
     assert baseline["fit_runs"] == ["t1", "t2"]
-    assert baseline["dataset_id"] == "ds-test" and len(baseline["dataset_manifest_sha256"]) == 64
+    assert baseline["dataset_id"] == "ds-test"
+    assert baseline["dataset_manifest_sha256"] == _sha256(dataset)
     args = ["check-leakage", "--dataset", str(dataset), "--runs-dir", str(runs)]
     assert main([*args, "--baseline", str(out)]) == 0
     assert '"errors": []' in capsys.readouterr().out
+
+    # apply-baseline ghi lineage cạnh bảng z: sha256 của đúng file baseline và manifest feature.
+    features = runs / "v1" / "telemetry" / "features"
+    assert main(["apply-baseline", str(features), "--baseline", str(out)]) == 0
+    capsys.readouterr()
+    lineage = json.loads((features / "baseline-apply.json").read_text(encoding="utf-8"))
+    assert lineage["baseline_sha256"] == _sha256(out)
+    assert lineage["features_manifest_sha256"] == _sha256(features / "features-manifest.json")
+    assert lineage["baseline_fit_runs"] == ["t1", "t2"] and lineage["run_id"] == "v1"
+
+    # Dataset manifest đổi sau khi fit (thêm một dòng trống): sha256 không còn khớp baseline.
+    dataset.write_text(dataset.read_text(encoding="utf-8") + "\n", "utf-8")
+    assert main([*args, "--baseline", str(out)]) == 1
+    assert "dataset manifest đang kiểm có sha256" in capsys.readouterr().out
     # Thiếu feature của một run train: fit từ chối thay vì âm thầm fit trên tập nhỏ hơn.
     shutil.rmtree(runs / "t2" / "telemetry" / "features")
     with pytest.raises(SystemExit, match="t2"):
@@ -172,3 +205,92 @@ def test_apply_refuses_baseline_of_other_schema(tmp_path):
     baseline = fit_baseline({"a": features})
     with pytest.raises(BaselineError, match="schema"):
         apply_baseline(features, {**baseline, "schema": "feature-baseline.v1"})
+
+
+def test_cli_fit_skips_train_runs_with_fault_and_check_rejects_them(tmp_path, capsys):
+    runs = tmp_path / "runs"
+    for name in ("t1", "t2"):
+        _run(runs, name)
+    dataset = tmp_path / "dataset.json"
+    manifest = _manifest(cases={"t2": "C2"}, train=["t1", "t2"])
+    dataset.write_text(json.dumps(manifest), "utf-8")
+    out = tmp_path / "baseline.json"
+    args = ["fit-baseline", "--dataset", str(dataset), "--runs-dir", str(runs), "--out", str(out)]
+    assert main(args) == 0
+    assert json.loads(out.read_text(encoding="utf-8"))["fit_runs"] == ["t1"]
+    # Baseline dựng tay có fit cả run train có fault: kiểm leakage bắt được.
+    dirs = {name: runs / name / "telemetry" / "features" for name in ("t1", "t2")}
+    leaky = fit_baseline(dirs, provenance={"dataset_id": "ds-test"})
+    errors = check_leakage(manifest, leaky, dirs)
+    assert "baseline fit trên run t2 không healthy (case ['C2'])" in errors
+    assert not any("run t1" in e for e in errors)
+
+
+def test_check_leakage_does_not_trust_baseline_metadata(tmp_path):
+    dirs = {name: _run(tmp_path, name) for name in ("t1", "v1")}
+    manifest = _manifest(train=["t1"], validation=["v1"])
+    baseline = fit_baseline({"t1": dirs["t1"]}, provenance={"dataset_id": "ds-test"})
+
+    # Khóa của fit_inputs_sha256 khác fit_runs.
+    errors = check_leakage(manifest, {**baseline, "fit_inputs_sha256": {}}, dirs)
+    assert "fit_inputs_sha256 có run [] khác fit_runs ['t1']" in errors
+
+    # Run fit không có thư mục feature để đối chiếu.
+    errors = check_leakage(manifest, baseline, {"v1": dirs["v1"]})
+    assert "baseline: không có feature của run fit t1 để đối chiếu sha256" in errors
+
+    # Manifest feature của run train bị sinh lại/sửa sau khi fit.
+    _edit_json(dirs["t1"] / "features-manifest.json", note="sinh lại")
+    errors = check_leakage(manifest, baseline, dirs)
+    assert any(e.startswith("baseline: sha256 features-manifest của t1 khác") for e in errors)
+
+    # dataset_manifest_sha256 khác sha256 của manifest đang kiểm.
+    errors = check_leakage(
+        manifest, {**baseline, "dataset_manifest_sha256": "a" * 64}, dirs, manifest_sha256="b" * 64
+    )
+    assert any("dataset manifest đang kiểm có sha256 " + "b" * 64 in e for e in errors)
+
+
+def test_check_leakage_checks_run_identity_and_collection_time(tmp_path):
+    dirs = {name: _run(tmp_path, name) for name in ("t1", "v1")}
+    manifest = _manifest(train=["t1"], validation=["v1"])
+
+    # Thư mục feature của t1 khai báo dưới tên v1.
+    errors = check_leakage(manifest, None, {"v1": dirs["t1"]})
+    assert "v1: features-manifest thuộc run t1" in errors
+    assert "v1: manifest export thuộc run t1" in errors
+
+    # Export ghi xong chỉ 5 s sau time_end (< độ trễ lớn nhất 10 s).
+    export = dirs["v1"].parent / "manifest.json"
+    time_end = json.loads(export.read_text(encoding="utf-8"))["time_end"]
+    early = time_end.replace(":10:00Z", ":10:05Z")
+    assert early != time_end
+    _edit_json(export, generated_at=early)
+    errors = check_leakage(manifest, None, dirs)
+    assert any(e.startswith(f"v1: export ghi lúc {early}, sớm hơn time_end + 10 s") for e in errors)
+
+    # Feature dựng trên export khác (time_end của export sớm hơn cửa sổ cuối của feature).
+    _edit_json(export, time_end=time_end.replace(":10:00Z", ":08:00Z"), generated_at=time_end)
+    errors = check_leakage(manifest, None, dirs)
+    assert any(e.startswith("v1: time_end của feature") for e in errors)
+    assert any(e.startswith("v1: service_windows.parquet có window_end") for e in errors)
+
+    # Thư mục feature tách khỏi artifact export: không kiểm được thời điểm.
+    moved = tmp_path / "elsewhere" / "features"
+    shutil.copytree(dirs["t1"], moved)
+    errors = check_leakage(manifest, None, {"t1": moved})
+    assert any(e.startswith("t1: không có manifest export") for e in errors)
+
+
+def test_check_leakage_catches_version_mismatch(tmp_path):
+    dirs = {name: _run(tmp_path, name) for name in ("t1", "v1")}
+    manifest = _manifest(train=["t1"], validation=["v1"])
+    _edit_json(dirs["v1"] / "features-manifest.json", noise_filter_version="noise.v0")
+    errors = check_leakage(manifest, None, dirs)
+    assert any(e.startswith("phiên bản feature/lọc nhiễu không đồng nhất") for e in errors)
+
+    # Đồng nhất nhưng không phải phiên bản hiện hành của pipeline.
+    _edit_json(dirs["t1"] / "features-manifest.json", noise_filter_version="noise.v0")
+    errors = check_leakage(manifest, None, dirs)
+    assert not any("không đồng nhất" in e for e in errors)
+    assert "cần ('feature.v1', 'noise.v1'), có [\"('feature.v1', 'noise.v0')\"]" in errors

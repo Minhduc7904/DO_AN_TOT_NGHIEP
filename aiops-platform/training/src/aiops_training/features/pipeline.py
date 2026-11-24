@@ -9,8 +9,10 @@ Thay đổi so với v0 (task-05 tuần 15, sau khi chạy trên run 48 phút c�
 - **Ánh xạ identity lệch** (`IDENTITY_ALIASES`) áp cho cạnh (metric dependency).
 - **Không dùng dữ liệu tương lai** (mục 7.2): metric và log chỉ lấy mẫu có thời điểm < `window_end`;
   span được tính vào cửa sổ chứa thời điểm **kết thúc** (trạng thái lỗi chỉ biết khi span xong), v0
-  tính theo lúc bắt đầu. Độ trễ thu thập theo modality ghi ở `available_after_s`: một cửa sổ chỉ
-  được dùng sau `window_end` + độ trễ lớn nhất.
+  tính theo lúc bắt đầu. Cửa sổ cuối kết thúc không sau `time_end` của export. Độ trễ thu thập
+  theo modality (`AVAILABLE_AFTER_S`) chỉ được **khai báo** ở `causality.available_after_s`;
+  pipeline không tự cắt cửa sổ theo nó. `check-leakage` kiểm export ghi xong không sớm hơn
+  `time_end` + độ trễ lớn nhất và mọi `window_end` ≤ `time_end` (`leakage.py`, mục 5).
 - **Trace không đầy đủ:** cột `traces_truncated` khi export chạm giới hạn tìm kiếm hoặc ngân sách
   (số span của cửa sổ đông bị thấp đi, không phải tín hiệu).
 - **Cạnh async:** bảng `queue_windows` từ gauge RabbitMQ theo hàng đợi (message sẵn sàng, chưa ack,
@@ -65,7 +67,8 @@ QUEUE_METRICS = {
     "rabbitmq_detailed_queue_consumers": "consumers",
 }
 #: Độ trễ thu thập theo modality (evaluation-protocol-v1 mục 1.3, 7.2): log ≈ 2 s, trace ≈ 2,5 s,
-#: counter 4–10 s. Cửa sổ chỉ đủ dữ liệu sau `window_end` + giá trị lớn nhất.
+#: counter 4–10 s. Cửa sổ chỉ đủ dữ liệu sau `window_end` + giá trị lớn nhất. Pipeline chỉ ghi giá
+#: trị này vào manifest; `leakage.check_leakage` dùng nó để kiểm thời điểm export.
 AVAILABLE_AFTER_S = {"metrics": 10.0, "traces": 3.0, "logs": 2.0}
 #: Số span tối thiểu để tính `trace_error_rate` (evaluation-protocol-v1 mục 6.1.1 bảng F): trace có
 #: thể là mẫu (ngân sách export), tỉ lệ trên vài span quá nhiễu nên để rỗng.
