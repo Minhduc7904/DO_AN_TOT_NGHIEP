@@ -79,8 +79,9 @@ Bỏ `--case`, `--fault-log` cho run healthy. Bản ghi theo [telemetry-and-grou
 ## Đặc trưng theo cửa sổ (feature pipeline v1)
 
 ```bash
-uv run aiops-training features artifacts/<RUN_ID>          # → artifacts/<RUN_ID>/features/
-# Baseline healthy: fit chỉ trên run train của dataset, áp cho mọi run, kiểm leakage
+uv run aiops-training features ../experiments/runs/<RUN_ID>/telemetry   # → .../telemetry/features/
+# Baseline healthy: fit chỉ trên run train healthy của dataset, áp cho mọi run, kiểm leakage.
+# fit/check đọc <runs-dir>/<run_id>/telemetry/features; manifest export phải nằm ở thư mục cha.
 uv run aiops-training fit-baseline --dataset ../experiments/datasets/dataset-v0.json --runs-dir ../experiments/runs --out baselines/dataset-v0.json
 uv run aiops-training apply-baseline ../experiments/runs/<RUN_ID>/telemetry/features --baseline baselines/dataset-v0.json
 uv run aiops-training check-leakage --dataset ../experiments/datasets/dataset-v0.json --runs-dir ../experiments/runs --baseline baselines/dataset-v0.json
@@ -92,7 +93,7 @@ Cửa sổ 60 s bước 15 s:
 - `edge_windows.parquet`: số lời gọi, tỉ lệ lỗi/timeout, độ trễ trung bình/p95/p99 theo cạnh;
 - `queue_windows.parquet`: message sẵn sàng/chưa ack và consumer theo hàng đợi RabbitMQ (cạnh async).
 
-`feature_config_version` (`feature.v1`) và `noise_filter_version` (`noise.v1`) ghi trong `features-manifest.json`, áp như nhau cho mọi run. Cột, bộ lọc nhiễu, quy tắc thời điểm, baseline và kiểm leakage: [telemetry-data-dictionary-v2](../../docs/processed/architecture/telemetry-data-dictionary-v2.md) mục 9.
+`feature_config_version` (`feature.v1`) và `noise_filter_version` (`noise.v1`) ghi trong `features-manifest.json`, áp như nhau cho mọi run. `apply-baseline` ghi thêm `baseline-apply.json` (sha256 của baseline đã dùng). Cột `run_id` chỉ là khóa (tên run mã hóa split và case), detector phải bỏ. Cột, bộ lọc nhiễu, quy tắc thời điểm, baseline và kiểm leakage: [telemetry-data-dictionary-v2](../../docs/processed/architecture/telemetry-data-dictionary-v2.md) mục 9.
 
 ## Cách export bảo vệ Tempo
 
