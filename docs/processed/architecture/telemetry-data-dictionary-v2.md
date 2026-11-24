@@ -354,11 +354,11 @@ Chạy trên 10 run train/validation của [dataset v0](dataset-v0.md) (mục 6)
   - Mỗi run còn 191 cửa sổ, 2.101 dòng service, 4.584 dòng hàng đợi (24 hàng đợi). Dòng cạnh: 7.258 (38 cạnh); hai run chỉ có 36 cạnh (`validation-healthy-normal-mixed-s2002`, `validation-c2-normal-mixed-s2001`) có 6.876 dòng.
   - Chỉ run validation C6 có cửa sổ im lặng (16 cửa sổ của `identity` trong lúc bị pause).
 - **Thời gian và RAM trên một run 48 phút**, đo bằng `/usr/bin/time` khi máy rảnh (không có run hay tác vụ nặng khác, 12 nhân, RAM trống khoảng 11.500 MB), chạy tuần tự từng run:
-  - `train-healthy-healthy-spike-s1004-20261124t002521z`: 62,2 s, RSS đỉnh 1.548 MB;
-  - `train-healthy-normal-mixed-s1001-20261123t102740z`: 60,9 s, RSS đỉnh 1.627 MB.
+  - `train-healthy-healthy-spike-s1004-20261124t002521z`: 62,3 s, RSS đỉnh 1.700 MB;
+  - `train-healthy-normal-mixed-s1001-20261123t102740z`: 61,0 s, RSS đỉnh 1.732 MB.
 
-  Cả 10 run: 53,9–64,3 s, RSS đỉnh 1.530–1.768 MB. Mỗi lần chạy cần khoảng 2 GB RAM trống.
-- `fit-baseline` trên dataset manifest v0 đọc đúng 4 run train healthy (2 `normal-mixed`, 2 `healthy-spike`): 3,4 s, RSS 150 MB. Kết quả có 11 nhóm service, 38 cạnh, 24 hàng đợi, và bỏ cửa sổ `warmup` cùng cửa sổ im lặng. Artifact `aiops-platform/training/baselines/dataset-v0.json` được fit lại trên feature mới, ghi sha256 của dataset manifest và của manifest feature của từng run train.
+  Lần chạy lại cho cả 10 run (cùng điều kiện) cho 53,9–64,3 s, RSS đỉnh 1.530–1.768 MB. RSS dao động khoảng 150 MB giữa các lần chạy cùng một run. Mỗi lần chạy cần khoảng 2 GB RAM trống.
+- `fit-baseline` trên dataset manifest v0 đọc đúng 4 run train healthy (2 `normal-mixed`, 2 `healthy-spike`): 3,4 s, RSS 146 MB. Kết quả có 11 nhóm service, 38 cạnh, 24 hàng đợi, và bỏ cửa sổ `warmup` cùng cửa sổ im lặng. Artifact `aiops-platform/training/baselines/dataset-v0.json` được fit lại trên feature mới, ghi sha256 của dataset manifest và của manifest feature của từng run train.
 - `apply-baseline` chạy cho cả 10 run, ghi `baseline-apply.json` với sha256 của baseline. `check-leakage` (gồm các kiểm ở mục 9.4) trên dataset manifest v0, với baseline trên, kiểm 10 run và không báo vi phạm nào (`errors` rỗng).
 
 ## 10. Giới hạn và việc tiếp theo
