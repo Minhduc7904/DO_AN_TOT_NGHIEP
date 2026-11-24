@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-04_collect-dataset-v0` |
 | Tuần | `week-15_2026-11-08_to_2026-11-14` |
-| Trạng thái | Đang thực hiện |
+| Trạng thái | Chờ review |
 | Người phụ trách | Bách |
 | Collaborator | Không có |
 | Ưu tiên | Cao |
@@ -51,13 +51,13 @@ Theo [evaluation-protocol-v1](../../../architecture/evaluation-protocol-v1.md) m
 - [x] Mỗi profile có ít nhất một run train; mỗi case có run validation `repeat_index=1`; có healthy validation cho hai profile bắt buộc; có ít nhất một run validation trùng cao điểm.
 - [x] Mọi run trong manifest có `RunGroundTruth` hợp lệ và quality `pass`/`partial`; run bị thay có dòng ledger và `replacement_for_run_id`.
 - [x] Kiểm tự động xác nhận không trùng `run_id`, seed, ngày log giữa các split.
-- [ ] PR mở vào `main`; URL PR ghi vào card.
+- [x] PR mở vào `main`; URL PR ghi vào card. (PR #97 xếp chồng trên nhánh task-03 vì PR #95 chưa merge; sẽ vào `main` khi các PR trước được merge.)
 
 ## Liên kết hồ sơ thực hiện
 
 - Input workspace: Không tạo (giai đoạn tự bắt kịp; bằng chứng nằm trong PR).
 - Output workspace: Không tạo.
-- Pull request: Chưa tạo.
+- Pull request: [#97](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/97) (xếp chồng trên nhánh task-03, PR #95).
 - Kết quả review: Chưa review.
 
 > URL/số PR và `Chờ review` phải được commit/push vào PR head trước review. Thành viên còn lại phải gửi `APPROVED` hợp lệ trên GitHub; sau đó người phụ trách finalization metadata, ghi `Hoàn thành` trên chính branch/PR và tự merge task của mình. Card chỉ canonically hoàn thành khi commit đó vào nhánh canonical; xem [vòng đời task canonical](../../../rules/git-and-pull-request-rules.md#vòng-đời-task-canonical).
