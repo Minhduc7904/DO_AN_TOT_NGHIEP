@@ -935,7 +935,7 @@ Extension chỉ được xem xét khi **M4 đã qua gate** và không đe dọa 
 
 Nếu thời gian còn lại không đủ cho tuần 13–23 (ngày 17/11/2026 còn 8 tuần lịch cho 11 tuần plan), áp dụng theo thứ tự, dừng ngay khi đủ:
 
-1. Bỏ Stretch (mức 3 offline) và toàn bộ Target: E7 thử nghiệm người, E6 RCAEval, biến thể case, case C1/C5/C7 — theo thứ tự đó.
+1. Bỏ Stretch (mức 3 offline) và toàn bộ Target: E7 thử nghiệm người (đã bỏ ngày 19/11/2026, không có người tham gia hợp lệ), E6 RCAEval, biến thể case, case C1/C5/C7 — theo thứ tự đó.
 2. Gộp tuần 14 và 15 của mảng workload/runner: mức 2+ chỉ cho W3 (học viên) và mức 2 tối thiểu cho W2/W5; giữ hai profile healthy bắt buộc và kiểm chứng hold-out.
 3. Giảm `R` từ 5 xuống 4 (1 validation + 3 test); ghi rõ trong báo cáo.
 4. Gộp tuần 20 và 21: giữ RQ1, RQ2, RQ6 (E1, E2, E4), E3 và E8; RQ3–RQ5 báo cáo ở mức tối thiểu.
