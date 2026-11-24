@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-05_build-feature-pipeline-v1` |
 | Tuần | `week-15_2026-11-08_to_2026-11-14` |
-| Trạng thái | Đang thực hiện |
+| Trạng thái | Chờ review |
 | Người phụ trách | Bách |
 | Collaborator | Không có |
 | Ưu tiên | Cao |
@@ -48,13 +48,13 @@ Theo [evaluation-protocol-v1](../../../architecture/evaluation-protocol-v1.md) m
 - [x] Pipeline v1 chạy trên mọi run của dataset v0, ghi `feature_config_version` và tham số đã fit chỉ từ run train.
 - [x] Kiểm tra leakage tự động chạy trên dataset manifest v0 và đạt; có test cố ý vi phạm (cùng `run_id` hai split, fit đọc run validation, cột ground truth trong feature) để chứng minh kiểm tra bắt được. (Thêm: kiểm thời điểm cắt cửa sổ và metadata của baseline, data dictionary mục 9.4.)
 - [x] Unit test trên dữ liệu biết trước đáp án cho phần mới; thời gian/RAM trên một run 48 phút được ghi.
-- [ ] PR mở vào `main`; URL PR ghi vào card.
+- [x] PR mở vào `main`; URL PR ghi vào card. (PR #100 xếp chồng trên PR #97; sẽ vào `main` khi các PR trước được merge.)
 
 ## Liên kết hồ sơ thực hiện
 
 - Input workspace: Không tạo (giai đoạn tự bắt kịp; bằng chứng nằm trong PR).
 - Output workspace: Không tạo.
-- Pull request: Chưa tạo.
+- Pull request: [#100](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/100) (xếp chồng trên PR #97 của task-04).
 - Kết quả review: Chưa review.
 
 > URL/số PR và `Chờ review` phải được commit/push vào PR head trước review. Thành viên còn lại phải gửi `APPROVED` hợp lệ trên GitHub; sau đó người phụ trách finalization metadata, ghi `Hoàn thành` trên chính branch/PR và tự merge task của mình. Card chỉ canonically hoàn thành khi commit đó vào nhánh canonical; xem [vòng đời task canonical](../../../rules/git-and-pull-request-rules.md#vòng-đời-task-canonical).
