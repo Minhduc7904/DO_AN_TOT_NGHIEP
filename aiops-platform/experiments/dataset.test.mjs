@@ -188,7 +188,7 @@ test('test chỉ khai báo; fault run không vào train; repeat_index theo split
   assert.ok(errors.some((e) => /validation dùng repeat_index 1/u.test(e)));
 });
 
-test('chuỗi thay thế phải khớp replacement_for_run_id; seed run thay không phá quy tắc seed', () => {
+test('chuỗi thay thế phải khớp replacement_for_run_id; run thay giữ seed của slot', () => {
   const { m, ledger } = complete();
   const c6 = m.slots.find((s) => s.case === 'C6');
   const failed = 'run-c6-failed';
@@ -199,10 +199,17 @@ test('chuỗi thay thế phải khớp replacement_for_run_id; seed run thay kh�
   assert.ok(errors.some((e) => /phải ghi replacement_for_run_id = run-c6-failed/u.test(e)));
 
   const fixed = ledger.filter((e) => e.run_id !== c6.run_id);
-  c6.workload_seed = 2010;
   fixed.push(...ledgerRun(c6.run_id, c6, { started: { replacement_for_run_id: failed } }));
   ({ errors } = checkDataset(m, fixed));
   assert.deepEqual(errors, []);
+
+  // Đổi seed khi thay run: trái mục 8.6 và phá quy tắc seed của fault run cùng repeat_index.
+  const reseeded = fixed.filter((e) => e.run_id !== c6.run_id);
+  c6.workload_seed = 2010;
+  reseeded.push(...ledgerRun(c6.run_id, c6, { started: { replacement_for_run_id: failed } }));
+  ({ errors } = checkDataset(m, reseeded));
+  assert.ok(errors.some((e) => /phải dùng seed 2001/u.test(e)));
+  assert.ok(errors.some((e) => /\(run-c6-failed\): seed trong ledger 2001, slot 2010/u.test(e)));
 });
 
 test('độ phủ còn thiếu và quyết định chưa chốt được liệt kê', () => {

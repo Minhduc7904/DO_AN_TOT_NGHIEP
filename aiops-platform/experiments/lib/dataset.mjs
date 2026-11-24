@@ -165,9 +165,10 @@ function checkRun(runId, slot, ledger, plans, role, errors) {
         errors.push(`${where}: kế hoạch đã chạy (${finished.plan_sha256}) khác kế hoạch của split`);
       }
     }
-    if (started.workload_seed !== slot.workload_seed) {
-      errors.push(`${where}: seed trong ledger ${started.workload_seed}, slot ${slot.workload_seed}`);
-    }
+  }
+  // Run được chọn và run bị thay đều chạy với seed của slot (evaluation-protocol-v1 mục 8.6).
+  if (started.workload_seed !== slot.workload_seed) {
+    errors.push(`${where}: seed trong ledger ${started.workload_seed}, slot ${slot.workload_seed}`);
   }
   return started.workload_seed;
 }
@@ -236,9 +237,10 @@ export function checkDataset(manifest, ledgerEntries, io = {}) {
     slotIds.add(slot.slot_id);
     checkSlotShape(slot, errors);
     claimSeed(slot.workload_seed, slot.split, `slot ${slot.slot_id}`);
-    if (slot.case !== null && !(slot.replaced_run_ids ?? []).length) {
+    if (slot.case !== null) {
       // Quy tắc seed (workload-design-v1 mục 11.4, chốt ở task-04 tuần 15): fault run các case cùng
-      // split và repeat_index dùng cùng seed. Slot có run bị thay được dùng seed mới (mục 8.6).
+      // split và repeat_index dùng cùng seed. Run thay thế giữ seed của slot (evaluation-protocol-v1
+      // mục 8.6: giữ nguyên cấu hình workload), nên quy tắc áp cho mọi slot, kể cả slot có run bị thay.
       const key = `${slot.split}#${slot.repeat_index}`;
       const seed = faultSeed.get(key);
       if (seed !== undefined && seed !== slot.workload_seed) {
