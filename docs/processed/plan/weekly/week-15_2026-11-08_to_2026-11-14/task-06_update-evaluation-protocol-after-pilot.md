@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-06_update-evaluation-protocol-after-pilot` |
 | Tuần | `week-15_2026-11-08_to_2026-11-14` |
-| Trạng thái | Đang thực hiện |
+| Trạng thái | Chờ review |
 | Người phụ trách | Bách |
 | Collaborator | Không có |
 | Ưu tiên | Cao |
@@ -48,13 +48,13 @@ Theo [evaluation-protocol-v1](../../../architecture/evaluation-protocol-v1.md) m
 - [x] Tập giá trị để validation chọn được khai báo trước khi chạy validation. (Tập này được chốt trước mọi fault run validation và trước mọi feature hay detector trên validation. Hai run healthy validation đã chạy trước đó, và luật nhận (2) của bảng F được đặt sau khi xem thống kê export của run `healthy-spike`; protocol mục 6.1.1 ghi rõ việc này.)
 - [x] Quyết định đưa E7 ra khỏi kế hoạch được ghi trong protocol và plan v0.4 kèm lý do.
 - [x] Tài liệu liên quan không còn giá trị mâu thuẫn với bản đã chốt.
-- [ ] PR mở vào `main`; URL PR ghi vào card.
+- [x] PR mở vào `main`; URL PR ghi vào card. (PR #99 xếp chồng trên PR #97; sẽ vào `main` khi các PR trước được merge.)
 
 ## Liên kết hồ sơ thực hiện
 
 - Input workspace: Không tạo (giai đoạn tự bắt kịp; bằng chứng nằm trong PR).
 - Output workspace: Không tạo.
-- Pull request: Chưa tạo.
+- Pull request: [#99](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/99) (xếp chồng trên PR #97 của task-04; nên merge ngay sau PR #97).
 - Kết quả review: Chưa review.
 
 > URL/số PR và `Chờ review` phải được commit/push vào PR head trước review. Thành viên còn lại phải gửi `APPROVED` hợp lệ trên GitHub; sau đó người phụ trách finalization metadata, ghi `Hoàn thành` trên chính branch/PR và tự merge task của mình. Card chỉ canonically hoàn thành khi commit đó vào nhánh canonical; xem [vòng đời task canonical](../../../rules/git-and-pull-request-rules.md#vòng-đời-task-canonical).
