@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-07_validate-workload-realism-v2` |
 | Tuần | `week-15_2026-11-08_to_2026-11-14` |
-| Trạng thái | Đang thực hiện |
+| Trạng thái | Chờ review |
 | Người phụ trách | Bách |
 | Collaborator | Không có |
 | Ưu tiên | Cao |
@@ -51,13 +51,13 @@ Theo [workload-realism-report-v1](../../../architecture/workload-realism-report-
 - [x] Ba run `r2` và mọi run train/validation của dataset v0 được chấm theo v1 và v2.
 - [x] Báo cáo có bảng theo v1 và v2, tỉ lệ run đạt v2, kết luận trung thực.
 - [x] Test cho bộ chấm v1/v2 đạt.
-- [ ] PR mở vào `main`; URL PR ghi vào card.
+- [x] PR mở vào `main`; URL PR ghi vào card. (PR #98 xếp chồng trên PR #97 vì bằng chứng chính cần dataset v0; sẽ vào `main` khi các PR trước được merge.)
 
 ## Liên kết hồ sơ thực hiện
 
 - Input workspace: Không tạo (giai đoạn tự bắt kịp; bằng chứng nằm trong PR).
 - Output workspace: Không tạo.
-- Pull request: Chưa tạo.
+- Pull request: [#98](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/98) (xếp chồng trên PR #97 của task-04).
 - Kết quả review: Chưa review.
 
 > URL/số PR và `Chờ review` phải được commit/push vào PR head trước review. Thành viên còn lại phải gửi `APPROVED` hợp lệ trên GitHub; sau đó người phụ trách finalization metadata, ghi `Hoàn thành` trên chính branch/PR và tự merge task của mình. Card chỉ canonically hoàn thành khi commit đó vào nhánh canonical; xem [vòng đời task canonical](../../../rules/git-and-pull-request-rules.md#vòng-đời-task-canonical).
