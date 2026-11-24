@@ -2,7 +2,7 @@
 
 > **Task:** `task-04_collect-dataset-v0` (tuần 15).
 >
-> **Trạng thái:** bản nháp, cập nhật 23/11/2026. Đã chốt luật chia ngày, kế hoạch phiên của ba split, các slot run (khai báo trước khi chạy) và các quyết định từ pilot task-03. Run dataset chạy từ 23/11/2026 (mục 6).
+> **Trạng thái:** cập nhật 24/11/2026. Đã chốt luật chia ngày, kế hoạch phiên của ba split, các slot run (khai báo trước khi chạy) và các quyết định từ pilot task-03. 10/10 slot train và validation đã có run đạt gate (mục 6); slot test chỉ khai báo, chờ freeze ở tuần 19.
 >
 > **Tài liệu liên quan:** [evaluation-protocol-v1](evaluation-protocol-v1.md) mục 5, 6.1, 8; [workload-design-v1](workload-design-v1.md) mục 11.4, 13.5. Manifest máy đọc được: [`aiops-platform/experiments/datasets/dataset-v0.json`](../../../aiops-platform/experiments/datasets/dataset-v0.json); kiểm tra: `aiops-platform/experiments/check-dataset.mjs`.
 
@@ -47,7 +47,7 @@ Phiên học viên mức 2+ lấy từ **đoạn xây** của log Moodle (ngày 
 | test | 3000–3999 | Như validation |
 
 - **Quy tắc seed cho fault run** (workload-design-v1 mục 11.4, trước đây là đề xuất, chốt ở task này): fault run của các case khác nhau cùng `repeat_index` dùng cùng `workload_seed`. Nhờ vậy khác biệt giữa các case đến từ fault, không từ workload.
-- **Run thay thế** (mục 8.6) dùng seed mới trong cùng khoảng và giữ `replacement_for_run_id`.
+- **Run thay thế** (mục 8.6) giữ nguyên cấu hình của slot, kể cả `workload_seed`, và ghi `replacement_for_run_id`. Giữ seed là điều kiện để quy tắc seed của fault run vẫn đúng; `check-dataset.mjs` kiểm seed của run khớp seed của slot.
 - Dữ liệu seed R-10: `small`/42 cho mọi run (mục 5.5).
 
 ## 4. Slot run
@@ -87,7 +87,32 @@ Số run healthy test và slot cao điểm của test chốt khi freeze (tuần 
 
 ## 6. Kết quả
 
-Bảng run theo slot ghi khi hàng đợi chạy xong. Sự kiện trong lúc chạy:
+Hàng đợi chạy từ 23/11/2026 09:14Z đến 24/11/2026 01:48Z trên một máy, mỗi lúc một run. Trước mỗi run, hàng đợi chờ RAM trống ≥ 4,3 GB. Mọi run giữ slot chạy trên commit sạch (`code_dirty` = false): `ec98a55` và `dbb9ae1` cho bốn run đầu, `9daed76` cho sáu run sau. Ngoài tài liệu, ba commit này chỉ khác nhau ở ngân sách export trace (mục 6.1), phần kiểm eligibility của `check-dataset.mjs` (chạy sau run) và một chuỗi mô tả trong `fault-manifest-v2.json`. Workload, cấu hình fault và cách thu telemetry không đổi.
+
+**10/10 slot train và validation có run đạt** gate thực thi `pass`, `RunGroundTruth` `valid`, chất lượng `partial`. `check-dataset.mjs --require-complete` không báo lỗi, cảnh báo hay phần còn thiếu nào. Lý do `partial`:
+
+- Mọi run có `truncated_modality:traces`: truy vấn tìm kiếm của Tempo chạm giới hạn kết quả. Riêng run validation `healthy-spike` còn bỏ trace vì ngân sách (mục 6.1).
+- C6 có thêm `telemetry_silent:identity`, với khoảng im lặng nằm trong cửa sổ fault.
+- Run validation `normal-mixed` có thêm `duplicates`: 1/26.297 dòng log trùng, metric và span không trùng.
+
+Cả ba lý do đều thuộc loại được nhận ở evaluation-protocol-v1 mục 6.1.1 bảng F.
+
+| Slot | `run_id` | Gate thực thi / chất lượng / ground truth | Tiêu chí khỏe | Trace (eligibility.v1) | Độ phủ ứng viên | `dropped_by_budget` |
+| --- | --- | --- | --- | --- | --- | --- |
+| `train-healthy-normal-mixed-1` | `train-healthy-normal-mixed-s1001-20261123t102740z` | `pass` / `partial` / `valid` | đạt | đủ | 0,992 | 0 |
+| `train-healthy-normal-mixed-2` | `train-healthy-normal-mixed-s1002-20261123t113109z` | `pass` / `partial` / `valid` | đạt | đủ | 0,991 | 0 |
+| `train-healthy-healthy-spike-1` | `train-healthy-healthy-spike-s1003-20261123t224223z` | `pass` / `partial` / `valid` | đạt | đủ | 0,995 | 0 |
+| `train-healthy-healthy-spike-2` | `train-healthy-healthy-spike-s1004-20261124t002521z` | `pass` / `partial` / `valid` | đạt | đủ | 0,996 | 0 |
+| `validation-healthy-normal-mixed-1` | `validation-healthy-normal-mixed-s2002-20261123t091816z` | `pass` / `partial` / `valid` | đạt | đủ | 0,991 | 0 |
+| `validation-healthy-healthy-spike-1` | `validation-healthy-healthy-spike-s2003-20261123t123352z` | `pass` / `partial` / `valid` | đạt | mẫu, giữ 52,5% | 0,995 | 18.099 |
+| `validation-c2-normal-mixed-r1` | `validation-c2-normal-mixed-s2001-20261123t182901z` | `pass` / `partial` / `valid` | — | đủ | 0,989 | 0 |
+| `validation-c3-normal-mixed-r1` | `validation-c3-normal-mixed-s2001-20261123t193231z` | `pass` / `partial` / `valid` | — | đủ | 0,989 | 0 |
+| `validation-c4-normal-mixed-r1` | `validation-c4-normal-mixed-s2001-20261123t203506z` | `pass` / `partial` / `valid` | — | đủ | 0,990 | 0 |
+| `validation-c6-normal-mixed-r1` | `validation-c6-normal-mixed-s2001-20261123t213759z` | `pass` / `partial` / `valid` | — | đủ | 0,992 | 0 |
+
+- **Tiêu chí khỏe** (workload-design-v1 mục 8.4) chỉ áp cho run healthy. Fault run được kiểm bằng gate và `RunGroundTruth`. Gate M3 (task-08, PR #96) kiểm thêm dữ liệu thô của bốn fault run pilot.
+- **Trace:** 9/10 run giữ đủ trace. Run validation `healthy-spike` là mẫu đều, giữ 52,5% (mục 6.1). Độ phủ ứng viên ở mọi run từ 0,989 đến 0,996, trên mức tối thiểu 0,98.
+- **Fault run validation:** C2 trùng cao điểm, fault bắt đầu ở giây 1.260,0 sau `run_start`. C3, C4, C6 theo lịch mặc định. Gate thực thi xác nhận lệnh bật/tắt fault thành công, và `RunGroundTruth` xác nhận có triệu chứng tối thiểu (`verification_checks`).
 
 ### 6.1. Ngân sách export trace (23/11/2026)
 
@@ -95,3 +120,15 @@ Bảng run theo slot ghi khi hàng đợi chạy xong. Sự kiện trong lúc ch
 - **Độ phủ ứng viên** (trace ứng viên không nhiễu ÷ request k6 trong cửa sổ) của mọi run pilot `normal-mixed` và dataset v0 tới thời điểm này là 0,990–0,996, kể cả run trên (0,995). 16 lần chạm giới hạn kết quả tìm kiếm của Tempo lặp lại ở mọi run, không theo tải, và không làm mất trace đáng kể; nguồn mất trace duy nhất là ngân sách. Run pilot `c2-spike` (fault cộng đỉnh tải) là ngoại lệ: 0,687, 291 lần chạm giới hạn.
 - Quyết định: nâng ngân sách mặc định lên 60.000 (commit `ebbae7f`) để run còn lại có `dropped_by_budget` = 0. Run `train-healthy-healthy-spike-s1003-20261123t134927z` đang chạy với ngân sách cũ được ngắt có chủ đích lúc 14:04Z (`aborted`, giữ trong ledger) và chạy lại bằng spec `train-healthy-healthy-spike-1-r2.json` (cùng seed, `replacement_for_run_id`).
 - Run s2003 đã đạt gate thực thi và chất lượng (`partial`), nên theo mục 8.6 không được thay; nó giữ slot validation `healthy-spike` với trace là mẫu 52,5%. Cách nhận run này cho primary evaluation và giới hạn đi kèm ở [evaluation-protocol-v1](evaluation-protocol-v1.md) mục 6.1.1 bảng F (task-06).
+
+### 6.2. Run không giữ slot
+
+Theo mục 8.6 và experiments/README, run bị lỗi không bị xóa mà giữ nguyên trong ledger và thư mục run.
+
+| `run_id` | Kết quả | Nguyên nhân | Xử lý |
+| --- | --- | --- | --- |
+| `validation-healthy-normal-mixed-s2002-20261123t091430z`, `train-healthy-normal-mixed-s1001-20261123t091511z`, `train-healthy-normal-mixed-s1002-20261123t091552z`, `validation-healthy-healthy-spike-s2003-20261123t091632z` | `failed` ở bước dữ liệu seed (`seed_data_failed`), chưa chạy workload | Worktree mới của task-04 chưa cài dependency của `lms/` (`pnpm install`) | Cài dependency, chạy lại bằng spec cũ với `run_id` mới. Các run này không có telemetry hay `RunGroundTruth`. |
+| `train-healthy-healthy-spike-s1003-20261123t091712z` | `aborted` ở bước reset, chưa chạy workload | Hàng đợi bị dừng để cài dependency như dòng trên | Như trên |
+| `train-healthy-healthy-spike-s1003-20261123t134927z` | `aborted` lúc 14:04Z, sau khoảng 14 phút workload | Ngắt có chủ đích vì export sẽ dùng ngân sách trace cũ (mục 6.1) | Thay bằng `train-healthy-healthy-spike-s1003-20261123t224223z` (cùng seed, `replacement_for_run_id`), ghi trong `replaced_run_ids` của slot |
+
+Năm run đầu hỏng trước khi workload bắt đầu, nên spec chạy lại không ghi `replacement_for_run_id` và slot không liệt kê chúng trong `replaced_run_ids`. Trong ledger, chúng vẫn được nhận ra qua cùng slot, cùng seed và trạng thái `failed`/`aborted`. Quyết định chạy lại chỉ dựa trên gate thực thi và nguyên nhân hạ tầng, không dựa trên kết quả detector hay mô hình (mục 8.6).

@@ -120,7 +120,7 @@ less aiops-platform/experiments/runs/<run_id>/runner.log
 
 - Luật chia ngày log Moodle theo split (`day_split`) và kế hoạch phiên của từng split (`plans`: đường dẫn trong `load/`, sha256, ngày). Kế hoạch không commit, sinh lại được bằng lệnh ở [load/README](../load/README.md#kế-hoạch-phiên-theo-split-cho-dataset).
 - Quy tắc seed (`seed_rule`) và các **slot** run: split, profile, case, `repeat_index`, `workload_seed`, `align_peak` (`null` là chưa chốt). Spec của slot nằm ở [`specs/dataset-v0/`](specs/dataset-v0/).
-- Khi run xong, ghi `run_id` vào slot. Run bị thay (mục 8.6) chuyển sang `replaced_run_ids` theo thứ tự; slot đó được dùng seed mới.
+- Khi run xong, ghi `run_id` vào slot. Run bị thay (mục 8.6) chuyển sang `replaced_run_ids` theo thứ tự; run thay thế giữ nguyên cấu hình của slot, kể cả seed.
 - Slot test chỉ khai báo, chưa chạy; danh sách test freeze ở tuần 19 (evaluation-protocol-v1 mục 6.3).
 
 ```bash

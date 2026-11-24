@@ -47,10 +47,10 @@ Theo [evaluation-protocol-v1](../../../architecture/evaluation-protocol-v1.md) m
 
 ## Definition of Done
 
-- [ ] Kế hoạch phiên của train, validation, test lấy từ nhóm ngày tách rời, không trùng hold-out; sha256 ghi trong manifest.
-- [ ] Mỗi profile có ít nhất một run train; mỗi case có run validation `repeat_index=1`; có healthy validation cho hai profile bắt buộc; có ít nhất một run validation trùng cao điểm.
-- [ ] Mọi run trong manifest có `RunGroundTruth` hợp lệ và quality `pass`/`partial`; run bị thay có dòng ledger và `replacement_for_run_id`.
-- [ ] Kiểm tự động xác nhận không trùng `run_id`, seed, ngày log giữa các split.
+- [x] Kế hoạch phiên của train, validation, test lấy từ nhóm ngày tách rời, không trùng hold-out; sha256 ghi trong manifest.
+- [x] Mỗi profile có ít nhất một run train; mỗi case có run validation `repeat_index=1`; có healthy validation cho hai profile bắt buộc; có ít nhất một run validation trùng cao điểm.
+- [x] Mọi run trong manifest có `RunGroundTruth` hợp lệ và quality `pass`/`partial`; run bị thay có dòng ledger và `replacement_for_run_id`.
+- [x] Kiểm tự động xác nhận không trùng `run_id`, seed, ngày log giữa các split.
 - [ ] PR mở vào `main`; URL PR ghi vào card.
 
 ## Liên kết hồ sơ thực hiện
@@ -64,8 +64,8 @@ Theo [evaluation-protocol-v1](../../../architecture/evaluation-protocol-v1.md) m
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 20/11/2026 — xong phần không cần chạy stack (làm song song với pilot của task-03): luật chia ngày `day-split-v1`, kế hoạch phiên cho ba split, dataset manifest v0 với 28 slot, công cụ `check-dataset.mjs` có test, spec của 6 run healthy; bản nháp [dataset-v0](../../../architecture/dataset-v0.md).
+- Cập nhật gần nhất: 24/11/2026 — hàng đợi chạy xong (23/11 09:14Z → 24/11 01:48Z). 10/10 slot train/validation có run đạt gate thực thi `pass`, `RunGroundTruth` `valid`, chất lượng `partial` (lý do được nhận theo evaluation-protocol-v1 bảng F). Run healthy validation `normal-mixed` đạt tiêu chí khỏe, nên giữ `k` = 4. `check-dataset.mjs --require-complete` không báo lỗi, cảnh báo hay phần còn thiếu nào. Bảng run và 6 run không giữ slot ở [dataset-v0](../../../architecture/dataset-v0.md) mục 6.
 - Ghi chú/tồn đọng:
-  - Chờ task-03: fault manifest v2, slot validation trùng cao điểm, quyết định profile đối chứng; sau đó viết spec 4 fault run validation.
-  - Kế hoạch validation `normal-mixed` có đỉnh 2,43 phiên/s, vượt 0,35 × `λ_knee` (1,96). Giữ kế hoạch; run healthy validation phải đạt tiêu chí mục 8.4, nếu trượt thì hạ `k` (dataset-v0 mục 2).
-  - Còn chạy 10 run (khoảng 13 giờ máy) sau khi task-03 xong.
+  - Run validation `healthy-spike` giữ slot với trace là mẫu 52,5% (ngân sách export cũ 20.000). Run sau dùng ngân sách 60.000 (dataset-v0 mục 6.1).
+  - Sửa tài liệu cho khớp code và protocol mục 8.6: run thay thế giữ seed của slot, không dùng seed mới.
+  - Năm run đầu hỏng ở bước dữ liệu seed vì worktree mới chưa `pnpm install` trong `lms/`. Chúng giữ nguyên trong ledger.
