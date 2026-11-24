@@ -43,14 +43,14 @@ Theo [workload-realism-report-v1](../../../architecture/workload-realism-report-
 | --- | --- | --- |
 | Tiêu chí v2 (đăng ký trước) | Docs | `docs/processed/architecture/workload-realism-criteria-v2.md` |
 | Bộ chấm có phiên bản tiêu chí | Code | `aiops-platform/load/tools/` |
-| Báo cáo độ thực theo v1 và v2, nhiều seed | Docs | `docs/processed/architecture/` |
+| Báo cáo độ thực theo v1 và v2, trên run dataset v0 | Docs | `docs/processed/architecture/` |
 
 ## Definition of Done
 
-- [ ] Commit tiêu chí v2 đã push có thời điểm trước run đầu tiên của task.
-- [ ] Ba run `r2` và mọi run train/validation của dataset v0 được chấm theo v1 và v2.
-- [ ] Báo cáo có bảng theo v1 và v2, tỉ lệ run đạt v2, kết luận trung thực.
-- [ ] Test cho bộ chấm v1/v2 đạt.
+- [x] Commit tiêu chí v2 đã push có thời điểm trước run đầu tiên của task.
+- [x] Ba run `r2` và mọi run train/validation của dataset v0 được chấm theo v1 và v2.
+- [x] Báo cáo có bảng theo v1 và v2, tỉ lệ run đạt v2, kết luận trung thực.
+- [x] Test cho bộ chấm v1/v2 đạt.
 - [ ] PR mở vào `main`; URL PR ghi vào card.
 
 ## Liên kết hồ sơ thực hiện
@@ -64,5 +64,8 @@ Theo [workload-realism-report-v1](../../../architecture/workload-realism-report-
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 19/11/2026 — tiêu chí v2 và mã chấm push ở commit `602230b` (15:18 +07) trước khi chấm; chấm lại `r2`: bán thực đạt v2 (điểm 0,490, `tau` 0,986), mức 2 thuần và mức 1 không đạt (báo cáo v1 mục 10). Còn chấm run dataset v0 (task-04).
-- Ghi chú/tồn đọng: 19/11/2026 — đổi cách làm: bỏ 3 run nhiều seed trên cùng kế hoạch (không đo được dao động), thay bằng tiêu chí v2 lấy mốc từ dao động của nhóm ngày thật và chấm trên run dataset v0.
+- Cập nhật gần nhất: 24/11/2026 — chấm 10 run train/validation của dataset v0 theo v1 và v2 ([báo cáo](../../../architecture/workload-realism-report-v1.md) mục 11–12). Kết quả: 10/10 run đạt v2 (4/4 nhóm ngày khác nhau), 0/10 đạt v1. Được viết "traffic học viên bán thực `normal-mixed` giống thật theo v2", kèm bốn giới hạn ở mục 12: (1) với bán thực, v2 chỉ kiểm bộ phát và nhóm ngày; (2) dáng theo giờ của nhóm validation nằm ngoài dải; (3) 1/4 ngày của mỗi nhóm đã nằm trong kế hoạch `r2`; (4) chỉ có 2 nhóm ngày độc lập, và phép so với nguồn đơn giản là chấm sau khi xem dữ liệu. `healthy-spike` đạt v2 nhưng chưa viết "giống thật", vì chưa có run mức 1 và mức 2 thuần ở profile này. Trước đó (19/11/2026): tiêu chí v2 và mã chấm được push ở commit `602230b` (15:18 +07) trước khi chấm. Chấm lại `r2`: bán thực đạt v2 (điểm 0,490, `tau` 0,986), mức 2 thuần và mức 1 không đạt (mục 10).
+- Ghi chú/tồn đọng:
+  - Nhánh gộp task-04 để có dataset v0, nên PR xếp chồng lên PR task-04.
+  - Run mức 1 và mức 2 thuần ở `healthy-spike` chưa có trong kế hoạch; cần có nếu muốn kết luận "giống thật" cho profile này.
+  - 19/11/2026 — đổi cách làm: bỏ 3 run nhiều seed trên cùng kế hoạch (không đo được dao động), thay bằng tiêu chí v2 lấy mốc từ dao động của nhóm ngày thật và chấm trên run dataset v0.

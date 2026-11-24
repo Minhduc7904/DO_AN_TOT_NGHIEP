@@ -2,17 +2,18 @@
 
 > **Task:** `task-04_validate-workload-realism` (tuần 14).
 >
-> **Trạng thái:** v1, cập nhật 19/11/2026. Số đo ở mục 0, 2, 4 và 5 lấy từ ba run `r2` chạy trên code workload đã merge (`main` `ba2d7da`, gồm PR #85 sau review và PR #90) với TTL service token mặc định 600 s. Lần đo pilot ngày 18/11/2026 (run `r1`, code trước review, TTL 60 s) giữ ở mục 7 để đối chiếu. Ngưỡng ở mục 1 không đổi giữa hai lần đo. Mục 10 (thêm ngày 19/11/2026, task-07 tuần 15) chấm lại `r2` theo [tiêu chí v2](workload-realism-criteria-v2.md).
+> **Trạng thái:** v1, cập nhật 24/11/2026. Số đo ở mục 0, 2, 4 và 5 lấy từ ba run `r2` chạy trên code workload đã merge (`main` `ba2d7da`, gồm PR #85 sau review và PR #90) với TTL service token mặc định 600 s. Lần đo pilot ngày 18/11/2026 (run `r1`, code trước review, TTL 60 s) giữ ở mục 7 để đối chiếu. Ngưỡng ở mục 1 không đổi giữa hai lần đo. Mục 10 (thêm ngày 19/11/2026, task-07 tuần 15) chấm lại `r2` theo [tiêu chí v2](workload-realism-criteria-v2.md). Mục 11–12 (24/11/2026) chấm 10 run train/validation của dataset v0, là bằng chứng chính của v2, và kết luận theo cả hai tiêu chí.
 >
 > **Tài liệu liên quan:** [ADR-007](../adr/adr-007-semi-real-workload-and-ai-evidence-v1.md) mục 2 và 4, [workload-design-v1](workload-design-v1.md) mục 10.4 và 13. Công cụ nằm ở `aiops-platform/load/tools/realism.mjs` và `validate-realism.mjs`.
 
 ## 0. Đọc nhanh
 
-- **Kết luận theo ngưỡng đã chốt trước:** chưa nguồn nào đạt đủ ngưỡng, nên **chưa được kết luận traffic bán thực là "giống thật"**. Bán thực (mức 2+) đạt 6/7 tiêu chí có ngưỡng. Tiêu chí không đạt là **trung vị thời lượng phiên**: lệch −42% (ngưỡng ±10%). KS D thời lượng = 0,099 đạt ngưỡng 0,1 nhưng chỉ cách ngưỡng 0,001 (lần pilot là 0,101), nên coi là sát ngưỡng, không phải đạt chắc chắn.
+- **Kết luận theo ngưỡng đã chốt trước:** chưa nguồn nào đạt đủ ngưỡng, nên **chưa được kết luận traffic bán thực là "giống thật" theo v1**. Bán thực (mức 2+) đạt 6/7 tiêu chí có ngưỡng. Tiêu chí không đạt là **trung vị thời lượng phiên**: lệch −42% (ngưỡng ±10%). KS D thời lượng = 0,099 đạt ngưỡng 0,1 nhưng chỉ cách ngưỡng 0,001 (lần pilot là 0,101), nên coi là sát ngưỡng, không phải đạt chắc chắn.
 - **Về thứ hạng, bán thực gần hold-out nhất trên mọi đại lượng.** Ví dụ JSD tỉ lệ thao tác: bán thực 0,019, mức 2 thuần 0,132, mức 1 0,300. Pearson dáng theo giờ lần lượt là 0,96, 0,68 và −0,02. Mức 2 thuần đạt 1/7 tiêu chí (trung vị số thao tác); mức 1 không đạt tiêu chí nào.
 - **Khoảng lệch thời lượng không do cơ chế phát lại.** Run bán thực khớp kế hoạch của nó: KS D thời lượng giữa run và kế hoạch là 0,020. Phần lệch có sẵn trong dữ liệu xây: chính 60 ngày đầu của log Moodle so với 31 ngày hold-out đã lệch trung vị thời lượng −37% (mục 5).
 - **Số đo gần như không đổi so với pilot** (mục 7). Các đại lượng đo ở phía client do kế hoạch phiên quyết định; code sửa sau review chủ yếu đổi phía server (khóa seed đúng, không trùng tài khoản). Run `r2` không còn phiên `auth_failed` hay `unexpected_status`.
-- **Theo tiêu chí v2** (đăng ký 19/11/2026, [workload-realism-criteria-v2](workload-realism-criteria-v2.md)): bán thực **đạt**, mức 2 thuần và mức 1 không đạt (mục 10). Đây là chấm lại `r2` sau khi đã xem dữ liệu; bằng chứng chính của v2 là run dataset v0 (tuần 15).
+- **Theo tiêu chí v2** (đăng ký 19/11/2026, [workload-realism-criteria-v2](workload-realism-criteria-v2.md)): chấm lại `r2` sau khi đã xem dữ liệu, bán thực **đạt**, mức 2 thuần và mức 1 không đạt (mục 10). Bằng chứng chính là 10 run train/validation của dataset v0, chạy sau thời điểm đăng ký: **10/10 run đạt v2** (4/4 nhóm ngày khác nhau) và **0/10 đạt v1** (mục 11).
+- **Kết luận** (mục 12): được viết "traffic học viên bán thực `normal-mixed` giống thật theo tiêu chí v2", kèm giới hạn: với bán thực, v2 chỉ kiểm bộ phát và nhóm ngày; dáng theo giờ của nhóm validation nằm ngoài dải; 1/4 ngày của mỗi nhóm đã nằm trong kế hoạch `r2`; chỉ có 2 nhóm ngày độc lập. Với `healthy-spike` chưa viết, vì chưa có nguồn đơn giản để so. Theo v1 vẫn chưa đạt.
 - **Hai lỗi đo được sửa sau lần chạy pilot đầu tiên** (mục 6). Cả hai làm công cụ đo sai đại lượng, không phải ngưỡng.
 
 ## 1. Tiêu chí chốt trước
@@ -140,13 +141,13 @@ Các đại lượng phía client gần như không đổi giữa hai lần đo,
 
 - **KS D thời lượng sát ngưỡng.** 0,099 so với ngưỡng 0,1, với một run một seed. Lần chạy khác có thể cho 0,101 như pilot. Không dùng kết quả "đạt" của tiêu chí này làm luận điểm.
 - **Lỗi kết nối giữ sống.** 5 request `PUT …/progress` ở run (c) gặp `EOF` sau khoảng nghỉ: kết nối keep-alive bị server đóng đúng lúc dùng lại. Client thử lại thành công.
-- **Một run, một seed cho mỗi nguồn,** và chỉ profile `normal-mixed`. Chưa có khoảng tin cậy giữa các seed.
+- **Một run, một seed cho mỗi nguồn,** và chỉ profile `normal-mixed`. Chưa có khoảng tin cậy giữa các seed. (Giới hạn của riêng `r2`; mục 11 chấm thêm 10 run dataset ở hai profile.)
 - **Không kiểm chứng giảng viên/admin bằng log Moodle** (không có dữ liệu; theo task card, dùng workload-design-v1 mục 10.1–10.3).
 - **Run thí nghiệm dùng TTL 60 s.** Lớp fault đặt TTL 60 s cho mọi run (healthy lẫn fault) để C6 có cùng cấu hình. Run `r2` dùng 600 s để đo hành vi người dùng không lẫn nhiễu token; ở profile của task-03 (TTL 60 s), nhiễu này làm 0,02–0,22% phiên kết thúc `auth_failed`.
 
 ## 8. Kết luận và việc tiếp theo
 
-1. Theo tiêu chí chốt trước: **chưa đạt**. Bán thực gần hold-out nhất (đạt 6/7 tiêu chí, hơn hẳn mức 2 thuần 1/7 và mức 1 0/7) nhưng không đạt trung vị thời lượng phiên, và KS D thời lượng chỉ đạt sát ngưỡng. Do đó chưa được dùng cụm từ "giống thật" trong báo cáo đồ án; chỉ được nói "gần hold-out hơn mức 1 và mức 2 thuần trên mọi đại lượng đo".
+1. Theo tiêu chí chốt trước: **chưa đạt**. Bán thực gần hold-out nhất (đạt 6/7 tiêu chí, hơn hẳn mức 2 thuần 1/7 và mức 1 0/7) nhưng không đạt trung vị thời lượng phiên, và KS D thời lượng chỉ đạt sát ngưỡng. Do đó, theo v1, chưa được dùng cụm từ "giống thật" trong báo cáo đồ án; chỉ được nói "gần hold-out hơn mức 1 và mức 2 thuần trên mọi đại lượng đo". Kết luận theo v2 (thêm ngày 24/11/2026) ở mục 12.
 2. Mục 5 cho thấy phần lệch thời lượng nằm ở khác biệt giữa giai đoạn xây và giai đoạn hold-out của log, không ở cơ chế phát lại.
 3. Đã chạy lại ba run trên code workload đã merge với TTL mặc định (19/11/2026); số đo khớp pilot. Bộ phát workload ở `ba2d7da` dùng được cho thu dữ liệu tuần 15.
 4. Tiêu chí thời lượng giữ nguyên ở lần đo này. Nếu muốn thay (mục 5), phải ghi phiên bản tiêu chí mới kèm lý do trước lần đo kế tiếp và báo cáo song song tiêu chí cũ; nên kèm nhiều seed để có khoảng tin cậy cho KS D thời lượng.
@@ -195,6 +196,85 @@ Quá trình đến (không có ngưỡng; khoảng 2,5–97,5% của nhóm ngày
 - **Làm tròn theo giây đưa KS D think time của bán thực từ 0,075 về 0,029**, đúng như chẩn đoán độ phân giải ở mục 5.
 - Với bán thực, đạt v2 nghĩa là bộ phát giữ được hình dạng phiên của kế hoạch và 4 ngày đã chọn không bất thường; v2 không chứng minh thêm điều gì về log Moodle so với người dùng của LMS này (criteria-v2 mục 3).
 - Kết luận "giống thật" theo v2 chưa được viết ở đây vì đây là chấm sau khi xem dữ liệu. Nó chỉ được viết khi các run dataset v0 (chạy sau thời điểm đăng ký, trên nhóm ngày chưa ai xem) đạt v2.
+
+## 11. Bằng chứng chính: run train/validation của dataset v0 (24/11/2026)
+
+Theo criteria-v2 mục 4.2. Tiêu chí v2 và mã chấm được push ở commit `602230b` (19/11/2026 15:18 +07); run dataset đầu tiên bắt đầu lúc 23/11/2026 09:14Z (16:14 +07), bốn ngày sau thời điểm đăng ký. Chấm **mọi** run train và validation đang giữ slot của dataset v0 (task-04, [dataset-v0](dataset-v0.md) mục 6). Sáu run dataset khác trong ledger không được chấm: năm run hỏng trước khi workload bắt đầu, và một run `healthy-spike` bị ngắt sau 14 phút rồi được thay thế (dataset-v0 mục 6.2). Chúng bị loại theo trạng thái ledger và luật thay run của evaluation-protocol-v1 mục 8.6, không theo điểm độ thực; không run nào được chọn hay bỏ sau khi chấm.
+
+Mỗi run chấm phần traffic học viên theo profile của nó, với cùng hold-out và cùng mã chấm như mục 10. Pool ngày tham chiếu và ngày hold-out cho quá trình đến khác nhau theo profile (criteria-v2 mục 2.3):
+
+- `normal-mixed`: 31 ngày có số phiên trong [Q1, Q3] = [204, 576]; ngày hold-out 80, 83, 60, 65, như mục 10.
+- `healthy-spike`: 16 ngày có số phiên ≥ 576; ngày hold-out 75, 67, 76, 74.
+
+Lệnh chấm:
+
+```bash
+cd aiops-platform/load
+node tools/validate-realism.mjs --profile <normal-mixed|healthy-spike> \
+  --run <tên>=../experiments/runs/<run_id>/workload --out <tên>.json
+```
+
+| Split | Case | Profile | `run_id` | Phiên | V1 (đạt/7) | V2 điểm / `tau` (đại lượng có thứ hạng cao nhất) | V2 | Quá trình đến ngoài khoảng 2,5–97,5% |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| train | healthy | normal-mixed | `train-healthy-normal-mixed-s1001-20261123t102740z` | 1.262 | 6/7 (trượt: trung vị thời lượng) | 0,386 / 0,987 (trung vị thao tác) | **đạt** | không |
+| train | healthy | normal-mixed | `train-healthy-normal-mixed-s1002-20261123t113109z` | 1.262 | 6/7 (trượt: trung vị thời lượng) | 0,386 / 0,987 (trung vị thao tác) | **đạt** | không |
+| validation | healthy | normal-mixed | `validation-healthy-normal-mixed-s2002-20261123t091816z` | 1.156 | 5/7 (trượt: KS thao tác, trung vị thời lượng) | 0,679 / 0,984 (trung vị thời lượng) | **đạt** | Pearson dáng theo giờ 0,68 (khoảng 0,74–0,97) |
+| train | healthy | healthy-spike | `train-healthy-healthy-spike-s1003-20261123t224223z` | 3.368 | 5/7 (trượt: trung vị thời lượng, JSD) | 0,917 / 0,989 (JSD) | **đạt** | không |
+| train | healthy | healthy-spike | `train-healthy-healthy-spike-s1004-20261124t002521z` | 3.370 | 5/7 (trượt: trung vị thời lượng, JSD) | 0,919 / 0,988 (JSD) | **đạt** | không |
+| validation | healthy | healthy-spike | `validation-healthy-healthy-spike-s2003-20261123t123352z` | 3.398 | 5/7 (trượt: trung vị thời lượng, trung vị think) | 0,499 / 0,988 (trung vị think) | **đạt** | không |
+| validation | C2 | normal-mixed | `validation-c2-normal-mixed-s2001-20261123t182901z` | 1.157 | 5/7 (trượt: KS thao tác, trung vị thời lượng) | 0,668 / 0,987 (trung vị thời lượng) | **đạt** | Pearson dáng theo giờ 0,68 (khoảng 0,74–0,97) |
+| validation | C3 | normal-mixed | `validation-c3-normal-mixed-s2001-20261123t193231z` | 1.158 | 5/7 (trượt: KS thao tác, trung vị thời lượng) | 0,687 / 0,987 (trung vị thời lượng) | **đạt** | Pearson dáng theo giờ 0,68 (khoảng 0,74–0,97) |
+| validation | C4 | normal-mixed | `validation-c4-normal-mixed-s2001-20261123t203506z` | 1.158 | 5/7 (trượt: KS thao tác, trung vị thời lượng) | 0,687 / 0,987 (trung vị thời lượng) | **đạt** | Pearson dáng theo giờ 0,68 (khoảng 0,74–0,97) |
+| validation | C6 | normal-mixed | `validation-c6-normal-mixed-s2001-20261123t213759z` | 947 | 5/7 (trượt: KS thao tác, trung vị thời lượng) | 0,593 / 0,990 (trung vị thời lượng) | **đạt** | Pearson dáng theo giờ 0,38 (khoảng 0,74–0,97) |
+
+`tau` khác nhau một chút giữa các run vì nhóm tham chiếu rút đúng số phiên của từng run (criteria-v2 mục 2.4). Cột "Phiên" là số phiên học viên quan sát được, tức phiên có ít nhất một thao tác sau bước đăng nhập.
+
+**Tỉ lệ đạt:**
+
+| Profile | Run đạt v2 | Nhóm ngày khác nhau đạt v2 | Run đạt v1 |
+| --- | --- | --- | --- |
+| `normal-mixed` | 7/7 (3 healthy, 4 fault) | 2/2 | 0/7 |
+| `healthy-spike` | 3/3 (healthy) | 2/2 | 0/3 |
+| Tổng | 10/10 | 4/4 | 0/10 |
+
+**Đọc kết quả:**
+
+- **Số run độc lập ít hơn số dòng của bảng.** Phiên phát lại lấy từ file kế hoạch của split; `workload_seed` chỉ đổi phần ngẫu nhiên của bộ phát (gán tài khoản, độ kiên nhẫn), không đổi phiên. Đối chiếu `sessions.jsonl` của hai run train: cùng phiên nguồn có cùng số thao tác, chỉ khác `account_index` và `patience_s`. Vì vậy:
+  - hai run train `normal-mixed` cho số đo gần như trùng (KS D think time 0,0828 và 0,0821);
+  - năm run validation `normal-mixed` (healthy seed 2002, bốn fault run seed 2001) chỉ khác nhau ở phần do seed và fault làm đổi. Thực chất chỉ có **4 nhóm ngày** khác nhau: train `normal-mixed` (ngày 36, 42, 31, 48), validation `normal-mixed` (6, 52, 29, 13), train `healthy-spike` (39, 26, 33, 20), validation `healthy-spike` (46, 41, 19, 44). Tỉ lệ "theo nhóm ngày" mới là số mẫu độc lập.
+- **V1 không đạt ở run nào.** Mọi run trượt lệch trung vị thời lượng phiên (ngưỡng v1 10%), giống `r2` (mục 4). Một số run trượt thêm KS D số thao tác/phiên (validation `normal-mixed`: 0,104–0,105, ngưỡng 0,1), JSD tỉ lệ thao tác (train `healthy-spike`: 0,071, ngưỡng 0,05) hoặc lệch trung vị think time (validation `healthy-spike`: 14%, ngưỡng 10%). Theo v2, các khoảng cách đó vẫn nằm trong dao động của nhóm ngày thật: thứ hạng lớn nhất 0,92 (JSD của hai run train `healthy-spike`), dưới `tau` 0,99.
+- **Fault run vẫn đạt v2.** Fault chỉ làm đổi phần nhỏ của phiên trong cửa sổ fault. Riêng C6: `identity` bị pause nên 213/1.160 phiên học viên (18,4%) kết thúc `auth_failed` không có thao tác, nên chỉ còn 947 phiên quan sát. Phần còn lại vẫn đạt v2 (0,593). Số đo độ thực của fault run phản ánh workload cộng tác động của fault, không phải workload thuần; run healthy là bằng chứng sạch hơn.
+- **Quá trình đến.** Pearson dáng theo giờ của nhóm validation `normal-mixed` là 0,68, ngoài khoảng 0,74–0,97 của profile này (không có ngưỡng). Nguyên nhân nằm ở 4 ngày đã chọn, không ở bộ phát: tính trên chính file kế hoạch `moodle-normal-mixed-k4-validation-v1` (giờ = `start_s` ÷ 120 s, so với hold-out cùng ngày của bộ chấm) cũng ra 0,677. Run khớp kế hoạch ở các nhóm khác:
+  - train `normal-mixed`: kế hoạch 0,948, run 0,95;
+  - train `healthy-spike`: kế hoạch 0,729, run 0,73, nằm trong khoảng 0,65–0,95 của profile `healthy-spike`.
+
+  C6 thấp hơn nữa (0,38) vì phiên bắt đầu trong cửa sổ pause không đăng nhập được. Ba đại lượng còn lại (đỉnh/trung bình, index of dispersion, Hurst) nằm trong khoảng ở mọi run.
+- **TTL 60 s.** Run dataset dùng TTL service token 60 s của lớp fault (criteria-v2 mục 4.3), khác `r2` (600 s). Ở run không phải C6, 0,03–0,34% phiên học viên kết thúc `auth_failed` (1–4 phiên mỗi run). Phần lớn các phiên này hỏng ở bước đăng nhập nên rơi khỏi tập quan sát; phiên hỏng giữa chừng vẫn được tính với các thao tác đã làm. Tỉ lệ này quá nhỏ để đổi phân phối đo.
+
+**Giới hạn của bằng chứng:**
+
+- **Một số ngày đã được xem trước.** Criteria-v2 mục 4.2 yêu cầu kế hoạch dựng từ "nhóm ngày chưa ai xem". Ở đây, một ngày tính là "đã xem" nếu nó thuộc một nhóm 4 ngày đã được đo độ thực trước khi đăng ký v2. Mục 5 có đo gộp toàn bộ phần xây (ngày 0–59), nhưng phép đo gộp đó không cho kết quả riêng của nhóm nào nên không tính. Luật chia ngày `day-split-v1` (task-04) chia theo thứ hạng số phiên và được ghi trước khi sinh kế hoạch, nhưng không loại các ngày đã dùng trước đó. So với các kế hoạch đã đo:
+  - Kế hoạch `moodle-normal-mixed-k4-v1` (ngày 30, 43, 52, 42) đã được chấm ở `r2` (mục 4, 10). Ngày 42 nằm trong nhóm train `normal-mixed`, ngày 52 trong nhóm validation (mỗi nhóm 1/4 ngày).
+  - Kế hoạch `moodle-healthy-spike-k4-v1` (40, 46, 39, 26) đã được đo theo bộ đo v1 ở mục 5 (dòng "Kế hoạch `healthy-spike` so với hold-out", 18/11/2026). Nó cũng được dùng ở task-02 và ở run pilot `pilot-c2-healthy-spike-s26-20261123t040552z` của task-03. Ngày 39, 26 nằm trong nhóm train `healthy-spike`, ngày 46 trong nhóm validation.
+
+  Không nhóm nào trùng nguyên với nhóm đã đo, và không ngày nào được chọn dựa trên kết quả độ thực. Điều kiện "chưa ai xem" đúng hoàn toàn với 2/4 ngày của nhóm train `healthy-spike` và 3/4 ngày của mỗi nhóm còn lại.
+- **Nhóm validation `normal-mixed` bất thường về lịch đến.** Pearson dáng theo giờ 0,68 (C6: 0,38) nằm ngoài khoảng 0,74–0,97 của nhóm ngày thật. Đại lượng này không có ngưỡng nên không làm run trượt v2. Dù vậy, câu "nhóm ngày không bất thường" chỉ đúng với bảy đại lượng mức phiên, không đúng với dáng theo giờ của nhóm này.
+- **Với bán thực, v2 chỉ kiểm hai điều** (criteria-v2 mục 3): bộ phát giữ được hình dạng phiên của kế hoạch, và nhóm ngày đã chọn không bất thường so với các ngày thật khác. Nó không chứng minh log Moodle giống người dùng của LMS này.
+- **Nguồn đơn giản chỉ có ở `normal-mixed`, và là điểm chấm sau khi xem dữ liệu.** Điều kiện thứ hai của kết luận (điểm v2 thấp hơn mức 1 và mức 2 thuần, criteria-v2 mục 2) chỉ so được với hai run `r2` cùng profile `normal-mixed` và `k` = 4, chấm ở mục 10: mức 1 và mức 2 thuần cùng điểm 1,000, tức thứ hạng tối đa.
+  - Điểm này được chấm sau khi đã biết hai nguồn trượt v1 (criteria-v2 mục 4.1). Vì vậy điều kiện thứ hai chỉ là kiểm tra hợp lý, không phải bằng chứng độc lập.
+  - Phép so cũng vượt lô: hai run `r2` khác run dataset ở TTL (600 s), số phiên (1.245–1.462 so với 947–1.262) và code (`ba2d7da` so với `ec98a55`/`dbb9ae1`/`9daed76`). Khoảng cách của hai nguồn này vượt xa phân vị 95% (ví dụ KS D thời lượng của mức 2 thuần là 0,288 so với 0,17), nên các khác biệt trên không kéo được điểm 1,000 xuống.
+  - Profile `healthy-spike` chưa có run mức 1 hay mức 2 thuần.
+
+## 12. Kết luận theo v1 và v2
+
+- **Theo v1** (ngưỡng cố định, mục 1): **chưa đạt** ở run nào, gồm `r2` và cả 10 run dataset. Vẫn không được dùng cụm "giống thật" theo v1.
+- **Theo v2, profile `normal-mixed`:** bán thực đạt v2 ở 7/7 run và 2/2 nhóm ngày, chạy sau thời điểm đăng ký; điểm (0,386–0,687) thấp hơn mức 1 và mức 2 thuần (1,000). Hai điều kiện của criteria-v2 mục 2 được thỏa, nên **được viết: traffic học viên bán thực `normal-mixed` giống thật theo tiêu chí v2**. Khi viết phải kèm bốn giới hạn ở mục 11:
+  1. nghĩa của v2 với bán thực: bộ phát trung thành với kế hoạch, và nhóm ngày không bất thường ở bảy đại lượng mức phiên;
+  2. dáng theo giờ của nhóm validation nằm ngoài dải của nhóm ngày thật;
+  3. 1/4 ngày của mỗi nhóm đã nằm trong kế hoạch `r2`;
+  4. chỉ có 2 nhóm ngày độc lập, và phép so với nguồn đơn giản là chấm sau khi xem dữ liệu.
+- **Theo v2, profile `healthy-spike`:** bán thực đạt v2 ở 3/3 run và 2/2 nhóm ngày, nhưng **chưa viết "giống thật"** vì chưa có nguồn đơn giản để so ở profile này. Muốn viết thì cần chạy và chấm một run mức 2 thuần (`assumed-healthy-spike-k4-v1`) và một run mức 1 tương ứng ở `healthy-spike`. Mức 1 dùng VU cố định, không có profile (mục 2), nên phải định nghĩa trước mức 1 tương ứng, chẳng hạn số VU cho cùng tổng request với run bán thực. Việc này chưa có trong kế hoạch tuần 15.
+- Tiêu chí v1 và v2 giữ nguyên. Các số đo trên không dẫn tới thay đổi tiêu chí.
 
 ## Tài liệu tham khảo
 
