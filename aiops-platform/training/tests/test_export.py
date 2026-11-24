@@ -1,5 +1,5 @@
 import json
-from datetime import timedelta
+from datetime import UTC, datetime, timedelta
 
 import httpx
 import pyarrow.parquet as pq
@@ -14,6 +14,7 @@ from aiops_training.telemetry.adapters.prometheus import PrometheusAdapter
 from aiops_training.telemetry.adapters.tempo import TempoAdapter, TempoExportOptions
 from aiops_training.telemetry.export import ExportOptions, Sources, check_retention, export_run
 from aiops_training.telemetry.schema import LOG_SCHEMA, METRIC_SCHEMA, SPAN_SCHEMA
+from aiops_training.telemetry.window import ExportWindow, parse_utc
 
 
 def _loki_vector(request):
@@ -84,3 +85,19 @@ def test_retention_guard(window, now):
     check_retention(window, now)
     with pytest.raises(ValueError, match="retention"):
         check_retention(window, now + timedelta(hours=25))
+
+
+def test_manifest_records_query_start_before_backend_calls(tmp_path):
+    current = datetime.now(UTC)
+    window = ExportWindow("run-q", current - timedelta(minutes=10), current - timedelta(minutes=5))
+    first_query: list[datetime] = []
+
+    def prometheus(request):
+        first_query.append(datetime.now(UTC))
+        return _matrix([DEPENDENCY_SERIES])
+
+    before = datetime.now(UTC)
+    manifest = export_run(window, tmp_path, _sources(prometheus), OPTIONS)
+    started = parse_utc(manifest["query_started_at"])
+    # Mốc lấy trước truy vấn đầu tiên tới backend và trước lúc export ghi xong.
+    assert before <= started <= first_query[0] <= parse_utc(manifest["generated_at"])

@@ -16,7 +16,7 @@ import httpx
 
 from .features.baseline import apply_baseline, fit_baseline, sha256_file
 from .features.leakage import check_leakage, is_healthy
-from .features.pipeline import write_features
+from .features.pipeline import FeatureError, write_features
 from .ground_truth.build import build_ground_truth, read_jsonl
 from .ground_truth.symptoms import SymptomConfig, measure_from_ground_truth, measure_symptoms
 from .ground_truth.validate import apply_verification, verify
@@ -116,10 +116,19 @@ def _features_parser(sub: argparse._SubParsersAction) -> None:
     parser = sub.add_parser("features", help="Sinh đặc trưng theo cửa sổ (feature pipeline v1)")
     parser.add_argument("artifact_dir", type=Path, help="Thư mục artifact (có manifest.json)")
     parser.add_argument("--out", type=Path, help="Mặc định <artifact_dir>/features")
+    parser.add_argument(
+        "--query-started-at",
+        help="ISO-8601 có múi giờ: ghi đè mốc export bắt đầu truy vấn backend (mặc định đọc "
+        "query_started_at của manifest export, rồi run-manifest.json của runner)",
+    )
 
 
 def _run_features(args: argparse.Namespace) -> int:
-    meta = write_features(args.artifact_dir, args.out)
+    query_start = parse_utc(args.query_started_at) if args.query_started_at else None
+    try:
+        meta = write_features(args.artifact_dir, args.out, query_start=query_start)
+    except FeatureError as error:
+        raise SystemExit(str(error)) from error
     keys = (
         "run_id",
         "feature_config_version",
@@ -130,7 +139,14 @@ def _run_features(args: argparse.Namespace) -> int:
         "queue_rows",
         "silent_windows",
     )
-    print(json.dumps({key: meta[key] for key in keys}, ensure_ascii=False))
+    brief = {key: meta[key] for key in keys}
+    brief.update(
+        {
+            key: meta["causality"][key]
+            for key in ("query_started_at", "query_started_at_source", "windows_cut")
+        }
+    )
+    print(json.dumps(brief, ensure_ascii=False))
     return 0
 
 

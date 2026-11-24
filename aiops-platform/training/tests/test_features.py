@@ -7,8 +7,10 @@ from pathlib import Path
 import pyarrow.parquet as pq
 import pytest
 
+from aiops_training.cli import main
 from aiops_training.features.pipeline import (
     FeatureConfig,
+    FeatureError,
     build_features,
     histogram_quantile,
     increase,
@@ -92,6 +94,8 @@ def _artifact(tmp_path: Path) -> Path:
         "time_end": (T0 + timedelta(seconds=600)).isoformat().replace("+00:00", "Z"),
         # Export chạy sau time_end + độ trễ thu thập, như runner (kiểm ở leakage).
         "generated_at": (T0 + timedelta(seconds=660)).isoformat().replace("+00:00", "Z"),
+        # Truy vấn backend bắt đầu 10 s sau time_end: không cửa sổ nào bị cắt.
+        "query_started_at": (T0 + timedelta(seconds=610)).isoformat().replace("+00:00", "Z"),
         "modality_availability": {"metrics": "available", "traces": "missing", "logs": "missing"},
         "files": {},
     }
@@ -321,3 +325,60 @@ def test_queue_windows_and_warmup_flag(tmp_path):
         "ai-worker:ai-worker--run-ai-job-v1",
         "ai-worker:ai-worker--run-ai-job-v1.error",
     ]
+
+
+def _iso(seconds: float) -> str:
+    return (T0 + timedelta(seconds=seconds)).isoformat().replace("+00:00", "Z")
+
+
+def _last_end(rows: list[dict]) -> datetime:
+    return max(row["window_end"] for row in rows)
+
+
+def test_windows_end_before_query_start_minus_collection_delay(tmp_path):
+    artifact = _artifact(tmp_path)
+    # Export bắt đầu truy vấn ở giây 590, trước time_end (600): mốc cắt 590 − 10 = 580.
+    _rewrite(artifact, [], query_started_at=_iso(590))
+    tables = build_features(artifact)
+    # Cửa sổ [525, 585) và [540, 600) kết thúc sau mốc cắt nên bị bỏ.
+    assert _last_end(tables.service_rows) == T0 + timedelta(seconds=570)
+    assert _last_end(tables.edge_rows) == T0 + timedelta(seconds=570)
+    causality = tables.meta["causality"]
+    assert causality["query_started_at_source"] == "export_manifest"
+    assert causality["windows_cut"] == 2
+    assert causality["window_end_cutoff"] == _iso(580)
+
+
+def test_query_start_falls_back_to_run_manifest_then_refuses(tmp_path):
+    run_dir = tmp_path / "run-1"
+    artifact = run_dir / "telemetry"
+    artifact.mkdir(parents=True)
+    _artifact(artifact)
+    _rewrite(artifact, [], query_started_at=None)
+    # Artifact cũ không có query_started_at và không có run-manifest: từ chối chạy.
+    with pytest.raises(FeatureError, match="--query-started-at"):
+        build_features(artifact)
+    # run-manifest.json của run khác không được dùng.
+    run_manifest = run_dir / "run-manifest.json"
+    steps = {"export": {"started_at": _iso(595)}}
+    run_manifest.write_text(json.dumps({"run_id": "khac", "steps": steps}), encoding="utf-8")
+    with pytest.raises(FeatureError):
+        build_features(artifact)
+    # run-manifest.json của runner cho cùng run: mốc 595 → cắt sau 585.
+    run_manifest.write_text(json.dumps({"run_id": "run-1", "steps": steps}), encoding="utf-8")
+    tables = build_features(artifact)
+    assert tables.meta["causality"]["query_started_at_source"] == "run_manifest"
+    assert _last_end(tables.service_rows) == T0 + timedelta(seconds=585)
+    assert tables.meta["causality"]["windows_cut"] == 1
+
+
+def test_cli_query_started_at_overrides_recorded_value(tmp_path, capsys):
+    artifact = _artifact(tmp_path)
+    assert main(["features", str(artifact), "--query-started-at", _iso(560)]) == 0
+    capsys.readouterr()
+    saved = json.loads((artifact / "features" / "features-manifest.json").read_text("utf-8"))
+    assert saved["causality"]["query_started_at_source"] == "cli"
+    # Mốc cắt 550: chỉ giữ cửa sổ kết thúc ở 540 trở về trước.
+    assert saved["causality"]["windows_cut"] == 4
+    rows = pq.read_table(artifact / "features" / "service_windows.parquet").to_pylist()
+    assert _last_end(rows) == T0 + timedelta(seconds=540)

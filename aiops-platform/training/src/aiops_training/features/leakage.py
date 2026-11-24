@@ -16,13 +16,12 @@
    - manifest feature khai báo quy tắc gán theo thời điểm của pipeline hiện hành (span theo
      `end_time`, mẫu trong `[window_start, window_end)`) và độ trễ thu thập `AVAILABLE_AFTER_S`;
    - `run_id` của manifest feature và manifest export (`<thư mục feature>/../manifest.json`) trùng
-     run đang kiểm, `time_end` của feature trùng `time_end` của export, mọi `window_end` ≤
-     `time_end`;
+     run đang kiểm, `time_end` của feature trùng `time_end` của export;
+   - manifest feature ghi mốc bắt đầu truy vấn (`causality.query_started_at`) và nguồn mốc; mốc
+     không muộn hơn mốc nào ghi trong file (`query_started_at` của export, `steps.export.started_at`
+     của `run-manifest.json`), nguồn file đã khai thì phải còn;
+   - mọi `window_end` ≤ min(`time_end`, mốc sớm nhất trong các nguồn trên − độ trễ lớn nhất);
    - manifest export được ghi (`generated_at`) không sớm hơn `time_end` + độ trễ lớn nhất.
-
-   Giới hạn: `generated_at` ghi lúc export **xong**, nên điều kiện cuối là điều kiện cần, không
-   chứng minh từng truy vấn backend chạy sau `time_end` + độ trễ (telemetry-data-dictionary-v2
-   mục 10).
 """
 
 from __future__ import annotations
@@ -37,7 +36,14 @@ import pyarrow.parquet as pq
 
 from ..telemetry.window import parse_utc
 from .baseline import FEATURE_MANIFEST, read_feature_meta, sha256_file
-from .pipeline import AVAILABLE_AFTER_S, FEATURE_VERSION, NOISE_FILTER_VERSION, TABLES
+from .pipeline import (
+    AVAILABLE_AFTER_S,
+    FEATURE_VERSION,
+    MAX_DELAY_S,
+    NOISE_FILTER_VERSION,
+    TABLES,
+    query_start_sources,
+)
 
 #: Trường truth/control không được đi vào feature path (evaluation-protocol-v1 mục 3.3).
 TRUTH_FIELDS = frozenset(
@@ -133,7 +139,7 @@ def _check_baseline(
 
 
 def _check_time(run_id: str, directory: Path, meta: dict[str, Any]) -> list[str]:
-    """Mục 5 của docstring module, phần đối chiếu với manifest export."""
+    """Mục 5 của docstring module, phần đối chiếu với manifest export và mốc truy vấn."""
     path = directory.parent / EXPORT_MANIFEST
     if not path.exists():
         return [f"{run_id}: không có manifest export {path} để kiểm thời điểm"]
@@ -150,19 +156,37 @@ def _check_time(run_id: str, directory: Path, meta: dict[str, Any]) -> list[str]
     if not time_end or not export.get("generated_at"):
         return [*errors, f"{run_id}: manifest export thiếu time_end hoặc generated_at"]
     end = parse_utc(time_end)
-    delay = max(AVAILABLE_AFTER_S.values())
-    if parse_utc(export["generated_at"]) < end + timedelta(seconds=delay):
+    if parse_utc(export["generated_at"]) < end + timedelta(seconds=MAX_DELAY_S):
         errors.append(
-            f"{run_id}: export ghi lúc {export['generated_at']}, sớm hơn time_end + {delay:g} s "
-            "(độ trễ thu thập lớn nhất)"
+            f"{run_id}: export ghi lúc {export['generated_at']}, sớm hơn time_end + "
+            f"{MAX_DELAY_S:g} s (độ trễ thu thập lớn nhất)"
         )
+    causality = meta.get("causality") or {}
+    declared, source = causality.get("query_started_at"), causality.get("query_started_at_source")
+    if not declared:
+        return [*errors, f"{run_id}: features-manifest không ghi mốc bắt đầu truy vấn"]
+    queried_at = parse_utc(declared)
+    recorded = query_start_sources(directory.parent, export)
+    if source != "cli" and source not in recorded:
+        errors.append(f"{run_id}: nguồn mốc truy vấn {source} không có trong file của run")
+    for name, value in sorted(recorded.items()):
+        if queried_at > value:
+            errors.append(
+                f"{run_id}: mốc truy vấn {declared} muộn hơn {name} ({value.isoformat()})"
+            )
+    # Mốc cắt theo mốc sớm nhất biết được, không chỉ mốc feature tự khai.
+    earliest = min([queried_at, *recorded.values()])
+    cutoff = min(end, earliest - timedelta(seconds=MAX_DELAY_S))
     for file_name, _ in TABLES.values():
         table_path = directory / file_name
         if not table_path.exists():
             continue
         last = pc.max(pq.read_table(table_path, columns=["window_end"]).column(0)).as_py()
-        if last is not None and last > end:
-            errors.append(f"{run_id}: {file_name} có window_end {last} sau time_end {time_end}")
+        if last is not None and last > cutoff:
+            errors.append(
+                f"{run_id}: {file_name} có window_end {last.isoformat()} sau mốc cắt "
+                f"{cutoff.isoformat()} (min(time_end, mốc truy vấn − {MAX_DELAY_S:g} s))"
+            )
     return errors
 
 

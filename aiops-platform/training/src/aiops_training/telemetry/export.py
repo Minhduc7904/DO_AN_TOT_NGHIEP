@@ -61,6 +61,10 @@ def _write(table: pa.Table, path: Path) -> dict[str, Any]:
     return {"path": path.name, "sha256": _sha256(path), "record_count": table.num_rows}
 
 
+def _iso(value: datetime) -> str:
+    return value.isoformat().replace("+00:00", "Z")
+
+
 def check_retention(window: ExportWindow, now: datetime | None = None) -> None:
     current = now or datetime.now(UTC)
     if window.start < current - RETENTION:
@@ -79,6 +83,9 @@ def export_run(
 ) -> dict[str, Any]:
     options = options or ExportOptions()
     check_retention(window, now)
+    # Mốc trước truy vấn đầu tiên: dữ liệu sau mốc này (trừ độ trễ thu thập) chưa chắc đã có trong
+    # backend; feature pipeline cắt cửa sổ theo mốc (evaluation-protocol-v1 mục 7.2).
+    query_started_at = _iso(now or datetime.now(UTC))
     target = out_dir / window.run_id
     target.mkdir(parents=True, exist_ok=True)
 
@@ -136,7 +143,7 @@ def export_run(
         availability["logs"] = "error"
         errors["logs"] = f"{type(error).__name__}: {error}"
 
-    generated_at = (now or datetime.now(UTC)).isoformat().replace("+00:00", "Z")
+    generated_at = _iso(now or datetime.now(UTC))
     manifest = {
         "artifact_manifest_version": MANIFEST_VERSION,
         "artifact_id": f"{window.run_id}--raw--{generated_at}",
@@ -150,6 +157,7 @@ def export_run(
         "format": "parquet",
         "files": files,
         "generated_at": generated_at,
+        "query_started_at": query_started_at,
         "time_start": window.start.isoformat().replace("+00:00", "Z"),
         "time_end": window.end.isoformat().replace("+00:00", "Z"),
         "record_count": sum(entry["record_count"] for entry in files.values()),

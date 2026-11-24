@@ -294,3 +294,39 @@ def test_check_leakage_catches_version_mismatch(tmp_path):
     errors = check_leakage(manifest, None, dirs)
     assert not any("không đồng nhất" in e for e in errors)
     assert "cần ('feature.v1', 'noise.v1'), có [\"('feature.v1', 'noise.v0')\"]" in errors
+
+
+def test_check_leakage_checks_windows_against_query_start(tmp_path):
+    dirs = {name: _run(tmp_path, name) for name in ("t1", "v1")}
+    manifest = _manifest(train=["t1"], validation=["v1"])
+    meta_path = dirs["v1"] / "features-manifest.json"
+    export = dirs["v1"].parent / "manifest.json"
+    meta = json.loads(meta_path.read_text(encoding="utf-8"))
+    declared = meta["causality"]["query_started_at"]
+    time_end = meta["time_end"]
+
+    # Export ghi mốc truy vấn sớm hơn mốc feature đã dùng (feature sinh trước khi sửa mốc).
+    earlier = time_end.replace(":10:00Z", ":09:50Z")
+    _edit_json(export, query_started_at=earlier)
+    errors = check_leakage(manifest, None, dirs)
+    assert any(
+        e.startswith(f"v1: mốc truy vấn {declared} muộn hơn export_manifest") for e in errors
+    )
+    # Cửa sổ của feature vượt mốc cắt mới (09:50 − 10 s).
+    assert any(
+        e.startswith("v1: service_windows.parquet có window_end") and "sau mốc cắt" in e
+        for e in errors
+    )
+
+    # Feature khai nguồn run_manifest nhưng run không có run-manifest.json.
+    _edit_json(export, query_started_at=declared)
+    meta["causality"]["query_started_at_source"] = "run_manifest"
+    meta_path.write_text(json.dumps(meta), encoding="utf-8")
+    errors = check_leakage(manifest, None, dirs)
+    assert "v1: nguồn mốc truy vấn run_manifest không có trong file của run" in errors
+
+    # Feature không ghi mốc.
+    del meta["causality"]["query_started_at"]
+    meta_path.write_text(json.dumps(meta), encoding="utf-8")
+    errors = check_leakage(manifest, None, dirs)
+    assert "v1: features-manifest không ghi mốc bắt đầu truy vấn" in errors

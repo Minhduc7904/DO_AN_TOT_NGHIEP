@@ -9,10 +9,12 @@ Thay đổi so với v0 (task-05 tuần 15, sau khi chạy trên run 48 phút c�
 - **Ánh xạ identity lệch** (`IDENTITY_ALIASES`) áp cho cạnh (metric dependency).
 - **Không dùng dữ liệu tương lai** (mục 7.2): metric và log chỉ lấy mẫu có thời điểm < `window_end`;
   span được tính vào cửa sổ chứa thời điểm **kết thúc** (trạng thái lỗi chỉ biết khi span xong), v0
-  tính theo lúc bắt đầu. Cửa sổ cuối kết thúc không sau `time_end` của export. Độ trễ thu thập
-  theo modality (`AVAILABLE_AFTER_S`) chỉ được **khai báo** ở `causality.available_after_s`;
-  pipeline không tự cắt cửa sổ theo nó. `check-leakage` kiểm export ghi xong không sớm hơn
-  `time_end` + độ trễ lớn nhất và mọi `window_end` ≤ `time_end` (`leakage.py`, mục 5).
+  tính theo lúc bắt đầu. **Độ trễ thu thập** (`AVAILABLE_AFTER_S`): chỉ giữ cửa sổ có
+  `window_end` ≤ min(`time_end`, mốc bắt đầu truy vấn backend − độ trễ lớn nhất). Export của
+  runner bắt đầu trước `time_end` (grace 30 s sau k6), nên cửa sổ cuối sau k6 bị cắt. Mốc lấy theo
+  `query_start` (tham số CLI, `query_started_at` của manifest export, hoặc
+  `steps.export.started_at` của `run-manifest.json` cạnh `telemetry/`); không có thì từ chối chạy.
+  Mốc, nguồn mốc và số cửa sổ bị cắt ghi ở `causality` của `features-manifest.json`.
 - **Trace không đầy đủ:** cột `traces_truncated` khi export chạm giới hạn tìm kiếm hoặc ngân sách
   (số span của cửa sổ đông bị thấp đi, không phải tín hiệu).
 - **Cạnh async:** bảng `queue_windows` từ gauge RabbitMQ theo hàng đợi (message sẵn sàng, chưa ack,
@@ -38,7 +40,8 @@ Sinh `ServiceWindowFeature` và `EdgeWindowFeature` theo telemetry-and-ground-tr
   `process_cpu_time_seconds_total` của runtime **không tăng** dù trước đó đã có mẫu được gắn
   `telemetry_silent = true` và đặc trưng tốc độ của runtime đó để null thay vì 0.
 - Không đọc ground truth, fault manifest hay nhật ký workload: đặc trưng chỉ từ telemetry (chống
-  leakage cơ bản; kiểm đầy đủ ở tuần 15).
+  leakage cơ bản; kiểm đầy đủ ở `leakage.py`). Từ `run-manifest.json` chỉ đọc `run_id` và
+  `steps.export.started_at` để lấy mốc truy vấn.
 """
 
 from __future__ import annotations
@@ -67,9 +70,11 @@ QUEUE_METRICS = {
     "rabbitmq_detailed_queue_consumers": "consumers",
 }
 #: Độ trễ thu thập theo modality (evaluation-protocol-v1 mục 1.3, 7.2): log ≈ 2 s, trace ≈ 2,5 s,
-#: counter 4–10 s. Cửa sổ chỉ đủ dữ liệu sau `window_end` + giá trị lớn nhất. Pipeline chỉ ghi giá
-#: trị này vào manifest; `leakage.check_leakage` dùng nó để kiểm thời điểm export.
+#: counter 4–10 s. Cửa sổ chỉ đủ dữ liệu sau `window_end` + giá trị lớn nhất.
 AVAILABLE_AFTER_S = {"metrics": 10.0, "traces": 3.0, "logs": 2.0}
+MAX_DELAY_S = max(AVAILABLE_AFTER_S.values())
+#: Manifest của runner, ở thư mục cha của `telemetry/` (`experiments/runs/<run_id>/`).
+RUN_MANIFEST = "run-manifest.json"
 #: Số span tối thiểu để tính `trace_error_rate` (evaluation-protocol-v1 mục 6.1.1 bảng F): trace có
 #: thể là mẫu (ngân sách export), tỉ lệ trên vài span quá nhiễu nên để rỗng.
 MIN_SPANS_FOR_RATE = 5
@@ -358,6 +363,43 @@ def _count_in(index: EventIndex | None, start: float, end: float) -> tuple[int, 
     return hi - lo, index.error_prefix[hi] - index.error_prefix[lo]
 
 
+class FeatureError(ValueError):
+    pass
+
+
+def query_start_sources(artifact_dir: Path, manifest: dict[str, Any]) -> dict[str, datetime]:
+    """Mốc bắt đầu truy vấn backend ghi trong file: `export_manifest` (`query_started_at`, export
+    từ task-05 tuần 15) và `run_manifest` (`steps.export.started_at` của runner, cho artifact cũ).
+    `run-manifest.json` của run khác bị bỏ qua."""
+    found: dict[str, datetime] = {}
+    if manifest.get("query_started_at"):
+        found["export_manifest"] = parse_utc(manifest["query_started_at"])
+    path = artifact_dir.parent / RUN_MANIFEST
+    if path.exists():
+        run = json.loads(path.read_text(encoding="utf-8"))
+        started = ((run.get("steps") or {}).get("export") or {}).get("started_at")
+        if started and run.get("run_id") == manifest.get("run_id"):
+            found["run_manifest"] = parse_utc(started)
+    return found
+
+
+def resolve_query_start(
+    artifact_dir: Path, manifest: dict[str, Any], override: datetime | None = None
+) -> tuple[datetime, str]:
+    """Mốc và nguồn mốc: tham số (`cli`) ghi đè, rồi `export_manifest`, rồi `run_manifest`."""
+    if override is not None:
+        return override, "cli"
+    found = query_start_sources(artifact_dir, manifest)
+    for source in ("export_manifest", "run_manifest"):
+        if source in found:
+            return found[source], source
+    raise FeatureError(
+        f"Không biết lúc export bắt đầu truy vấn backend của {manifest.get('run_id')}: manifest "
+        f"export không có query_started_at, không có {artifact_dir.parent / RUN_MANIFEST} của cùng "
+        "run. Truyền --query-started-at để pipeline cắt cửa sổ theo độ trễ thu thập (mục 7.2)."
+    )
+
+
 @dataclass
 class FeatureTables:
     service_rows: list[dict[str, Any]]
@@ -367,14 +409,21 @@ class FeatureTables:
 
 
 def build_features(
-    artifact_dir: Path, config: FeatureConfig | None = None, noise: NoiseFilter | None = None
+    artifact_dir: Path,
+    config: FeatureConfig | None = None,
+    noise: NoiseFilter | None = None,
+    query_start: datetime | None = None,
 ) -> FeatureTables:
+    """`query_start`: ghi đè mốc bắt đầu truy vấn backend (mặc định đọc từ file, xem
+    `resolve_query_start`)."""
     config = config or FeatureConfig()
     noise = noise or NoiseFilter()
     manifest = json.loads((artifact_dir / "manifest.json").read_text(encoding="utf-8"))
     run_id = manifest["run_id"]
+    queried_at, queried_source = resolve_query_start(artifact_dir, manifest, query_start)
     start = _ts(parse_utc(manifest["time_start"]))
-    end = _ts(parse_utc(manifest["time_end"]))
+    time_end = _ts(parse_utc(manifest["time_end"]))
+    end = min(time_end, _ts(queried_at) - MAX_DELAY_S)
     index = load_metric_index(artifact_dir, start, noise=noise)
     spans = _span_index(artifact_dir)
     logs = _log_index(artifact_dir)
@@ -536,6 +585,10 @@ def build_features(
             "traces": "span có end_time trong [window_start, window_end)",
             "logs": "dòng log có timestamp trong [window_start, window_end)",
             "available_after_s": AVAILABLE_AFTER_S,
+            "query_started_at": _iso(_ts(queried_at)),
+            "query_started_at_source": queried_source,
+            "window_end_cutoff": _iso(end),
+            "windows_cut": len(windows(start, time_end, config)) - len(all_windows),
         },
         "run_id": run_id,
         "config": asdict(config),
@@ -629,8 +682,10 @@ TABLES = {
 }
 
 
-def write_features(artifact_dir: Path, out_dir: Path | None = None) -> dict[str, Any]:
-    tables = build_features(artifact_dir)
+def write_features(
+    artifact_dir: Path, out_dir: Path | None = None, query_start: datetime | None = None
+) -> dict[str, Any]:
+    tables = build_features(artifact_dir, query_start=query_start)
     meta = tables.meta
     target = out_dir or artifact_dir / "features"
     target.mkdir(parents=True, exist_ok=True)
@@ -648,11 +703,14 @@ __all__ = [
     "NOISE_FILTER_VERSION",
     "TABLES",
     "FeatureConfig",
+    "FeatureError",
     "FeatureTables",
     "NoiseFilter",
     "build_features",
     "histogram_quantile",
     "increase",
+    "query_start_sources",
+    "resolve_query_start",
     "windows",
     "write_features",
 ]
