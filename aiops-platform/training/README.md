@@ -81,6 +81,8 @@ Bỏ `--case`, `--fault-log` cho run healthy. Bản ghi theo [telemetry-and-grou
 ```bash
 uv run aiops-training features ../experiments/runs/<RUN_ID>/telemetry   # → .../telemetry/features/
 # Baseline healthy: fit chỉ trên run train healthy của dataset, áp cho mọi run, kiểm leakage.
+# Cửa sổ chỉ giữ tới (mốc bắt đầu truy vấn − 10 s): mốc từ query_started_at của manifest export,
+# hoặc run-manifest.json của runner; không có thì truyền --query-started-at <ISO-8601>.
 # fit/check đọc <runs-dir>/<run_id>/telemetry/features; manifest export phải nằm ở thư mục cha.
 uv run aiops-training fit-baseline --dataset ../experiments/datasets/dataset-v0.json --runs-dir ../experiments/runs --out baselines/dataset-v0.json
 uv run aiops-training apply-baseline ../experiments/runs/<RUN_ID>/telemetry/features --baseline baselines/dataset-v0.json

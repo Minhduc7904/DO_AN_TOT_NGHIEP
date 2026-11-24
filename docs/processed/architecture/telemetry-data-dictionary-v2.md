@@ -151,6 +151,7 @@ Theo `TelemetryArtifactManifest` (schema v1 mục 6), cụ thể:
 | `format` | `parquet` |
 | `files.<modality>` | `path`, `sha256`, `record_count` |
 | `generated_at`, `time_start`, `time_end` | Cửa sổ export (đã cộng 30 s cuối khi lấy từ k6 summary) |
+| `query_started_at` | Lúc export bắt đầu truy vấn backend (lấy trước truy vấn đầu tiên; có từ task-05 tuần 15). `generated_at` là lúc export ghi xong. Feature pipeline cắt cửa sổ theo `query_started_at` (mục 9) |
 | `source_systems` | URL backend |
 | `export_config` | Bước metric, có loại probe log không, route probe, tên span gốc nhiễu, tùy chọn Tempo |
 | `queries` | Truy vấn đã dùng cho từng nguồn |
@@ -270,7 +271,7 @@ Hệ quả cho feature pipeline: **mọi metric của runtime đã ngừng vẫn
 
 - **Lọc nhiễu `noise.v1`**, áp như nhau cho mọi run (evaluation-protocol-v1 mục 8.5): bỏ route probe `/ready`, `/health` khỏi metric HTTP của service; bỏ thao tác `ping` (readiness của `media`, `media-worker` gọi MinIO) khỏi metric dependency. Ví dụ trên run pilot C6: `request_rate` của `scheduler` ở v0 là 0,2 req/s, toàn bộ là probe; v1 là 0. Trace và log probe vẫn lọc ở bước export như trước.
 - **Ánh xạ identity lệch:** `notification-rabbitmq` → `notification-worker-rabbitmq` khi dựng cạnh.
-- **Không dùng dữ liệu tương lai** (evaluation-protocol-v1 mục 7.2): span tính vào cửa sổ chứa `end_time`, vì trạng thái lỗi chỉ biết khi span kết thúc (v0 tính theo `start_time`, nên cửa sổ thấy lỗi của span còn chạy sau `window_end`). Metric và log dùng mẫu có thời điểm trong `[window_start, window_end)`. Cửa sổ chỉ đủ dữ liệu sau `window_end` + độ trễ thu thập (`available_after_s`: metric 10 s, trace 3 s, log 2 s). Pipeline chỉ khai báo độ trễ này trong manifest, không tự cắt cửa sổ; phần được kiểm ở mục 9.4, giới hạn ở mục 10.
+- **Không dùng dữ liệu tương lai** (evaluation-protocol-v1 mục 7.2): span tính vào cửa sổ chứa `end_time`, vì trạng thái lỗi chỉ biết khi span kết thúc (v0 tính theo `start_time`, nên cửa sổ thấy lỗi của span còn chạy sau `window_end`). Metric và log dùng mẫu có thời điểm trong `[window_start, window_end)`. Cửa sổ chỉ đủ dữ liệu sau `window_end` + độ trễ thu thập (`available_after_s`: metric 10 s, trace 3 s, log 2 s). Pipeline chỉ giữ cửa sổ có `window_end` ≤ min(`time_end`, mốc bắt đầu truy vấn backend − 10 s). Runner gọi export ngay khi k6 xong, trước `time_end` (k6 xong + 30 s grace), nên 2–3 cửa sổ cuối sau k6 của mỗi run bị cắt (mục 9.6). Mốc lấy theo thứ tự: `--query-started-at` (ghi đè); `query_started_at` của manifest export (export ghi từ task-05 tuần 15, ngay trước truy vấn đầu tiên); `steps.export.started_at` của `run-manifest.json` cạnh `telemetry/` (artifact cũ của runner; chỉ đọc trường này và `run_id`). Không có nguồn nào thì pipeline từ chối chạy. `features-manifest.json` ghi ở `causality`: `query_started_at`, `query_started_at_source`, `window_end_cutoff`, `windows_cut`.
 - **Modality thiếu:** `span_count`, `log_count`, `log_error_rate` rỗng khi modality `missing`; runtime chưa từng có mẫu nhịp tim thì mọi đặc trưng metric rỗng. v0 ghi 0, và số 0 này đi vào bước fit như một quan sát thật.
 - **Cột mới:** `warmup` (cửa sổ bắt đầu trước `time_start` + 360 s, bước fit bỏ qua), `traces_truncated` (export chạm giới hạn tìm kiếm hoặc ngân sách: span của cửa sổ đông bị thiếu, không dùng số span làm tín hiệu tải).
 - **Bảng `queue_windows`** cho cạnh async (mục 9.3).
@@ -335,7 +336,7 @@ Cạnh async (producer → hàng đợi → consumer) không có trong metric de
   - cột hay khóa ground truth (`fault_*`, `root_cause_*`, `expected_*`, `scenario_id`, `case_id`, `repeat_index`, `split`) trong bảng feature hoặc manifest feature;
   - phiên bản feature hay lọc nhiễu không đồng nhất, hoặc đồng nhất nhưng khác `feature.v1`/`noise.v1`;
   - manifest feature không khai báo quy tắc thời điểm của v1;
-  - thời điểm: `time_end` của feature khác manifest export (`telemetry/manifest.json`); có `window_end` sau `time_end`; export ghi xong (`generated_at`) sớm hơn `time_end` + 10 s (độ trễ thu thập lớn nhất). Pipeline không tự cắt cửa sổ theo độ trễ thu thập, chỉ khai báo; và `generated_at` là lúc export xong nên đây là điều kiện cần, không chứng minh từng truy vấn chạy sau độ trễ (mục 10).
+  - thời điểm: `time_end` của feature khác manifest export (`telemetry/manifest.json`); manifest feature không ghi mốc truy vấn, khai nguồn file mà file không còn, hoặc mốc muộn hơn mốc ghi trong manifest export hay `run-manifest.json`; có `window_end` sau min(`time_end`, mốc sớm nhất − 10 s); export ghi xong (`generated_at`) sớm hơn `time_end` + 10 s.
 
   Mỗi loại có test cố ý vi phạm ở `tests/test_baseline_leakage.py`.
 
@@ -345,23 +346,25 @@ Artifact `w14-t05-fault-trial` (15 phút, tải nền k6 mức 1, bốn case b�
 
 ### 9.6. Kết quả của v1 trên dataset v0 (24/11/2026)
 
-Chạy trên 10 run train/validation của [dataset v0](dataset-v0.md) (mục 6), artifact ở `aiops-platform/experiments/runs/<run_id>/telemetry/`:
+Chạy trên 10 run train/validation của [dataset v0](dataset-v0.md) (mục 6), artifact ở `aiops-platform/experiments/runs/<run_id>/telemetry/`. Số dưới đây là lần chạy lại 24/11 sau khi pipeline cắt cửa sổ theo độ trễ thu thập; thay cho lần chạy trước đó.
 
-- `features`: 10/10 run thoát 0, `feature.v1` và `noise.v1` ở mọi run. Mỗi run có 193–194 cửa sổ, 2.123–2.134 dòng service, 6.984–7.372 dòng cạnh, 4.632–4.656 dòng hàng đợi (24 hàng đợi ở mọi run). Hai run 193 cửa sổ (`train-healthy-normal-mixed-s1002`, `validation-healthy-healthy-spike-s2003`) có 2.123/7.334/4.632 dòng. Hai run chỉ có 36 cạnh thay vì 38 (`validation-healthy-normal-mixed-s2002`, `validation-c2-normal-mixed-s2001`) có 6.984 dòng cạnh. Chỉ run validation C6 có cửa sổ im lặng (16 cửa sổ của `identity` trong lúc bị pause).
-- **Thời gian và RAM trên một run 48 phút**, đo bằng `/usr/bin/time` khi máy rảnh (stack đã dừng, 12 nhân, RAM trống 11.704 MB):
-  - `train-healthy-healthy-spike-s1004-20261124t002521z`: 62,9 s, RSS đỉnh 1.787 MB;
-  - `train-healthy-normal-mixed-s1001-20261123t102740z`: 60,5 s, RSS đỉnh 1.883 MB.
+- `features`: 10/10 run thoát 0, `feature.v1` và `noise.v1` ở mọi run.
+  - Mốc truy vấn lấy từ `steps.export.started_at` của `run-manifest.json` (artifact export cũ chưa có `query_started_at`). Export bắt đầu sớm hơn `time_end` 28,7–29,5 s.
+  - Cửa sổ bị cắt: 2 ở `train-healthy-normal-mixed-s1002` và `validation-healthy-healthy-spike-s2003`, 3 ở tám run còn lại; tổng 28. Đều là cửa sổ cuối, sau khi k6 xong.
+  - Mỗi run còn 191 cửa sổ, 2.101 dòng service, 4.584 dòng hàng đợi (24 hàng đợi). Dòng cạnh: 7.258 (38 cạnh); hai run chỉ có 36 cạnh (`validation-healthy-normal-mixed-s2002`, `validation-c2-normal-mixed-s2001`) có 6.876 dòng.
+  - Chỉ run validation C6 có cửa sổ im lặng (16 cửa sổ của `identity` trong lúc bị pause).
+- **Thời gian và RAM trên một run 48 phút**, đo bằng `/usr/bin/time` khi máy rảnh (không có run hay tác vụ nặng khác, 12 nhân, RAM trống khoảng 11.500 MB), chạy tuần tự từng run:
+  - `train-healthy-healthy-spike-s1004-20261124t002521z`: 62,2 s, RSS đỉnh 1.548 MB;
+  - `train-healthy-normal-mixed-s1001-20261123t102740z`: 60,9 s, RSS đỉnh 1.627 MB.
 
-  Tám run còn lại đo khi một run k6 đang chạy song song: 58,6–69,5 s, RSS 1.582–1.672 MB. Pipeline chạy tuần tự từng run; mỗi lần chạy cần khoảng 2 GB RAM trống.
-- `fit-baseline` trên dataset manifest v0 đọc đúng 4 run train healthy (2 `normal-mixed`, 2 `healthy-spike`). Kết quả có 11 nhóm service, 38 cạnh, 24 hàng đợi, và bỏ cửa sổ `warmup` cùng cửa sổ im lặng. Artifact `aiops-platform/training/baselines/dataset-v0.json` ghi sha256 của dataset manifest và của manifest feature của từng run train.
-  - Lần đo đầu (3,5 s, RSS 150 MB) chạy trước khi gộp task-04. Đầu vào giống hệt; dataset manifest sau đó chỉ đổi câu `seed_rule`.
-  - Đo lại 24/11 trên dataset manifest hiện hành: 3,4 s, RSS 151 MB. Baseline sinh ra trùng từng byte với bản đã commit.
-- `apply-baseline` chạy cho cả 10 run, ghi `baseline-apply.json` với sha256 của baseline. `check-leakage` (gồm các kiểm thêm ở mục 9.4) trên dataset manifest v0, với baseline trên, kiểm 10 run và không báo vi phạm nào (`errors` rỗng).
+  Cả 10 run: 53,9–64,3 s, RSS đỉnh 1.530–1.768 MB. Mỗi lần chạy cần khoảng 2 GB RAM trống.
+- `fit-baseline` trên dataset manifest v0 đọc đúng 4 run train healthy (2 `normal-mixed`, 2 `healthy-spike`): 3,4 s, RSS 150 MB. Kết quả có 11 nhóm service, 38 cạnh, 24 hàng đợi, và bỏ cửa sổ `warmup` cùng cửa sổ im lặng. Artifact `aiops-platform/training/baselines/dataset-v0.json` được fit lại trên feature mới, ghi sha256 của dataset manifest và của manifest feature của từng run train.
+- `apply-baseline` chạy cho cả 10 run, ghi `baseline-apply.json` với sha256 của baseline. `check-leakage` (gồm các kiểm ở mục 9.4) trên dataset manifest v0, với baseline trên, kiểm 10 run và không báo vi phạm nào (`errors` rỗng).
 
 ## 10. Giới hạn và việc tiếp theo
 
 - Chưa có `phase_coverage`, `workflow_trace_coverage_ratio` và các trường async của schema v1 mục 7.2 (cần nhật ký thao tác k6 mức 2 và fault manifest, tuần 14).
 - Ngưỡng `silent_threshold_s` 30 s, mép 35 s và tương quan log–trace 95% đã **chốt sau pilot tuần 15** ([evaluation-protocol-v1](evaluation-protocol-v1.md) mục 6.1.1, bảng F): trong 9 run pilot chỉ hai run C6 gắn `telemetry_silent:identity`, đúng runtime bị pause; không run nào có `low_log_trace_correlation`. Đổi ngưỡng sau mốc này là đổi `telemetry_quality_version`.
 - `notification-worker` khi phát lại command từ outbox đang dùng identity `notification-rabbitmq` thay vì `notification-worker-rabbitmq` (lệch so với schema v1 mục 3.2.4; `lms/services/notification/src/adapters/messaging/outbox-relay.service.ts`). Feature v1 ánh xạ lại khi dựng cạnh (`IDENTITY_ALIASES`, ghi trong `features-manifest.json`); cột `dependency_identity` của span trong artifact vẫn giữ giá trị gốc.
-- **Export bắt đầu trước `time_end`.** Runner gọi export ngay khi k6 xong, còn `time_end` = k6 xong + 30 s grace (`ExportWindow.from_k6_summary`). Trên 10 run của dataset v0, export bắt đầu sớm hơn `time_end` 28,7–29,5 s. Prometheus trả cả bước sau thời điểm truy vấn bằng giá trị cũ (lookback): counter của mọi runtime đứng yên từ khoảng 20 s cuối, ví dụ `process_cpu_time_seconds_total` của `course`, `gateway`, `scheduler` ở run `train-healthy-normal-mixed-s1001`. Có 2–3 cửa sổ cuối mỗi run (28 cửa sổ trên 10 run, đều trong khoảng không tải sau k6) kết thúc sau lúc export bắt đầu − 10 s, nên chưa đủ độ trễ thu thập (evaluation-protocol-v1 mục 7.2). `check-leakage` chưa bắt được vì manifest export không ghi lúc bắt đầu truy vấn; `generated_at` ghi lúc export xong. Hướng sửa: export chờ tới `time_end` + 10 s rồi mới truy vấn, hoặc ghi lúc bắt đầu truy vấn để pipeline cắt cửa sổ và `check-leakage` kiểm. Sau đó chạy lại `features`, `fit-baseline`, `apply-baseline`.
+- **Export bắt đầu trước `time_end`** (đã xử lý ở pipeline). Runner gọi export ngay khi k6 xong, còn `time_end` = k6 xong + 30 s grace (`ExportWindow.from_k6_summary`). Prometheus trả cả bước sau thời điểm truy vấn bằng giá trị cũ (lookback), nên trước khi sửa, counter của mọi runtime đứng yên ở khoảng 20 s cuối mỗi run. Export nay ghi `query_started_at` ngay trước truy vấn đầu tiên. Pipeline cắt cửa sổ theo mốc này (mục 9), còn `check-leakage` kiểm lại (mục 9.4). Không export lại được vì stack đã reset; artifact của dataset v0 dùng `steps.export.started_at` của runner làm mốc. Việc còn mở: cho export chờ tới `time_end` + 10 s rồi mới truy vấn, để không mất cửa sổ cuối.
 - Bộ đếm lỗi xuất hiện lần đầu giữa cửa sổ là series mới; `increase()` của Prometheus bỏ mẫu đầu. Artifact giữ giá trị thô nên feature pipeline coi giá trị trước đó là 0 (đã làm ở mục 9).

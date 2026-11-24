@@ -65,14 +65,15 @@ Theo [evaluation-protocol-v1](../../../architecture/evaluation-protocol-v1.md) m
   - `features` thoát 0 ở cả 10 run (`feature.v1`, `noise.v1`).
   - `fit-baseline` đọc đúng 4 run train healthy. Baseline `aiops-platform/training/baselines/dataset-v0.json` được commit, có sha256 của dataset manifest.
   - `apply-baseline` chạy cho cả 10 run. `check-leakage` trên dataset manifest v0 không báo vi phạm nào.
-  - Đo trên run 48 phút khi máy rảnh: 60,5–62,9 s, RSS đỉnh 1.787–1.883 MB.
-- Cập nhật 24/11/2026 sau review độc lập ([telemetry-data-dictionary-v2](../../../architecture/telemetry-data-dictionary-v2.md) mục 9.4, 9.6):
+  - Đo trên run 48 phút khi máy rảnh: 60,5–62,9 s, RSS đỉnh 1.787–1.883 MB. Các số của lần chạy này đã được thay bằng lần chạy lại ở cập nhật dưới.
+- Cập nhật 24/11/2026 sau review độc lập ([telemetry-data-dictionary-v2](../../../architecture/telemetry-data-dictionary-v2.md) mục 9, 9.4, 9.6, 10):
   - `fit-baseline` chỉ đọc slot train có `case` rỗng (healthy, mục 9.1); `check-leakage` bắt baseline fit trên run train có fault.
   - `check-leakage` không tin metadata tự khai của baseline: đối chiếu khóa `fit_inputs_sha256` với `fit_runs`, sha256 manifest feature hiện có của từng run fit, sha256 của dataset manifest; đối chiếu `run_id` của manifest feature và manifest export.
-  - Kiểm thời điểm: `time_end` của feature trùng manifest export, mọi `window_end` ≤ `time_end`, export ghi xong không sớm hơn `time_end` + 10 s. Độ trễ thu thập chỉ được khai báo; pipeline không tự cắt cửa sổ theo nó.
+  - Độ trễ thu thập được áp khi đóng cửa sổ: export ghi `query_started_at` trước truy vấn đầu tiên; pipeline chỉ giữ cửa sổ có `window_end` ≤ min(`time_end`, mốc − 10 s). Artifact cũ lấy mốc từ `run-manifest.json` của runner; không có mốc thì từ chối chạy. `check-leakage` kiểm lại mốc và mọi `window_end`.
   - `apply-baseline` ghi `baseline-apply.json` có sha256 của baseline.
-  - Chạy lại trên 10 run: baseline trùng từng byte bản đã commit (3,4 s, RSS 151 MB); `check-leakage` không báo vi phạm nào.
+  - Chạy lại `features` cho 10 run: cắt 2–3 cửa sổ cuối sau k6 mỗi run (tổng 28), mỗi run còn 191 cửa sổ. Fit lại baseline, apply cho 10 run; `check-leakage` không báo vi phạm nào.
+  - Đo lại khi máy rảnh: `features` 60,9–62,2 s, RSS đỉnh 1.548–1.627 MB trên hai run đo chính thức; `fit-baseline` 3,4 s, RSS 150 MB.
 - Ghi chú/tồn đọng:
-  - Yêu cầu "độ trễ thu thập được áp khi đóng cửa sổ" mới đạt một phần. Export bắt đầu sớm hơn `time_end` khoảng 29 s, nên 2–3 cửa sổ cuối mỗi run (28 cửa sổ trên 10 run, đều trong khoảng không tải sau k6) có metric Prometheus lấp bằng giá trị cũ. Chi tiết và hướng sửa ở mục 10 của data dictionary; cần sửa export/runner rồi chạy lại `features`, `fit-baseline`, `apply-baseline`.
+  - Export của runner vẫn bắt đầu trước `time_end` nên mất 2–3 cửa sổ cuối mỗi run; có thể cho export chờ tới `time_end` + 10 s (mục 10 của data dictionary).
   - Artifact feature nằm trong thư mục run (không commit), sinh lại được bằng lệnh ở README `training/`.
   - Nhánh đã gộp task-04 để có dataset manifest có `run_id`.
