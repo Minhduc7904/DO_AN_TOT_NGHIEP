@@ -199,7 +199,7 @@ Quá trình đến (không có ngưỡng; khoảng 2,5–97,5% của nhóm ngày
 
 ## 11. Bằng chứng chính: run train/validation của dataset v0 (24/11/2026)
 
-Theo criteria-v2 mục 4.2. Tiêu chí v2 và mã chấm được push ở commit `602230b` (19/11/2026 15:18 +07); run dataset đầu tiên bắt đầu lúc 23/11/2026 09:14Z (16:14 +07), bốn ngày sau thời điểm đăng ký. Chấm **mọi** run train và validation đang giữ slot của dataset v0 (task-04, [dataset-v0](dataset-v0.md) mục 6). Sáu run dataset khác trong ledger không được chấm: năm run hỏng trước khi workload bắt đầu, và một run `healthy-spike` bị ngắt sau 14 phút rồi được thay thế (dataset-v0 mục 6.2). Chúng bị loại theo trạng thái ledger và luật thay run của evaluation-protocol-v1 mục 8.6, không theo điểm độ thực; không run nào được chọn hay bỏ sau khi chấm.
+Theo criteria-v2 mục 4.2. Tiêu chí v2 và mã chấm được push ở commit `602230b` (19/11/2026 15:18 +07); run dataset đầu tiên bắt đầu lúc 23/11/2026 09:14Z (16:14 +07), bốn ngày sau thời điểm đăng ký. Chấm **mọi** run train và validation đang giữ slot của dataset v0 (task-04, [dataset-v0](dataset-v0.md) mục 6). Sáu run dataset khác trong ledger không được chấm: năm run hỏng trước khi workload bắt đầu, và một run `healthy-spike` bị ngắt sau 14 phút rồi được thay thế (dataset-v0 mục 6.2). Chúng bị loại theo trạng thái ledger (gate thực thi fail) và quyết định ghi ở dataset-v0 mục 6.1–6.2. Việc ngắt run `healthy-spike` được ghi ở đó là sai lệch khỏi evaluation-protocol-v1 mục 8.6, và luật cho run hỏng trước workload được đặt sau khi chạy. Không run nào bị loại theo điểm độ thực; không run nào được chọn hay bỏ sau khi chấm.
 
 Mỗi run chấm phần traffic học viên theo profile của nó, với cùng hold-out và cùng mã chấm như mục 10. Pool ngày tham chiếu và ngày hold-out cho quá trình đến khác nhau theo profile (criteria-v2 mục 2.3):
 
@@ -239,7 +239,7 @@ node tools/validate-realism.mjs --profile <normal-mixed|healthy-spike> \
 
 **Đọc kết quả:**
 
-- **Số run độc lập ít hơn số dòng của bảng.** Phiên phát lại lấy từ file kế hoạch của split; `workload_seed` chỉ đổi phần ngẫu nhiên của bộ phát (gán tài khoản, độ kiên nhẫn), không đổi phiên. Đối chiếu `sessions.jsonl` của hai run train: cùng phiên nguồn có cùng số thao tác, chỉ khác `account_index` và `patience_s`. Vì vậy:
+- **Số run độc lập ít hơn số dòng của bảng.** Phiên phát lại lấy từ file kế hoạch của split; `workload_seed` chỉ đổi phần ngẫu nhiên của bộ phát (gán tài khoản, độ kiên nhẫn), không đổi phiên. Đối chiếu `sessions.jsonl` của hai run train: 1.265/1.265 phiên ghép theo phiên nguồn có cùng số thao tác; chỉ khác tham số phụ của bộ phát (`account_index`, profile kiên nhẫn: `patience_s`, `slow_limit`) và số request do thử lại. Vì vậy:
   - hai run train `normal-mixed` cho số đo gần như trùng (KS D think time 0,0828 và 0,0821);
   - năm run validation `normal-mixed` (healthy seed 2002, bốn fault run seed 2001) chỉ khác nhau ở phần do seed và fault làm đổi. Thực chất chỉ có **4 nhóm ngày** khác nhau: train `normal-mixed` (ngày 36, 42, 31, 48), validation `normal-mixed` (6, 52, 29, 13), train `healthy-spike` (39, 26, 33, 20), validation `healthy-spike` (46, 41, 19, 44). Tỉ lệ "theo nhóm ngày" mới là số mẫu độc lập.
 - **V1 không đạt ở run nào.** Mọi run trượt lệch trung vị thời lượng phiên (ngưỡng v1 10%), giống `r2` (mục 4). Một số run trượt thêm KS D số thao tác/phiên (validation `normal-mixed`: 0,104–0,105, ngưỡng 0,1), JSD tỉ lệ thao tác (train `healthy-spike`: 0,071, ngưỡng 0,05) hoặc lệch trung vị think time (validation `healthy-spike`: 14%, ngưỡng 10%). Theo v2, các khoảng cách đó vẫn nằm trong dao động của nhóm ngày thật: thứ hạng lớn nhất 0,92 (JSD của hai run train `healthy-spike`), dưới `tau` 0,99.
@@ -262,7 +262,7 @@ node tools/validate-realism.mjs --profile <normal-mixed|healthy-spike> \
 - **Với bán thực, v2 chỉ kiểm hai điều** (criteria-v2 mục 3): bộ phát giữ được hình dạng phiên của kế hoạch, và nhóm ngày đã chọn không bất thường so với các ngày thật khác. Nó không chứng minh log Moodle giống người dùng của LMS này.
 - **Nguồn đơn giản chỉ có ở `normal-mixed`, và là điểm chấm sau khi xem dữ liệu.** Điều kiện thứ hai của kết luận (điểm v2 thấp hơn mức 1 và mức 2 thuần, criteria-v2 mục 2) chỉ so được với hai run `r2` cùng profile `normal-mixed` và `k` = 4, chấm ở mục 10: mức 1 và mức 2 thuần cùng điểm 1,000, tức thứ hạng tối đa.
   - Điểm này được chấm sau khi đã biết hai nguồn trượt v1 (criteria-v2 mục 4.1). Vì vậy điều kiện thứ hai chỉ là kiểm tra hợp lý, không phải bằng chứng độc lập.
-  - Phép so cũng vượt lô: hai run `r2` khác run dataset ở TTL (600 s), số phiên (1.245–1.462 so với 947–1.262) và code (`ba2d7da` so với `ec98a55`/`dbb9ae1`/`9daed76`). Khoảng cách của hai nguồn này vượt xa phân vị 95% (ví dụ KS D thời lượng của mức 2 thuần là 0,288 so với 0,17), nên các khác biệt trên không kéo được điểm 1,000 xuống.
+  - Phép so cũng vượt lô: hai run `r2` khác run dataset ở TTL (600 s), số phiên (1.111–1.462 so với 947–1.262) và code (`ba2d7da` so với `ec98a55`/`dbb9ae1`/`9daed76`). Khoảng cách của hai nguồn này vượt xa phân vị 95% (ví dụ KS D thời lượng của mức 2 thuần là 0,288 so với 0,17), nên các khác biệt trên không kéo được điểm 1,000 xuống.
   - Profile `healthy-spike` chưa có run mức 1 hay mức 2 thuần.
 
 ## 12. Kết luận theo v1 và v2
