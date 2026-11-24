@@ -64,8 +64,11 @@ Theo [evaluation-protocol-v1](../../../architecture/evaluation-protocol-v1.md) m
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 24/11/2026 — hàng đợi chạy xong (23/11 09:14Z → 24/11 01:48Z). 10/10 slot train/validation có run đạt gate thực thi `pass`, `RunGroundTruth` `valid`, chất lượng `partial` (lý do được nhận theo evaluation-protocol-v1 bảng F). Run healthy validation `normal-mixed` đạt tiêu chí khỏe, nên giữ `k` = 4. `check-dataset.mjs --require-complete` không báo lỗi, cảnh báo hay phần còn thiếu nào. Bảng run và 6 run không giữ slot ở [dataset-v0](../../../architecture/dataset-v0.md) mục 6.
+- Cập nhật gần nhất: 24/11/2026 — hàng đợi chạy xong (23/11 09:14Z → 24/11 01:48Z). 10/10 slot train/validation có run đạt gate thực thi `pass`, `RunGroundTruth` `valid`, chất lượng `partial` (lý do được nhận theo evaluation-protocol-v1 mục 6.1.1 bảng F). Run healthy validation `normal-mixed` đạt tiêu chí khỏe, nên giữ `k` = 4. `check-dataset.mjs --require-complete` không báo lỗi, cảnh báo hay phần còn thiếu nào. Bảng run và 6 run không giữ slot ở [dataset-v0](../../../architecture/dataset-v0.md) mục 6.
 - Ghi chú/tồn đọng:
   - Run validation `healthy-spike` giữ slot với trace là mẫu 52,5% (ngân sách export cũ 20.000). Run sau dùng ngân sách 60.000 (dataset-v0 mục 6.1).
-  - Sửa tài liệu cho khớp code và protocol mục 8.6: run thay thế giữ seed của slot, không dùng seed mới.
-  - Năm run đầu hỏng ở bước dữ liệu seed vì worktree mới chưa `pnpm install` trong `lms/`. Chúng giữ nguyên trong ledger.
+  - Sửa tài liệu cho khớp evaluation-protocol-v1 mục 8.6: run thay thế giữ seed của slot, không dùng seed mới. Đã sửa ở dataset-v0 mục 3, `seed_rule` của manifest, workload-design-v1 mục 11.4 và experiments/README.
+  - Năm run đầu hỏng trước khi workload bắt đầu, vì worktree mới chưa `pnpm install` trong `lms/`: 4 run `failed` ở bước dữ liệu seed, 1 run `aborted` ở reset. Chúng giữ nguyên trong ledger và không vào `replaced_run_ids`. Luật cho trường hợp này được đặt sau khi chạy và ghi vào experiments/README (dataset-v0 mục 6.2). DoD 3 được tick theo luật đó.
+  - Run `134927z` bị ngắt chủ động để đổi ngân sách trace. Việc này lệch khỏi câu chữ của evaluation-protocol-v1 mục 8.6; lý do ghi ở dataset-v0 mục 6.1.
+  - `check-dataset.mjs` bỏ ngoại lệ cho slot có run bị thay được đổi seed, và kiểm thêm seed của run bị thay; có test.
+  - **Thứ tự merge:** dataset-v0 và `lib/eligibility.mjs` trỏ tới evaluation-protocol-v1 mục 6.1.1 bảng F, mà mục này nằm ở PR task-06. Nên merge PR task-06 ngay sau PR này.

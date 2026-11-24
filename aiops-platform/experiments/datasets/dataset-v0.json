@@ -92,7 +92,7 @@
     }
   },
   "plan_rule": "Mỗi split: normal-mixed = k ngày gần trung vị của split nhất, healthy-spike = k ngày đông nhất của split; k = 4 (task-02 tuần 15). Sinh bằng build-replay-plan.mjs --source moodle --k 4 --split <split>.",
-  "seed_rule": "Fault run các case cùng split và repeat_index dùng cùng workload_seed (workload-design-v1 mục 11.4, chốt ở task-04 tuần 15); mỗi run healthy một seed riêng; run thay thế (mục 8.6) dùng seed mới trong cùng khoảng.",
+  "seed_rule": "Fault run các case cùng split và repeat_index dùng cùng workload_seed (workload-design-v1 mục 11.4, chốt ở task-04 tuần 15); mỗi run healthy một seed riêng; run thay thế giữ nguyên cấu hình của slot, kể cả workload_seed (evaluation-protocol-v1 mục 8.6; sửa 24/11/2026, bản khai báo trước khi chạy ghi nhầm là seed mới).",
   "plans": {
     "train": {
       "normal-mixed": {
