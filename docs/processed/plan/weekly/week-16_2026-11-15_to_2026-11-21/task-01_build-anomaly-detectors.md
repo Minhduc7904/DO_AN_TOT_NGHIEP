@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-01_build-anomaly-detectors` |
 | Tuần | `week-16_2026-11-15_to_2026-11-21` |
-| Trạng thái | Chờ review |
+| Trạng thái | Hoàn thành |
 | Người phụ trách | Bách |
 | Collaborator | Không có |
 | Ưu tiên | Cao |
@@ -70,13 +70,13 @@ Theo [analysis-anomaly-rca-blueprint-v1](../../../architecture/analysis-anomaly-
 - Input workspace: Không tạo (giai đoạn tự bắt kịp; bằng chứng nằm trong PR).
 - Output workspace: Không tạo.
 - Pull request: [#105](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/105).
-- Kết quả review: Chờ review. Đã review bằng agent riêng ba vòng và sửa các điểm nêu (xem mô tả PR).
+- Kết quả review: Không có GitHub `APPROVED` (giai đoạn tự bắt kịp). Đã review bằng agent riêng ba vòng; các phát hiện đã sửa trong PR (xem mô tả PR). CI GitHub đạt trước khi merge. PR #105 được Bách (người phụ trách) merge ngày 25/11/2026 (merge commit `fa3cee0`) trước khi finalization; card chuyển `Hoàn thành` bằng PR ghi nhận hậu kiểm trên `main` theo yêu cầu của Bách.
 
 > URL/số PR và `Chờ review` phải được commit/push vào PR head trước review. Thành viên còn lại phải gửi `APPROVED` hợp lệ trên GitHub; sau đó người phụ trách finalization metadata, ghi `Hoàn thành` trên chính branch/PR và tự merge task của mình. Card chỉ canonically hoàn thành khi commit đó vào nhánh canonical; xem [vòng đời task canonical](../../../rules/git-and-pull-request-rules.md#vòng-đời-task-canonical).
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 25/11/2026 — module `anomaly/` (ngưỡng tĩnh, robust z, Isolation Forest, fused; `AnomalyRecord` `anomaly-record.v2` có khóa bằng chứng), lệnh `fit-iforest`, `detect`; chạy trên run train ở cửa sổ 30 s và 60 s, và hết chuỗi trên 4 fault run pilot + 1 run pilot khỏe (README training, mục Detector).
+- Cập nhật gần nhất: 25/11/2026 — đã merge PR #105 (`fa3cee0`); ghi nhận hậu kiểm, chuyển Hoàn thành. Khi merge, gộp `main` (đã có PR #104) vào nhánh: test `test_fit_rejects_mixed_window_lengths` phải apply baseline cùng cửa sổ cho từng run vì `apply_baseline` của task-02 từ chối cửa sổ lệch (commit `79b8675`, chỉ sửa phần dựng dữ liệu của test; `fit_models` vẫn chặn trộn 30 s và 60 s); 96 test đạt. Trước đó cùng ngày — module `anomaly/` (ngưỡng tĩnh, robust z, Isolation Forest, fused; `AnomalyRecord` `anomaly-record.v2` có khóa bằng chứng), lệnh `fit-iforest`, `detect`; chạy trên run train ở cửa sổ 30 s và 60 s, và hết chuỗi trên 4 fault run pilot + 1 run pilot khỏe (README training, mục Detector).
 - Ghi chú/tồn đọng:
   - Review phát hiện luật cửa sổ không dữ liệu theo service gần như không kích hoạt (`log_error_rate` luôn có giá trị) và thang đo baseline cỡ sai số dấu phẩy động; sửa bằng khóa bằng chứng (task-01, task-03) và luật thang đo v2 (task-02); khai báo ở `detection-candidates.v2` (task-05).
   - Phần `tie_rank` và chọn ngưỡng thuộc task-04, task-06.

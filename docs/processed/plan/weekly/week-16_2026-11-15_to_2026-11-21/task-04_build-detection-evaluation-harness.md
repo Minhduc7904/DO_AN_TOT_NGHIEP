@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-04_build-detection-evaluation-harness` |
 | Tuần | `week-16_2026-11-15_to_2026-11-21` |
-| Trạng thái | Chờ review |
+| Trạng thái | Hoàn thành |
 | Người phụ trách | Bách |
 | Collaborator | Không có |
 | Ưu tiên | Cao |
@@ -66,13 +66,13 @@ Theo [evaluation-protocol-v1](../../../architecture/evaluation-protocol-v1.md) m
 - Input workspace: Không tạo (giai đoạn tự bắt kịp; bằng chứng nằm trong PR).
 - Output workspace: Không tạo.
 - Pull request: [#107](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/107).
-- Kết quả review: Chờ review. Đã review bằng agent riêng hai vòng và sửa các điểm nêu (xem mô tả PR).
+- Kết quả review: Không có GitHub `APPROVED` (giai đoạn tự bắt kịp). Đã review bằng agent riêng hai vòng; các phát hiện đã sửa trong PR (xem mô tả PR). CI GitHub đạt trước khi merge. PR #107 được Bách (người phụ trách) merge ngày 25/11/2026 (merge commit `e5289f9`) trước khi finalization; card chuyển `Hoàn thành` bằng PR ghi nhận hậu kiểm trên `main` theo yêu cầu của Bách.
 
 > URL/số PR và `Chờ review` phải được commit/push vào PR head trước review. Thành viên còn lại phải gửi `APPROVED` hợp lệ trên GitHub; sau đó người phụ trách finalization metadata, ghi `Hoàn thành` trên chính branch/PR và tự merge task của mình. Card chỉ canonically hoàn thành khi commit đó vào nhánh canonical; xem [vòng đời task canonical](../../../rules/git-and-pull-request-rules.md#vòng-đời-task-canonical).
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 25/11/2026 — module `evaluation/detection/` và lệnh `evaluate-detection`, `configs/detection-evaluation-v1.json`; chạy trên incident record thật của task-03 cho 4 fault run pilot (C2, C3, C4, C6) và 1 run pilot khỏe với 4 detector (README training, mục harness).
+- Cập nhật gần nhất: 25/11/2026 — đã merge PR #107 (`e5289f9`); ghi nhận hậu kiểm, chuyển Hoàn thành. Khi merge, gộp `main` (đã có PR #104–#106) vào nhánh: giữ cả lệnh `fit-iforest`/`detect`/`incidents` và `evaluate-detection` trong `cli.py`, README xếp Detector → Incident → Evaluation harness; 198 test đạt; chấm lại incident robust z của 4 fault run pilot bằng code đã gộp cho cùng kết quả (4/4 khớp, 0 FP). Trước đó cùng ngày — module `evaluation/detection/` và lệnh `evaluate-detection`, `configs/detection-evaluation-v1.json`; chạy trên incident record thật của task-03 cho 4 fault run pilot (C2, C3, C4, C6) và 1 run pilot khỏe với 4 detector (README training, mục harness).
 - Ghi chú/tồn đọng:
   - Thêm ngoài card: `tie_rank` cho luật hòa đã khai báo (yêu cầu của `detection-candidates.v2`), chặn chấm split test ở mọi đường vào.
   - Rủi ro cho tuần 19: test chỉ có 1 run khỏe mỗi profile nên CI báo động giả/giờ suy biến (ghi ở config `bootstrap.risk`).

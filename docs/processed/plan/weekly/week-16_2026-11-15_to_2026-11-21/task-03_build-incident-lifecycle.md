@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-03_build-incident-lifecycle` |
 | Tuần | `week-16_2026-11-15_to_2026-11-21` |
-| Trạng thái | Chờ review |
+| Trạng thái | Hoàn thành |
 | Người phụ trách | Bách |
 | Collaborator | Không có |
 | Ưu tiên | Cao |
@@ -68,14 +68,14 @@ Theo [analysis-anomaly-rca-blueprint-v1](../../../architecture/analysis-anomaly-
 
 - Input workspace: Không tạo (giai đoạn tự bắt kịp; bằng chứng nằm trong PR).
 - Output workspace: Không tạo.
-- Pull request: [#106](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/106) (xếp chồng trên PR #105 của task-01).
-- Kết quả review: Chờ review. Đã review bằng agent riêng bốn vòng và sửa các điểm nêu (xem mô tả PR).
+- Pull request: [#106](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/106) (mở xếp chồng trên PR #105; đổi base sang `main` sau khi PR #105 merge).
+- Kết quả review: Không có GitHub `APPROVED` (giai đoạn tự bắt kịp). Đã review bằng agent riêng bốn vòng; các phát hiện đã sửa trong PR (xem mô tả PR). CI GitHub đạt trước khi merge. PR #106 được Bách (người phụ trách) merge ngày 25/11/2026 (merge commit `a680a1a`) trước khi finalization; card chuyển `Hoàn thành` bằng PR ghi nhận hậu kiểm trên `main` theo yêu cầu của Bách.
 
 > URL/số PR và `Chờ review` phải được commit/push vào PR head trước review. Thành viên còn lại phải gửi `APPROVED` hợp lệ trên GitHub; sau đó người phụ trách finalization metadata, ghi `Hoàn thành` trên chính branch/PR và tự merge task của mình. Card chỉ canonically hoàn thành khi commit đó vào nhánh canonical; xem [vòng đời task canonical](../../../rules/git-and-pull-request-rules.md#vòng-đời-task-canonical).
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 25/11/2026 — module `incident/`: máy trạng thái theo service, persistence theo từng khóa bằng chứng với `max_chain_gap_seconds`, recovery, gộp theo merge gap và cửa sổ tương quan, `incident-record.v1`; chạy hết chuỗi trên 4 fault run pilot (mỗi case một run) và 1 run pilot khỏe (README training, mục Incident).
+- Cập nhật gần nhất: 25/11/2026 — đã merge PR #106 (`a680a1a`); ghi nhận hậu kiểm, chuyển Hoàn thành. Khi merge, gộp `main` vào nhánh, chỉ xung đột bảng trạng thái của weekly overview; 120 test đạt. Trước đó cùng ngày — module `incident/`: máy trạng thái theo service, persistence theo từng khóa bằng chứng với `max_chain_gap_seconds`, recovery, gộp theo merge gap và cửa sổ tương quan, `incident-record.v1`; chạy hết chuỗi trên 4 fault run pilot (mỗi case một run) và 1 run pilot khỏe (README training, mục Incident).
 - Ghi chú/tồn đọng:
   - Thêm ngoài card: `max_chain_gap_seconds` (ngăn hai sự kiện đơn lẻ trên cạnh thưa cộng thành một chuỗi), khai báo ở `detection-candidates.v2`.
   - Tương quan chỉ theo thời gian; đồ thị v2 thay ở tuần 17 (phải tăng `incident_config_version`).
