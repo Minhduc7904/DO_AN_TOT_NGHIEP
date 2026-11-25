@@ -1,0 +1,132 @@
+{
+  "schema": "incident-record.v1",
+  "run_id": "validation-healthy-normal-mixed-s2002-20261123t091816z",
+  "detector": "iforest",
+  "detector_config_version": "validation-v1.iforest-q0.995-w30",
+  "incident_config_version": "validation-v1.incident-w30-p4-m300-g120",
+  "window_seconds": 30,
+  "persistence_windows": 4,
+  "step_seconds": 15,
+  "threshold": 0.7800339720962758,
+  "available_after_s": 10.0,
+  "incident_config": {
+    "incident_config_version": "validation-v1.incident-w30-p4-m300-g120",
+    "persistence_windows": 4,
+    "recovery_windows": 3,
+    "merge_gap_seconds": 300.0,
+    "correlation_window_seconds": 300.0,
+    "max_chain_gap_seconds": 120.0
+  },
+  "lineage": {
+    "anomalies_sha256": "9f47bdf7667ab739130ff6ddba7af955ff14419d6b67d0c24baa2539b73e141a",
+    "anomalies_manifest_sha256": "6d0a07a35cae7f1ec88f218e0b82a571ab2db97deff49dd0737d7eb59ab10612",
+    "incident_config_file_sha256": "92010db0a901897058fb683a11c10ebf3b57022edbfb3edff3d1242e38d0b2bb",
+    "incident_config_sha256": "82f5ec0061d65e5f22d1f678bb1ac38cd32a1b12e30a778b6a1724851f101a99",
+    "detector_config_sha256": "6903d69b8cb66e831099d7e215e7ea2e7b8fe8a455de3d9b2036542c5a47cad4",
+    "model_sha256": "7df97006fd975fdce85296bb136d0e304d71b4db45e43492f4ee39b8b5fc44be",
+    "threshold": 0.7800339720962758,
+    "features_manifest_sha256": "c38d83fd92800d67d4d733795105dda615bc68f77636771c22cadb50b479eb53",
+    "feature_config_version": "feature.v1",
+    "noise_filter_version": "noise.v1",
+    "baseline_sha256": "08ddaefb4c0e42068693c194f19cf89d38bd356427f1aac24edad216b90d8e5b",
+    "baseline_fit_runs": [
+      "train-healthy-healthy-spike-s1003-20261123t224223z",
+      "train-healthy-healthy-spike-s1004-20261124t002521z",
+      "train-healthy-normal-mixed-s1001-20261123t102740z",
+      "train-healthy-normal-mixed-s1002-20261123t113109z"
+    ],
+    "model_fit_runs": [
+      "train-healthy-healthy-spike-s1003-20261123t224223z",
+      "train-healthy-healthy-spike-s1004-20261124t002521z",
+      "train-healthy-normal-mixed-s1001-20261123t102740z",
+      "train-healthy-normal-mixed-s1002-20261123t113109z"
+    ]
+  },
+  "counts": {
+    "incidents": 1,
+    "episodes": 1,
+    "windows": 2123
+  },
+  "incidents": [
+    {
+      "incident_id": "inc-a2c2f0faad0b1432",
+      "detected_at": "2026-11-23T09:53:40Z",
+      "estimated_start_time": "2026-11-23T09:52:30Z",
+      "resolved_at": "2026-11-23T09:55:10Z",
+      "open_at_run_end": false,
+      "duration_s": 90.0,
+      "affected_services": [
+        "scheduler-worker"
+      ],
+      "first_symptom": {
+        "service": "scheduler-worker",
+        "signal": "edge.duration_p95",
+        "entity": "scheduler-worker|scheduler-postgres",
+        "evidence_key": "edge.duration_p95@scheduler-worker|scheduler-postgres",
+        "window_start": "2026-11-23T09:52:15Z",
+        "window_end": "2026-11-23T09:52:45Z",
+        "score": 0.8420274477189386,
+        "reason": "threshold"
+      },
+      "trigger_reason": "4 cửa sổ vượt liên tiếp ở scheduler-worker (threshold: edge.duration_p95@scheduler-worker|scheduler-postgres)",
+      "peak_score": 0.8420274477189386,
+      "peak_score_infinite": false,
+      "episodes": [
+        {
+          "service": "scheduler-worker",
+          "evidence_key": "edge.duration_p95@scheduler-worker|scheduler-postgres",
+          "opened_at": "2026-11-23T09:53:40Z",
+          "estimated_start_time": "2026-11-23T09:52:30Z",
+          "resolved_at": "2026-11-23T09:55:10Z"
+        }
+      ],
+      "timeline": [
+        {
+          "state": "SUSPECTED",
+          "signal": "service.downstream_latency_p95",
+          "entity": "scheduler-worker",
+          "reason": "threshold",
+          "service": "scheduler-worker",
+          "at": "2026-11-23T09:52:55Z",
+          "window_start": "2026-11-23T09:52:15Z",
+          "window_end": "2026-11-23T09:52:45Z",
+          "score": 0.8420274477189386
+        },
+        {
+          "state": "OPEN",
+          "signal": "service.downstream_latency_p95",
+          "entity": "scheduler-worker",
+          "reason": "threshold",
+          "service": "scheduler-worker",
+          "at": "2026-11-23T09:53:40Z",
+          "window_start": "2026-11-23T09:53:00Z",
+          "window_end": "2026-11-23T09:53:30Z",
+          "score": 0.8420274477189386
+        },
+        {
+          "state": "RECOVERING",
+          "signal": "service.downstream_latency_p95",
+          "entity": "scheduler-worker",
+          "reason": "below_threshold",
+          "service": "scheduler-worker",
+          "at": "2026-11-23T09:54:40Z",
+          "window_start": "2026-11-23T09:54:00Z",
+          "window_end": "2026-11-23T09:54:30Z",
+          "score": 0.4243710463907928
+        },
+        {
+          "state": "RESOLVED",
+          "signal": "service.downstream_latency_p95",
+          "entity": "scheduler-worker",
+          "reason": "below_threshold",
+          "service": "scheduler-worker",
+          "at": "2026-11-23T09:55:10Z",
+          "window_start": "2026-11-23T09:54:30Z",
+          "window_end": "2026-11-23T09:55:00Z",
+          "score": 0.4243710463907928
+        }
+      ]
+    }
+  ],
+  "generated_at": "2026-11-25T08:22:48.942222Z"
+}
