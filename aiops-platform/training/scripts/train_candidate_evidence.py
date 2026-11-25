@@ -17,7 +17,8 @@ import pyarrow.parquet as pq
 runs_dir, dataset, out = Path(sys.argv[1]), Path(sys.argv[2]), Path(sys.argv[3])
 manifest = json.loads(dataset.read_text())
 train = sorted(
-    s["run_id"] for s in manifest["slots"]
+    s["run_id"]
+    for s in manifest["slots"]
     if s.get("run_id") and s["split"] == "train" and not s.get("case")
 )
 out.mkdir(parents=True, exist_ok=True)
@@ -34,9 +35,20 @@ def run(*args):
 
 
 incident_cfg = out / "incident-step1.json"
-incident_cfg.write_text(json.dumps({"incident_config_version": "evidence-step1", "incident": {
-    "persistence_windows": 5, "recovery_windows": 5, "merge_gap_seconds": 120,
-    "correlation_window_seconds": 300, "max_chain_gap_seconds": 120}}))
+incident_cfg.write_text(
+    json.dumps(
+        {
+            "incident_config_version": "evidence-step1",
+            "incident": {
+                "persistence_windows": 5,
+                "recovery_windows": 5,
+                "merge_gap_seconds": 120,
+                "correlation_window_seconds": 300,
+                "max_chain_gap_seconds": 120,
+            },
+        }
+    )
+)
 
 
 def scores(detector, config, model_arg=()):
@@ -44,18 +56,37 @@ def scores(detector, config, model_arg=()):
     for run_id in train:
         features = runs_dir / run_id / "telemetry" / "features"
         target = out / config.stem / run_id
-        run("detect", str(features), "--detector", detector, "--config", str(config), *model_arg,
-            "--out", str(target))
+        run(
+            "detect",
+            str(features),
+            "--detector",
+            detector,
+            "--config",
+            str(config),
+            *model_arg,
+            "--out",
+            str(target),
+        )
         table = pq.read_table(target / f"anomalies-{detector}.parquet").to_pylist()
         post = [r for r in table if not r["warmup"]]
-        values += [r["score"] for r in post
-                   if r["score"] is not None and r["flagged"] is not None
-                   and r["reason"] != "telemetry_silent"]
+        values += [
+            r["score"]
+            for r in post
+            if r["score"] is not None
+            and r["flagged"] is not None
+            and r["reason"] != "telemetry_silent"
+        ]
         start = min(r["window_start"] for r in post)
         end = max(r["window_end"] for r in post)
         hours += (end - start).total_seconds() / 3600
-        record = json.loads(run("incidents", str(target / f"anomalies-{detector}.parquet"),
-                                "--config", str(incident_cfg)))
+        record = json.loads(
+            run(
+                "incidents",
+                str(target / f"anomalies-{detector}.parquet"),
+                "--config",
+                str(incident_cfg),
+            )
+        )
         incidents += record["incidents"]
     return np.array(values, dtype=float), incidents, hours
 
@@ -69,13 +100,27 @@ def config_with(name, section):
     return path
 
 
-report = {"train_runs": train, "window_s": 60, "incident_config": json.loads(incident_cfg.read_text())}
+report = {
+    "train_runs": train,
+    "window_s": 60,
+    "incident_config": json.loads(incident_cfg.read_text()),
+}
 quant = [0.99, 0.995, 0.999]
 # Isolation Forest và fused: phân vị trên điểm, rồi incident/giờ ở từng ngưỡng phân vị.
 for name, detector, section, model_arg in [
     ("iforest", "iforest", {"iforest": dev["detectors"]["iforest"]}, ("--model", str(model))),
-    ("fused-equal", "fused", {"fused": {"threshold": 3, "weights": {"metrics": 1/3, "traces": 1/3, "logs": 1/3}}}, ()),
-    ("fused-442", "fused", {"fused": {"threshold": 3, "weights": {"metrics": 0.4, "traces": 0.4, "logs": 0.2}}}, ()),
+    (
+        "fused-equal",
+        "fused",
+        {"fused": {"threshold": 3, "weights": {"metrics": 1 / 3, "traces": 1 / 3, "logs": 1 / 3}}},
+        (),
+    ),
+    (
+        "fused-442",
+        "fused",
+        {"fused": {"threshold": 3, "weights": {"metrics": 0.4, "traces": 0.4, "logs": 0.2}}},
+        (),
+    ),
 ]:
     base = config_with(name, section)
     values, _, _ = scores(detector, base, model_arg)
