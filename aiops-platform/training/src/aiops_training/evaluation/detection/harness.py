@@ -130,6 +130,9 @@ _COMBINATION_KEYS = (
     "persistence_windows",
     "step_seconds",
     "threshold",
+    "detector_config_sha256",
+    "incident_config_sha256",
+    "model_sha256",
 )
 
 
@@ -218,10 +221,29 @@ def _run_row(
 
 
 def _guard_test_split(run_id: str | None, split: str | None, final_test: bool) -> None:
-    if split == TEST_SPLIT and not final_test:
+    if final_test:
+        return
+    if split == TEST_SPLIT or (run_id or "").startswith(f"{TEST_SPLIT}-"):
         raise EvaluationError(
             f"{run_id or 'Tập run'} thuộc split test: chỉ chấm với final_test (sau freeze, mục 6.3)"
         )
+
+
+def _resolve_split(slot: RunSlot, spec_split: str | None, final_test: bool) -> str | None:
+    """Split của run: `spec.split` của run manifest, thiếu thì `slot.split` của dataset.
+
+    Mọi nguồn (kể cả tiền tố `test-` của `run_id`) đều được kiểm chặn test. Không xác định được
+    split thì không loại trừ được khả năng là run test, nên từ chối khi không có `final_test`.
+    """
+    for candidate in (spec_split, slot.split):
+        _guard_test_split(slot.run_id, candidate, final_test)
+    resolved = spec_split if spec_split is not None else slot.split
+    if resolved is None and not final_test:
+        raise EvaluationError(
+            f"{slot.run_id}: không xác định được split (run manifest và dataset đều không ghi); "
+            "chỉ chấm với final_test"
+        )
+    return resolved
 
 
 def _prepare(
@@ -248,11 +270,10 @@ def _prepare(
         # Không biết split của run nên không đọc ground truth.
         reasons.append("run_manifest_missing")
         return entry
-    spec_split = (run_manifest.get("spec") or {}).get("split")
-    _guard_test_split(slot.run_id, spec_split, final_test)
-    if split is not None and spec_split != split:
+    run_split = _resolve_split(slot, (run_manifest.get("spec") or {}).get("split"), final_test)
+    if split is not None and run_split != split:
         raise EvaluationError(
-            f"{slot.run_id}: run manifest ghi split {spec_split!r}, đang chấm split {split!r}"
+            f"{slot.run_id}: run thuộc split {run_split!r}, đang chấm split {split!r}"
         )
     lineage["run_manifest_ref"] = _file_ref(manifest_path)
     entry["run_manifest"] = run_manifest
@@ -343,10 +364,11 @@ def evaluate_detection(
         raise EvaluationError("Mẫu đường dẫn incident record phải chứa {run_id}")
     _guard_test_split(None, split, final_test)
     code = code if code is not None else code_provenance()
-    if code.get("dirty") and not allow_dirty:
+    # dirty None (không gọi được git) coi như dirty: không chứng minh được code đã commit.
+    if code.get("dirty") is not False and not allow_dirty:
         raise EvaluationError(
-            "Code training có thay đổi chưa commit: commit trước khi chấm (hoặc allow_dirty; "
-            "artifact ghi analysis_code_dirty)"
+            "Code training có thay đổi chưa commit hoặc không kiểm được bằng git: commit trước khi "
+            "chấm (hoặc allow_dirty; artifact ghi analysis_code_dirty)"
         )
     candidates_path = config.candidates_path
     candidates = load_candidates(candidates_path)
@@ -508,6 +530,9 @@ def evaluate_detection(
         "detector_config_version": combo.detector_config_version,
         "incident_config_version": combo.incident_config_version,
         "threshold": combo.threshold,
+        "detector_config_sha256": combo.detector_config_sha256,
+        "incident_config_sha256": combo.incident_config_sha256,
+        "model_sha256": combo.model_sha256,
         "window_seconds": combo.window_seconds,
         "persistence_windows": combo.persistence_windows,
         "step_seconds": combo.step_seconds,

@@ -610,6 +610,48 @@ def test_inconsistent_combination_fields_are_rejected(campaign, field, value):
         run_harness(campaign, bootstrap=False)
 
 
+LINEAGE_SHAS = {
+    "detector_config_sha256": "d" * 64,
+    "incident_config_sha256": "i" * 64,
+    "model_sha256": None,
+}
+
+
+def test_lineage_shas_are_recorded_on_artifact(campaign):
+    _write_records(campaign, **{"*": {"threshold": 1.0, "lineage": dict(LINEAGE_SHAS)}})
+    artifact = run_harness(campaign, bootstrap=False)
+    for name, value in LINEAGE_SHAS.items():
+        assert artifact[name] == value
+    chosen = combination_from_artifact(artifact, "static-a")
+    assert chosen.detector_config_sha256 == "d" * 64
+    assert chosen.model_sha256 is None
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("detector_config_sha256", "e" * 64),
+        ("incident_config_sha256", "j" * 64),
+        ("model_sha256", "m" * 64),
+    ],
+)
+def test_inconsistent_lineage_shas_are_rejected(campaign, field, value):
+    _write_records(
+        campaign,
+        **{
+            "*": {"lineage": dict(LINEAGE_SHAS)},
+            "v-c3": {"lineage": {**LINEAGE_SHAS, field: value}},
+        },
+    )
+    with pytest.raises(EvaluationError, match=field):
+        run_harness(campaign, bootstrap=False)
+
+
+def test_lineage_sha_must_be_string_or_null():
+    with pytest.raises(IncidentRecordError, match="model_sha256"):
+        parse_incident_record(record("r", [], lineage={"model_sha256": 5}))
+
+
 def test_selection_from_two_artifacts_on_same_runs(campaign):
     _write_records(campaign, **{"*": {"threshold": 4}})
     first = combination_from_artifact(run_harness(campaign, bootstrap=False), "thr-4")
@@ -702,6 +744,15 @@ def test_dirty_code_is_refused_unless_allowed(campaign):
         run_harness(campaign, bootstrap=False, code=dirty)
 
 
+def test_unknown_git_state_counts_as_dirty(campaign):
+    with pytest.raises(EvaluationError, match="chưa commit"):
+        run_harness(campaign, bootstrap=False, code={"commit": None, "dirty": None})
+    artifact = run_harness(
+        campaign, bootstrap=False, code={"commit": None, "dirty": None}, allow_dirty=True
+    )
+    assert artifact["lineage"]["analysis_code_dirty"] is None
+
+
 def test_allow_dirty_is_recorded(campaign):
     artifact = evaluate_detection(
         slots_from_dataset(campaign["dataset"], "validation"),
@@ -748,3 +799,26 @@ def test_only_cli_imports_evaluation_package():
         and pattern.search(path.read_text(encoding="utf-8"))
     ]
     assert offenders == []
+
+
+# --- Split thiếu trong run manifest ---------------------------------------------------------
+
+
+def test_missing_spec_split_falls_back_to_dataset_slot(campaign):
+    make_run(campaign["runs"], "v-c3", split=None, fault=(1080, 1980), case="C3", detections=[])
+    artifact = run_harness(campaign, bootstrap=False)
+    assert "v-c3" in artifact["summary"]["eligible_run_ids"]
+
+
+def test_missing_spec_split_with_test_prefix_is_refused(campaign):
+    make_run(campaign["runs"], "test-c2-x", split=None, fault=(1080, 1680), detections=[])
+    with pytest.raises(EvaluationError, match="split test"):
+        _api(campaign, [_slot(campaign, "test-c2-x")])
+
+
+def test_unknown_split_is_refused_without_final_test(campaign):
+    make_run(campaign["runs"], "pilot-x", split=None, fault=(1080, 1680), detections=[])
+    with pytest.raises(EvaluationError, match="không xác định được split"):
+        _api(campaign, [_slot(campaign, "pilot-x")])
+    artifact = _api(campaign, [_slot(campaign, "pilot-x")], final_test=True)
+    assert artifact["summary"]["eligible_run_ids"] == ["pilot-x"]

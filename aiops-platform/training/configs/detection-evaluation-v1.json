@@ -1,6 +1,9 @@
 {
   "evaluation_config_version": "detection-evaluation.v1",
   "declared_at": "2026-11-25",
+  "changes": [
+    "Nội dung chốt lại sau review task-04 ngày 25/11/2026, trước mọi lần chấm validation."
+  ],
   "source": "docs/processed/architecture/evaluation-protocol-v1.md mục 6.1.2, 7.1, 17, 20.2, 20.6, 20.7, 22",
   "candidates_config": "configs/detection-candidates-v1.json",
   "protocol_version": "evaluation-protocol-v1",
@@ -56,7 +59,7 @@
     "anchor": "workload_start + s (giây tính từ đầu kế hoạch, window_start_s = 0)",
     "duration_reason": "600 s bằng thời lượng fault C2 của slot validation trùng cao điểm (fault manifest v2, align_peak), nên đoạn cao điểm của run khỏe và cửa sổ fault trùng cao điểm cùng kích thước và cùng luật chọn. Ở mức 2+ dáng tải trong ngày lấy từ log thật của kế hoạch phát lại chứ không từ hệ số buổi tối giả định của workload-design-v1 mục 7.4 (mức 2). Ví dụ kiểm: kế hoạch pilot moodle-healthy-spike-k4-v1 cho đoạn [1440, 2040) s, trùng fault_start (giây 1440 sau workload_start) của run pilot-c2-healthy-spike-s26 đặt bằng --align-peak.",
     "metric": "báo động giả trong đoạn cao điểm: incident trong evaluation interval có peak_start <= detected_at < peak_end; mẫu số là phần đoạn cao điểm nằm trong evaluation interval",
-    "unavailable": "Run khỏe của profile cao điểm không tính được đoạn cao điểm thì vẫn tính chỉ số khác, chỉ bị loại khỏi chỉ số cao điểm, ghi lý do trong summary.peak_unavailable_by_reason: peak_plan_missing (run manifest không ghi plan_path hoặc thiếu file), peak_plan_sha256_missing (run manifest không ghi plan_sha256; không bỏ qua bước kiểm), peak_plan_sha256_mismatch, peak_plan_invalid (kế hoạch hỏng hoặc quá ngắn). CLI trả mã 1 khi có lý do này, trừ khi có --allow-missing-peak.",
+    "unavailable": "Run khỏe của profile cao điểm không tính được đoạn cao điểm thì vẫn tính chỉ số khác, chỉ bị loại khỏi chỉ số cao điểm, ghi lý do trong summary.peak_unavailable_by_reason: peak_plan_missing (run manifest không ghi plan_path hoặc thiếu file), peak_plan_sha256_missing (run manifest không ghi plan_sha256; không bỏ qua bước kiểm), peak_plan_sha256_mismatch, peak_plan_invalid (kế hoạch hỏng hoặc quá ngắn). CLI vẫn ghi artifact rồi trả mã 1 khi có lý do này, trừ khi có --allow-missing-peak; script gọi CLI phải kiểm mã thoát.",
     "plan_files": "Kế hoạch không commit (load/.gitignore bỏ data/): dựng lại bằng aiops-platform/load/tools/build-replay-plan.mjs theo dataset manifest, harness kiểm sha256; --load-dir phải trỏ tới thư mục có data/plans."
   },
   "bootstrap": {
@@ -105,8 +108,8 @@
     ],
     "ground_truth_case_mismatch": "scenario_id của RunGroundTruth khác case của slot (hoặc 'healthy' với run khỏe), hoặc có/không có fault không khớp slot",
     "replaced_runs": "Run bị thay (replaced_run_ids của dataset manifest, mục 8.6) không được chấm; summary.replaced_runs liệt kê theo slot",
-    "test_split_guard": "Run có spec.split = test (run manifest) chỉ được chấm khi final_test; kiểm trước khi đọc ground truth, ở mọi cách gọi",
-    "dirty_code_guard": "Code training (src, configs, pyproject.toml, uv.lock) có thay đổi chưa commit thì từ chối chấm, trừ khi allow_dirty; artifact ghi analysis_code_dirty và allow_dirty"
+    "test_split_guard": "Split của run lấy từ spec.split của run manifest, thiếu thì slot.split của dataset; run có split test hoặc run_id bắt đầu bằng 'test-' chỉ được chấm khi final_test; không xác định được split thì cũng từ chối khi không có final_test. Kiểm trước khi đọc ground truth, ở mọi cách gọi.",
+    "dirty_code_guard": "Code training (src, configs, pyproject.toml, uv.lock) có thay đổi chưa commit, hoặc không kiểm được bằng git (dirty null), thì từ chối chấm, trừ khi allow_dirty; artifact ghi analysis_code_dirty và allow_dirty."
   },
   "selection_rule": {
     "source": "detection-candidates-v1.json selection_rule",
@@ -136,8 +139,12 @@
       "window_seconds",
       "persistence_windows",
       "step_seconds",
-      "threshold"
+      "threshold",
+      "lineage.detector_config_sha256",
+      "lineage.incident_config_sha256",
+      "lineage.model_sha256"
     ],
-    "rule": "Mọi incident record trong một artifact phải cùng các khóa này; threshold đọc từ trường top-level, không có thì lineage.threshold"
+    "rule": "Mọi incident record trong một artifact phải cùng các khóa này; threshold đọc từ trường top-level, không có thì lineage.threshold; ba sha256 đọc từ lineage (model_sha256 null với detector không có model). Artifact ghi các khóa ở cấp trên cùng.",
+    "identity": "Định danh tổ hợp ứng viên: detector, window_seconds, persistence_windows, threshold, detector_config_sha256, incident_config_sha256, model_sha256. Ngưỡng tĩnh luôn có threshold 1.0 và chỉ khác bộ ngưỡng trong config; Isolation Forest khác hyperparameter ở sha của config/model; tham số incident khác ở incident_config_sha256. Luật chọn từ chối hai combination_id trùng toàn bộ định danh."
   }
 }

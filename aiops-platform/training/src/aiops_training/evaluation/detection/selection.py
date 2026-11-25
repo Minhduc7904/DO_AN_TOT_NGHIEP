@@ -35,6 +35,22 @@ class CombinationResult:
     detector: str
     window_seconds: int | None = None
     persistence_windows: int | None = None
+    #: Định danh tổ hợp: các ứng viên khác nhau chính ở các sha này (bộ ngưỡng tĩnh, hyperparameter
+    #: Isolation Forest, tham số incident), không chỉ ở threshold.
+    detector_config_sha256: str | None = None
+    incident_config_sha256: str | None = None
+    model_sha256: str | None = None
+
+    def identity(self) -> tuple:
+        return (
+            self.detector,
+            self.window_seconds,
+            self.persistence_windows,
+            self.threshold,
+            self.detector_config_sha256,
+            self.incident_config_sha256,
+            self.model_sha256,
+        )
 
     @property
     def false_alarm_hours(self) -> float:
@@ -85,6 +101,9 @@ def combination_from_artifact(
         detector=artifact["detector"],
         window_seconds=artifact.get("window_seconds"),
         persistence_windows=artifact.get("persistence_windows"),
+        detector_config_sha256=artifact.get("detector_config_sha256"),
+        incident_config_sha256=artifact.get("incident_config_sha256"),
+        model_sha256=artifact.get("model_sha256"),
     )
 
 
@@ -137,6 +156,16 @@ def select_combination(results: Sequence[CombinationResult]) -> dict[str, Any]:
                     f"{result.combination_id} khác {first.combination_id} ở {name}: "
                     "chỉ so các tổ hợp chấm trên cùng run, config và detector"
                 )
+    seen: dict[tuple, str] = {}
+    for result in results:
+        other = seen.setdefault(result.identity(), result.combination_id)
+        if other != result.combination_id:
+            raise ValueError(
+                f"{other} và {result.combination_id} trùng toàn bộ khóa định danh (detector, "
+                "window, persistence, threshold, sha256 của config detector, config incident, "
+                "model): "
+                "cùng một tổ hợp bị chấm hai lần"
+            )
     passing = sorted((r for r in results if r.meets_cap), key=_key_when_cap_met)
     failing = sorted((r for r in results if not r.meets_cap), key=_key_fallback)
     table = [
@@ -146,6 +175,9 @@ def select_combination(results: Sequence[CombinationResult]) -> dict[str, Any]:
             "threshold": result.threshold,
             "window_seconds": result.window_seconds,
             "persistence_windows": result.persistence_windows,
+            "detector_config_sha256": result.detector_config_sha256,
+            "incident_config_sha256": result.incident_config_sha256,
+            "model_sha256": result.model_sha256,
             "late_tolerance_seconds": result.late_tolerance_seconds,
             "matched_fault_runs": result.matched_fault_runs,
             "false_alarms": result.false_alarms,

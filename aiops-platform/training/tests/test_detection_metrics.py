@@ -305,7 +305,8 @@ SHARED = {
 
 
 def combo(cid, threshold, late, matched, alarms, hours=2.0, **overrides):
-    fields = {**SHARED, **overrides}
+    # Mỗi ứng viên có config detector riêng (sha khác nhau) trừ khi test ghi đè.
+    fields = {**SHARED, "detector_config_sha256": f"sha-{cid}", **overrides}
     return CombinationResult(
         combination_id=cid,
         threshold=threshold,
@@ -486,3 +487,16 @@ def test_bootstrap_undefined_without_runs_of_that_kind():
     stats = bootstrap_ci(units, resamples=10, seed=1)["statistics"]
     assert stats["healthy_run_fpr"]["status"] == "undefined"
     assert stats["healthy_run_fpr"]["point"] is None
+
+
+def test_selection_rejects_two_ids_with_identical_identity():
+    same = {"detector_config_sha256": "d1", "incident_config_sha256": "i1", "model_sha256": None}
+    with pytest.raises(ValueError, match="khóa định danh"):
+        select_combination([combo("a", 1.0, 60, 4, 0, **same), combo("b", 1.0, 60, 4, 0, **same)])
+    # Ngưỡng tĩnh: cùng threshold 1.0, khác bộ ngưỡng trong config thì là hai tổ hợp hợp lệ.
+    other = {**same, "detector_config_sha256": "d2"}
+    chosen = select_combination(
+        [combo("a", 1.0, 60, 4, 0, **same), combo("b", 1.0, 60, 4, 0, **other)]
+    )
+    assert {row["combination_id"] for row in chosen["ranking"]} == {"a", "b"}
+    assert chosen["ranking"][0]["detector_config_sha256"] in {"d1", "d2"}

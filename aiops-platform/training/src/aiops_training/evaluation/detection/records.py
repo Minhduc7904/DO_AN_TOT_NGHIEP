@@ -71,6 +71,11 @@ class IncidentRecord:
     incidents: tuple[Incident, ...]
     #: Ngưỡng của detector: trường top-level `threshold`, không có thì `lineage.threshold`.
     threshold: float | None = None
+    #: Định danh tổ hợp (cùng với threshold): sha256 của config detector, config incident và model
+    #: lấy từ `lineage`; null khi không có (ví dụ detector không có model).
+    detector_config_sha256: str | None = None
+    incident_config_sha256: str | None = None
+    model_sha256: str | None = None
 
 
 def _check_type(where: str, data: dict[str, Any], fields: dict[str, Any]) -> None:
@@ -135,6 +140,7 @@ def parse_incident_record(data: Any) -> IncidentRecord:
         )
     return IncidentRecord(
         threshold=_threshold(data),
+        **{name: _sha_or_none(data["lineage"], name) for name in _LINEAGE_SHA_FIELDS},
         run_id=data["run_id"],
         detector=data["detector"],
         detector_config_version=data["detector_config_version"],
@@ -153,6 +159,16 @@ def _number_or_none(where: str, value: Any) -> float | None:
     if isinstance(value, bool) or not isinstance(value, int | float):
         raise IncidentRecordError(f"{where} phải là số hoặc null")
     return float(value)
+
+
+_LINEAGE_SHA_FIELDS = ("detector_config_sha256", "incident_config_sha256", "model_sha256")
+
+
+def _sha_or_none(lineage: dict[str, Any], name: str) -> str | None:
+    value = lineage.get(name)
+    if value is not None and not isinstance(value, str):
+        raise IncidentRecordError(f"lineage.{name} phải là chuỗi hoặc null")
+    return value
 
 
 def _threshold(data: dict[str, Any]) -> float | None:
