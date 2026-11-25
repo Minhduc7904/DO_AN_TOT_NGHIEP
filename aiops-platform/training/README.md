@@ -6,7 +6,8 @@ Phần chính của đề tài: từ telemetry của một run thí nghiệm đi
 | --- | --- |
 | `telemetry/adapters` — export Prometheus, Tempo, Loki theo run | **Có** (tuần 13) |
 | `telemetry/validation` — data-quality check (`TelemetryQualityReport`) | **Có** (tuần 13) |
-| `features`, `anomaly`, `incident`, `graph`, `rca`, `evaluation` | Tuần 14 trở đi |
+| `evaluation/detection` — evaluation harness cho phát hiện sự cố | **Có** (tuần 16) |
+| `features`, `anomaly`, `incident`, `graph`, `rca` | Tuần 14 trở đi |
 
 ## Cài đặt
 
@@ -96,6 +97,30 @@ Cửa sổ 60 s bước 15 s:
 - `queue_windows.parquet`: message sẵn sàng/chưa ack và consumer theo hàng đợi RabbitMQ (cạnh async).
 
 `feature_config_version` (`feature.v1`) và `noise_filter_version` (`noise.v1`) ghi trong `features-manifest.json`, áp như nhau cho mọi run. `apply-baseline` ghi thêm `baseline-apply.json` (sha256 của baseline đã dùng). Cột `run_id` chỉ là khóa (tên run mã hóa split và case), detector phải bỏ. Cột, bộ lọc nhiễu, quy tắc thời điểm, baseline và kiểm leakage: [telemetry-data-dictionary-v2](../../docs/processed/architecture/telemetry-data-dictionary-v2.md) mục 9.
+
+## Evaluation harness cho phát hiện sự cố
+
+```bash
+# Chấm một tổ hợp detector/config trên một split của dataset (incident record theo mẫu {run_id})
+uv run aiops-training evaluate-detection --dataset ../experiments/datasets/dataset-v0.json \
+  --split validation --runs-dir ../experiments/runs \
+  --incidents '../experiments/runs/{run_id}/incidents.json' --out evaluations/<tên>.json
+# Run ngoài dataset (pilot): thay --dataset/--split bằng --run-id lặp lại
+```
+
+Module `src/aiops_training/evaluation/detection/`; chỉ harness (và gói `ground_truth`) đọc `ground-truth.json` (evaluation-protocol-v1 mục 3.3, có test kiểm). Mọi luật nằm trong [`configs/detection-evaluation-v1.json`](configs/detection-evaluation-v1.json) (`detection-evaluation.v1`):
+
+| Phần | Luật |
+| --- | --- |
+| Evaluation interval (mục 7.1) | `[workload_start + 360 s, workload_end]` của `RunGroundTruth`; incident ngoài khoảng chỉ ghi diagnostic |
+| Ghép incident (mục 17.2–17.4) | Early tolerance 0; `late_tolerance` tra từ `detection-candidates-v1.json` theo cặp window/persistence của incident record; incident sớm nhất trong `[fault_start, fault_end + late_tolerance]` là TP (hòa theo `incident_id`), còn lại là FP; không có thì FN |
+| Chỉ số | TP/FP/FN, Precision/Recall/F1 (`null` khi mẫu số 0); healthy-run FPR và FP/giờ khỏe theo profile; Detection Delay count/mean/median theo case và theo `align_peak` (FN không có delay) |
+| Báo động giả/giờ (luật chọn mục 6.1.2) | Tử: incident trên run khỏe + incident ngoài `[fault_start, fault_end + late_tolerance]` của fault run. Mẫu: evaluation interval của run khỏe + evaluation interval của fault run trừ `[fault_start, fault_end + late_tolerance]`. Đoạn `(fault_end, fault_end + late_tolerance]` bị trừ khỏi mẫu số vì tử số không đếm incident ở đó |
+| Đoạn cao điểm (`healthy-spike`) | Từ kế hoạch phát lại của run (`workload.plan_path`, kiểm `plan_sha256`, gốc `--load-dir`, mặc định `../load`): đoạn 600 s có nhiều lần bắt đầu phiên nhất, quét bước 30 s sau warm-up, hòa lấy sớm nhất (cùng luật `--align-peak` của `fault-schedule.mjs`) |
+| Bootstrap CI (mục 20.7) | Percentile 95%, 10.000 lần, seed 20261125, lấy mẫu lại theo run trong tầng (fault run theo case, run khỏe theo profile); tầng một run thì chỉ số báo `degenerate`, không có CI |
+| Run bị loại (mục 20.6) | `summary.excluded_by_reason`: slot chưa thu, thiếu/không hợp lệ ground truth, gate thực thi, chất lượng `fail`, thiếu incident record, interval không phủ khoảng ghép |
+
+Artifact `detection-evaluation-artifact.v1` gồm từng run (phần detection của mục 22, nhãn từng incident, lineage tới run manifest, ground truth, incident record kèm sha256), bảng tổng hợp, bootstrap và lineage tới evaluation config, `detection-candidates-v1.json` (sha256), dataset manifest, commit code. Luật chọn của mục 6.1.2 là `selection.select_combination` (đầu vào lấy từ artifact bằng `combination_from_artifact`). Chấm split `test` phải thêm `--final-test` (mục 6.3).
 
 ## Cách export bảo vệ Tempo
 
