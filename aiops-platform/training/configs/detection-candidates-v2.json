@@ -160,11 +160,12 @@
       "bước 1: late_tolerance nhỏ hơn rồi ngưỡng z lớn hơn (như v1); bước 2a/2b: tie_rank nhỏ hơn"
     ],
     "fallback_if_none_meet_cap": "ít báo động giả/giờ nhất, rồi cùng thứ tự; ghi là không đạt điều kiện",
-    "harness": "select_combination với tham số tie_rank đọc từ danh sách ứng viên của v2 (task-04 tuần 16)"
+    "harness": "select_combination với tham số tie_rank đọc từ danh sách ứng viên của v2 (task-04 tuần 16)",
+    "candidate_binding": "combination_id của mỗi artifact phải bằng id của ứng viên trong v2; trước khi gọi select_combination, task-06 đối chiếu sha256 nội dung config detector/incident của từng tổ hợp (lineage.detector_config_sha256, lineage.incident_config_sha256) với config sinh từ ứng viên v2 và ghi vào ledger; tổ hợp bước 1 dùng lại cho bước 2a được ghi nhãn merge120-chain120"
   },
   "combinations": { "step1": 12, "step2a_incident": 4, "step2b_static": 3, "step2b_iforest": 3, "step2b_fused": 6, "total": 28, "distinct": 27 },
   "train_evidence": {
-    "command": "aiops-platform/training/scripts/train_candidate_evidence.py (chạy từ aiops-platform/training của nhánh task-03 commit 0f8be19, baseline dataset-v0-w60.json luật v2, model iforest fit bằng configs/detector-dev-v1.json)",
+    "command": "aiops-platform/training/scripts/train_candidate_evidence.py <runs_dir> <dataset> <out_dir> configs/detection-candidates-v2.json, sau khi apply-baseline dataset-v0-w60.json (luật v2) cho 4 run train; script tự fit Isolation Forest bằng configs/detector-dev-v1.json; code anomaly/incident của nhánh task-03 commit 0f8be19",
     "window_s": 60,
     "train_hours_post_warmup": 2.83,
     "incident_config": "persistence 5, recovery 5, merge 120 s, tương quan 300 s, max_chain_gap 120 s",

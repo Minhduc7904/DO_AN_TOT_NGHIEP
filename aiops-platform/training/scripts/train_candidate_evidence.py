@@ -2,8 +2,14 @@
 tuyến tính) và số incident/giờ trên 4 run train khỏe cho từng ứng viên ngưỡng, cửa sổ 60 s.
 
 Chạy từ aiops-platform/training (cần anomaly/, incident/ của task-01, task-03 tuần 16):
-  uv run python <file> <runs_dir> <dataset> <out_dir>
-Chỉ đọc run train (split train, case rỗng) của dataset; không chạm validation.
+  # 1. Áp baseline luật thang đo v2 cho thư mục feature 60 s của 4 run train:
+  uv run aiops-training apply-baseline <runs_dir>/<run_id>/telemetry/features \
+    --baseline baselines/dataset-v0-w60.json
+  # 2. Chạy script; nó tự fit Isolation Forest bằng configs/detector-dev-v1.json vào <out_dir>:
+  uv run python scripts/train_candidate_evidence.py <runs_dir> <dataset> <out_dir> \
+    configs/detection-candidates-v2.json
+Tham số thứ 4 (tập ứng viên v2) cho phần ngưỡng tĩnh. Chỉ đọc run train (split train, case rỗng)
+của dataset; không chạm validation.
 """
 
 import json
@@ -23,6 +29,27 @@ train = sorted(
 )
 out.mkdir(parents=True, exist_ok=True)
 model = out / "iforest-w60.joblib"
+if not model.exists():
+    fit = subprocess.run(
+        [
+            "uv",
+            "run",
+            "aiops-training",
+            "fit-iforest",
+            "--dataset",
+            str(dataset),
+            "--runs-dir",
+            str(runs_dir),
+            "--config",
+            "configs/detector-dev-v1.json",
+            "--out",
+            str(model),
+        ],
+        capture_output=True,
+        text=True,
+    )
+    if fit.returncode:
+        raise SystemExit(fit.stderr[-500:])
 dev = json.loads(Path("configs/detector-dev-v1.json").read_text())
 v2 = json.loads(Path(sys.argv[4]).read_text()) if len(sys.argv) > 4 else None
 
@@ -142,7 +169,8 @@ for z in (3, 4, 5):
 report["robust_z"] = {"train": rows}
 if v2:
     rows = {}
-    for name, thresholds in v2["step2"]["static"]["threshold_sets"].items():
+    for candidate in v2["step2b"]["static"]["candidates"]:
+        name, thresholds = candidate["id"], candidate["thresholds"]
         cfg = config_with(f"static-{name}", {"static": {"thresholds": thresholds}})
         _, incidents, hours = scores("static", cfg)
         rows[name] = {"incidents": incidents, "per_hour": incidents / hours}
