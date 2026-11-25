@@ -48,7 +48,7 @@
   - **RAM:** mỗi lúc một lệnh nặng; không tính feature khi stack đang chạy run.
 - Quyết định đã chốt:
   - Giai đoạn tự bắt kịp: mọi task do Bách phụ trách, không collaborator; review/merge theo ngoại lệ Bách xác nhận (plan v0.4 mục 0.1, dòng "Nhân sự").
-  - `detection-candidates.v1` (window, persistence, ngưỡng robust z, luật chọn) đã khai báo ngày 23/11/2026, không đổi. Task-05 khai báo phần còn mở của phát hiện thành v2. Phần RCA (SimpleRCA, BARO, `base-manual-auto`, trọng số RCA) khai báo ở tuần 17–18.
+  - `detection-candidates.v1` (window, persistence, ngưỡng robust z, luật chọn) đã khai báo ngày 23/11/2026; lưới và luật chọn không đổi, còn luật thang đo và luật cửa sổ không dữ liệu được thay ở v2 (mục 6.1.3, 25/11/2026). Task-05 khai báo phần còn mở của phát hiện thành v2. Phần RCA (SimpleRCA, BARO, `base-manual-auto`, trọng số RCA) khai báo ở tuần 17–18.
   - Baseline ngưỡng tĩnh là đối chứng phát hiện cho E1 và RQ6 (plan v0.4 tuần 16).
   - Không chạm split test: campaign tuần 19, E1 chính thức đo trên test ở tuần 20.
   - Phạm vi: MVP làm đầy đủ; change-point (Target) và deep model (Stretch) không làm tuần này. Diagnostic E1 trên run mức 1 (mục 17.8) không bắt buộc, không làm tuần này.
