@@ -590,12 +590,14 @@ EvaluationRecord
 
 ### 7.1. Window mặc định
 
-Giá trị khởi điểm (đề xuất, chờ pilot):
+Giá trị khởi điểm (đề xuất trước pilot):
 
 ```text
 window_size = 60 seconds
 step = 15 seconds
 ```
+
+> **Đã chốt sau pilot (23/11/2026):** bước 15 s cố định; độ dài cửa sổ chọn trên validation trong {30 s, 60 s}, kèm persistence {3, 4} (30 s) hoặc {5, 6} (60 s) ([evaluation-protocol-v1](evaluation-protocol-v1.md) mục 6.1.2). Giá trị ở trên và trong các config mẫu dưới đây là minh họa, không phải giá trị chốt.
 
 Các window có overlap:
 
@@ -1424,7 +1426,7 @@ Trọng số modality là giá trị khởi điểm minh họa, không phải k�
 
 ```yaml
 incident_config_version: 1
-persistence_steps: 3
+persistence_steps: 3   # minh họa; tập ứng viên ở evaluation-protocol-v1 mục 6.1.2 (cửa sổ 60 s: 5 hoặc 6)
 merge_gap_seconds: 60
 recovery_steps: 3
 minimum_related_services: 1
@@ -1638,7 +1640,7 @@ Không tính `root_cause_component` trong metric chính. Component evidence đư
 ADR-002 thêm thời gian chẩn đoán (thủ công so với AI) bên cạnh Top-1/Top-3/MRR và ablation; ADR-007 tách thành hai bằng chứng:
 
 - **E4 — chi phí chẩn đoán (MVP):** `base-manual-auto` (ngưỡng + trace lỗi/chậm nhất, mục 12.6) chạy trên cùng run, đếm số artifact phải mở (trace, panel, truy vấn log) và thời gian, so với bằng chứng engine trả sẵn trong `RcaIncidentResult`; đo lặp được.
-- **E7 — thử nghiệm người (Target):** within-subject, mỗi người 4 incident, nửa dùng Grafana/Tempo/Loki thủ công, nửa có báo cáo engine, cân bằng thứ tự; đo thời gian, đúng/sai, số thứ đã mở, NASA-TLX rút gọn ([NASA-TLX](https://en.wikipedia.org/wiki/NASA-TLX)), SUS ([SUS](https://measuringu.com/sus/)). Mẫu tham khảo là user study của LogAssist: 19 người, within-subject, tổng thời gian giảm 42,49% nhưng hai task đơn giản nhất lại chậm hơn khi có công cụ (`[L-LogAssist]` [IEEE TSE 2022 (online 2021)](https://ece.uwaterloo.ca/~wshang/pubs/TSE2021_LogAssist.pdf)). Số người 6–10 nếu tìm được, nếu không thì 2–3 người, chỉ minh họa định tính; chốt người tham gia trước tuần 15 của plan-v0.4. Thiết kế chi tiết ở evaluation-protocol-v1 mục 15.3; chưa có lần chạy nào, chưa có thời gian chẩn đoán đo được.
+- **E7 — thử nghiệm người (Target; đã ra khỏi kế hoạch ngày 19/11/2026, evaluation-protocol-v1 mục 15.3):** within-subject, mỗi người 4 incident, nửa dùng Grafana/Tempo/Loki thủ công, nửa có báo cáo engine, cân bằng thứ tự; đo thời gian, đúng/sai, số thứ đã mở, NASA-TLX rút gọn ([NASA-TLX](https://en.wikipedia.org/wiki/NASA-TLX)), SUS ([SUS](https://measuringu.com/sus/)). Mẫu tham khảo là user study của LogAssist: 19 người, within-subject, tổng thời gian giảm 42,49% nhưng hai task đơn giản nhất lại chậm hơn khi có công cụ (`[L-LogAssist]` [IEEE TSE 2022 (online 2021)](https://ece.uwaterloo.ca/~wshang/pubs/TSE2021_LogAssist.pdf)). Số người 6–10 nếu tìm được, nếu không thì 2–3 người, chỉ minh họa định tính; chốt người tham gia trước tuần 15 của plan-v0.4. Thiết kế chi tiết ở evaluation-protocol-v1 mục 15.3; chưa có lần chạy nào, chưa có thời gian chẩn đoán đo được.
 - **E8 — case study C6 (MVP):** chuỗi bằng chứng của engine (lỗi ở `gateway`, nguyên nhân ở `identity` im lặng, cờ `telemetry_silent`) đặt cạnh đường truy vết thủ công.
 
 Kết quả báo cáo tách theo nhóm: case có nguyên nhân trên đường request và case nguyên nhân ngoài đường request (mục 15). Luận điểm của đề tài chỉ được khẳng định ở nhóm sau nếu engine vượt baseline thủ công ở đó trên các case đã chạy thật.
@@ -1933,7 +1935,7 @@ Cùng input, code, seed và config phải tạo:
 10. Implement evidence, verdict và ghi `RcaIncidentResult`.
 11. Implement evaluation harness (Top-K/MRR, thời gian chẩn đoán).
 12. Chạy thật các case MVP C2, C3, C4, C6 (C1, C5, C7 là Target) bằng lớp fault, kể cả run đặt fault trùng cao điểm tải; chạy pilot, đăng ký trước và freeze protocol/config (tuần 19 của plan-v0.4).
-13. Chạy final campaign, E1–E5, E8 (ablation, robustness E3) và nếu còn thời gian E6, E7.
+13. Chạy final campaign, E1–E5, E8 (ablation, robustness E3) và nếu còn thời gian E6 (E7 đã ra khỏi kế hoạch, evaluation-protocol-v1 mục 15.3).
 14. Chỉ sau khi 1–13 đạt: MCP server chỉ đọc và agent (mục 16).
 15. Implement API/visualization tối thiểu nếu cần (có thể làm song song từ bước 10).
 
@@ -1983,7 +1985,7 @@ Không bắt đầu deep model, Kubernetes hoặc component-level RCA trước k
 
 - [ ] Tính được Precision, Recall, F1, FPR và Detection Delay.
 - [ ] Tính service-level Top-1, Top-3 và MRR; báo cáo riêng tỉ lệ `insufficient_evidence`.
-- [ ] Đo chi phí chẩn đoán thủ công so với AI (E4: số artifact `base-manual-auto` phải mở và thời gian); thử nghiệm người E7 chỉ khi đạt mức Target.
+- [ ] Đo chi phí chẩn đoán thủ công so với AI (E4: số artifact `base-manual-auto` phải mở và thời gian); thử nghiệm người E7 đã ra khỏi kế hoạch (19/11/2026, evaluation-protocol-v1 mục 15.3).
 - [ ] Báo cáo tách case nguyên nhân trên và ngoài đường request, ghi rõ case nào đã chạy thật.
 - [ ] Có modality, graph (theo loại cạnh) và temporal ablation theo protocol.
 - [ ] Có E3: giữ 50% và 10% trace, log mất `trace_id`, mất một modality (ADR-007); expanded matrix chỉ thuộc Target.

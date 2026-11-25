@@ -69,7 +69,7 @@
       ],
       "fault_duration_s": 900,
       "requires": [],
-      "source": "complex-case-catalogue-and-rca-result-v0 mục C3; trễ 30 s ± 5 s nhỏ hơn AI_COMPLETION_TIMEOUT_MS 240 s nên job chậm chứ không FAILED",
+      "source": "complex-case-catalogue-and-rca-result-v0 mục C3; trễ 30–35 s (30 s cộng ngẫu nhiên trong [0, jitter 5 s], faults/README) nhỏ hơn AI_COMPLETION_TIMEOUT_MS 240 s nên job chậm chứ không FAILED",
       "pilot": {
         "fault_duration_s_v1": 600,
         "first_signal_lag_s": {

@@ -44,7 +44,7 @@ def _export_parser(sub: argparse._SubParsersAction) -> None:
     parser.add_argument("--tempo-url", default="http://127.0.0.1:3200")
     parser.add_argument("--loki-url", default="http://127.0.0.1:3100")
     parser.add_argument("--step-seconds", type=int, default=5)
-    parser.add_argument("--max-traces", type=int, default=20_000)
+    parser.add_argument("--max-traces", type=int, default=TempoExportOptions.max_traces)
     parser.add_argument("--trace-delay-ms", type=int, default=20)
     parser.add_argument("--include-noise-traces", action="store_true")
     parser.add_argument("--include-probe-logs", action="store_true")

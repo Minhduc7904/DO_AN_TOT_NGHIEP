@@ -1,0 +1,42 @@
+{
+  "candidate_set_version": "detection-candidates.v1",
+  "declared_at": "2026-11-23",
+  "source": "docs/processed/architecture/evaluation-protocol-v1.md#612-giá-trị-để-validation-chọn-và-tập-ứng-viên",
+  "selection_detector": "robust_z",
+  "step_seconds": 15,
+  "window_persistence": [
+    { "window_seconds": 30, "persistence_windows": 3, "late_tolerance_seconds": 60 },
+    { "window_seconds": 30, "persistence_windows": 4, "late_tolerance_seconds": 75 },
+    { "window_seconds": 60, "persistence_windows": 5, "late_tolerance_seconds": 120 },
+    { "window_seconds": 60, "persistence_windows": 6, "late_tolerance_seconds": 135 }
+  ],
+  "robust_z_thresholds": [3, 4, 5],
+  "null_window_rule": "skip_without_breaking_chain",
+  "scale_rule": {
+    "primary": "1.4826 * MAD",
+    "when_mad_zero": "1.2533 * MeanAD",
+    "when_meanad_zero": "unit_floor",
+    "unit_floor": {
+      "ratio": 0.01,
+      "seconds": 0.01,
+      "per_second": 0.05,
+      "calls": 1,
+      "messages": 1,
+      "consumers": 0.2,
+      "cpu_seconds_per_second": 0.01,
+      "memory_bytes": 1048576
+    }
+  },
+  "detected_at": "window_end + available_after_s of the slowest modality used (metrics 10 s)",
+  "selection_rule": {
+    "false_alarm_cap_per_hour": 1,
+    "false_alarm_definition": "incidents on validation healthy runs + incidents with detected_at outside [fault_start, fault_end + late_tolerance] on validation fault runs, per hour of post-warm-up non-fault evaluation time",
+    "order": [
+      "max fault runs with a matched incident (among combos meeting the cap)",
+      "min false alarms",
+      "min late_tolerance",
+      "max threshold"
+    ],
+    "fallback_if_none_meet_cap": "min false alarms, then the same order; recorded as not meeting the cap"
+  }
+}

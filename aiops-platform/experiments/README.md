@@ -98,7 +98,7 @@ node aiops-platform/experiments/run-experiment.mjs aiops-platform/experiments/sp
 | `--export-timeout-s` | 60 | Timeout mỗi lời gọi HTTP của bước export (Prometheus, Tempo, Loki); mặc định của `aiops-training export` là 15 s, quá ngắn cho truy vấn log cả run khi máy thiếu RAM. Timeout áp cho từng lần tải trace nên khi Tempo treo, export chờ lâu hơn trước khi bỏ (vẫn trong giới hạn 3 giờ của bước) |
 | `--runs-dir`, `--ledger` | `aiops-platform/experiments/runs`, `ledger.jsonl` | Đổi nơi ghi |
 
-Runner không chuyển biến cấu hình k6 của shell (`PLAN`, `VUS`, `DURATION`…) vào k6: mọi tham số workload lấy từ spec. Một run 48 phút cộng reset (2–5 phút), setup k6 (1–2 phút), export (15–25 phút cho trace): khoảng 1,2–1,5 giờ. Lệnh in một dòng JSON tóm tắt; mã thoát 0 khi `completed`.
+Runner không chuyển biến cấu hình k6 của shell (`PLAN`, `VUS`, `DURATION`…) vào k6: mọi tham số workload lấy từ spec. Một run 48 phút cộng reset (2–5 phút), setup k6 (1–2 phút), export (15–25 phút cho trace với `normal-mixed`; ~38.000 trace của `healthy-spike` cần khoảng 60–80 phút): khoảng 1,2–1,5 giờ (`healthy-spike` tới ~2,3 giờ). Lệnh in một dòng JSON tóm tắt; mã thoát 0 khi `completed`.
 
 ### 3. Đọc kết quả
 
@@ -116,6 +116,35 @@ node aiops-platform/experiments/verify-raw-ground-truth.mjs aiops-platform/exper
 - `Ctrl+C`, SIGTERM hoặc SIGHUP: runner dừng container k6 bằng một SIGTERM (`docker stop -t 90`, để k6 kịp ghi tóm tắt), gửi SIGTERM cho lịch fault (lịch tự gỡ fault), chạy bước gỡ fault, ghi `aborted`, giữ phần artifact đã có và `RunGroundTruth`; không export. Tiến trình con chạy ở process group riêng nên tín hiệu của terminal chỉ tới runner.
 - Sau khi runner chết đột ngột: kiểm `node aiops-platform/faults/fault-control.mjs status`, chạy `clear`, `llm reset`, `container unpause identity` nếu cần; xóa `runs/.runner.lock` nếu tiến trình ghi trong đó không còn.
 - Không sửa hay xóa dòng ledger; chạy lại bằng spec mới (`run_id` mới, `replacement_for_run_id`).
+
+## Dataset manifest (`dataset-manifest.v0`)
+
+[`datasets/dataset-v0.json`](datasets/dataset-v0.json) khai báo dataset **trước khi chạy**:
+
+- Luật chia ngày log Moodle theo split (`day_split`) và kế hoạch phiên của từng split (`plans`: đường dẫn trong `load/`, sha256, ngày). Kế hoạch không commit, sinh lại được bằng lệnh ở [load/README](../load/README.md#kế-hoạch-phiên-theo-split-cho-dataset).
+- Quy tắc seed (`seed_rule`) và các **slot** run: split, profile, case, `repeat_index`, `workload_seed`, `align_peak` (`null` là chưa chốt). Spec của slot nằm ở [`specs/dataset-v0/`](specs/dataset-v0/).
+- Khi run xong, ghi `run_id` vào slot. Run bị thay (mục 8.6) chuyển sang `replaced_run_ids` theo thứ tự; run thay thế giữ nguyên cấu hình của slot, kể cả seed.
+- Run hỏng trước khi workload bắt đầu (lỗi dựng môi trường, chưa có telemetry hay `RunGroundTruth`) được chạy lại bằng spec cũ với `run_id` mới, không ghi `replacement_for_run_id` và không vào `replaced_run_ids`. Luật này được ghi sau khi chạy dataset v0 (24/11/2026, [dataset-v0](../../docs/processed/architecture/dataset-v0.md) mục 6.2); các run đó vẫn nằm trong ledger. `check-dataset.mjs` không phát hiện run chạy lại mà không khai trong manifest; muốn rà thì lọc ledger theo split, profile và seed của slot.
+- Slot test chỉ khai báo, chưa chạy; danh sách test freeze ở tuần 19 (evaluation-protocol-v1 mục 6.3).
+
+```bash
+node aiops-platform/experiments/check-dataset.mjs aiops-platform/experiments/datasets/dataset-v0.json            # kiểm, liệt kê phần còn thiếu
+node aiops-platform/experiments/check-dataset.mjs aiops-platform/experiments/datasets/dataset-v0.json --require-complete
+```
+
+`check-dataset.mjs` đối chiếu manifest với ledger và file kế hoạch, báo `errors` (vi phạm), `pending` (độ phủ còn thiếu, quyết định chưa chốt) và `warnings` (không đọc được file kế hoạch hoặc artifact, variant có trace bị loại):
+
+| Kiểm | Nội dung |
+| --- | --- |
+| Không trùng giữa split | Ngày log (cả nhóm ngày lẫn ngày của kế hoạch), seed (của slot và của run trong ledger, kể cả run bị thay), `run_id`; không ngày nào thuộc hold-out |
+| Seed | Trong khoảng của split; fault run các case cùng split và `repeat_index` dùng cùng seed (workload-design-v1 mục 11.4) |
+| Kế hoạch | sha256 và ngày của file khớp manifest; kế hoạch mà run đã chạy (`plan_sha256` trong ledger) là kế hoạch của split |
+| Run của slot | Có trong ledger, cùng split/case/`repeat_index`/profile/seed; `completed`, gate thực thi `pass`, `RunGroundTruth` `valid`, chất lượng `pass`/`partial`; chuỗi `replacement_for_run_id` khớp `replaced_run_ids` |
+| Hình dạng slot | Fault run không vào train; validation dùng `repeat_index` 1, test 2..R; healthy có `repeat_index` 0; slot test chưa có run |
+| Nhận cho primary evaluation (run có artifact trong `--runs-dir`, mặc định `runs/`) | `lib/eligibility.mjs` theo [evaluation-protocol-v1](../../docs/processed/architecture/evaluation-protocol-v1.md) mục 6.1.1 bảng F: metric/log không `empty`; lý do `partial` thuộc loại được nhận (`truncated_modality:traces`, `duplicates` có giới hạn, `telemetry_silent:identity` trong cửa sổ fault của C6). Lỗi trace (export ngắt, lỗi tải, độ phủ ứng viên < 0,98, fault run bỏ trace vì ngân sách) chỉ loại variant có trace (`warnings`); run healthy bỏ trace vì ngân sách được ghi `trace_variants = sampled` kèm tỉ lệ giữ. Kết quả từng run ở trường `eligibility` |
+| Độ phủ (`--require-complete`) | Mỗi profile có run healthy ở train và validation; mỗi case có fault run validation; ít nhất một fault run validation trùng cao điểm; `align_peak`, fault manifest và `pending_decisions` đã chốt |
+
+Chạy dataset như mọi run khác: lần lượt từng spec bằng `run-experiment.mjs`. Chạy kèm `load/tools/sample-docker-stats.mjs` để `load/tools/health-check.mjs` chấm được tiêu chí CPU/bộ nhớ của run healthy.
 
 ## Test
 
