@@ -19,7 +19,7 @@
 | Điểm hợp nhất | **Trọng số bằng nhau, q 99,9% (1,769)**: 4/4, 0 báo động giả. q 99% (cả hai bộ trọng số) vượt giới hạn: 1,41/giờ |
 | Config đã freeze | [`detector-e1-v1.json`](../../../aiops-platform/training/configs/detector-e1-v1.json) (`detector-e1.v1`), [`incident-e1-v1.json`](../../../aiops-platform/training/configs/incident-e1-v1.json) (`incident-e1.v1`), evaluation config `detection-evaluation.v1` giữ nguyên |
 | E1 sơ bộ | Cả 4 detector khớp 4/4 fault run. Chỉ Isolation Forest có 1 báo động giả (run khỏe `normal-mixed`). Delay giống nhau ở C3 (737 s) và C4 (117 s); robust z và fused sớm hơn 15 s ở C2, C6 |
-| Error analysis | 1 FP, 0 FN trên 4 tổ hợp E1. FP do model Isolation Forest của `scheduler-worker` cho điểm bão hòa với lệch rất nhỏ. Delay C3 do job AI đến muộn (lời gọi provider đầu tiên ở khoảng giây 470 của fault) |
+| Error analysis | 1 FP, 0 FN trên 4 tổ hợp E1; FP của các tổ hợp không chọn chủ yếu là latency ở `gateway` khi tải thấp hoặc trên cạnh thưa (mục 8.5). FP do model Isolation Forest của `scheduler-worker` cho điểm bão hòa với lệch rất nhỏ. Delay C3 do job AI đến muộn (lời gọi provider đầu tiên ở khoảng giây 470 của fault) |
 
 Đọc kết quả cùng giới hạn ở mục 8: recall chỉ có 5 mức, báo động giả đo trên 3,54 giờ, nhiều hòa được quyết định bằng thứ tự khai báo trước chứ không bằng số đo.
 
@@ -106,21 +106,21 @@ Window 30 s, persistence 4, tham số incident của bước 2a; hòa cuối the
 - **Ngưỡng tĩnh hòa hoàn toàn.** Phần công bố của v2 dự đoán chỉ bộ `strict` (0,5 s) bắt được C4, vì ở pilot độ lớn triệu chứng chỉ khoảng 0,3–0,6 s (C4) và 0,29 s (C2). Trên validation, p95 của cửa sổ 30 s cao hơn nhiều:
   - C2: `course.latency_p95` và `gateway → course` khoảng 2,32 s.
   - C4: `gateway → media` và `media.latency_p95` khoảng 2,35 s.
-  - C3: `ai-worker.downstream_latency_p95` 10 s.
+  - C3: `ai-worker.downstream_latency_p95` 10 s. Đây là trần của histogram; lời gọi provider thật kéo dài 32,6–34,8 s (`duration_mean`).
   - C6: `gateway → identity` lỗi 100%.
 
-  Cả ba bộ đều vượt ngưỡng (`loose` 2 s vượt với biên khoảng 0,3 s), nên chọn `loose` theo thứ tự khai báo. Validation không cho biết bộ nào tốt hơn. Ở test, C2 và C4 chỉ cần p95 dưới 2 s là bộ `loose` bỏ lỡ.
+  Cả ba bộ đều vượt ngưỡng, nên chọn `loose` theo thứ tự khai báo. Biên của bộ `loose` (2 s) rất hẹp: ở cửa sổ vượt đầu tiên của C2, giá trị chỉ 2,012 s; ở C4, giá trị dao động 2,05–2,35 s và có cửa sổ rơi xuống dưới 2 s ngay trong lúc fault. Validation không cho biết bộ nào tốt hơn. Ở test, C2 và C4 chỉ cần p95 dưới 2 s là bộ `loose` bỏ lỡ.
 - **Isolation Forest: trần điểm theo service.** Mỗi service một model, và điểm của mỗi model bão hòa ở một mức trần riêng. Điểm lớn nhất quan sát trên 4 run train và 6 run validation:
 
   | Service | `scheduler` | `course` | `gateway` | `notification` | `identity` | `media` | `ai-worker` | `scheduler-worker` | `notification-worker` | `ai` | `media-worker` |
   | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
   | Điểm lớn nhất | 0,500 | 0,746 | 0,788 | 0,811 | 0,826 | 0,834 | 0,838 | 0,842 | 0,847 | 0,849 | 0,855 |
 
-  - Ngưỡng phân vị gộp mọi (cửa sổ, service) theo luật của v2, nên service có trần dưới ngưỡng không bao giờ vượt. Ở C2, `course` đạt trần 0,746 ở 45 cửa sổ trong lúc fault.
+  - Ngưỡng phân vị gộp mọi (cửa sổ, service) theo luật của v2, nên service có trần dưới ngưỡng không bao giờ vượt. Ở run C2, `course` đạt trần 0,746 ở 49 cửa sổ: 42 cửa sổ chồng lên fault và 7 cửa sổ trước fault. Dò thêm trên model: với z không âm, điểm của `course` không vượt 0,746; điểm cao nhất tìm được là 0,78000 (dưới ngưỡng 0,78003), và chỉ đạt khi z âm cỡ −1000. Vì vậy trên thực tế `course` không vượt được, nhưng đây không phải chứng minh chặt. `scheduler` có model suy biến, điểm luôn đúng 0,5.
   - Ở q 99,9% (0,842): `course`, `gateway` và `ai-worker` đều không vượt được, nên C2 và C3 không có incident nào (2/4).
   - Ở q 99,5% (0,780, đã chọn): C2 vẫn được bắt qua `gateway` (0,788) và `ai-worker`, nhưng `course` và `scheduler` bị bỏ qua hoàn toàn.
   - Đây là giới hạn của luật đã khai báo, không đổi sau khi xem kết quả (mục 9).
-- **Điểm hợp nhất:** ngưỡng q 99% có 5 báo động giả và mất C6. Ở run C6, một incident báo giả lúc 21:55:40 (56 s trước `fault_start`) nuốt đợt của fault qua cửa sổ tương quan, thành FP + FN. Đây là rủi ro đã ghi ở v2.
+- **Điểm hợp nhất:** ngưỡng q 99% có 5 báo động giả và mất C6. Ở run C6, một incident báo giả lúc 21:55:40 (56,8 s trước `fault_start`, hồi phục lúc 21:56:25) gom luôn các đợt của fault vào cùng incident, thành FP + FN. Đây là rủi ro đã ghi ở v2.
 
 ## 6. Config đã freeze
 
@@ -156,12 +156,12 @@ Không báo bootstrap CI: mỗi tầng (case, profile) chỉ có một run nên 
 
 - Mẫu số: 6 run eligible (4 fault, 2 khỏe), không run nào bị loại; đoạn cao điểm tính được ở run `healthy-spike` (kế hoạch phát lại khớp sha256).
 - Bốn detector gần như không phân biệt được trên validation. Khác biệt duy nhất: 1 báo động giả của Isolation Forest, và robust z/fused sớm hơn 15 s (một bước) ở C2 và C6.
-- Mỗi fault run có đúng một incident, gom các service liên quan:
-  - C2: `course`, `gateway`, `ai-worker`.
-  - C4: `gateway`, `media`, `media-worker`.
-  - C6: `gateway`, `identity` im lặng.
-  - C3: `ai-worker`.
-- Trace của run `healthy-spike` là mẫu 52,5% (bảng F, hệ quả (a)): báo động giả 0 của detector dùng trace (fused) đo trên mẫu.
+- Mỗi fault run có đúng một incident. Service trong incident khác nhau theo detector:
+  - Robust z và fused: C2 `course`, `gateway`, `ai-worker`; C4 `gateway`, `media`, `media-worker`.
+  - Ngưỡng tĩnh: C2 `course`, `gateway`; C4 `gateway`, `media`.
+  - Isolation Forest: C2 `gateway`, `ai-worker`; C4 `media`, `media-worker`.
+  - Cả 4 detector: C6 `gateway`, `identity` im lặng; C3 `ai-worker`.
+- Trace của run `healthy-spike` là mẫu 52,5% (bảng F, hệ quả (a)). Cả 4 detector dùng `service.trace_error_rate` (`signals.v1`), nên báo động giả 0 ở run này đo trên trace mẫu.
 
 ## 8. Error analysis ban đầu
 
@@ -171,9 +171,9 @@ Không báo bootstrap CI: mỗi tầng (case, profile) chỉ có một run nên 
 | --- | --- |
 | Service, khóa bằng chứng | `scheduler-worker`, `edge.duration_p95@scheduler-worker\|scheduler-postgres` (cùng `service.downstream_latency_p95`) |
 | Cửa sổ | Các cửa sổ vượt rải từ 09:47:30 tới 10:03:45 (giờ kết thúc cửa sổ). Chuỗi đủ 4 cửa sổ liên tiếp kết thúc ở 09:52:45–09:53:30; `detected_at` = 09:53:30 + 10 s |
-| Điểm | 0,842 ở mọi cửa sổ vượt (ngưỡng 0,780) |
-| Độ lệch thật | Latency tới `scheduler-postgres` 5–8 ms. z lớn nhất của tín hiệu chỉ 0,01–0,28 |
-| Giả thuyết | **Nhiễu do model, không phải triệu chứng.** Ở train, điểm của `scheduler-worker` gần như rời rạc: phần lớn cửa sổ 0,424, một số 0,577–0,747, và mức 0,842 xuất hiện 3 lần (2 ở `healthy-spike` s1003, 1 ở `normal-mixed` s1001). Model Isolation Forest cô lập tổ hợp "có lời gọi DB với z hơi dương" vì vector của service này gần như hằng trên train. Ngưỡng phân vị q 99,5% (0,780) nằm dưới mức bão hòa đó, nên mỗi khi worker chạy job DB vài phút liền thì đủ persistence. Bằng chứng z > 0 (luật khóa của Isolation Forest) quá rộng ở đây; rủi ro này đã ghi ở v2 |
+| Điểm | 0,842 ở cả 18 cửa sổ vượt (ngưỡng 0,780) |
+| Độ lệch thật | Latency tới `scheduler-postgres` 4,9–7,6 ms. z lớn nhất của tín hiệu chỉ 0,01–0,28 |
+| Giả thuyết | **Nhiễu do model, không phải triệu chứng.** Ở train, điểm của `scheduler-worker` gần như rời rạc: 576/676 cửa sổ ở 0,424, một số ở 0,577–0,765, và mức 0,842 xuất hiện 3 lần (2 ở `healthy-spike` s1003, 1 ở `normal-mixed` s1001). Model Isolation Forest cô lập tổ hợp "có lời gọi DB với z hơi dương" vì vector của service này gần như hằng trên train. Ngưỡng phân vị q 99,5% (0,780) nằm dưới mức bão hòa đó, nên mỗi khi worker chạy job DB vài phút liền thì đủ persistence. Bằng chứng z > 0 (luật khóa của Isolation Forest) quá rộng ở đây; rủi ro này đã ghi ở v2 |
 
 ### 8.2. FN
 
@@ -184,9 +184,9 @@ Không có FN ở 4 tổ hợp E1. Các ứng viên không được chọn có F
 
 ### 8.3. Delay C3 737 s: job AI đến muộn
 
-- Fault C3 kéo dài 900 s (19:51:08–20:06:08 UTC). Trong cửa sổ fault, lời gọi `ai-worker → ai-llm-provider` đầu tiên nằm ở cửa sổ kết thúc ở giây 486. Mỗi lời gọi mất khoảng 10 s và nằm trong hai cửa sổ chồng nhau (486, 501).
+- Fault C3 kéo dài 900 s (19:51:08–20:06:08 UTC). Trong cửa sổ fault, lời gọi `ai-worker → ai-llm-provider` đầu tiên nằm ở cửa sổ kết thúc ở giây 486. Mỗi lời gọi mất 32,6–34,8 s (`duration_mean`; p95 ghi 10 s là trần histogram) và đếm ở hai cửa sổ chồng nhau (486, 501).
 - Lời gọi kế tiếp đến sau khoảng 180 s, vượt `max_chain_gap` 120 s, nên chuỗi bắt đầu lại. Đợt job kế tiếp có 4 cửa sổ liên tiếp (kết thúc ở giây 681–726); `detected_at` = 726 + 10 s ≈ 737 s.
-- Pilot đo thời điểm job AI đầu tiên sau phút 18 ở 8 run: 14–458 s (fault-pilot-report-v1 mục 5). Run validation này có job đầu tiên ở khoảng giây 470 sau `fault_start`, gần biên của pilot.
+- Pilot đo thời điểm job AI đầu tiên sau phút 18 ở 8 run: 14–458 s (fault-pilot-report-v1 mục 5). Run validation này có lời gọi provider đầu tiên ở khoảng giây 470 sau `fault_start`, **ngoài** dải của pilot. Mốc 458 s của pilot là run C6, nơi fault chặn đăng nhập; các run pilot khác tối đa 329 s.
 - Ứng viên `max_chain_gap` 300 s sẽ nối được chuỗi, nhưng chỉ sớm hơn khoảng 30 s (giây 696 + 10). Luật chọn không xét delay nên không đổi lựa chọn.
 - Đây là giới hạn của workload, không phải của detector: cả 4 detector có cùng delay.
 
@@ -194,17 +194,32 @@ Không có FN ở 4 tổ hợp E1. Các ứng viên không được chọn có F
 
 | Nhóm | Quan sát trên validation |
 | --- | --- |
-| Nhiễu | 1 FP (mục 8.1), do model chứ không do dao động tải |
+| Nhiễu | E1: 1 FP (mục 8.1), do model chứ không do dao động tải. Các tổ hợp không chọn: latency ở `gateway` khi tải gần 0 hoặc trên cạnh thưa (mục 8.5) |
 | Cao điểm | Đoạn cao điểm 600 s của `healthy-spike` không có báo động giả nào ở 4 detector. C2 trùng cao điểm phát hiện sau 61–76 s |
 | Trace mẫu | Không có báo động giả ở run `healthy-spike` (trace mẫu 52,5%); chưa thấy tác động |
 | Cạnh thưa | C3: lời gọi provider thưa làm delay dài (mục 8.3) |
-| Runtime im lặng | C6: `identity` im lặng nằm trong incident nhưng incident mở trước bằng lỗi ở `gateway` (`gateway → identity` 100% lỗi, hoặc `log_error_rate`/latency ở gateway) |
+| Runtime im lặng | C6: `identity` im lặng nằm trong incident, nhưng incident mở trước bằng triệu chứng ở `gateway`: `gateway → identity` (ngưỡng tĩnh), `log_error_rate` (robust z), latency `gateway → course` (fused, Isolation Forest) |
+
+### 8.5. FP và FN của mọi tổ hợp đã chấm
+
+Bảng đầy đủ ở `tables.md` (mục "FP của mọi tổ hợp đã chấm", "FN của mọi tổ hợp đã chấm"), sinh từ incident record của cả 27 tổ hợp, lưu ở `evaluations/validation-v1/incidents/` (lệnh `select-detectors archive`; chỉ chép khi sha256 khớp artifact). Gộp các incident giống nhau giữa các tổ hợp:
+
+| Nhóm FP | Tổ hợp gặp | Giả thuyết |
+| --- | --- | --- |
+| `gateway` latency p95, run khỏe `normal-mixed`, 09:26:55–09:27:25 (ngay sau warm-up) | 5 tổ hợp robust z có persistence nhỏ (`w30-p3-*`, `w60-p5-z3/z4`) | **Tải gần 0.** Gateway chỉ có 0,03–0,2 req/s ở các cửa sổ này (trung vị cả run 4,8 req/s), nên p95 tính trên vài request: một request 90 ms (trung vị 38 ms) đã thành bất thường |
+| `gateway → identity-token`, `gateway → course`, `gateway → notification` duration p95, run khỏe `normal-mixed`, 09:29 và 10:02 | robust z z = 3–4; fused q 99–99,5% | **Cạnh thưa.** Quanh 10:02, latency ở mức service của gateway vẫn bình thường (29–39 ms); bất thường nằm ở cạnh ít lời gọi. Đợt 09:29 chưa kiểm riêng |
+| `gateway` latency trên cạnh, run C3/C4 trước fault hoặc sau `late_tolerance` | robust z z = 3; fused q 99% | Như trên. Ở run C6, incident báo giả trước fault còn nuốt luôn đợt của fault (mục 5) |
+| `scheduler-worker → scheduler-postgres` | Isolation Forest q 99–99,5% | Do model (mục 8.1) |
+
+- **FN:** `iforest-q0.999` bỏ lỡ C2, C3 (trần điểm, mục 5); `fused-*-q0.99` bỏ lỡ C6 (bị incident báo giả nuốt).
+- **Không có FP nào** ở run `healthy-spike` và trong đoạn cao điểm, ở mọi tổ hợp.
+- **Báo động giả tập trung ở gateway.** Tín hiệu p95 trên lưu lượng thấp là nguồn nhiễu chính. Luật persistence và ngưỡng đã chọn lọc được các FP này trên validation; trên test cần theo dõi lại.
 
 ## 9. Giới hạn
 
 - **Validation nhỏ.** 4 fault run, 2 run khỏe. Recall chỉ có 5 mức, và trên validation mọi tổ hợp được chọn đều 4/4. Báo động giả 0–1 trên 3,54 giờ không phân biệt được 0 với 0,28/giờ có ý nghĩa thống kê.
 - **Nhiều lựa chọn do thứ tự khai báo.** Bước 2a (cả 4 bộ tham số incident) và ngưỡng tĩnh (cả 3 bộ) hòa hoàn toàn. Lựa chọn khi đó là `tie_rank` đã khai báo trước (merge 300 s, chain 120 s; bộ `loose`), không phải bằng chứng.
-- **Ngưỡng tĩnh `loose` có biên hẹp.** Triệu chứng C2/C4 trên validation chỉ vượt ngưỡng 2 s khoảng 0,3 s.
+- **Ngưỡng tĩnh `loose` có biên hẹp.** Triệu chứng C2/C4 trên validation chỉ vượt ngưỡng 2 s tối đa khoảng 0,3 s, có cửa sổ chỉ 0,01 s hoặc rơi dưới ngưỡng.
 - **Isolation Forest với ngưỡng gộp mọi service.** Ở ngưỡng đã freeze (0,780), `course` và `scheduler` không thể vượt (trần 0,746 và 0,500), nên trên test Isolation Forest chỉ bắt được fault ở các service này qua service khác bị ảnh hưởng. Ngưỡng theo từng service (phân vị riêng hoặc chuẩn hóa điểm theo trần) cần phiên bản ứng viên mới và chọn lại; ghi để cân nhắc, không đổi ở E1.
 - **Ngân sách chọn không đều.** Robust z qua 12 tổ hợp; tham số incident cũng chọn bằng robust z; fused 6; ngưỡng tĩnh và Isolation Forest mỗi detector 3. So sánh E1 vì vậy hơi nghiêng về robust z và fused (v2 `known_risks`).
 - **Tương quan incident chỉ theo thời gian** cho tới khi có đồ thị phụ thuộc v2 (tuần 17). Khi thay phải tăng `incident_config_version` và chạy lại bước 2a theo cùng luật.

@@ -1,0 +1,179 @@
+{
+  "schema": "incident-record.v1",
+  "run_id": "validation-c6-normal-mixed-s2001-20261123t213759z",
+  "detector": "robust_z",
+  "detector_config_version": "validation-v1.robust_z-z5",
+  "incident_config_version": "validation-v1.incident-w30-p3-m120-g120",
+  "window_seconds": 30,
+  "persistence_windows": 3,
+  "step_seconds": 15,
+  "threshold": 5.0,
+  "available_after_s": 10.0,
+  "incident_config": {
+    "incident_config_version": "validation-v1.incident-w30-p3-m120-g120",
+    "persistence_windows": 3,
+    "recovery_windows": 3,
+    "merge_gap_seconds": 120.0,
+    "correlation_window_seconds": 300.0,
+    "max_chain_gap_seconds": 120.0
+  },
+  "lineage": {
+    "anomalies_sha256": "efd319254d08bfaa93ff6d0883eef1c476fb06ebac1218ebaae67ba592a6f3b4",
+    "anomalies_manifest_sha256": "dbc3173293dfa64b89cef7b5359e708fdeee811762943d90071cc5ed2a039ac2",
+    "incident_config_file_sha256": "99b38f451201ae46b8eddd5722883c0a94dbf5dc8931e21500d5a5b565a72b47",
+    "incident_config_sha256": "c69c1b757ff150a7acf5bafdb75da1b5d261a82de86e97509671c4f14128d55a",
+    "detector_config_sha256": "0beabb42fdcba8dcf3c28a274c530eee10dea9e8012034fe4144fe625b91cf94",
+    "model_sha256": null,
+    "threshold": 5.0,
+    "features_manifest_sha256": "dffec47c2ca359160c2337edc03708ac4b73f1cd447a9882bddd5b36adfeb2d3",
+    "feature_config_version": "feature.v1",
+    "noise_filter_version": "noise.v1",
+    "baseline_sha256": "08ddaefb4c0e42068693c194f19cf89d38bd356427f1aac24edad216b90d8e5b",
+    "baseline_fit_runs": [
+      "train-healthy-healthy-spike-s1003-20261123t224223z",
+      "train-healthy-healthy-spike-s1004-20261124t002521z",
+      "train-healthy-normal-mixed-s1001-20261123t102740z",
+      "train-healthy-normal-mixed-s1002-20261123t113109z"
+    ],
+    "model_fit_runs": null
+  },
+  "counts": {
+    "incidents": 1,
+    "episodes": 2,
+    "windows": 2123
+  },
+  "incidents": [
+    {
+      "incident_id": "inc-4311be77b2055966",
+      "detected_at": "2026-11-23T21:57:25Z",
+      "estimated_start_time": "2026-11-23T21:56:30Z",
+      "resolved_at": "2026-11-23T22:03:10Z",
+      "open_at_run_end": false,
+      "duration_s": 345.0,
+      "affected_services": [
+        "gateway",
+        "identity"
+      ],
+      "first_symptom": {
+        "service": "gateway",
+        "signal": "service.log_error_rate",
+        "entity": "gateway",
+        "evidence_key": "service.log_error_rate@gateway",
+        "window_start": "2026-11-23T21:56:15Z",
+        "window_end": "2026-11-23T21:56:45Z",
+        "score": 5.333333333333333,
+        "reason": "threshold"
+      },
+      "trigger_reason": "3 cửa sổ vượt liên tiếp ở gateway (threshold: service.log_error_rate@gateway)",
+      "peak_score": 970.25,
+      "peak_score_infinite": false,
+      "episodes": [
+        {
+          "service": "gateway",
+          "evidence_key": "service.log_error_rate@gateway",
+          "opened_at": "2026-11-23T21:57:25Z",
+          "estimated_start_time": "2026-11-23T21:56:30Z",
+          "resolved_at": "2026-11-23T22:03:10Z"
+        },
+        {
+          "service": "identity",
+          "evidence_key": "telemetry_silent@identity",
+          "opened_at": "2026-11-23T21:57:55Z",
+          "estimated_start_time": "2026-11-23T21:57:00Z",
+          "resolved_at": "2026-11-23T22:03:10Z"
+        }
+      ],
+      "timeline": [
+        {
+          "state": "SUSPECTED",
+          "signal": "service.log_error_rate",
+          "entity": "gateway",
+          "reason": "threshold",
+          "service": "gateway",
+          "at": "2026-11-23T21:56:55Z",
+          "window_start": "2026-11-23T21:56:15Z",
+          "window_end": "2026-11-23T21:56:45Z",
+          "score": 5.333333333333333
+        },
+        {
+          "state": "OPEN",
+          "signal": "edge.duration_p95",
+          "entity": "gateway|gateway-identity",
+          "reason": "threshold",
+          "service": "gateway",
+          "at": "2026-11-23T21:57:25Z",
+          "window_start": "2026-11-23T21:56:45Z",
+          "window_end": "2026-11-23T21:57:15Z",
+          "score": 967.6637931034485
+        },
+        {
+          "state": "SUSPECTED",
+          "signal": null,
+          "entity": null,
+          "reason": "telemetry_silent",
+          "service": "identity",
+          "at": "2026-11-23T21:57:25Z",
+          "window_start": "2026-11-23T21:56:45Z",
+          "window_end": "2026-11-23T21:57:15Z",
+          "score": null
+        },
+        {
+          "state": "OPEN",
+          "signal": null,
+          "entity": null,
+          "reason": "telemetry_silent",
+          "service": "identity",
+          "at": "2026-11-23T21:57:55Z",
+          "window_start": "2026-11-23T21:57:15Z",
+          "window_end": "2026-11-23T21:57:45Z",
+          "score": null
+        },
+        {
+          "state": "RECOVERING",
+          "signal": "service.latency_p95",
+          "entity": "gateway",
+          "reason": "below_threshold",
+          "service": "gateway",
+          "at": "2026-11-23T22:02:40Z",
+          "window_start": "2026-11-23T22:02:00Z",
+          "window_end": "2026-11-23T22:02:30Z",
+          "score": 0.5714160839160848
+        },
+        {
+          "state": "RECOVERING",
+          "signal": "service.downstream_latency_p95",
+          "entity": "identity",
+          "reason": "below_threshold",
+          "service": "identity",
+          "at": "2026-11-23T22:02:40Z",
+          "window_start": "2026-11-23T22:02:00Z",
+          "window_end": "2026-11-23T22:02:30Z",
+          "score": 0.07431502525252522
+        },
+        {
+          "state": "RESOLVED",
+          "signal": "service.latency_p95",
+          "entity": "gateway",
+          "reason": "below_threshold",
+          "service": "gateway",
+          "at": "2026-11-23T22:03:10Z",
+          "window_start": "2026-11-23T22:02:30Z",
+          "window_end": "2026-11-23T22:03:00Z",
+          "score": 0.5248900293255143
+        },
+        {
+          "state": "RESOLVED",
+          "signal": "service.downstream_latency_p95",
+          "entity": "identity",
+          "reason": "below_threshold",
+          "service": "identity",
+          "at": "2026-11-23T22:03:10Z",
+          "window_start": "2026-11-23T22:02:30Z",
+          "window_end": "2026-11-23T22:03:00Z",
+          "score": 0.02653834541062796
+        }
+      ]
+    }
+  ],
+  "generated_at": "2026-11-25T08:19:46.684092Z"
+}

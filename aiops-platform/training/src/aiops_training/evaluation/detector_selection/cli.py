@@ -7,7 +7,7 @@ import json
 from pathlib import Path
 
 COMMANDS = ("select-detectors",)
-ACTIONS = ("setup", "step1", "step2a", "step2b", "freeze", "report", "all")
+ACTIONS = ("setup", "step1", "step2a", "step2b", "freeze", "archive", "report", "all")
 
 
 def register(sub: argparse._SubParsersAction) -> None:
@@ -29,9 +29,11 @@ def register(sub: argparse._SubParsersAction) -> None:
 
 def dispatch(args: argparse.Namespace) -> int:
     from .report import write_tables
-    from .runner import Context, freeze, setup, step1, step2a, step2b
+    from .runner import Context, archive_incidents, freeze, setup, step1, step2a, step2b
 
-    if args.action != "report" and (args.runs_dir is None or args.load_dir is None):
+    if args.action not in ("report", "archive") and (
+        args.runs_dir is None or args.load_dir is None
+    ):
         raise SystemExit("--runs-dir và --load-dir là bắt buộc khi chấm")
     ctx = Context(
         runs_dir=args.runs_dir or Path("."),
@@ -46,9 +48,10 @@ def dispatch(args: argparse.Namespace) -> int:
         "step2a": lambda: _brief(step2a(ctx)),
         "step2b": lambda: {d: _brief(s) for d, s in step2b(ctx).items()},
         "freeze": lambda: freeze(ctx),
+        "archive": lambda: archive_incidents(ctx),
         "report": lambda: {"tables": str(write_tables(ctx))},
     }
-    order = ["setup", "step1", "step2a", "step2b", "freeze", "report"]
+    order = ["setup", "step1", "step2a", "step2b", "freeze", "archive", "report"]
     for action in order if args.action == "all" else [args.action]:
         print(json.dumps({action: steps[action]()}, ensure_ascii=False, default=str))
     return 0

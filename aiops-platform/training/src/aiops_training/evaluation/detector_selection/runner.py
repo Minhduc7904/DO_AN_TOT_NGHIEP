@@ -854,3 +854,24 @@ def freeze(ctx: Context) -> dict[str, Any]:
         e1_incidents=copied,
         code_commit=code["commit"],
     )
+
+
+def archive_incidents(ctx: Context) -> dict[str, Any]:
+    """Chép incident record của mọi tổ hợp đã chấm vào `out_dir/incidents/` (để error analysis
+    tái lập được từ file đã commit); chỉ chép khi sha256 khớp artifact đã kiểm với ledger."""
+    copied = 0
+    for entry in ctx.ledger.find("score"):
+        artifact_path = _verified(ctx, entry["artifact"], entry["artifact_sha256"], "archive")
+        artifact = _read_json(artifact_path)
+        step_dir = f"step{entry['step']}"
+        source = ctx.work_dir / "incidents" / step_dir / entry["combination_id"]
+        target = ctx.out_dir / "incidents" / step_dir / entry["combination_id"]
+        target.mkdir(parents=True, exist_ok=True)
+        for row in artifact["runs"]:
+            ref = (row.get("lineage") or {}).get("incident_artifact_ref", {}).get("sha256")
+            file = source / f"{row['run_id']}.json"
+            if not file.exists() or sha256_file(file) != ref:
+                raise SelectionError(f"{file}: incident record khác bản đã chấm trong artifact")
+            shutil.copyfile(file, target / file.name)
+            copied += 1
+    return {"incident_records": copied, "dir": ctx.rel(ctx.out_dir / "incidents")}

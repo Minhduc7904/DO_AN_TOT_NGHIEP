@@ -1,0 +1,206 @@
+{
+  "schema": "incident-record.v1",
+  "run_id": "validation-healthy-normal-mixed-s2002-20261123t091816z",
+  "detector": "fused",
+  "detector_config_version": "validation-v1.fused-w442-q0.99-w30",
+  "incident_config_version": "validation-v1.incident-w30-p4-m300-g120",
+  "window_seconds": 30,
+  "persistence_windows": 4,
+  "step_seconds": 15,
+  "threshold": 0.9361931818181792,
+  "available_after_s": 10.0,
+  "incident_config": {
+    "incident_config_version": "validation-v1.incident-w30-p4-m300-g120",
+    "persistence_windows": 4,
+    "recovery_windows": 3,
+    "merge_gap_seconds": 300.0,
+    "correlation_window_seconds": 300.0,
+    "max_chain_gap_seconds": 120.0
+  },
+  "lineage": {
+    "anomalies_sha256": "11925f484dc26e61dccef4a2482559c3c9668c7b645fbc2078e6f93615969403",
+    "anomalies_manifest_sha256": "987050d1b316add4a6697e44284029545b970f35f430651541db1a3647bb9e3c",
+    "incident_config_file_sha256": "92010db0a901897058fb683a11c10ebf3b57022edbfb3edff3d1242e38d0b2bb",
+    "incident_config_sha256": "82f5ec0061d65e5f22d1f678bb1ac38cd32a1b12e30a778b6a1724851f101a99",
+    "detector_config_sha256": "7592f8df2285fd5bb3355884d8010dd33b5a007618ace9aa56ae8937f5779830",
+    "model_sha256": null,
+    "threshold": 0.9361931818181792,
+    "features_manifest_sha256": "c38d83fd92800d67d4d733795105dda615bc68f77636771c22cadb50b479eb53",
+    "feature_config_version": "feature.v1",
+    "noise_filter_version": "noise.v1",
+    "baseline_sha256": "08ddaefb4c0e42068693c194f19cf89d38bd356427f1aac24edad216b90d8e5b",
+    "baseline_fit_runs": [
+      "train-healthy-healthy-spike-s1003-20261123t224223z",
+      "train-healthy-healthy-spike-s1004-20261124t002521z",
+      "train-healthy-normal-mixed-s1001-20261123t102740z",
+      "train-healthy-normal-mixed-s1002-20261123t113109z"
+    ],
+    "model_fit_runs": null
+  },
+  "counts": {
+    "incidents": 2,
+    "episodes": 2,
+    "windows": 2123
+  },
+  "incidents": [
+    {
+      "incident_id": "inc-555e07f1921ad467",
+      "detected_at": "2026-11-23T09:29:10Z",
+      "estimated_start_time": "2026-11-23T09:26:15Z",
+      "resolved_at": "2026-11-23T09:29:55Z",
+      "open_at_run_end": false,
+      "duration_s": 45.0,
+      "affected_services": [
+        "gateway"
+      ],
+      "first_symptom": {
+        "service": "gateway",
+        "signal": "edge.duration_p95",
+        "entity": "gateway|gateway-notification",
+        "evidence_key": "edge.duration_p95@gateway|gateway-notification",
+        "window_start": "2026-11-23T09:26:00Z",
+        "window_end": "2026-11-23T09:26:30Z",
+        "score": 2.238181818181818,
+        "reason": "threshold"
+      },
+      "trigger_reason": "4 cửa sổ vượt liên tiếp ở gateway (threshold: edge.duration_p95@gateway|gateway-notification)",
+      "peak_score": 3.396969696969698,
+      "peak_score_infinite": false,
+      "episodes": [
+        {
+          "service": "gateway",
+          "evidence_key": "edge.duration_p95@gateway|gateway-notification",
+          "opened_at": "2026-11-23T09:29:10Z",
+          "estimated_start_time": "2026-11-23T09:26:15Z",
+          "resolved_at": "2026-11-23T09:29:55Z"
+        }
+      ],
+      "timeline": [
+        {
+          "state": "SUSPECTED",
+          "signal": "service.latency_p95",
+          "entity": "gateway",
+          "reason": "threshold",
+          "service": "gateway",
+          "at": "2026-11-23T09:26:40Z",
+          "window_start": "2026-11-23T09:26:00Z",
+          "window_end": "2026-11-23T09:26:30Z",
+          "score": 2.238181818181818
+        },
+        {
+          "state": "OPEN",
+          "signal": "service.latency_p95",
+          "entity": "gateway",
+          "reason": "threshold",
+          "service": "gateway",
+          "at": "2026-11-23T09:29:10Z",
+          "window_start": "2026-11-23T09:28:30Z",
+          "window_end": "2026-11-23T09:29:00Z",
+          "score": 1.9381818181818173
+        },
+        {
+          "state": "RECOVERING",
+          "signal": "edge.duration_p95",
+          "entity": "gateway|gateway-notification",
+          "reason": "below_threshold",
+          "service": "gateway",
+          "at": "2026-11-23T09:29:25Z",
+          "window_start": "2026-11-23T09:28:45Z",
+          "window_end": "2026-11-23T09:29:15Z",
+          "score": 0.7702564102564102
+        },
+        {
+          "state": "RESOLVED",
+          "signal": "edge.duration_p95",
+          "entity": "gateway|gateway-notification",
+          "reason": "below_threshold",
+          "service": "gateway",
+          "at": "2026-11-23T09:29:55Z",
+          "window_start": "2026-11-23T09:29:15Z",
+          "window_end": "2026-11-23T09:29:45Z",
+          "score": 0.7402564102564102
+        }
+      ]
+    },
+    {
+      "incident_id": "inc-0d734fa1a2d69f31",
+      "detected_at": "2026-11-23T10:02:10Z",
+      "estimated_start_time": "2026-11-23T10:01:00Z",
+      "resolved_at": "2026-11-23T10:03:40Z",
+      "open_at_run_end": false,
+      "duration_s": 90.0,
+      "affected_services": [
+        "gateway"
+      ],
+      "first_symptom": {
+        "service": "gateway",
+        "signal": "edge.duration_p95",
+        "entity": "gateway|gateway-course",
+        "evidence_key": "edge.duration_p95@gateway|gateway-course",
+        "window_start": "2026-11-23T10:00:45Z",
+        "window_end": "2026-11-23T10:01:15Z",
+        "score": 1.1999999999999982,
+        "reason": "threshold"
+      },
+      "trigger_reason": "4 cửa sổ vượt liên tiếp ở gateway (threshold: edge.duration_p95@gateway|gateway-course)",
+      "peak_score": 1.7499999999999993,
+      "peak_score_infinite": false,
+      "episodes": [
+        {
+          "service": "gateway",
+          "evidence_key": "edge.duration_p95@gateway|gateway-course",
+          "opened_at": "2026-11-23T10:02:10Z",
+          "estimated_start_time": "2026-11-23T10:01:00Z",
+          "resolved_at": "2026-11-23T10:03:40Z"
+        }
+      ],
+      "timeline": [
+        {
+          "state": "SUSPECTED",
+          "signal": "edge.duration_p95",
+          "entity": "gateway|gateway-identity",
+          "reason": "threshold",
+          "service": "gateway",
+          "at": "2026-11-23T10:01:25Z",
+          "window_start": "2026-11-23T10:00:45Z",
+          "window_end": "2026-11-23T10:01:15Z",
+          "score": 1.1999999999999982
+        },
+        {
+          "state": "OPEN",
+          "signal": "edge.duration_p95",
+          "entity": "gateway|gateway-identity-token",
+          "reason": "threshold",
+          "service": "gateway",
+          "at": "2026-11-23T10:02:10Z",
+          "window_start": "2026-11-23T10:01:30Z",
+          "window_end": "2026-11-23T10:02:00Z",
+          "score": 1.6499999999999997
+        },
+        {
+          "state": "RECOVERING",
+          "signal": "edge.duration_p95",
+          "entity": "gateway|gateway-notification",
+          "reason": "below_threshold",
+          "service": "gateway",
+          "at": "2026-11-23T10:03:10Z",
+          "window_start": "2026-11-23T10:02:30Z",
+          "window_end": "2026-11-23T10:03:00Z",
+          "score": 0.16025641025641024
+        },
+        {
+          "state": "RESOLVED",
+          "signal": "edge.duration_p95",
+          "entity": "gateway|gateway-course",
+          "reason": "below_threshold",
+          "service": "gateway",
+          "at": "2026-11-23T10:03:40Z",
+          "window_start": "2026-11-23T10:03:00Z",
+          "window_end": "2026-11-23T10:03:30Z",
+          "score": 0.11335714285714296
+        }
+      ]
+    }
+  ],
+  "generated_at": "2026-11-25T08:24:53.809865Z"
+}

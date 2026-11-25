@@ -201,6 +201,7 @@ uv run aiops-training select-detectors step1  --runs-dir $R --load-dir $L  # 12 
 uv run aiops-training select-detectors step2a --runs-dir $R --load-dir $L  # 4 bộ tham số incident
 uv run aiops-training select-detectors step2b --runs-dir $R --load-dir $L  # ngưỡng tĩnh, Isolation Forest, fused
 uv run aiops-training select-detectors freeze --runs-dir $R --load-dir $L  # configs/detector-e1-v1.json, incident-e1-v1.json
+uv run aiops-training select-detectors archive                             # chép incident record mọi tổ hợp (kiểm sha256)
 uv run aiops-training select-detectors report                              # sinh lại evaluations/validation-v1/tables.md
 ```
 

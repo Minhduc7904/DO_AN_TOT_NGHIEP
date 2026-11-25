@@ -288,6 +288,69 @@ def error_table(ctx: Context) -> list[str]:
     return _table(header, rows)
 
 
+def all_combination_errors(ctx: Context) -> tuple[list[str], list[str]]:
+    """FP (gộp theo incident giống nhau) và FN của mọi tổ hợp đã chấm, từ `out_dir/incidents/`."""
+    fps: dict[tuple, dict[str, Any]] = {}
+    fns: list[list[Any]] = []
+    for entry in ctx.ledger.find("score"):
+        artifact = _read(ctx.path(entry["artifact"]))
+        combo = entry["combination_id"]
+        for run in artifact["runs"]:
+            if run["inclusion_status"] != "eligible":
+                continue
+            name = run["case_id"] or run["profile"]
+            if run["case_id"] and run.get("fn"):
+                fns.append([f"`{combo}`", entry["detector"], name])
+            wrong = [
+                i
+                for i in run["incidents"]
+                if i["label"] not in ("tp", "outside_evaluation_interval")
+            ]
+            if not wrong:
+                continue
+            path = (
+                ctx.out_dir / "incidents" / f"step{entry['step']}" / combo / f"{run['run_id']}.json"
+            )
+            details = {i["incident_id"]: i for i in _read(path)["incidents"]}
+            for incident in wrong:
+                first = details[incident["incident_id"]]["first_symptom"]
+                key = (
+                    name,
+                    incident["label"],
+                    incident["detected_at"],
+                    first["service"],
+                    first["evidence_key"],
+                )
+                fps.setdefault(key, {"detectors": set(), "combos": []})
+                fps[key]["detectors"].add(entry["detector"])
+                fps[key]["combos"].append(combo)
+    fp_rows = [
+        [
+            name,
+            f"`{label}`",
+            _hhmmss(at),
+            f"{service}: `{evidence}`",
+            ", ".join(sorted(v["detectors"])),
+            len(v["combos"]),
+            ", ".join(f"`{c}`" for c in v["combos"]),
+        ]
+        for (name, label, at, service, evidence), v in sorted(
+            fps.items(), key=lambda kv: (kv[0][0], kv[0][2])
+        )
+    ]
+    header = [
+        "Run",
+        "Nhãn",
+        "detected_at (UTC)",
+        "Triệu chứng đầu",
+        "Detector",
+        "Số tổ hợp",
+        "Tổ hợp",
+    ]
+    fn_table = _table(["Tổ hợp", "Detector", "Case bỏ lỡ"], fns) if fns else ["Không có FN."]
+    return _table(header, fp_rows), fn_table
+
+
 def train_threshold_table(ctx: Context) -> list[str]:
     window = _read(ctx.out_dir / "selection-step1.json")["chosen"]["window_seconds"]
     data = _read(ctx.out_dir / f"train-thresholds-w{window}.json")
@@ -333,6 +396,9 @@ def build_tables(ctx: Context) -> str:
         ]
     parts += ["## E1 sơ bộ trên validation", "", *e1_table(ctx), ""]
     parts += ["## FP và FN của E1", "", *error_table(ctx), ""]
+    fp_all, fn_all = all_combination_errors(ctx)
+    parts += ["## FP của mọi tổ hợp đã chấm (gộp incident giống nhau)", "", *fp_all, ""]
+    parts += ["## FN của mọi tổ hợp đã chấm", "", *fn_all, ""]
     return "\n".join(parts)
 
 

@@ -113,3 +113,33 @@ Luật: cap_met; hòa cuối theo tie_rank_asc; tổ hợp chọn `fused-equal-q
 | Detector | Loại | Run | detected_at (UTC) | Triệu chứng đầu | Service | Điểm đỉnh | Ghi chú |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | Isolation Forest | FP | normal-mixed (`fp_healthy_run`) | 09:53:40 | scheduler-worker: `edge.duration_p95@scheduler-worker|scheduler-postgres` | scheduler-worker | 0,842 | run khỏe |
+
+## FP của mọi tổ hợp đã chấm (gộp incident giống nhau)
+
+| Run | Nhãn | detected_at (UTC) | Triệu chứng đầu | Detector | Số tổ hợp | Tổ hợp |
+| --- | --- | --- | --- | --- | --- | --- |
+| C3 | `fp_before_fault` | 19:45:55 | gateway: `edge.duration_p95@gateway|gateway-identity` | robust_z | 1 | `w30-p3-z3` |
+| C3 | `fp_before_fault` | 19:46:10 | gateway: `edge.duration_p95@gateway|gateway-identity` | robust_z | 1 | `w30-p4-z3` |
+| C3 | `fp_before_fault` | 19:46:10 | gateway: `edge.duration_p95@gateway|gateway-course` | fused | 2 | `fused-equal-q0.99`, `fused-w442-q0.99` |
+| C3 | `fp_before_fault` | 19:46:40 | gateway: `edge.duration_p95@gateway|gateway-identity` | robust_z | 1 | `w60-p5-z3` |
+| C3 | `fp_after_late_tolerance` | 20:17:40 | gateway: `edge.duration_p95@gateway|gateway-course` | fused | 2 | `fused-equal-q0.99`, `fused-w442-q0.99` |
+| C4 | `fp_after_late_tolerance` | 21:22:10 | gateway: `edge.duration_p95@gateway|gateway-identity` | robust_z | 1 | `w30-p3-z3` |
+| C6 | `fp_before_fault` | 21:55:40 | gateway: `service.downstream_latency_p95@gateway` | fused | 2 | `fused-equal-q0.99`, `fused-w442-q0.99` |
+| normal-mixed | `fp_healthy_run` | 09:26:55 | gateway: `service.latency_p95@gateway` | robust_z | 3 | `w30-p3-z3`, `w30-p3-z4`, `w30-p3-z5` |
+| normal-mixed | `fp_healthy_run` | 09:27:25 | gateway: `service.latency_p95@gateway` | robust_z | 2 | `w60-p5-z3`, `w60-p5-z4` |
+| normal-mixed | `fp_healthy_run` | 09:29:10 | gateway: `edge.duration_p95@gateway|gateway-notification` | fused | 4 | `fused-equal-q0.995`, `fused-w442-q0.995`, `fused-equal-q0.99`, `fused-w442-q0.99` |
+| normal-mixed | `fp_healthy_run` | 09:53:40 | scheduler-worker: `edge.duration_p95@scheduler-worker|scheduler-postgres` | iforest | 2 | `iforest-q0.995`, `iforest-q0.99` |
+| normal-mixed | `fp_healthy_run` | 10:02:10 | gateway: `edge.duration_p95@gateway|gateway-identity-token` | robust_z | 2 | `w30-p3-z3`, `w30-p3-z4` |
+| normal-mixed | `fp_healthy_run` | 10:02:10 | gateway: `edge.duration_p95@gateway|gateway-course` | fused | 2 | `fused-equal-q0.99`, `fused-w442-q0.99` |
+| normal-mixed | `fp_healthy_run` | 10:02:25 | gateway: `edge.duration_p95@gateway|gateway-identity-token` | robust_z | 2 | `w30-p4-z3`, `w30-p4-z4` |
+| normal-mixed | `fp_healthy_run` | 10:02:40 | gateway: `edge.duration_p95@gateway|gateway-identity-token` | robust_z | 1 | `w60-p5-z3` |
+| normal-mixed | `fp_healthy_run` | 10:02:55 | gateway: `edge.duration_p95@gateway|gateway-identity-token` | robust_z | 1 | `w60-p6-z3` |
+
+## FN của mọi tổ hợp đã chấm
+
+| Tổ hợp | Detector | Case bỏ lỡ |
+| --- | --- | --- |
+| `iforest-q0.999` | iforest | C2 |
+| `iforest-q0.999` | iforest | C3 |
+| `fused-equal-q0.99` | fused | C6 |
+| `fused-w442-q0.99` | fused | C6 |

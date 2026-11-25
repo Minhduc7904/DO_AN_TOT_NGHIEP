@@ -1,0 +1,465 @@
+{
+  "schema": "incident-record.v1",
+  "run_id": "validation-c4-normal-mixed-s2001-20261123t203506z",
+  "detector": "robust_z",
+  "detector_config_version": "validation-v1.robust_z-z3",
+  "incident_config_version": "validation-v1.incident-w30-p4-m120-g120",
+  "window_seconds": 30,
+  "persistence_windows": 4,
+  "step_seconds": 15,
+  "threshold": 3.0,
+  "available_after_s": 10.0,
+  "incident_config": {
+    "incident_config_version": "validation-v1.incident-w30-p4-m120-g120",
+    "persistence_windows": 4,
+    "recovery_windows": 3,
+    "merge_gap_seconds": 120.0,
+    "correlation_window_seconds": 300.0,
+    "max_chain_gap_seconds": 120.0
+  },
+  "lineage": {
+    "anomalies_sha256": "da6c8c309f923b6d629b18339e46181f2efede1de61cb9984f4f787275921927",
+    "anomalies_manifest_sha256": "c61185a6c5629d7326ace2c43c93f151d7edd151b3a1bb36bcf3668f98aa4c66",
+    "incident_config_file_sha256": "67937420b39f5326d83960bf096e057a3d87f075231f614f1f1d42e079d947a2",
+    "incident_config_sha256": "bb17bddc71bb29d19fbcb61bddf41822e927621344883564484288d4879fc8f3",
+    "detector_config_sha256": "f9c80ee0e16244a28430dde7391aafd7b923be5006a80943e87ff0b69d1245d6",
+    "model_sha256": null,
+    "threshold": 3.0,
+    "features_manifest_sha256": "ab427bd1fd26d1c97d16bbc87fcccc472e1e5353d89cc482846aa0c0d38a64d0",
+    "feature_config_version": "feature.v1",
+    "noise_filter_version": "noise.v1",
+    "baseline_sha256": "08ddaefb4c0e42068693c194f19cf89d38bd356427f1aac24edad216b90d8e5b",
+    "baseline_fit_runs": [
+      "train-healthy-healthy-spike-s1003-20261123t224223z",
+      "train-healthy-healthy-spike-s1004-20261124t002521z",
+      "train-healthy-normal-mixed-s1001-20261123t102740z",
+      "train-healthy-normal-mixed-s1002-20261123t113109z"
+    ],
+    "model_fit_runs": null
+  },
+  "counts": {
+    "incidents": 1,
+    "episodes": 5,
+    "windows": 2123
+  },
+  "incidents": [
+    {
+      "incident_id": "inc-1b0059d38e73023f",
+      "detected_at": "2026-11-23T20:55:40Z",
+      "estimated_start_time": "2026-11-23T20:54:30Z",
+      "resolved_at": "2026-11-23T21:05:10Z",
+      "open_at_run_end": false,
+      "duration_s": 570.0,
+      "affected_services": [
+        "gateway",
+        "media",
+        "media-worker"
+      ],
+      "first_symptom": {
+        "service": "gateway",
+        "signal": "edge.duration_p95",
+        "entity": "gateway|gateway-media",
+        "evidence_key": "edge.duration_p95@gateway|gateway-media",
+        "window_start": "2026-11-23T20:54:15Z",
+        "window_end": "2026-11-23T20:54:45Z",
+        "score": 225.20624999999995,
+        "reason": "threshold"
+      },
+      "trigger_reason": "4 cửa sổ vượt liên tiếp ở gateway (threshold: edge.duration_p95@gateway|gateway-media)",
+      "peak_score": 232.78749999999997,
+      "peak_score_infinite": false,
+      "episodes": [
+        {
+          "service": "gateway",
+          "evidence_key": "edge.duration_p95@gateway|gateway-media",
+          "opened_at": "2026-11-23T20:55:40Z",
+          "estimated_start_time": "2026-11-23T20:54:30Z",
+          "resolved_at": "2026-11-23T21:02:10Z"
+        },
+        {
+          "service": "media",
+          "evidence_key": "edge.duration_p95@media|media-minio",
+          "opened_at": "2026-11-23T20:55:40Z",
+          "estimated_start_time": "2026-11-23T20:54:30Z",
+          "resolved_at": "2026-11-23T21:02:10Z"
+        },
+        {
+          "service": "media-worker",
+          "evidence_key": "edge.duration_p95@media-worker|media-minio",
+          "opened_at": "2026-11-23T20:55:55Z",
+          "estimated_start_time": "2026-11-23T20:54:30Z",
+          "resolved_at": "2026-11-23T21:02:10Z"
+        },
+        {
+          "service": "media",
+          "evidence_key": "edge.duration_p95@media|media-minio",
+          "opened_at": "2026-11-23T21:03:55Z",
+          "estimated_start_time": "2026-11-23T21:02:15Z",
+          "resolved_at": "2026-11-23T21:05:10Z"
+        },
+        {
+          "service": "gateway",
+          "evidence_key": "edge.duration_p95@gateway|gateway-media",
+          "opened_at": "2026-11-23T21:04:25Z",
+          "estimated_start_time": "2026-11-23T21:03:15Z",
+          "resolved_at": "2026-11-23T21:05:10Z"
+        }
+      ],
+      "timeline": [
+        {
+          "state": "SUSPECTED",
+          "signal": "edge.duration_p95",
+          "entity": "gateway|gateway-media",
+          "reason": "threshold",
+          "service": "gateway",
+          "at": "2026-11-23T20:54:55Z",
+          "window_start": "2026-11-23T20:54:15Z",
+          "window_end": "2026-11-23T20:54:45Z",
+          "score": 225.20624999999995
+        },
+        {
+          "state": "SUSPECTED",
+          "signal": "service.latency_p95",
+          "entity": "media",
+          "reason": "threshold",
+          "service": "media",
+          "at": "2026-11-23T20:54:55Z",
+          "window_start": "2026-11-23T20:54:15Z",
+          "window_end": "2026-11-23T20:54:45Z",
+          "score": 225.28749999999994
+        },
+        {
+          "state": "SUSPECTED",
+          "signal": "edge.duration_p95",
+          "entity": "media-worker|media-minio",
+          "reason": "threshold",
+          "service": "media-worker",
+          "at": "2026-11-23T20:54:55Z",
+          "window_start": "2026-11-23T20:54:15Z",
+          "window_end": "2026-11-23T20:54:45Z",
+          "score": 94.52499999999999
+        },
+        {
+          "state": "OPEN",
+          "signal": "edge.duration_p95",
+          "entity": "gateway|gateway-media",
+          "reason": "threshold",
+          "service": "gateway",
+          "at": "2026-11-23T20:55:40Z",
+          "window_start": "2026-11-23T20:55:00Z",
+          "window_end": "2026-11-23T20:55:30Z",
+          "score": 225.20624999999995
+        },
+        {
+          "state": "OPEN",
+          "signal": "service.latency_p95",
+          "entity": "media",
+          "reason": "threshold",
+          "service": "media",
+          "at": "2026-11-23T20:55:40Z",
+          "window_start": "2026-11-23T20:55:00Z",
+          "window_end": "2026-11-23T20:55:30Z",
+          "score": 225.28749999999994
+        },
+        {
+          "state": "OPEN",
+          "signal": "edge.duration_p95",
+          "entity": "media-worker|media-minio",
+          "reason": "threshold",
+          "service": "media-worker",
+          "at": "2026-11-23T20:55:55Z",
+          "window_start": "2026-11-23T20:55:15Z",
+          "window_end": "2026-11-23T20:55:45Z",
+          "score": 94.52499999999999
+        },
+        {
+          "state": "RECOVERING",
+          "signal": "service.latency_p95",
+          "entity": "gateway",
+          "reason": "below_threshold",
+          "service": "gateway",
+          "at": "2026-11-23T20:56:25Z",
+          "window_start": "2026-11-23T20:55:45Z",
+          "window_end": "2026-11-23T20:56:15Z",
+          "score": 0.4704545454545461
+        },
+        {
+          "state": "RECOVERING",
+          "signal": "service.error_rate",
+          "entity": "media",
+          "reason": "below_threshold",
+          "service": "media",
+          "at": "2026-11-23T20:56:25Z",
+          "window_start": "2026-11-23T20:55:45Z",
+          "window_end": "2026-11-23T20:56:15Z",
+          "score": 0.0
+        },
+        {
+          "state": "RECOVERING",
+          "signal": "service.downstream_latency_p95",
+          "entity": "media-worker",
+          "reason": "below_threshold",
+          "service": "media-worker",
+          "at": "2026-11-23T20:56:25Z",
+          "window_start": "2026-11-23T20:55:45Z",
+          "window_end": "2026-11-23T20:56:15Z",
+          "score": 0.0
+        },
+        {
+          "state": "OPEN",
+          "signal": "edge.duration_p95",
+          "entity": "gateway|gateway-media",
+          "reason": "threshold",
+          "service": "gateway",
+          "at": "2026-11-23T20:56:40Z",
+          "window_start": "2026-11-23T20:56:00Z",
+          "window_end": "2026-11-23T20:56:30Z",
+          "score": 232.70624999999998
+        },
+        {
+          "state": "OPEN",
+          "signal": "service.latency_p95",
+          "entity": "media",
+          "reason": "threshold",
+          "service": "media",
+          "at": "2026-11-23T20:56:40Z",
+          "window_start": "2026-11-23T20:56:00Z",
+          "window_end": "2026-11-23T20:56:30Z",
+          "score": 232.78749999999997
+        },
+        {
+          "state": "OPEN",
+          "signal": "edge.duration_p95",
+          "entity": "media-worker|media-minio",
+          "reason": "threshold",
+          "service": "media-worker",
+          "at": "2026-11-23T20:56:55Z",
+          "window_start": "2026-11-23T20:56:15Z",
+          "window_end": "2026-11-23T20:56:45Z",
+          "score": 94.52499999999999
+        },
+        {
+          "state": "RECOVERING",
+          "signal": "service.latency_p95",
+          "entity": "gateway",
+          "reason": "below_threshold",
+          "service": "gateway",
+          "at": "2026-11-23T20:57:25Z",
+          "window_start": "2026-11-23T20:56:45Z",
+          "window_end": "2026-11-23T20:57:15Z",
+          "score": 0.30235109717868247
+        },
+        {
+          "state": "RECOVERING",
+          "signal": "service.error_rate",
+          "entity": "media",
+          "reason": "below_threshold",
+          "service": "media",
+          "at": "2026-11-23T20:57:25Z",
+          "window_start": "2026-11-23T20:56:45Z",
+          "window_end": "2026-11-23T20:57:15Z",
+          "score": 0.0
+        },
+        {
+          "state": "OPEN",
+          "signal": "edge.duration_p95",
+          "entity": "gateway|gateway-media",
+          "reason": "threshold",
+          "service": "gateway",
+          "at": "2026-11-23T20:57:40Z",
+          "window_start": "2026-11-23T20:57:00Z",
+          "window_end": "2026-11-23T20:57:30Z",
+          "score": 202.7062499999999
+        },
+        {
+          "state": "OPEN",
+          "signal": "service.latency_p95",
+          "entity": "media",
+          "reason": "threshold",
+          "service": "media",
+          "at": "2026-11-23T20:57:40Z",
+          "window_start": "2026-11-23T20:57:00Z",
+          "window_end": "2026-11-23T20:57:30Z",
+          "score": 202.78749999999988
+        },
+        {
+          "state": "RECOVERING",
+          "signal": "service.downstream_latency_p95",
+          "entity": "media-worker",
+          "reason": "below_threshold",
+          "service": "media-worker",
+          "at": "2026-11-23T21:00:40Z",
+          "window_start": "2026-11-23T21:00:00Z",
+          "window_end": "2026-11-23T21:00:30Z",
+          "score": 0.0
+        },
+        {
+          "state": "OPEN",
+          "signal": "edge.duration_p95",
+          "entity": "media-worker|media-minio",
+          "reason": "threshold",
+          "service": "media-worker",
+          "at": "2026-11-23T21:01:10Z",
+          "window_start": "2026-11-23T21:00:30Z",
+          "window_end": "2026-11-23T21:01:00Z",
+          "score": 94.52499999999999
+        },
+        {
+          "state": "RECOVERING",
+          "signal": "edge.duration_p95",
+          "entity": "gateway|gateway-notification",
+          "reason": "below_threshold",
+          "service": "gateway",
+          "at": "2026-11-23T21:01:40Z",
+          "window_start": "2026-11-23T21:01:00Z",
+          "window_end": "2026-11-23T21:01:30Z",
+          "score": 0.6506410256410226
+        },
+        {
+          "state": "RECOVERING",
+          "signal": "service.error_rate",
+          "entity": "media",
+          "reason": "below_threshold",
+          "service": "media",
+          "at": "2026-11-23T21:01:40Z",
+          "window_start": "2026-11-23T21:01:00Z",
+          "window_end": "2026-11-23T21:01:30Z",
+          "score": 0.0
+        },
+        {
+          "state": "RECOVERING",
+          "signal": "service.downstream_latency_p95",
+          "entity": "media-worker",
+          "reason": "below_threshold",
+          "service": "media-worker",
+          "at": "2026-11-23T21:01:40Z",
+          "window_start": "2026-11-23T21:01:00Z",
+          "window_end": "2026-11-23T21:01:30Z",
+          "score": 0.0
+        },
+        {
+          "state": "RESOLVED",
+          "signal": "service.latency_p95",
+          "entity": "gateway",
+          "reason": "below_threshold",
+          "service": "gateway",
+          "at": "2026-11-23T21:02:10Z",
+          "window_start": "2026-11-23T21:01:30Z",
+          "window_end": "2026-11-23T21:02:00Z",
+          "score": 0.26212121212121076
+        },
+        {
+          "state": "RESOLVED",
+          "signal": "service.latency_p95",
+          "entity": "media",
+          "reason": "below_threshold",
+          "service": "media",
+          "at": "2026-11-23T21:02:10Z",
+          "window_start": "2026-11-23T21:01:30Z",
+          "window_end": "2026-11-23T21:02:00Z",
+          "score": 0.21250000000000052
+        },
+        {
+          "state": "RESOLVED",
+          "signal": "service.downstream_latency_p95",
+          "entity": "media-worker",
+          "reason": "below_threshold",
+          "service": "media-worker",
+          "at": "2026-11-23T21:02:10Z",
+          "window_start": "2026-11-23T21:01:30Z",
+          "window_end": "2026-11-23T21:02:00Z",
+          "score": 0.0
+        },
+        {
+          "state": "SUSPECTED",
+          "signal": "service.latency_p95",
+          "entity": "media",
+          "reason": "threshold",
+          "service": "media",
+          "at": "2026-11-23T21:02:40Z",
+          "window_start": "2026-11-23T21:02:00Z",
+          "window_end": "2026-11-23T21:02:30Z",
+          "score": 225.28749999999994
+        },
+        {
+          "state": "SUSPECTED",
+          "signal": "edge.duration_p95",
+          "entity": "gateway|gateway-media",
+          "reason": "threshold",
+          "service": "gateway",
+          "at": "2026-11-23T21:03:40Z",
+          "window_start": "2026-11-23T21:03:00Z",
+          "window_end": "2026-11-23T21:03:30Z",
+          "score": 232.70624999999998
+        },
+        {
+          "state": "OPEN",
+          "signal": "service.latency_p95",
+          "entity": "media",
+          "reason": "threshold",
+          "service": "media",
+          "at": "2026-11-23T21:03:55Z",
+          "window_start": "2026-11-23T21:03:15Z",
+          "window_end": "2026-11-23T21:03:45Z",
+          "score": 217.78749999999997
+        },
+        {
+          "state": "OPEN",
+          "signal": "edge.duration_p95",
+          "entity": "gateway|gateway-media",
+          "reason": "threshold",
+          "service": "gateway",
+          "at": "2026-11-23T21:04:25Z",
+          "window_start": "2026-11-23T21:03:45Z",
+          "window_end": "2026-11-23T21:04:15Z",
+          "score": 87.70624999999998
+        },
+        {
+          "state": "RECOVERING",
+          "signal": "edge.duration_p95",
+          "entity": "gateway|gateway-notification",
+          "reason": "below_threshold",
+          "service": "gateway",
+          "at": "2026-11-23T21:04:40Z",
+          "window_start": "2026-11-23T21:04:00Z",
+          "window_end": "2026-11-23T21:04:30Z",
+          "score": 1.2506410256410259
+        },
+        {
+          "state": "RECOVERING",
+          "signal": "service.error_rate",
+          "entity": "media",
+          "reason": "below_threshold",
+          "service": "media",
+          "at": "2026-11-23T21:04:40Z",
+          "window_start": "2026-11-23T21:04:00Z",
+          "window_end": "2026-11-23T21:04:30Z",
+          "score": 0.0
+        },
+        {
+          "state": "RESOLVED",
+          "signal": "edge.duration_p95",
+          "entity": "gateway|gateway-notification",
+          "reason": "below_threshold",
+          "service": "gateway",
+          "at": "2026-11-23T21:05:10Z",
+          "window_start": "2026-11-23T21:04:30Z",
+          "window_end": "2026-11-23T21:05:00Z",
+          "score": 1.1381410256410243
+        },
+        {
+          "state": "RESOLVED",
+          "signal": "service.downstream_latency_p95",
+          "entity": "media",
+          "reason": "below_threshold",
+          "service": "media",
+          "at": "2026-11-23T21:05:10Z",
+          "window_start": "2026-11-23T21:04:30Z",
+          "window_end": "2026-11-23T21:05:00Z",
+          "score": 0.1937500000000001
+        }
+      ]
+    }
+  ],
+  "generated_at": "2026-11-25T08:19:47.489791Z"
+}
