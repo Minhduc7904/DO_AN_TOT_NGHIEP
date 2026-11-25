@@ -14,6 +14,7 @@ from pathlib import Path
 
 import httpx
 
+from .anomaly import cli as anomaly_cli
 from .features.baseline import apply_baseline, fit_baseline, sha256_file
 from .features.leakage import check_leakage, is_healthy
 from .features.pipeline import FeatureConfig, FeatureError, write_features
@@ -368,7 +369,10 @@ def main(argv: list[str] | None = None) -> int:
     _ground_truth_parser(sub)
     _symptoms_parser(sub)
     _baseline_parsers(sub)
+    anomaly_cli.register(sub)
     args = parser.parse_args(argv)
+    if args.command in anomaly_cli.COMMANDS:
+        return anomaly_cli.dispatch(args)
     if args.command == "symptoms":
         return _run_symptoms(args)
     if args.command == "fit-baseline":

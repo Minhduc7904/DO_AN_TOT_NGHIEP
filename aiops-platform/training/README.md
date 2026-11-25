@@ -105,6 +105,40 @@ Cửa sổ 60 s bước 15 s:
 
 `feature_config_version` (`feature.v1`) và `noise_filter_version` (`noise.v1`) ghi trong `features-manifest.json`, áp như nhau cho mọi run. `apply-baseline` ghi thêm `baseline-apply.json` (sha256 của baseline đã dùng). Cột `run_id` chỉ là khóa (tên run mã hóa split và case), detector phải bỏ. Cột, bộ lọc nhiễu, quy tắc thời điểm, baseline và kiểm leakage: [telemetry-data-dictionary-v2](../../docs/processed/architecture/telemetry-data-dictionary-v2.md) mục 9.
 
+## Detector bất thường (`anomaly/`)
+
+Bốn loại điểm theo (cửa sổ, service), cùng đầu ra, để E1 chỉ đổi detector (evaluation-protocol-v1 mục 17.8):
+
+| `--detector` | Đầu vào | Điểm | Vượt ngưỡng khi |
+| --- | --- | --- | --- |
+| `static` | Giá trị thô | max(giá trị / ngưỡng) với tín hiệu tăng; max(ngưỡng / giá trị) với `consumers` | điểm > 1 |
+| `robust_z` | z của baseline healthy | max z có hướng | điểm > `threshold` |
+| `iforest` | Vector z theo service, model fit trên train khỏe | −`score_samples` ∈ (0, 1] | điểm > `threshold` |
+| `fused` | z theo modality | trung bình có trọng số của max(0, max z) từng modality có dữ liệu | điểm > `threshold` |
+
+```bash
+# Isolation Forest: một model mỗi service, chỉ từ run train khỏe (case rỗng) của dataset.
+uv run aiops-training fit-iforest --dataset ../experiments/datasets/dataset-v0.json --runs-dir ../experiments/runs \
+  --features-subdir telemetry/features --config configs/detector-dev-v1.json \
+  --out models/iforest-w60.joblib   # + models/iforest-w60.joblib.json
+# Chạy trên thư mục feature đã apply-baseline; ghi anomalies-<detector>.parquet + .json (lineage).
+uv run aiops-training detect ../experiments/runs/<RUN_ID>/telemetry/features --detector robust_z --config configs/detector-dev-v1.json
+uv run aiops-training detect ../experiments/runs/<RUN_ID>/telemetry/features --detector iforest --config configs/detector-dev-v1.json --model models/iforest-w60.joblib
+```
+
+Quy tắc dùng chung (chi tiết ở docstring `anomaly/signals.py`, `anomaly/detectors.py`, `anomaly/iforest.py`):
+
+- **Tín hiệu** (`signals.v1`): triệu chứng lỗi, độ trễ, hàng đợi ứ, mất consumer. Không dùng tín hiệu tải (`request_rate`, `call_count`, CPU, bộ nhớ). Trace chỉ dùng `trace_error_rate`, không dùng số đếm tuyệt đối (bảng F, hệ quả (c)).
+- **Quy về service:** cạnh theo phía gọi, hàng đợi theo consumer. `consumers` chỉ xét hàng đợi thường; hàng đợi dead-letter không có consumer theo thiết kế.
+- **`telemetry_silent`:** luôn vượt ngưỡng ở cả bốn loại điểm (`reason = telemetry_silent`), không đi qua z.
+- **Cửa sổ không dữ liệu:** `flagged` rỗng chỉ khi service không có giá trị triệu chứng nào. Mỗi dòng ghi thêm `top_key` (tín hiệu làm cửa sổ vượt) và `observed_keys` (tín hiệu có giá trị) để lifecycle áp luật cửa sổ không dữ liệu theo từng tín hiệu.
+- **Điểm hợp nhất:** chỉ fallback khi modality thật sự không có dữ liệu; trọng số chuẩn hóa lại trên modality còn lại.
+- **Isolation Forest:** vector = max z có hướng của từng tín hiệu trên các thực thể của service; chiều thiếu điền 0 (median của train). Hyperparameter và seed đọc từ config detector (`detectors.iforest`). Artifact ghi thứ tự feature, baseline (scaler, phải fit trên đúng các run fit model), hyperparameter, seed, run fit, `window_s`, phiên bản và sha256 config, code commit, sha256 model. `detect` từ chối khi thiếu `baseline-apply.json`, khi bảng z sinh từ manifest feature khác bản hiện có, hoặc khi model khác `window_s`, khác baseline, khác bộ tín hiệu.
+
+`configs/detector-dev-v1.json` chỉ là giá trị phát triển để kiểm code chạy đúng. Ngưỡng dùng cho validation và test khai báo ở `detection-candidates.v2` và chọn ở task-06 tuần 16.
+
+Số đo (25/11/2026, `/usr/bin/time`, baseline luật thang đo v2): `fit-iforest` trên 4 run train 6,9–7,0 s, RSS 255–266 MB (cửa sổ 60 s: 668 cửa sổ mỗi service; 30 s: tương tự); `detect` trên một run 48 phút (2.101–2.123 cặp cửa sổ–service) 2–11 s, RSS 230–270 MB mỗi detector. Chạy hết chuỗi feature → detector → incident → harness trên 4 fault run pilot (C2, C3, C4, C6) và 1 run pilot khỏe với config phát triển: ngưỡng tĩnh, robust z, fused khớp 4/4 fault run, không báo giả; Isolation Forest ngưỡng 0,6 báo giả 4,4 lần/giờ. Pilot chỉ dùng để kiểm code, không để chọn ngưỡng.
+
 ## Cách export bảo vệ Tempo
 
 Tempo của testbed bị giới hạn 512 MiB và từng bị OOM khi nhận truy vấn dồn dập. Adapter:
