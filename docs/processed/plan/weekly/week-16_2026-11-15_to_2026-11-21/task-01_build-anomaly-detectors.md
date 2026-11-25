@@ -69,7 +69,7 @@ Theo [analysis-anomaly-rca-blueprint-v1](../../../architecture/analysis-anomaly-
 
 - Input workspace: Không tạo (giai đoạn tự bắt kịp; bằng chứng nằm trong PR).
 - Output workspace: Không tạo.
-- Pull request: Chưa tạo.
+- Pull request: [#105](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/105).
 - Kết quả review: Chờ review. Đã review bằng agent riêng ba vòng và sửa các điểm nêu (xem mô tả PR).
 
 > URL/số PR và `Chờ review` phải được commit/push vào PR head trước review. Thành viên còn lại phải gửi `APPROVED` hợp lệ trên GitHub; sau đó người phụ trách finalization metadata, ghi `Hoàn thành` trên chính branch/PR và tự merge task của mình. Card chỉ canonically hoàn thành khi commit đó vào nhánh canonical; xem [vòng đời task canonical](../../../rules/git-and-pull-request-rules.md#vòng-đời-task-canonical).
