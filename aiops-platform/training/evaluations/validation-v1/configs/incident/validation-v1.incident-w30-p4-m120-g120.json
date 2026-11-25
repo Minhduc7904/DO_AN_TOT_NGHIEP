@@ -1,0 +1,11 @@
+{
+  "candidate_set_version": "detection-candidates.v2",
+  "incident": {
+    "correlation_window_seconds": 300,
+    "max_chain_gap_seconds": 120,
+    "merge_gap_seconds": 120,
+    "persistence_windows": 4,
+    "recovery_windows": 3
+  },
+  "incident_config_version": "validation-v1.incident-w30-p4-m120-g120"
+}
