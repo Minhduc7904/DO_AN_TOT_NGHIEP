@@ -140,6 +140,20 @@ Quy tắc dùng chung (chi tiết ở docstring `anomaly/signals.py`, `anomaly/d
 
 Số đo (25/11/2026, `/usr/bin/time`, baseline luật thang đo v2): `fit-iforest` trên 4 run train 6,9–7,0 s, RSS 255–266 MB (cửa sổ 60 s: 668 cửa sổ mỗi service; 30 s: tương tự); `detect` trên một run 48 phút (2.101–2.123 cặp cửa sổ–service) 2–11 s, RSS 230–270 MB mỗi detector. Chạy hết chuỗi feature → detector → incident → harness trên 4 fault run pilot (C2, C3, C4, C6) và 1 run pilot khỏe với config phát triển: ngưỡng tĩnh, robust z, fused khớp 4/4 fault run, không báo giả; Isolation Forest ngưỡng 0,6 báo giả 4,4 lần/giờ. Pilot chỉ dùng để kiểm code, không để chọn ngưỡng.
 
+## Incident lifecycle (`incident/`)
+
+```bash
+# Gom cửa sổ bất thường của một detector thành incident; ghi incidents-<detector>.json cạnh đầu vào.
+uv run aiops-training incidents <dir>/anomalies-robust_z.parquet --config configs/incident-dev-v1.json
+```
+
+- **Máy trạng thái theo service** `NORMAL → SUSPECTED → OPEN → RECOVERING → RESOLVED`, persistence **theo từng khóa bằng chứng**: mỗi cửa sổ vượt cộng vào chuỗi của các tín hiệu mà detector coi là bất thường (`evidence_keys`); chuỗi của một tín hiệu chỉ đứt khi một cửa sổ quan sát được tín hiệu đó (`observed_keys`) mà nó bình thường. Cửa sổ không quan sát được tín hiệu (cạnh thưa của C3 giữa hai lời gọi) hay không có dữ liệu thì bỏ qua. Bằng chứng của các tín hiệu khác nhau không cộng dồn; hai cửa sổ vượt liên tiếp của cùng tín hiệu cách nhau quá `max_chain_gap_seconds` thì chuỗi bắt đầu lại. Đầu vào phải là `anomaly-record.v2` (có cột bằng chứng). Mở đợt khi một chuỗi đủ `persistence_windows`; hồi phục sau `recovery_windows` cửa sổ không vượt có dữ liệu.
+- **Thời điểm:** `detected_at` = `window_end` của cửa sổ hoàn tất persistence + `available_after_s` (10 s); `estimated_start_time` = `window_end` của cửa sổ vượt đầu tiên − bước 15 s; `resolved_at` rỗng nếu chưa hồi phục tới cuối run.
+- **Gộp (tạm thời, theo thời gian; đồ thị v2 thay ở tuần 17):** đợt mở trước khi incident đang xét hồi phục + `merge_gap_seconds`, hoặc trong `correlation_window_seconds` kể từ `detected_at` của incident, nhập vào incident đó.
+- **Record `incident-record.v1`:** `threshold` của detector; `incident_id` xác định (băm run, detector, ngưỡng, phiên bản và sha256 nội dung config detector/incident, window/persistence, cửa sổ mở); `open_at_run_end`, `duration_s` để chẩn đoán incident gộp quá rộng, `affected_services`, `first_symptom`, `trigger_reason`, `peak_score` (vô cùng ghi `peak_score_infinite`), từng đợt và timeline trỏ tới (service, tín hiệu, thực thể, cửa sổ, điểm), lineage tới detector, feature, baseline, model.
+
+`configs/incident-dev-v1.json` chỉ là giá trị phát triển; tham số incident khai báo ở `detection-candidates.v2`.
+
 ## Evaluation harness cho phát hiện sự cố
 
 ```bash
