@@ -17,7 +17,11 @@
       }
     },
     "robust_z": { "threshold": 4 },
-    "iforest": { "threshold": 0.6 },
+    "iforest": {
+      "threshold": 0.6,
+      "seed": 20260819,
+      "hyperparameters": { "n_estimators": 200, "max_samples": 256, "max_features": 1.0, "bootstrap": false }
+    },
     "fused": {
       "threshold": 3,
       "weights": { "metrics": 0.3333333333333333, "traces": 0.3333333333333333, "logs": 0.3333333333333333 }

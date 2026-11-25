@@ -111,7 +111,8 @@ Bốn loại điểm theo (cửa sổ, service), cùng đầu ra, để E1 chỉ
 ```bash
 # Isolation Forest: một model mỗi service, chỉ từ run train khỏe (case rỗng) của dataset.
 uv run aiops-training fit-iforest --dataset ../experiments/datasets/dataset-v0.json --runs-dir ../experiments/runs \
-  --features-subdir telemetry/features --out models/iforest-w60.joblib   # + models/iforest-w60.joblib.json
+  --features-subdir telemetry/features --config configs/detector-dev-v1.json \
+  --out models/iforest-w60.joblib   # + models/iforest-w60.joblib.json
 # Chạy trên thư mục feature đã apply-baseline; ghi anomalies-<detector>.parquet + .json (lineage).
 uv run aiops-training detect ../experiments/runs/<RUN_ID>/telemetry/features --detector robust_z --config configs/detector-dev-v1.json
 uv run aiops-training detect ../experiments/runs/<RUN_ID>/telemetry/features --detector iforest --config configs/detector-dev-v1.json --model models/iforest-w60.joblib
@@ -122,9 +123,9 @@ Quy tắc dùng chung (chi tiết ở docstring `anomaly/signals.py`, `anomaly/d
 - **Tín hiệu** (`signals.v1`): triệu chứng lỗi, độ trễ, hàng đợi ứ, mất consumer. Không dùng tín hiệu tải (`request_rate`, `call_count`, CPU, bộ nhớ). Trace chỉ dùng `trace_error_rate`, không dùng số đếm tuyệt đối (bảng F, hệ quả (c)).
 - **Quy về service:** cạnh theo phía gọi, hàng đợi theo consumer. `consumers` chỉ xét hàng đợi thường; hàng đợi dead-letter không có consumer theo thiết kế.
 - **`telemetry_silent`:** luôn vượt ngưỡng ở cả bốn loại điểm (`reason = telemetry_silent`), không đi qua z.
-- **Cửa sổ không dữ liệu:** `flagged` rỗng (không bất thường, không làm đứt persistence).
+- **Cửa sổ không dữ liệu:** `flagged` rỗng chỉ khi service không có giá trị triệu chứng nào. Mỗi dòng ghi thêm `top_key` (tín hiệu làm cửa sổ vượt) và `observed_keys` (tín hiệu có giá trị) để lifecycle áp luật cửa sổ không dữ liệu theo từng tín hiệu.
 - **Điểm hợp nhất:** chỉ fallback khi modality thật sự không có dữ liệu; trọng số chuẩn hóa lại trên modality còn lại.
-- **Isolation Forest:** vector = max z có hướng của từng tín hiệu trên các thực thể của service; chiều thiếu điền 0 (median của train). Artifact ghi thứ tự feature, baseline (scaler), hyperparameter, seed, run fit, `window_s`, sha256. `detect` từ chối model khác `window_s` hoặc khác baseline của run.
+- **Isolation Forest:** vector = max z có hướng của từng tín hiệu trên các thực thể của service; chiều thiếu điền 0 (median của train). Hyperparameter và seed đọc từ config detector (`detectors.iforest`). Artifact ghi thứ tự feature, baseline (scaler, phải fit trên đúng các run fit model), hyperparameter, seed, run fit, `window_s`, phiên bản và sha256 config, code commit, sha256 model. `detect` từ chối khi thiếu `baseline-apply.json`, khi bảng z sinh từ manifest feature khác bản hiện có, hoặc khi model khác `window_s`, khác baseline, khác bộ tín hiệu.
 
 `configs/detector-dev-v1.json` chỉ là giá trị phát triển để kiểm code chạy đúng. Ngưỡng dùng cho validation và test khai báo ở `detection-candidates.v2` và chọn ở task-06 tuần 16.
 

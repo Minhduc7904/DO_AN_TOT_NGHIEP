@@ -20,7 +20,13 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 
 from .detectors import Detector
-from .signals import AVAILABLE_AFTER_S, SIGNAL_SET_VERSION, service_windows
+from .signals import (
+    AVAILABLE_AFTER_S,
+    MODALITIES,
+    SIGNAL_SET_VERSION,
+    SIGNALS,
+    service_windows,
+)
 
 ANOMALY_SCHEMA_VERSION = "anomaly-record.v1"
 ANOMALY_SCHEMA = pa.schema(
@@ -43,8 +49,27 @@ ANOMALY_SCHEMA = pa.schema(
         ("top_entity", pa.string()),
         ("top_value", pa.float64()),
         ("top_score", pa.float64()),
+        # Khóa bằng chứng của cửa sổ vượt (`<bảng>.<cột>@<thực thể>`, hoặc
+        # `telemetry_silent@<service>`) và khóa các tín hiệu có giá trị trong cửa sổ: lifecycle dùng
+        # để áp luật cửa sổ không dữ liệu theo từng tín hiệu (`signals.py`).
+        ("top_key", pa.string()),
+        ("observed_keys", pa.list_(pa.string())),
+        ("missing_modalities", pa.list_(pa.string())),
+        ("detector_config_version", pa.string()),
     ]
 )
+#: Ý nghĩa của `score_metrics/traces/logs`: z có hướng (robust_z, fused, iforest) hoặc tỉ lệ
+#: giá trị/ngưỡng (static, rỗng khi modality không có tín hiệu nào có ngưỡng).
+COMPONENT_MEANING = {
+    "static": "max(giá trị / ngưỡng) theo modality",
+    "robust_z": "max(0, max z có hướng) theo modality",
+    "fused": "max(0, max z có hướng) theo modality",
+    "iforest": "max(0, max z có hướng) theo modality (model dùng cả vector)",
+}
+
+
+def silence_key(service: str) -> str:
+    return f"telemetry_silent@{service}"
 
 
 def _sha256(path: Path) -> str | None:
@@ -60,25 +85,40 @@ def detect(
     config_path: Path | None = None,
     model_metadata: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    meta = json.loads((features_dir / "features-manifest.json").read_text(encoding="utf-8"))
+    manifest_path = features_dir / "features-manifest.json"
+    meta = json.loads(manifest_path.read_text(encoding="utf-8"))
     applied_path = features_dir / "baseline-apply.json"
-    applied = json.loads(applied_path.read_text(encoding="utf-8")) if applied_path.exists() else {}
-    window_s = int(meta["config"]["window_s"])
-    if model_metadata and int(model_metadata["window_s"]) != window_s:
-        raise ValueError(
-            f"Model fit trên cửa sổ {model_metadata['window_s']} s, feature là {window_s} s"
-        )
-    if (
-        model_metadata
-        and applied.get("baseline_sha256")
-        and model_metadata["baseline_sha256"] != applied["baseline_sha256"]
-    ):
-        raise ValueError("Model và feature của run dùng hai baseline khác nhau")
+    if not applied_path.exists():
+        raise ValueError(f"Thiếu {applied_path}: chạy apply-baseline trước detect")
+    applied = json.loads(applied_path.read_text(encoding="utf-8"))
+    window_s = int(meta.get("window_s") or meta["config"]["window_s"])
+    if applied.get("features_manifest_sha256") != _sha256(manifest_path):
+        raise ValueError("Bảng z được sinh từ manifest feature khác bản hiện có: chạy lại apply")
+    if applied.get("window_s") is not None and int(applied["window_s"]) != window_s:
+        raise ValueError(f"Baseline áp cho cửa sổ {applied['window_s']} s, feature là {window_s} s")
+    if model_metadata:
+        if int(model_metadata["window_s"]) != window_s:
+            raise ValueError(
+                f"Model fit trên cửa sổ {model_metadata['window_s']} s, feature là {window_s} s"
+            )
+        if model_metadata["baseline_sha256"] != applied.get("baseline_sha256"):
+            raise ValueError("Model và feature của run dùng hai baseline khác nhau")
+        expected = [signal.name for signal in SIGNALS]
+        if (
+            model_metadata.get("signal_set_version") != SIGNAL_SET_VERSION
+            or model_metadata.get("feature_order") != expected
+        ):
+            raise ValueError("Model fit trên bộ tín hiệu/thứ tự khác bộ tín hiệu hiện hành")
     rows = []
     counts = {"flagged": 0, "below_threshold": 0, "no_data": 0, "telemetry_silent": 0}
     for window in service_windows(features_dir):
         result = detector.score(window)
         top = result.top
+        observed = [silence_key(window.service), *window.observed_keys()]
+        if result.reason == "telemetry_silent":
+            top_key = silence_key(window.service)
+        else:
+            top_key = top.key if top is not None and result.flagged else None
         rows.append(
             {
                 "run_id": window.run_id,
@@ -99,6 +139,10 @@ def detect(
                 "top_entity": top.entity if top else None,
                 "top_value": top.value if top else None,
                 "top_score": result.top_score,
+                "top_key": top_key,
+                "observed_keys": observed,
+                "missing_modalities": [m for m in MODALITIES if not window.available(m)],
+                "detector_config_version": config.get("detector_config_version"),
             }
         )
         if result.reason == "telemetry_silent":
@@ -120,6 +164,7 @@ def detect(
         "detector_config": config,
         "detector_config_sha256": _sha256(config_path) if config_path else None,
         "signal_set_version": SIGNAL_SET_VERSION,
+        "component_meaning": COMPONENT_MEANING.get(detector.name),
         "threshold": detector.threshold,
         "window_s": window_s,
         "step_s": int(meta["config"]["step_s"]),

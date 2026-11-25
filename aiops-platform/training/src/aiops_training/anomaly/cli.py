@@ -9,7 +9,7 @@ from pathlib import Path
 from ..features.baseline import sha256_file
 from ..features.leakage import is_healthy
 from .detectors import DETECTORS, build_detector
-from .iforest import DEFAULT_SEED, fit_models, load_models, save_models
+from .iforest import DEFAULT_SEED, code_provenance, fit_models, load_models, save_models
 from .run import detect
 
 COMMANDS = ("fit-iforest", "detect")
@@ -27,9 +27,12 @@ def register(sub: argparse._SubParsersAction) -> None:
         help="Thư mục feature trong mỗi run (đã apply-baseline); mặc định cửa sổ 60 s",
     )
     fit.add_argument("--out", type=Path, required=True, help="File model (.joblib)")
-    fit.add_argument("--seed", type=int, default=DEFAULT_SEED)
-    fit.add_argument("--n-estimators", type=int)
-    fit.add_argument("--max-samples", type=int)
+    fit.add_argument(
+        "--config",
+        type=Path,
+        required=True,
+        help="Config detector (JSON): hyperparameter và seed ở detectors.iforest",
+    )
 
     run = sub.add_parser("detect", help="Chạy một detector trên thư mục feature của một run")
     run.add_argument("features_dir", type=Path, help="Thư mục feature đã apply-baseline")
@@ -56,17 +59,21 @@ def _fit(args: argparse.Namespace) -> int:
     missing = [run_id for run_id, path in runs.items() if not path.exists()]
     if missing:
         raise SystemExit(f"Thiếu feature của run train: {missing}")
-    overrides = {
-        key: value
-        for key, value in (
-            ("n_estimators", args.n_estimators),
-            ("max_samples", args.max_samples),
-        )
-        if value is not None
+    config = json.loads(args.config.read_text(encoding="utf-8"))
+    section = config["detectors"]["iforest"]
+    provenance = {
+        "detector_config_version": config.get("detector_config_version"),
+        "detector_config_sha256": sha256_file(args.config),
+        "dataset_id": manifest.get("dataset_id"),
+        "dataset_manifest_sha256": sha256_file(args.dataset),
+        **code_provenance(Path(__file__).resolve().parents[3]),
     }
-    models, metadata = fit_models(runs, overrides, seed=args.seed)
-    metadata["dataset_id"] = manifest.get("dataset_id")
-    metadata["dataset_manifest_sha256"] = sha256_file(args.dataset)
+    models, metadata = fit_models(
+        runs,
+        section.get("hyperparameters"),
+        seed=int(section.get("seed", DEFAULT_SEED)),
+        provenance=provenance,
+    )
     full = save_models(models, metadata, args.out)
     print(
         json.dumps(
