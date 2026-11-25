@@ -368,15 +368,24 @@ def _evaluate_detection_parser(sub: argparse._SubParsersAction) -> None:
     parser.add_argument(
         "--final-test",
         action="store_true",
-        help="Bắt buộc khi --split test: xác nhận đây là lần chấm final test đã freeze (mục 6.3)",
+        help="Bắt buộc khi chấm run thuộc split test (kể cả qua --run-id): xác nhận đây là lần "
+        "chấm final test đã freeze (mục 6.3)",
+    )
+    parser.add_argument(
+        "--allow-dirty",
+        action="store_true",
+        help="Cho chấm khi code training có thay đổi chưa commit (artifact ghi cờ dirty)",
+    )
+    parser.add_argument(
+        "--allow-missing-peak",
+        action="store_true",
+        help="Không trả mã lỗi khi run khỏe của profile cao điểm không tính được đoạn cao điểm",
     )
 
 
 def _run_evaluate_detection(args: argparse.Namespace) -> int:
     if args.dataset is not None and args.split is None:
         raise SystemExit("--dataset cần --split")
-    if args.split == "test" and not args.final_test:
-        raise SystemExit("Chấm split test cần --final-test (chỉ sau khi freeze, mục 6.3)")
     config = load_evaluation_config(args.evaluation_config)
     dataset = None
     if args.dataset is not None:
@@ -398,6 +407,8 @@ def _run_evaluate_detection(args: argparse.Namespace) -> int:
         dataset=dataset,
         dataset_path=args.dataset,
         split=args.split,
+        final_test=args.final_test,
+        allow_dirty=args.allow_dirty,
         bootstrap=not args.no_bootstrap,
     )
     args.out.parent.mkdir(parents=True, exist_ok=True)
@@ -409,8 +420,16 @@ def _run_evaluate_detection(args: argparse.Namespace) -> int:
         "pooled": summary["pooled"],
         "false_alarm_rate": summary["false_alarm_rate"],
         "excluded_by_reason": summary["excluded_by_reason"],
+        "peak_unavailable_by_reason": summary["peak_unavailable_by_reason"],
     }
     print(json.dumps(brief, ensure_ascii=False, indent=2))
+    if summary["peak_unavailable_by_reason"] and not args.allow_missing_peak:
+        print(
+            "Có run khỏe thuộc profile cao điểm không tính được đoạn cao điểm (xem "
+            "peak_unavailable_by_reason); dùng --allow-missing-peak nếu chấp nhận",
+            file=sys.stderr,
+        )
+        return 1
     return 0
 
 

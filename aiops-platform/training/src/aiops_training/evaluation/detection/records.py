@@ -1,6 +1,9 @@
 """Đọc incident record (đầu ra của incident lifecycle) và `RunGroundTruth` cho harness.
 
-Đây là chỗ duy nhất ngoài gói `ground_truth` đọc file ground truth (evaluation-protocol-v1 mục 3.3).
+Ranh giới evaluation-protocol-v1 mục 3.3: trong đường chấm, chỉ module này đọc `ground-truth.json`
+(qua `harness`). Ngoài gói `evaluation`, chỉ gói `ground_truth` (dựng và kiểm chứng ground truth) và
+các lệnh `ground-truth`, `symptoms` của `cli.py` chạm tới file này; detector và incident lifecycle
+không đọc (test `test_only_evaluation_and_ground_truth_read_ground_truth`).
 """
 
 from __future__ import annotations
@@ -66,6 +69,8 @@ class IncidentRecord:
     step_seconds: int
     lineage: dict[str, Any]
     incidents: tuple[Incident, ...]
+    #: Ngưỡng của detector: trường top-level `threshold`, không có thì `lineage.threshold`.
+    threshold: float | None = None
 
 
 def _check_type(where: str, data: dict[str, Any], fields: dict[str, Any]) -> None:
@@ -129,6 +134,7 @@ def parse_incident_record(data: Any) -> IncidentRecord:
             )
         )
     return IncidentRecord(
+        threshold=_threshold(data),
         run_id=data["run_id"],
         detector=data["detector"],
         detector_config_version=data["detector_config_version"],
@@ -139,6 +145,24 @@ def parse_incident_record(data: Any) -> IncidentRecord:
         lineage=data["lineage"],
         incidents=tuple(incidents),
     )
+
+
+def _number_or_none(where: str, value: Any) -> float | None:
+    if value is None:
+        return None
+    if isinstance(value, bool) or not isinstance(value, int | float):
+        raise IncidentRecordError(f"{where} phải là số hoặc null")
+    return float(value)
+
+
+def _threshold(data: dict[str, Any]) -> float | None:
+    lineage_value = _number_or_none("lineage.threshold", data["lineage"].get("threshold"))
+    if "threshold" not in data:
+        return lineage_value
+    value = _number_or_none("threshold", data["threshold"])
+    if "threshold" in data["lineage"] and lineage_value != value:
+        raise IncidentRecordError(f"threshold ({value}) khác lineage.threshold ({lineage_value})")
+    return value
 
 
 def load_incident_record(path: Path) -> IncidentRecord:
@@ -160,6 +184,7 @@ class RunTruth:
     workload_end: datetime
     fault_start: datetime | None
     fault_end: datetime | None
+    verification_result: str | None = None
 
     @property
     def is_fault_run(self) -> bool:
@@ -180,6 +205,7 @@ def parse_run_truth(data: dict[str, Any]) -> RunTruth:
             workload_end=parse_utc(data["workload_end"]),
             fault_start=None if fault_start is None else parse_utc(fault_start),
             fault_end=None if fault_end is None else parse_utc(fault_end),
+            verification_result=data.get("verification_result"),
         )
     except (KeyError, TypeError, ValueError, AttributeError) as error:
         raise GroundTruthReadError(f"RunGroundTruth không đọc được: {error!r}") from error

@@ -9,11 +9,13 @@ import statistics
 from collections import defaultdict
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
+from fractions import Fraction
 from typing import Any
 
-from .matching import RunDetection
+from .matching import MICROSECONDS, RunDetection
 
 SECONDS_PER_HOUR = 3600.0
+US_PER_HOUR = 3600 * MICROSECONDS
 
 
 @dataclass(frozen=True)
@@ -69,8 +71,23 @@ def false_alarm_rate(units: Iterable[RunUnit]) -> dict[str, Any]:
     """Báo động giả/giờ theo luật chọn mục 6.1.2 (tử, mẫu số theo evaluation config)."""
     units = list(units)
     alarms = sum(u.detection.false_alarms for u in units)
-    hours = sum(u.detection.exposure_s for u in units) / SECONDS_PER_HOUR
-    return {"false_alarms": alarms, "hours": hours, "per_hour": ratio(alarms, hours)}
+    exposure_us = sum(u.detection.exposure_us for u in units)
+    return {
+        "false_alarms": alarms,
+        "exposure_us": exposure_us,
+        "hours": exposure_us / US_PER_HOUR,
+        "per_hour": None if exposure_us == 0 else alarms * US_PER_HOUR / exposure_us,
+    }
+
+
+def meets_cap(false_alarms: int, exposure_us: int, cap_per_hour: float) -> bool:
+    """`false_alarms / giờ <= cap` so bằng số hữu tỉ: `alarms × 3600 s <= cap × exposure`.
+
+    Mẫu số 0 (không có thời gian phơi nhiễm) thì tỉ lệ không xác định nên không đạt.
+    """
+    if exposure_us <= 0:
+        return False
+    return false_alarms * US_PER_HOUR <= Fraction(cap_per_hour) * exposure_us
 
 
 def healthy_rates(units: Iterable[RunUnit]) -> dict[str, Any]:
@@ -139,12 +156,15 @@ def summarize(units: Sequence[RunUnit], cap_per_hour: float) -> dict[str, Any]:
     }
     repetitions = {case: summary["n_runs"] for case, summary in per_case.items()}
     return {
+        # Chỉ số chính (mục 17.6, 20.2): mọi run eligible, FP của run khỏe tính vào.
         "pooled": counts(units),
+        # Chỉ số phụ: chỉ fault run, để thấy Precision không bị run khỏe kéo xuống.
+        "pooled_fault_runs": counts(fault),
         "matched_fault_runs": sum(u.detection.tp for u in fault),
         "false_alarm_rate": {
             **alarm,
             "cap_per_hour": cap_per_hour,
-            "meets_cap": alarm["per_hour"] is not None and alarm["per_hour"] <= cap_per_hour,
+            "meets_cap": meets_cap(alarm["false_alarms"], alarm["exposure_us"], cap_per_hour),
         },
         "healthy": {
             **healthy_rates(healthy),

@@ -16,6 +16,9 @@ FP_DUPLICATE = "fp_duplicate"
 FP_HEALTHY = "fp_healthy_run"
 OUTSIDE_INTERVAL = "outside_evaluation_interval"
 
+MICROSECONDS = 1_000_000
+_ONE_US = timedelta(microseconds=1)
+
 
 @dataclass(frozen=True)
 class Interval:
@@ -36,8 +39,16 @@ class Interval:
         return (self.end - self.start).total_seconds()
 
     def overlap_seconds(self, other: Interval) -> float:
+        return self.overlap_us(other) / MICROSECONDS
+
+    @property
+    def duration_us(self) -> int:
+        return (self.end - self.start) // _ONE_US
+
+    def overlap_us(self, other: Interval) -> int:
+        """Độ dài phần chung tính bằng micro giây (số nguyên, không sai số làm tròn)."""
         start, end = max(self.start, other.start), min(self.end, other.end)
-        return max(0.0, (end - start).total_seconds())
+        return max(0, (end - start) // _ONE_US)
 
 
 @dataclass(frozen=True)
@@ -68,13 +79,18 @@ class RunDetection:
     fn: int
     #: Báo động giả theo luật chọn (mục 6.1.2 bước 2) và thời gian phơi nhiễm tương ứng.
     false_alarms: int
-    exposure_s: float
+    #: Thời gian phơi nhiễm (micro giây, số nguyên) để so cap không qua phép chia số thực.
+    exposure_us: int
     peak: dict[str, Any] | None = None
     incidents: list[Incident] = field(default_factory=list)
 
     @property
     def is_fault_run(self) -> bool:
         return self.fault_window is not None
+
+    @property
+    def exposure_s(self) -> float:
+        return self.exposure_us / MICROSECONDS
 
     @property
     def incidents_in_interval(self) -> int:
@@ -129,7 +145,7 @@ def evaluate_run(
         for incident in inside:
             labels[incident.incident_id] = FP_HEALTHY
         false_alarms = len(inside)
-        exposure = evaluation_interval.seconds
+        exposure = evaluation_interval.duration_us
     else:
         matching = Interval(
             fault_window.start, fault_window.end + timedelta(seconds=late_tolerance_s)
@@ -151,7 +167,7 @@ def evaluate_run(
             if labels[incident.incident_id] in (FP_BEFORE_FAULT, FP_AFTER_LATE_TOLERANCE)
         )
         removed = matching if exclude_late_tolerance_tail else fault_window
-        exposure = evaluation_interval.seconds - evaluation_interval.overlap_seconds(removed)
+        exposure = evaluation_interval.duration_us - evaluation_interval.overlap_us(removed)
 
     tp = int(matched is not None)
     fp = len(inside) - tp
@@ -187,7 +203,7 @@ def evaluate_run(
         fp=fp,
         fn=fn,
         false_alarms=false_alarms,
-        exposure_s=exposure,
+        exposure_us=exposure,
         peak=peak_result,
         incidents=ordered,
     )

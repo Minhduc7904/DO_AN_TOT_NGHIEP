@@ -67,31 +67,44 @@ def peak_window(
 
 
 def load_plan_peak(
-    plan_path: Path,
+    plan_path: Path | None,
     expected_sha256: str | None,
     *,
     warmup_s: float,
     duration_s: float,
     step_s: float,
 ) -> tuple[PlanPeak, dict[str, Any]]:
-    """Đọc kế hoạch, kiểm sha256 với run manifest và trả đoạn cao điểm cùng tham chiếu lineage."""
-    if not plan_path.is_file():
+    """Đọc kế hoạch, kiểm sha256 với run manifest và trả đoạn cao điểm cùng tham chiếu lineage.
+
+    Mọi lỗi thành `PeakPlanError` có `reason` để harness ghi lý do thay vì dừng: thiếu file, run
+    manifest không ghi sha256 (không bỏ qua bước kiểm), sha256 lệch, kế hoạch hỏng hoặc quá ngắn.
+    """
+    if plan_path is None or not plan_path.is_file():
         raise PeakPlanError("peak_plan_missing", f"Không thấy kế hoạch {plan_path}")
+    if not expected_sha256:
+        raise PeakPlanError(
+            "peak_plan_sha256_missing", f"Run manifest không ghi plan_sha256 của {plan_path}"
+        )
     raw = plan_path.read_bytes()
     digest = hashlib.sha256(raw).hexdigest()
-    if expected_sha256 and digest != expected_sha256:
+    if digest != expected_sha256:
         raise PeakPlanError(
             "peak_plan_sha256_mismatch",
             f"sha256 của {plan_path} là {digest}, run manifest ghi {expected_sha256}",
         )
-    plan = json.loads(raw)
-    peak = peak_window(
-        [float(session["start_s"]) for session in plan["sessions"]],
-        run_seconds=float(plan["run_seconds"]),
-        warmup_s=warmup_s,
-        duration_s=duration_s,
-        step_s=step_s,
-    )
+    try:
+        plan = json.loads(raw)
+        peak = peak_window(
+            [float(session["start_s"]) for session in plan["sessions"]],
+            run_seconds=float(plan["run_seconds"]),
+            warmup_s=warmup_s,
+            duration_s=duration_s,
+            step_s=step_s,
+        )
+    except (ValueError, KeyError, TypeError) as error:
+        raise PeakPlanError(
+            "peak_plan_invalid", f"Kế hoạch {plan_path} không dùng được: {error}"
+        ) from error
     reference = {
         "plan_id": plan.get("plan_id"),
         "path": str(plan_path),

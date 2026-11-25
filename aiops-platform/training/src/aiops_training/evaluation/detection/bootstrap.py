@@ -1,7 +1,9 @@
 """Bootstrap percentile CI theo run, phân tầng (evaluation-protocol-v1 mục 20.7).
 
 Fault run phân tầng theo case, run khỏe theo profile. Một tầng chỉ có một run thì mọi lần lấy mẫu
-lại đều chọn đúng run đó: CI của chỉ số dùng tầng ấy suy biến và được báo `degenerate`.
+lại đều chọn đúng run đó. Mọi tầng của chỉ số đều một run: CI suy biến, báo `degenerate`, không có
+khoảng. Chỉ một phần tầng một run: vẫn báo CI nhưng `partially_degenerate` kèm danh sách tầng suy
+biến, vì biến thiên của các tầng đó không vào khoảng (khoảng hẹp hơn thực tế).
 """
 
 from __future__ import annotations
@@ -114,10 +116,10 @@ def bootstrap_ci(
         }
         if not involved or not values:
             entry["status"] = "undefined"
-        elif single:
+        elif len(single) == len(involved):
             entry["status"] = "degenerate"
         else:
-            entry["status"] = "ok"
+            entry["status"] = "partially_degenerate" if single else "ok"
             entry["ci_low"] = percentile(values, alpha)
             entry["ci_high"] = percentile(values, 1 - alpha)
         result[name] = entry

@@ -25,6 +25,7 @@ from aiops_training.evaluation.detection.matching import (
 from aiops_training.evaluation.detection.metrics import (
     RunUnit,
     counts,
+    meets_cap,
     precision_recall_f1,
     summarize,
 )
@@ -149,6 +150,13 @@ def test_incidents_outside_evaluation_interval_are_diagnostic_only():
     assert healthy.detection_fields()["healthy_run_false_positive"] == 0
 
 
+def test_incidents_exactly_at_evaluation_bounds_are_inside():
+    # Evaluation interval đóng hai đầu: đúng evaluation_start và đúng evaluation_end đều được tính.
+    result = healthy_run("h", ("at-start", WARMUP_S), ("at-end", RUN_S))
+    assert result.labels == {"at-start": FP_HEALTHY, "at-end": FP_HEALTHY}
+    assert result.false_alarms == 2
+
+
 # --- Mẫu số 0 và tỉ lệ (mục 17.6) --------------------------------------------------------------
 
 
@@ -174,6 +182,19 @@ def test_pooled_counts_over_fault_and_healthy_runs():
     assert pooled["precision"] == pytest.approx(1 / 4)
     assert pooled["recall"] == pytest.approx(1 / 2)
     assert pooled["n_incidents"] == 4
+    # Chỉ số phụ chỉ trên fault run: bỏ FP của run khỏe.
+    fault_only = summarize(units, cap_per_hour=1.0)["pooled_fault_runs"]
+    assert (fault_only["tp"], fault_only["fp"], fault_only["fn"]) == (1, 2, 1)
+    assert fault_only["precision"] == pytest.approx(1 / 3)
+
+
+def test_cap_comparison_is_exact_at_the_boundary():
+    hour_us = 3600 * 1_000_000
+    assert meets_cap(2, 2 * hour_us, 1.0) is True
+    assert meets_cap(2, 2 * hour_us - 1, 1.0) is False
+    assert meets_cap(0, 0, 1.0) is False
+    # 7 báo động giả trong 7 giờ: 7/7 bằng đúng cap, phép chia số thực không được làm lệch.
+    assert meets_cap(7, 7 * hour_us, 1) is True
 
 
 # --- Mẫu số báo động giả/giờ (mục 6.1.2, 17.7) ---------------------------------------------------
@@ -274,18 +295,37 @@ def test_false_alarms_in_peak_segment():
 # --- Luật chọn (mục 6.1.2) --------------------------------------------------------------------
 
 
-def combo(cid, threshold, late, matched, alarms, hours=2.0):
-    return CombinationResult(cid, threshold, late, matched, alarms, hours)
+SHARED = {
+    "cap_per_hour": 1.0,
+    "eligible_run_ids": ("c2", "c3", "h"),
+    "evaluation_config_version": "detection-evaluation.v1",
+    "candidates_sha256": "abc",
+    "detector": "robust_z",
+}
+
+
+def combo(cid, threshold, late, matched, alarms, hours=2.0, **overrides):
+    fields = {**SHARED, **overrides}
+    return CombinationResult(
+        combination_id=cid,
+        threshold=threshold,
+        late_tolerance_seconds=late,
+        matched_fault_runs=matched,
+        false_alarms=alarms,
+        exposure_us=round(hours * 3600 * 1_000_000),
+        **fields,
+    )
 
 
 def test_selection_respects_cap_before_matches():
     results = [
         combo("noisy", 3, 60, matched=4, alarms=3),  # 1,5/giờ: vượt cap
-        combo("quiet", 5, 135, matched=3, alarms=2),  # 1/giờ: đạt
+        combo("quiet", 5, 135, matched=3, alarms=2),  # đúng 1/giờ: đạt (biên đóng)
     ]
-    chosen = select_combination(results, cap_per_hour=1.0)
+    chosen = select_combination(results)
     assert chosen["selected"] == "quiet"
     assert chosen["meets_cap"] is True
+    assert chosen["cap_per_hour"] == 1.0
     assert [row["combination_id"] for row in chosen["ranking"]] == ["quiet", "noisy"]
 
 
@@ -301,6 +341,17 @@ def test_selection_order_matches_then_alarms_then_tolerance_then_threshold():
     assert ranking == ["best", "lower-thr", "larger-tol", "more-alarms", "fewer-matches"]
 
 
+def test_selection_same_counts_different_exposure_compares_rates():
+    # Cùng 2 báo động giả và cùng số fault run khớp; mẫu số khác do late_tolerance khác.
+    results = [
+        combo("short-exposure", 5, 60, matched=4, alarms=2, hours=2.0),
+        combo("long-exposure", 5, 135, matched=4, alarms=2, hours=2.5),
+    ]
+    ranking = select_combination(results)["ranking"]
+    assert [row["combination_id"] for row in ranking] == ["long-exposure", "short-exposure"]
+    assert ranking[0]["false_alarms_per_hour"] == pytest.approx(0.8)
+
+
 def test_selection_fallback_when_no_combination_meets_cap():
     results = [
         combo("a", 3, 60, matched=4, alarms=6),
@@ -308,18 +359,39 @@ def test_selection_fallback_when_no_combination_meets_cap():
         combo("c", 4, 60, matched=3, alarms=4),
         combo("zero-hours", 5, 60, matched=4, alarms=0, hours=0),
     ]
-    chosen = select_combination(results, cap_per_hour=1.0)
+    chosen = select_combination(results)
     assert chosen["rule_applied"] == "fallback_min_false_alarms"
     assert chosen["meets_cap"] is False
-    # Hòa 2/giờ giữa b và c: nhiều fault run khớp hơn thắng; tỉ lệ null xếp cuối.
+    # Hòa 2/giờ giữa b và c: nhiều fault run khớp hơn thắng; tỉ lệ không xác định xếp cuối.
     assert [row["combination_id"] for row in chosen["ranking"]] == ["c", "b", "a", "zero-hours"]
 
 
-def test_selection_rejects_duplicates_and_empty_input():
+def test_selection_fallback_ties_break_by_late_tolerance_then_threshold():
+    results = [
+        combo("tol-135", 5, 135, matched=3, alarms=4),
+        combo("tol-60-thr-3", 3, 60, matched=3, alarms=4),
+        combo("tol-60-thr-5", 5, 60, matched=3, alarms=4),
+    ]
+    chosen = select_combination(results)
+    assert chosen["rule_applied"] == "fallback_min_false_alarms"
+    ranking = [row["combination_id"] for row in chosen["ranking"]]
+    assert ranking == ["tol-60-thr-5", "tol-60-thr-3", "tol-135"]
+
+
+def test_selection_rejects_duplicates_empty_and_incomparable_results():
     with pytest.raises(ValueError):
         select_combination([])
     with pytest.raises(ValueError):
         select_combination([combo("x", 3, 60, 1, 0), combo("x", 4, 60, 1, 0)])
+    for name, value in (
+        ("eligible_run_ids", ("c2", "h")),
+        ("evaluation_config_version", "detection-evaluation.v2"),
+        ("candidates_sha256", "def"),
+        ("detector", "isolation_forest"),
+        ("cap_per_hour", 2.0),
+    ):
+        with pytest.raises(ValueError, match=name):
+            select_combination([combo("x", 3, 60, 1, 0), combo("y", 4, 60, 1, 0, **{name: value})])
 
 
 # --- Bootstrap (mục 20.7) ---------------------------------------------------------------------
@@ -355,7 +427,32 @@ def test_bootstrap_is_deterministic_for_same_seed():
     assert first["statistics"]["healthy_run_fpr"]["strata"] == {"profile:normal-mixed": 2}
 
 
-def test_bootstrap_reports_degenerate_when_stratum_has_one_run():
+def test_bootstrap_hand_computed_interval():
+    # Một tầng 4 run (3 TP, 1 FN): recall của lần lấy mẫu = k/4, k ~ Binomial(4; 0,75).
+    # P(k <= 0) = 0,4% < 2,5% < P(k <= 1) = 5,1% nên phân vị 2,5% là 1/4;
+    # P(k = 4) = 31,6% > 2,5% nên phân vị 97,5% là 1. Hai mốc cách xa ngưỡng, không phụ thuộc seed.
+    units = [
+        RunUnit(fault_run("a", ("x", 1100)), "C2", "normal-mixed"),
+        RunUnit(fault_run("b", ("y", 1100)), "C2", "normal-mixed"),
+        RunUnit(fault_run("c", ("z", 1100)), "C2", "normal-mixed"),
+        RunUnit(fault_run("d"), "C2", "normal-mixed"),
+    ]
+    recall = bootstrap_ci(units, resamples=10000, seed=20261125)["statistics"]["recall"]
+    assert recall["status"] == "ok"
+    assert (recall["ci_low"], recall["ci_high"]) == (0.25, 1.0)
+
+
+def test_bootstrap_different_seed_gives_different_result():
+    units = _units_two_per_stratum()
+
+    def bounds(seed):
+        stats = bootstrap_ci(units, resamples=30, seed=seed)["statistics"]
+        return [(entry["ci_low"], entry["ci_high"]) for entry in stats.values()]
+
+    assert bounds(1) != bounds(2)
+
+
+def test_bootstrap_partially_degenerate_keeps_interval():
     units = [
         RunUnit(fault_run("c2", ("a", 1100)), "C2", "normal-mixed"),
         RunUnit(fault_run("c3a"), "C3", "normal-mixed"),
@@ -363,9 +460,24 @@ def test_bootstrap_reports_degenerate_when_stratum_has_one_run():
         RunUnit(healthy_run("h", ("x", 1000)), None, "healthy-spike"),
     ]
     stats = bootstrap_ci(units, resamples=200, seed=1)["statistics"]
+    recall = stats["recall"]
+    assert recall["status"] == "partially_degenerate"
+    assert recall["degenerate_strata"] == ["case:C2"]
+    # C2 luôn TP, C3 có 0–2 TP: recall của lần lấy mẫu nằm trong {1/3, 2/3, 1}.
+    assert 1 / 3 - 1e-9 <= recall["ci_low"] <= recall["ci_high"] <= 1.0
+
+
+def test_bootstrap_reports_degenerate_when_every_stratum_has_one_run():
+    units = [
+        RunUnit(fault_run("c2", ("a", 1100)), "C2", "normal-mixed"),
+        RunUnit(fault_run("c3"), "C3", "normal-mixed"),
+        RunUnit(healthy_run("h", ("x", 1000)), None, "healthy-spike"),
+    ]
+    stats = bootstrap_ci(units, resamples=200, seed=1)["statistics"]
     assert stats["recall"]["status"] == "degenerate"
-    assert stats["recall"]["degenerate_strata"] == ["case:C2"]
+    assert stats["recall"]["degenerate_strata"] == ["case:C2", "case:C3"]
     assert stats["recall"]["ci_low"] is None and stats["recall"]["ci_high"] is None
+    assert stats["healthy_run_fpr"]["status"] == "degenerate"
     assert stats["healthy_run_fpr"]["degenerate_strata"] == ["profile:healthy-spike"]
 
 
