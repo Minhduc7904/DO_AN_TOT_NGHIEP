@@ -20,7 +20,7 @@
 | Mã task | Task | Người phụ trách | Collaborator | Ưu tiên | Trạng thái |
 | --- | --- | --- | --- | --- | --- |
 | [task-01_build-anomaly-detectors](task-01_build-anomaly-detectors.md) | Detector ngưỡng tĩnh, robust z-score, Isolation Forest fit trên train khỏe; điểm hợp nhất M/T/L có fallback khi thiếu modality; `telemetry_silent` | Bách | Không có | Cao | Chờ review |
-| [task-02_add-30s-window-features](task-02_add-30s-window-features.md) | Feature và baseline cửa sổ 30 s cho tập ứng viên, tách khỏi cửa sổ 60 s về version, thư mục và kiểm leakage | Bách | Không có | Cao | Đã giao |
+| [task-02_add-30s-window-features](task-02_add-30s-window-features.md) | Feature và baseline cửa sổ 30 s cho tập ứng viên, tách khỏi cửa sổ 60 s về version, thư mục và kiểm leakage | Bách | Không có | Cao | Chờ review |
 | [task-03_build-incident-lifecycle](task-03_build-incident-lifecycle.md) | Incident lifecycle (persistence, recovery, merge, gộp nhiều service), `detected_at`, `estimated_start_time`, incident record | Bách | Không có | Cao | Chờ review |
 | [task-04_build-detection-evaluation-harness](task-04_build-detection-evaluation-harness.md) | Evaluation harness: ghép incident với fault, Precision/Recall/F1, healthy-run FPR, báo động giả/giờ (kể cả đoạn cao điểm), Detection Delay, bootstrap CI, hàm của luật chọn | Bách | Không có | Cao | Đã giao |
 | [task-05_declare-detection-candidates-v2](task-05_declare-detection-candidates-v2.md) | Khai báo trước mọi lần chấm validation phần còn mở của phát hiện: quy tắc gộp điểm, tham số incident, Isolation Forest, điểm hợp nhất, ngưỡng tĩnh E1 | Bách | Không có | Cao | Đã giao |

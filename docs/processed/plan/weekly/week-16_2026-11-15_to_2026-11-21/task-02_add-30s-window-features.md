@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-02_add-30s-window-features` |
 | Tuần | `week-16_2026-11-15_to_2026-11-21` |
-| Trạng thái | Đã giao |
+| Trạng thái | Chờ review |
 | Người phụ trách | Bách |
 | Collaborator | Không có |
 | Ưu tiên | Cao |
@@ -51,22 +51,24 @@
 
 ## Definition of Done
 
-- [ ] Test hồi quy: bảng 60 s sinh bằng code mới bằng bảng sinh bằng code cũ trên cùng một run (`pyarrow.Table.equals`).
-- [ ] `check-leakage --baseline baselines/dataset-v0.json` vẫn đạt trên feature 60 s đã có (sha256 manifest khớp `fit_inputs`).
-- [ ] Áp baseline 60 s lên feature 30 s (và ngược lại) bị từ chối (test); đường đọc baseline cũ thiếu `window_s` có test.
-- [ ] Feature và baseline 30 s cho 10 run; `check-leakage` 30 s không lỗi; baseline 30 s chỉ fit trên run train khỏe.
-- [ ] Có số đo thời gian và RAM của pipeline 30 s trên một run; `uv run pytest` và `ruff` đạt.
+- [x] Test hồi quy: bảng 60 s sinh bằng code mới bằng bảng sinh bằng code cũ trên cùng một run (`pyarrow.Table.equals`).
+- [x] `check-leakage --baseline baselines/dataset-v0.json` vẫn đạt trên feature 60 s đã có (sha256 manifest khớp `fit_inputs`).
+- [x] Áp baseline 60 s lên feature 30 s (và ngược lại) bị từ chối (test); đường đọc baseline cũ thiếu `window_s` có test.
+- [x] Feature và baseline 30 s cho 10 run; `check-leakage` 30 s không lỗi; baseline 30 s chỉ fit trên run train khỏe.
+- [x] Có số đo thời gian và RAM của pipeline 30 s trên một run; `uv run pytest` và `ruff` đạt.
 
 ## Liên kết hồ sơ thực hiện
 
 - Input workspace: Không tạo (giai đoạn tự bắt kịp; bằng chứng nằm trong PR).
 - Output workspace: Không tạo.
-- Pull request: Chưa tạo.
-- Kết quả review: Chưa review.
+- Pull request: [#104](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/104).
+- Kết quả review: Chờ review. Đã review bằng agent riêng (cùng vòng review task-01/03); phát hiện luật thang đo đã sửa (xem mô tả PR).
 
 > URL/số PR và `Chờ review` phải được commit/push vào PR head trước review. Thành viên còn lại phải gửi `APPROVED` hợp lệ trên GitHub; sau đó người phụ trách finalization metadata, ghi `Hoàn thành` trên chính branch/PR và tự merge task của mình. Card chỉ canonically hoàn thành khi commit đó vào nhánh canonical; xem [vòng đời task canonical](../../../rules/git-and-pull-request-rules.md#vòng-đời-task-canonical).
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 25/11/2026 — lập card.
+- Cập nhật gần nhất: 25/11/2026 — feature 30 s cho 10 run (61–74 s, RSS 1.618–1.849 MB mỗi run), baseline `dataset-v0-w30.json` và `dataset-v0-w60.json` theo luật thang đo v2, hồi quy 60 s bằng hệt, `check-leakage` không lỗi với cả ba baseline ([data dictionary](../../../architecture/telemetry-data-dictionary-v2.md) mục 9.7).
 - Ghi chú/tồn đọng:
+  - Thêm ngoài card: luật thang đo v2 (thang đo không nhỏ hơn sàn theo đơn vị), phát hiện khi review task-01 (MAD bằng sai số dấu phẩy động làm z tới 1e15 trên run khỏe); khai báo ở evaluation-protocol-v1 mục 6.1.3 (PR #103). Baseline mới là file mới, `dataset-v0.json` giữ nguyên.
+  - Card dự đoán số cửa sổ 30 s gấp đôi; thực tế 193 so với 191 (cùng bước 15 s), RAM ngang bản 60 s.

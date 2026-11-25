@@ -200,6 +200,24 @@ def test_robust_scale_falls_back_from_mad_to_meanad_to_unit_floor():
     assert constant["scale_basis"] == "unit_floor" and constant["scale"] == pytest.approx(0.2)
 
 
+def test_scale_rule_v2_never_goes_below_the_unit_floor():
+    from aiops_training.features.baseline import SCALE_RULE, SCALE_RULE_V1, robust_scale
+
+    assert SCALE_RULE.endswith(".v2")
+    # Số đo thật trên train: MAD chỉ là sai số dấu phẩy động (0,3 + 0,1 khác 0,4 ở bit cuối).
+    noisy = [0.4] * 5 + [0.30000000000000004 + 0.1] * 5 + [0.4000000000000001] * 3
+    v2 = robust_scale(noisy, "latency_p95")
+    assert v2["scale"] == pytest.approx(0.01)  # sàn 10 ms của đơn vị giây
+    assert v2["scale_basis"].startswith("unit_floor>")
+    v1 = robust_scale(noisy, "latency_p95", rule=SCALE_RULE_V1)
+    assert 0 < v1["scale"] < 1e-15  # luật cũ cho thang đo cỡ sai số → z tới 1e15
+    # Thang đo lớn hơn sàn giữ nguyên như v1.
+    spread = robust_scale([1.0, 2.0, 3.0, 4.0, 5.0], "latency_p95")
+    assert spread["scale_basis"] == "mad" and spread["scale"] == pytest.approx(1.4826)
+    with pytest.raises(BaselineError):
+        robust_scale([1.0], "latency_p95", rule="khác")
+
+
 def test_apply_refuses_baseline_of_other_schema(tmp_path):
     features = _run(tmp_path, "a")
     baseline = fit_baseline({"a": features})

@@ -356,9 +356,10 @@ def test_iforest_scores_a_fault_like_window_higher(tmp_path):
 def test_fit_rejects_mixed_window_lengths(tmp_path):
     a = _feature_dir(tmp_path, "train-a")
     b = _feature_dir(tmp_path, "train-b", window_s=30)
-    baseline = fit_baseline({"train-a": a})
-    for directory in (a, b):
-        apply_baseline(directory, baseline, baseline_sha256="x")
+    # Mỗi run apply baseline cùng cửa sổ (apply từ chối cửa sổ lệch); fit model phải tự chặn việc
+    # trộn hai độ dài cửa sổ, trước cả kiểm tra baseline.
+    apply_baseline(a, fit_baseline({"train-a": a}), baseline_sha256="x")
+    apply_baseline(b, fit_baseline({"train-b": b}), baseline_sha256="x")
     with pytest.raises(ValueError, match="độ dài cửa sổ"):
         fit_models({"train-a": a, "train-b": b})
 
