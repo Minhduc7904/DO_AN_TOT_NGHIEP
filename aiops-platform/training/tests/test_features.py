@@ -7,8 +7,10 @@ from pathlib import Path
 import pyarrow.parquet as pq
 import pytest
 
+from aiops_training.cli import main
 from aiops_training.features.pipeline import (
     FeatureConfig,
+    FeatureError,
     build_features,
     histogram_quantile,
     increase,
@@ -90,6 +92,10 @@ def _artifact(tmp_path: Path) -> Path:
         "manifest_version": "telemetry-artifact.v1",
         "time_start": T0.isoformat().replace("+00:00", "Z"),
         "time_end": (T0 + timedelta(seconds=600)).isoformat().replace("+00:00", "Z"),
+        # Export chạy sau time_end + độ trễ thu thập, như runner (kiểm ở leakage).
+        "generated_at": (T0 + timedelta(seconds=660)).isoformat().replace("+00:00", "Z"),
+        # Truy vấn backend bắt đầu 10 s sau time_end: không cửa sổ nào bị cắt.
+        "query_started_at": (T0 + timedelta(seconds=610)).isoformat().replace("+00:00", "Z"),
         "modality_availability": {"metrics": "available", "traces": "missing", "logs": "missing"},
         "files": {},
     }
@@ -98,7 +104,8 @@ def _artifact(tmp_path: Path) -> Path:
 
 
 def test_service_and_edge_features_on_synthetic_artifact(tmp_path):
-    service_rows, edge_rows, meta = build_features(_artifact(tmp_path))
+    tables = build_features(_artifact(tmp_path))
+    service_rows, edge_rows, meta = tables.service_rows, tables.edge_rows, tables.meta
     assert meta["windows"] == len(windows(T0.timestamp(), T0.timestamp() + 600, FeatureConfig()))
     by_window = {(row["window_start"], row["service_name"]): row for row in service_rows}
     early = by_window[(T0 + timedelta(seconds=60), "course")]
@@ -134,7 +141,8 @@ def test_write_features_outputs_parquet_and_manifest(tmp_path):
     assert pq.read_table(target / "service_windows.parquet").num_rows == meta["service_rows"]
     assert pq.read_table(target / "edge_windows.parquet").num_rows == meta["edge_rows"]
     saved = json.loads((target / "features-manifest.json").read_text(encoding="utf-8"))
-    assert saved["feature_version"] == "feature.v0"
+    assert saved["feature_config_version"] == "feature.v1"
+    assert saved["noise_filter_version"] == "noise.v1"
     assert saved["edges"] == ["course->course-postgres"]
 
 
@@ -145,8 +153,232 @@ def test_first_window_does_not_count_cumulative_value_from_process_start(tmp_pat
         if row["metric_name"] == "http_server_request_count_total":
             row["value"] += 1_000_000  # process đã chạy lâu trước khi artifact bắt đầu
     pq.write_table(to_table(table, METRIC_SCHEMA), artifact / "metrics.parquet")
-    service_rows, _, _ = build_features(artifact)
+    service_rows = build_features(artifact).service_rows
     first = next(
         row for row in service_rows if row["service_name"] == "course" and row["window_start"] == T0
     )
     assert first["request_rate"] == pytest.approx(2.0 * 55 / 60)
+
+
+# --- feature v1 (task-05 tuần 15) -------------------------------------------------------------
+
+
+def _rewrite(artifact: Path, extra: list[dict], **manifest_changes) -> None:
+    rows = pq.read_table(artifact / "metrics.parquet").to_pylist() + extra
+    pq.write_table(to_table(rows, METRIC_SCHEMA), artifact / "metrics.parquet")
+    manifest = json.loads((artifact / "manifest.json").read_text(encoding="utf-8"))
+    manifest.update(manifest_changes)
+    (artifact / "manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
+
+
+def _row(rows: list[dict], seconds: float, **match) -> dict:
+    return next(
+        row
+        for row in rows
+        if row["window_start"] == T0 + timedelta(seconds=seconds)
+        and all(row[key] == value for key, value in match.items())
+    )
+
+
+def test_probe_routes_and_operations_are_filtered(tmp_path):
+    artifact = _artifact(tmp_path)
+    extra = []
+    for step in range(0, 600, 5):
+        # Probe /ready mỗi 5 s ở course; ping MinIO của media mỗi 5 s, chậm 1 s.
+        extra.append(
+            _metric(
+                "http_server_request_count_total",
+                step,
+                step / 5,
+                service_name="course",
+                http_route_template="/ready",
+            )
+        )
+        labels = {
+            "service_name": "media",
+            "dependency_identity": "media-minio",
+            "operation_name": "ping",
+        }
+        extra.append(_metric("lms_dependency_request_count_total", step, step / 5, **labels))
+        extra.append(_metric("lms_dependency_duration_seconds_count", step, step / 5, **labels))
+        extra.append(_metric("lms_dependency_duration_seconds_sum", step, step / 5, **labels))
+    _rewrite(artifact, extra)
+    tables = build_features(artifact)
+    course = _row(tables.service_rows, 60, service_name="course")
+    assert course["request_rate"] == pytest.approx(2.0)  # chỉ traffic thật, không có probe
+    assert not any(row["dependency_identity"] == "media-minio" for row in tables.edge_rows)
+    assert tables.meta["noise_filter"]["probe_operations"] == ["ping"]
+
+
+def test_identity_alias_maps_outbox_replay_edge(tmp_path):
+    artifact = _artifact(tmp_path)
+    extra = []
+    for step in range(0, 600, 5):
+        for identity in ("notification-worker-rabbitmq", "notification-rabbitmq"):
+            extra.append(
+                _metric(
+                    "lms_dependency_request_count_total",
+                    step,
+                    step / 5,
+                    service_name="notification-worker",
+                    dependency_identity=identity,
+                )
+            )
+    _rewrite(artifact, extra)
+    tables = build_features(artifact)
+    edges = {(row["caller_service"], row["dependency_identity"]) for row in tables.edge_rows}
+    assert ("notification-worker", "notification-worker-rabbitmq") in edges
+    assert ("notification-worker", "notification-rabbitmq") not in edges
+    merged = _row(
+        tables.edge_rows,
+        60,
+        caller_service="notification-worker",
+        dependency_identity="notification-worker-rabbitmq",
+    )
+    assert merged["call_count"] == pytest.approx(24)  # 2 series × 12 lời gọi trong 60 s
+
+
+def test_spans_count_in_window_of_their_end_time(tmp_path):
+    from aiops_training.telemetry.schema import SPAN_SCHEMA
+
+    artifact = _artifact(tmp_path)
+    span = {
+        "run_id": "run-1",
+        "trace_id": "t1",
+        "span_id": "s1",
+        "service_name": "course",
+        "span_kind": "SERVER",
+        "span_name": "POST /x",
+        # Bắt đầu ở giây 100, kết thúc lỗi ở giây 170: trạng thái chỉ biết từ giây 170.
+        "start_time": T0 + timedelta(seconds=100),
+        "end_time": T0 + timedelta(seconds=170),
+        "duration_ms": 70_000.0,
+        "status": "error",
+        "schema_version": "telemetry.v2",
+        "quality_flags": [],
+    }
+    # Bốn span lỗi kết thúc ở giây 170, một span thành công kết thúc ở giây 200.
+    spans = [{**span, "span_id": f"s{i}"} for i in range(4)]
+    spans.append({**span, "span_id": "s4", "end_time": T0 + timedelta(seconds=200), "status": "ok"})
+    pq.write_table(to_table(spans, SPAN_SCHEMA), artifact / "spans.parquet")
+    _rewrite(
+        artifact,
+        [],
+        modality_availability={"metrics": "available", "traces": "truncated", "logs": "missing"},
+    )
+    rows = build_features(artifact).service_rows
+    # Cửa sổ [90, 150) chứa lúc bắt đầu nhưng span chưa xong: không được thấy lỗi.
+    early = _row(rows, 90, service_name="course")
+    assert early["span_count"] == 0 and early["trace_error_rate"] is None
+    # [120, 180) chứa end_time của 4 span: dưới MIN_SPANS_FOR_RATE (5) nên tỉ lệ để rỗng.
+    late = _row(rows, 120, service_name="course")
+    assert late["span_count"] == 4 and late["trace_error_rate"] is None
+    assert late["traces_truncated"] is True and late["missing_traces"] is False
+    # Log `missing`: đặc trưng log rỗng, không phải 0.
+    assert late["missing_logs"] is True
+    assert late["log_count"] is None and late["log_error_rate"] is None
+    # [150, 210) có đủ 5 span: 4 lỗi / 5.
+    full = _row(rows, 150, service_name="course")
+    assert full["span_count"] == 5 and full["trace_error_rate"] == pytest.approx(0.8)
+
+
+def test_metric_sample_exactly_at_window_end_is_excluded(tmp_path):
+    artifact = _artifact(tmp_path)
+    table = pq.read_table(artifact / "metrics.parquet").to_pylist()
+    for row in table:
+        # Đúng giây 120 (window_end của cửa sổ [60, 120)), course nhận thêm 600 request.
+        if row["metric_name"] == "http_server_request_count_total" and row[
+            "timestamp"
+        ] >= T0 + timedelta(seconds=120):
+            row["value"] += 600
+    pq.write_table(to_table(table, METRIC_SCHEMA), artifact / "metrics.parquet")
+    rows = build_features(artifact).service_rows
+    # Cửa sổ [60, 120) không thấy mẫu ở giây 120: vẫn 2 req/s như artifact gốc.
+    assert _row(rows, 60, service_name="course")["request_rate"] == pytest.approx(2.0)
+    # Cửa sổ kế tiếp [75, 135) chứa giây 120 nên thấy 600 request thêm.
+    assert _row(rows, 75, service_name="course")["request_rate"] == pytest.approx(2.0 + 10.0)
+
+
+def test_queue_windows_and_warmup_flag(tmp_path):
+    artifact = _artifact(tmp_path)
+    extra = []
+    for step in range(0, 600, 5):
+        for queue, ready, unacked in (
+            ("ai-worker--run-ai-job-v1", 0, 1 if step < 300 else 3),
+            ("ai-worker--run-ai-job-v1.error", 2, 0),
+        ):
+            labels = {"service_name": "ai-worker", "queue": queue}
+            extra.append(_metric("rabbitmq_detailed_queue_messages_ready", step, ready, **labels))
+            extra.append(
+                _metric("rabbitmq_detailed_queue_messages_unacked", step, unacked, **labels)
+            )
+            extra.append(_metric("rabbitmq_detailed_queue_consumers", step, 1, **labels))
+    _rewrite(artifact, extra)
+    tables = build_features(artifact, FeatureConfig(warmup_s=120))
+    job = _row(tables.queue_rows, 420, queue="ai-worker--run-ai-job-v1")
+    assert job["messages_unacked"] == 3 and job["consumers"] == 1 and job["dead_letter"] is False
+    assert _row(tables.queue_rows, 60, queue="ai-worker--run-ai-job-v1")["messages_unacked"] == 1
+    assert _row(tables.queue_rows, 60, queue="ai-worker--run-ai-job-v1.error")["dead_letter"]
+    assert _row(tables.service_rows, 90, service_name="course")["warmup"] is True
+    assert _row(tables.service_rows, 120, service_name="course")["warmup"] is False
+    assert tables.meta["queues"] == [
+        "ai-worker:ai-worker--run-ai-job-v1",
+        "ai-worker:ai-worker--run-ai-job-v1.error",
+    ]
+
+
+def _iso(seconds: float) -> str:
+    return (T0 + timedelta(seconds=seconds)).isoformat().replace("+00:00", "Z")
+
+
+def _last_end(rows: list[dict]) -> datetime:
+    return max(row["window_end"] for row in rows)
+
+
+def test_windows_end_before_query_start_minus_collection_delay(tmp_path):
+    artifact = _artifact(tmp_path)
+    # Export bắt đầu truy vấn ở giây 590, trước time_end (600): mốc cắt 590 − 10 = 580.
+    _rewrite(artifact, [], query_started_at=_iso(590))
+    tables = build_features(artifact)
+    # Cửa sổ [525, 585) và [540, 600) kết thúc sau mốc cắt nên bị bỏ.
+    assert _last_end(tables.service_rows) == T0 + timedelta(seconds=570)
+    assert _last_end(tables.edge_rows) == T0 + timedelta(seconds=570)
+    causality = tables.meta["causality"]
+    assert causality["query_started_at_source"] == "export_manifest"
+    assert causality["windows_cut"] == 2
+    assert causality["window_end_cutoff"] == _iso(580)
+
+
+def test_query_start_falls_back_to_run_manifest_then_refuses(tmp_path):
+    run_dir = tmp_path / "run-1"
+    artifact = run_dir / "telemetry"
+    artifact.mkdir(parents=True)
+    _artifact(artifact)
+    _rewrite(artifact, [], query_started_at=None)
+    # Artifact cũ không có query_started_at và không có run-manifest: từ chối chạy.
+    with pytest.raises(FeatureError, match="--query-started-at"):
+        build_features(artifact)
+    # run-manifest.json của run khác không được dùng.
+    run_manifest = run_dir / "run-manifest.json"
+    steps = {"export": {"started_at": _iso(595)}}
+    run_manifest.write_text(json.dumps({"run_id": "khac", "steps": steps}), encoding="utf-8")
+    with pytest.raises(FeatureError):
+        build_features(artifact)
+    # run-manifest.json của runner cho cùng run: mốc 595 → cắt sau 585.
+    run_manifest.write_text(json.dumps({"run_id": "run-1", "steps": steps}), encoding="utf-8")
+    tables = build_features(artifact)
+    assert tables.meta["causality"]["query_started_at_source"] == "run_manifest"
+    assert _last_end(tables.service_rows) == T0 + timedelta(seconds=585)
+    assert tables.meta["causality"]["windows_cut"] == 1
+
+
+def test_cli_query_started_at_overrides_recorded_value(tmp_path, capsys):
+    artifact = _artifact(tmp_path)
+    assert main(["features", str(artifact), "--query-started-at", _iso(560)]) == 0
+    capsys.readouterr()
+    saved = json.loads((artifact / "features" / "features-manifest.json").read_text("utf-8"))
+    assert saved["causality"]["query_started_at_source"] == "cli"
+    # Mốc cắt 550: chỉ giữ cửa sổ kết thúc ở 540 trở về trước.
+    assert saved["causality"]["windows_cut"] == 4
+    rows = pq.read_table(artifact / "features" / "service_windows.parquet").to_pylist()
+    assert _last_end(rows) == T0 + timedelta(seconds=540)

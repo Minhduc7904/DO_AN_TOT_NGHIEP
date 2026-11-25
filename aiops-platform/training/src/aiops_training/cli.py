@@ -14,7 +14,9 @@ from pathlib import Path
 
 import httpx
 
-from .features.pipeline import write_features
+from .features.baseline import apply_baseline, fit_baseline, sha256_file
+from .features.leakage import check_leakage, is_healthy
+from .features.pipeline import FeatureError, write_features
 from .ground_truth.build import build_ground_truth, read_jsonl
 from .ground_truth.symptoms import SymptomConfig, measure_from_ground_truth, measure_symptoms
 from .ground_truth.validate import apply_verification, verify
@@ -111,15 +113,40 @@ def _run_quality(args: argparse.Namespace) -> int:
 
 
 def _features_parser(sub: argparse._SubParsersAction) -> None:
-    parser = sub.add_parser("features", help="Sinh đặc trưng theo cửa sổ (feature pipeline v0)")
+    parser = sub.add_parser("features", help="Sinh đặc trưng theo cửa sổ (feature pipeline v1)")
     parser.add_argument("artifact_dir", type=Path, help="Thư mục artifact (có manifest.json)")
     parser.add_argument("--out", type=Path, help="Mặc định <artifact_dir>/features")
+    parser.add_argument(
+        "--query-started-at",
+        help="ISO-8601 có múi giờ: ghi đè mốc export bắt đầu truy vấn backend (mặc định đọc "
+        "query_started_at của manifest export, rồi run-manifest.json của runner)",
+    )
 
 
 def _run_features(args: argparse.Namespace) -> int:
-    meta = write_features(args.artifact_dir, args.out)
-    keys = ("run_id", "windows", "service_rows", "edge_rows", "silent_windows")
-    print(json.dumps({key: meta[key] for key in keys}, ensure_ascii=False))
+    query_start = parse_utc(args.query_started_at) if args.query_started_at else None
+    try:
+        meta = write_features(args.artifact_dir, args.out, query_start=query_start)
+    except FeatureError as error:
+        raise SystemExit(str(error)) from error
+    keys = (
+        "run_id",
+        "feature_config_version",
+        "noise_filter_version",
+        "windows",
+        "service_rows",
+        "edge_rows",
+        "queue_rows",
+        "silent_windows",
+    )
+    brief = {key: meta[key] for key in keys}
+    brief.update(
+        {
+            key: meta["causality"][key]
+            for key in ("query_started_at", "query_started_at_source", "windows_cut")
+        }
+    )
+    print(json.dumps(brief, ensure_ascii=False))
     return 0
 
 
@@ -173,6 +200,85 @@ def _run_ground_truth(args: argparse.Namespace) -> int:
     }
     print(json.dumps(brief, ensure_ascii=False))
     return 0 if record["run_status"] == "valid" else 1
+
+
+def _features_of(runs_dir: Path, run_id: str) -> Path:
+    return runs_dir / run_id / "telemetry" / "features"
+
+
+def _manifest_runs(manifest: dict, split: str | None = None, healthy: bool = False) -> list[str]:
+    return sorted(
+        slot["run_id"]
+        for slot in manifest.get("slots", [])
+        if slot.get("run_id")
+        and (split is None or slot["split"] == split)
+        and (not healthy or is_healthy(slot))
+    )
+
+
+def _baseline_parsers(sub: argparse._SubParsersAction) -> None:
+    fit = sub.add_parser(
+        "fit-baseline", help="Fit median/MAD trên các run train healthy của dataset"
+    )
+    fit.add_argument("--dataset", type=Path, required=True, help="dataset manifest (JSON)")
+    fit.add_argument("--runs-dir", type=Path, required=True, help="Thư mục runs/ của runner")
+    fit.add_argument("--out", type=Path, required=True, help="File baseline JSON")
+    apply = sub.add_parser("apply-baseline", help="Tính robust z của một run theo baseline đã fit")
+    apply.add_argument("features_dir", type=Path)
+    apply.add_argument("--baseline", type=Path, required=True)
+    apply.add_argument("--out", type=Path, help="Mặc định ghi cạnh bảng feature")
+    leak = sub.add_parser("check-leakage", help="Kiểm leakage của feature/baseline theo dataset")
+    leak.add_argument("--dataset", type=Path, required=True)
+    leak.add_argument("--runs-dir", type=Path, required=True)
+    leak.add_argument("--baseline", type=Path)
+
+
+def _run_fit_baseline(args: argparse.Namespace) -> int:
+    manifest = json.loads(args.dataset.read_text(encoding="utf-8"))
+    # Chỉ đọc run train healthy (`case` rỗng, mục 9.1); kiểm tra leakage xác nhận lại sau.
+    runs = {
+        run_id: _features_of(args.runs_dir, run_id)
+        for run_id in _manifest_runs(manifest, "train", healthy=True)
+    }
+    missing = [run_id for run_id, path in runs.items() if not path.exists()]
+    if missing:
+        raise SystemExit(f"Thiếu feature của run train: {missing}")
+    baseline = fit_baseline(
+        runs,
+        provenance={
+            "dataset_id": manifest.get("dataset_id"),
+            "dataset_manifest_sha256": sha256_file(args.dataset),
+        },
+    )
+    args.out.parent.mkdir(parents=True, exist_ok=True)
+    args.out.write_text(json.dumps(baseline, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    groups = {table: len(stats) for table, stats in baseline["stats"].items()}
+    print(json.dumps({"fit_runs": baseline["fit_runs"], "groups": groups}, ensure_ascii=False))
+    return 0
+
+
+def _run_apply_baseline(args: argparse.Namespace) -> int:
+    baseline = json.loads(args.baseline.read_text(encoding="utf-8"))
+    result = apply_baseline(
+        args.features_dir, baseline, args.out, baseline_sha256=sha256_file(args.baseline)
+    )
+    print(json.dumps(result, ensure_ascii=False))
+    return 0
+
+
+def _run_check_leakage(args: argparse.Namespace) -> int:
+    manifest = json.loads(args.dataset.read_text(encoding="utf-8"))
+    baseline = json.loads(args.baseline.read_text(encoding="utf-8")) if args.baseline else None
+    dirs = {
+        run_id: path
+        for run_id in _manifest_runs(manifest)
+        if (path := _features_of(args.runs_dir, run_id)).exists()
+    }
+    errors = check_leakage(manifest, baseline, dirs, manifest_sha256=sha256_file(args.dataset))
+    print(
+        json.dumps({"runs_checked": sorted(dirs), "errors": errors}, ensure_ascii=False, indent=2)
+    )
+    return 1 if errors else 0
 
 
 def _symptoms_parser(sub: argparse._SubParsersAction) -> None:
@@ -231,9 +337,16 @@ def main(argv: list[str] | None = None) -> int:
     _features_parser(sub)
     _ground_truth_parser(sub)
     _symptoms_parser(sub)
+    _baseline_parsers(sub)
     args = parser.parse_args(argv)
     if args.command == "symptoms":
         return _run_symptoms(args)
+    if args.command == "fit-baseline":
+        return _run_fit_baseline(args)
+    if args.command == "apply-baseline":
+        return _run_apply_baseline(args)
+    if args.command == "check-leakage":
+        return _run_check_leakage(args)
     if args.command == "export":
         return _run_export(args)
     if args.command == "quality":

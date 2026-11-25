@@ -1,4 +1,29 @@
-"""Feature pipeline v0: cửa sổ trượt trên artifact export (schema `telemetry.v2`).
+"""Feature pipeline v1: cửa sổ trượt trên artifact export (schema `telemetry.v2`).
+
+Thay đổi so với v0 (task-05 tuần 15, sau khi chạy trên run 48 phút có fault của pilot):
+
+- **Lọc nhiễu `noise.v1`** áp như nhau cho mọi run (evaluation-protocol-v1 mục 8.5): bỏ route probe
+  (`/ready`, `/health`) khỏi metric HTTP của service và thao tác probe (`ping` tới MinIO) khỏi
+  metric dependency. Trace/log probe đã bị lọc ở bước export; bộ lọc của export được ghi lại trong
+  `features-manifest.json`.
+- **Ánh xạ identity lệch** (`IDENTITY_ALIASES`) áp cho cạnh (metric dependency).
+- **Không dùng dữ liệu tương lai** (mục 7.2): metric và log chỉ lấy mẫu có thời điểm < `window_end`;
+  span được tính vào cửa sổ chứa thời điểm **kết thúc** (trạng thái lỗi chỉ biết khi span xong), v0
+  tính theo lúc bắt đầu. **Độ trễ thu thập** (`AVAILABLE_AFTER_S`): chỉ giữ cửa sổ có
+  `window_end` ≤ min(`time_end`, mốc bắt đầu truy vấn backend − độ trễ lớn nhất). Export của
+  runner bắt đầu trước `time_end` (grace 30 s sau k6), nên cửa sổ cuối sau k6 bị cắt. Mốc lấy theo
+  `query_start` (tham số CLI, `query_started_at` của manifest export, hoặc
+  `steps.export.started_at` của `run-manifest.json` cạnh `telemetry/`); không có thì từ chối chạy.
+  Mốc, nguồn mốc và số cửa sổ bị cắt ghi ở `causality` của `features-manifest.json`.
+- **Trace không đầy đủ:** cột `traces_truncated` khi export chạm giới hạn tìm kiếm hoặc ngân sách
+  (số span của cửa sổ đông bị thấp đi, không phải tín hiệu).
+- **Cạnh async:** bảng `queue_windows` từ gauge RabbitMQ theo hàng đợi (message sẵn sàng, chưa ack,
+  consumer).
+- **Modality thiếu:** `span_count`, `log_count`, `log_error_rate` rỗng thay vì 0; runtime không có
+  metric nào thì mọi feature metric rỗng (v0 ghi `request_rate` = 0).
+- **Warm-up:** cột `warmup` cho cửa sổ bắt đầu trước `time_start + warmup_s`; bước fit bỏ qua.
+
+Phần còn lại giữ như v0:
 
 Sinh `ServiceWindowFeature` và `EdgeWindowFeature` theo telemetry-and-ground-truth-schema-v1 mục
 11.1–11.2, cửa sổ 60 s, bước 15 s (analysis blueprint v1). Quy tắc:
@@ -15,7 +40,8 @@ Sinh `ServiceWindowFeature` và `EdgeWindowFeature` theo telemetry-and-ground-tr
   `process_cpu_time_seconds_total` của runtime **không tăng** dù trước đó đã có mẫu được gắn
   `telemetry_silent = true` và đặc trưng tốc độ của runtime đó để null thay vì 0.
 - Không đọc ground truth, fault manifest hay nhật ký workload: đặc trưng chỉ từ telemetry (chống
-  leakage cơ bản; kiểm đầy đủ ở tuần 15).
+  leakage cơ bản; kiểm đầy đủ ở `leakage.py`). Từ `run-manifest.json` chỉ đọc `run_id` và
+  `steps.export.started_at` để lấy mốc truy vấn.
 """
 
 from __future__ import annotations
@@ -32,11 +58,26 @@ from typing import Any
 import pyarrow as pa
 import pyarrow.parquet as pq
 
-from ..telemetry.identity import RUNTIMES
+from ..telemetry.identity import IDENTITY_ALIASES, PROBE_OPERATIONS, PROBE_ROUTES, RUNTIMES
 from ..telemetry.window import parse_utc
 
-FEATURE_VERSION = "feature.v0"
+FEATURE_VERSION = "feature.v1"
+NOISE_FILTER_VERSION = "noise.v1"
 HEARTBEAT = "process_cpu_time_seconds_total"
+QUEUE_METRICS = {
+    "rabbitmq_detailed_queue_messages_ready": "messages_ready",
+    "rabbitmq_detailed_queue_messages_unacked": "messages_unacked",
+    "rabbitmq_detailed_queue_consumers": "consumers",
+}
+#: Độ trễ thu thập theo modality (evaluation-protocol-v1 mục 1.3, 7.2): log ≈ 2 s, trace ≈ 2,5 s,
+#: counter 4–10 s. Cửa sổ chỉ đủ dữ liệu sau `window_end` + giá trị lớn nhất.
+AVAILABLE_AFTER_S = {"metrics": 10.0, "traces": 3.0, "logs": 2.0}
+MAX_DELAY_S = max(AVAILABLE_AFTER_S.values())
+#: Manifest của runner, ở thư mục cha của `telemetry/` (`experiments/runs/<run_id>/`).
+RUN_MANIFEST = "run-manifest.json"
+#: Số span tối thiểu để tính `trace_error_rate` (evaluation-protocol-v1 mục 6.1.1 bảng F): trace có
+#: thể là mẫu (ngân sách export), tỉ lệ trên vài span quá nhiễu nên để rỗng.
+MIN_SPANS_FOR_RATE = 5
 
 METRICS_USED = (
     "http_server_request_count_total",
@@ -49,7 +90,10 @@ METRICS_USED = (
     "lms_dependency_duration_seconds_count",
     HEARTBEAT,
     "process_memory_usage_bytes",
+    *QUEUE_METRICS,
 )
+HTTP_METRICS = frozenset(name for name in METRICS_USED if name.startswith("http_server_"))
+DEPENDENCY_METRICS = frozenset(name for name in METRICS_USED if name.startswith("lms_dependency_"))
 
 
 @dataclass(frozen=True)
@@ -58,6 +102,24 @@ class FeatureConfig:
     step_s: int = 15
     #: Bỏ cửa sổ đầu run cho tới khi có ít nhất một cửa sổ đầy đủ dữ liệu.
     align_s: int = 15
+    #: Warm-up của fault manifest (phút 0–6 của run 48 phút); chỉ dùng để đánh dấu cửa sổ.
+    warmup_s: int = 360
+
+
+@dataclass(frozen=True)
+class NoiseFilter:
+    version: str = NOISE_FILTER_VERSION
+    probe_routes: tuple[str, ...] = PROBE_ROUTES
+    probe_operations: tuple[str, ...] = PROBE_OPERATIONS
+    identity_aliases: tuple[tuple[str, str], ...] = tuple(sorted(IDENTITY_ALIASES.items()))
+
+    def alias(self, identity: str | None) -> str | None:
+        return dict(self.identity_aliases).get(identity, identity) if identity else identity
+
+    def drops(self, metric: str, route: str | None, operation: str | None) -> bool:
+        if metric in HTTP_METRICS and route in self.probe_routes:
+            return True
+        return metric in DEPENDENCY_METRICS and operation in self.probe_operations
 
 
 @dataclass
@@ -144,12 +206,20 @@ def histogram_quantile(q: float, buckets: dict[float, float]) -> float | None:
     return previous_bound
 
 
-def load_metric_index(artifact_dir: Path, time_start: float, step_s: float = 5.0) -> Index:
-    """Đọc metric cần dùng, gom theo (service_name, dependency_identity).
+def load_metric_index(
+    artifact_dir: Path,
+    time_start: float,
+    step_s: float = 5.0,
+    noise: NoiseFilter | None = None,
+) -> Index:
+    """Đọc metric cần dùng, gom theo (service_name, dependency_identity) — với gauge hàng đợi là
+    (service_name, queue).
 
     Đọc từng metric một và theo cột để giới hạn RAM (artifact 48 phút có vài triệu dòng). Series có
     mẫu đầu trong vòng một bước scrape từ `time_start` coi là đã tồn tại trước artifact (`carried`).
+    Bỏ series của probe và đổi identity lệch theo `noise`.
     """
+    noise = noise or NoiseFilter()
     columns = [
         "service_name",
         "dependency_identity",
@@ -160,7 +230,9 @@ def load_metric_index(artifact_dir: Path, time_start: float, step_s: float = 5.0
         "http_method",
         "operation_name",
         "http_status_class",
+        "queue",
     ]
+    position = {name: index for index, name in enumerate(columns)}
     index: Index = defaultdict(lambda: defaultdict(list))
     for metric in METRICS_USED:
         table = pq.read_table(
@@ -175,11 +247,20 @@ def load_metric_index(artifact_dir: Path, time_start: float, step_s: float = 5.0
             if value is None:
                 continue
             key = tuple(data[column][row] for column in columns)
+            if noise.drops(
+                metric, key[position["http_route_template"]], key[position["operation_name"]]
+            ):
+                continue
             raw[key].append((_ts(data["timestamp"][row]), value))
         del data, table
         for key, points in raw.items():
             points.sort()
-            index[metric][(key[0], key[1])].append(
+            second = (
+                key[position["queue"]]
+                if metric in QUEUE_METRICS
+                else noise.alias(key[position["dependency_identity"]])
+            )
+            index[metric][(key[0], second)].append(
                 SeriesData(
                     status=key[2],
                     le=key[3],
@@ -234,10 +315,14 @@ def _span_index(artifact_dir: Path) -> dict[str, EventIndex]:
     path = artifact_dir / "spans.parquet"
     if not path.exists():
         return {}
-    table = pq.read_table(path, columns=["service_name", "start_time", "status"])
+    # Span chỉ quan sát được (và biết có lỗi hay không) khi đã kết thúc: tính theo `end_time` để
+    # cửa sổ không dùng trạng thái của span còn chạy sau `window_end` (v0 tính theo `start_time`).
+    table = pq.read_table(path, columns=["service_name", "end_time", "status"])
     spans: dict[str, list[tuple[float, bool]]] = defaultdict(list)
     for row in table.to_pylist():
-        spans[row["service_name"]].append((_ts(row["start_time"]), row["status"] == "error"))
+        if row["end_time"] is None:
+            continue
+        spans[row["service_name"]].append((_ts(row["end_time"]), row["status"] == "error"))
     return {service: _event_index(items) for service, items in spans.items()}
 
 
@@ -278,22 +363,81 @@ def _count_in(index: EventIndex | None, start: float, end: float) -> tuple[int, 
     return hi - lo, index.error_prefix[hi] - index.error_prefix[lo]
 
 
+class FeatureError(ValueError):
+    pass
+
+
+def query_start_sources(artifact_dir: Path, manifest: dict[str, Any]) -> dict[str, datetime]:
+    """Mốc bắt đầu truy vấn backend ghi trong file: `export_manifest` (`query_started_at`, export
+    từ task-05 tuần 15) và `run_manifest` (`steps.export.started_at` của runner, cho artifact cũ).
+    `run-manifest.json` của run khác bị bỏ qua."""
+    found: dict[str, datetime] = {}
+    if manifest.get("query_started_at"):
+        found["export_manifest"] = parse_utc(manifest["query_started_at"])
+    path = artifact_dir.parent / RUN_MANIFEST
+    if path.exists():
+        run = json.loads(path.read_text(encoding="utf-8"))
+        started = ((run.get("steps") or {}).get("export") or {}).get("started_at")
+        if started and run.get("run_id") == manifest.get("run_id"):
+            found["run_manifest"] = parse_utc(started)
+    return found
+
+
+def resolve_query_start(
+    artifact_dir: Path, manifest: dict[str, Any], override: datetime | None = None
+) -> tuple[datetime, str]:
+    """Mốc và nguồn mốc: tham số (`cli`) ghi đè, rồi `export_manifest`, rồi `run_manifest`."""
+    if override is not None:
+        return override, "cli"
+    found = query_start_sources(artifact_dir, manifest)
+    for source in ("export_manifest", "run_manifest"):
+        if source in found:
+            return found[source], source
+    raise FeatureError(
+        f"Không biết lúc export bắt đầu truy vấn backend của {manifest.get('run_id')}: manifest "
+        f"export không có query_started_at, không có {artifact_dir.parent / RUN_MANIFEST} của cùng "
+        "run. Truyền --query-started-at để pipeline cắt cửa sổ theo độ trễ thu thập (mục 7.2)."
+    )
+
+
+@dataclass
+class FeatureTables:
+    service_rows: list[dict[str, Any]]
+    edge_rows: list[dict[str, Any]]
+    queue_rows: list[dict[str, Any]]
+    meta: dict[str, Any]
+
+
 def build_features(
-    artifact_dir: Path, config: FeatureConfig | None = None
-) -> tuple[list[dict[str, Any]], list[dict[str, Any]], dict[str, Any]]:
+    artifact_dir: Path,
+    config: FeatureConfig | None = None,
+    noise: NoiseFilter | None = None,
+    query_start: datetime | None = None,
+) -> FeatureTables:
+    """`query_start`: ghi đè mốc bắt đầu truy vấn backend (mặc định đọc từ file, xem
+    `resolve_query_start`)."""
     config = config or FeatureConfig()
+    noise = noise or NoiseFilter()
     manifest = json.loads((artifact_dir / "manifest.json").read_text(encoding="utf-8"))
     run_id = manifest["run_id"]
+    queried_at, queried_source = resolve_query_start(artifact_dir, manifest, query_start)
     start = _ts(parse_utc(manifest["time_start"]))
-    end = _ts(parse_utc(manifest["time_end"]))
-    index = load_metric_index(artifact_dir, start)
+    time_end = _ts(parse_utc(manifest["time_end"]))
+    end = min(time_end, _ts(queried_at) - MAX_DELAY_S)
+    index = load_metric_index(artifact_dir, start, noise=noise)
     spans = _span_index(artifact_dir)
     logs = _log_index(artifact_dir)
-    span_available = manifest["modality_availability"].get("traces") != "missing"
-    log_available = manifest["modality_availability"].get("logs") != "missing"
+    availability = manifest.get("modality_availability", {})
+    span_available = availability.get("traces") != "missing"
+    log_available = availability.get("logs") != "missing"
+    traces_truncated = availability.get("traces") == "truncated"
+    warmup_end = start + config.warmup_s
 
     edges = sorted(
         key for key in index.get("lms_dependency_request_count_total", {}) if key[0] and key[1]
+    )
+    queues = sorted(
+        {key for metric in QUEUE_METRICS for key in index.get(metric, {}) if key[0] and key[1]}
     )
     per_service = {
         runtime: {
@@ -316,13 +460,24 @@ def build_features(
         }
         for edge in edges
     }
+    per_queue = {
+        queue: {column: _select(index, metric, *queue) for metric, column in QUEUE_METRICS.items()}
+        for queue in queues
+    }
 
     service_rows: list[dict[str, Any]] = []
     edge_rows: list[dict[str, Any]] = []
+    queue_rows: list[dict[str, Any]] = []
     all_windows = windows(start, end, config)
     for window_start, window_end in all_windows:
         seconds = window_end - window_start
         bounds = (window_start, window_end)
+        common = {
+            "run_id": run_id,
+            "window_start": datetime.fromtimestamp(window_start, tz=UTC),
+            "window_end": datetime.fromtimestamp(window_end, tz=UTC),
+            "warmup": window_start < warmup_end,
+        }
         silent: dict[str, bool] = {}
         for runtime in RUNTIMES:
             data = per_service[runtime]
@@ -340,32 +495,35 @@ def build_features(
             memory = [last_value(item.times, item.values, *bounds) for item in data["memory"]]
             span_total, span_errors = _count_in(spans.get(runtime), *bounds)
             log_total, log_errors = _count_in(logs.get(runtime), *bounds)
-            live = not dead
+            # Runtime im lặng hoặc chưa từng có mẫu nhịp tim: metric để rỗng, không phải 0.
+            live = not dead and not missing_metrics
             service_rows.append(
                 {
-                    "run_id": run_id,
-                    "window_start": datetime.fromtimestamp(window_start, tz=UTC),
-                    "window_end": datetime.fromtimestamp(window_end, tz=UTC),
+                    **common,
                     "service_name": runtime,
                     "request_rate": requests / seconds if live else None,
                     "error_rate": _ratio(errors, requests) if live else None,
                     "latency_p50": histogram_quantile(0.5, latency) if live else None,
                     "latency_p95": histogram_quantile(0.95, latency) if live else None,
                     "latency_p99": histogram_quantile(0.99, latency) if live else None,
-                    "cpu_usage": cpu / seconds if live and not missing_metrics else None,
+                    "cpu_usage": cpu / seconds if live else None,
                     "memory_usage": max((v for v in memory if v is not None), default=None)
                     if live
                     else None,
-                    "trace_error_rate": _ratio(span_errors, span_total),
-                    "span_count": span_total,
+                    "trace_error_rate": _ratio(span_errors, span_total)
+                    if span_total >= MIN_SPANS_FOR_RATE
+                    else None,
+                    # Modality thiếu: để rỗng, không phải 0 (0 nghĩa là "không có sự kiện").
+                    "span_count": span_total if span_available else None,
                     "downstream_latency_p95": histogram_quantile(0.95, downstream)
                     if live
                     else None,
-                    "log_error_rate": log_errors / seconds,
-                    "log_count": log_total,
+                    "log_error_rate": log_errors / seconds if log_available else None,
+                    "log_count": log_total if log_available else None,
                     "missing_metrics": missing_metrics,
                     "missing_traces": not span_available,
                     "missing_logs": not log_available,
+                    "traces_truncated": traces_truncated,
                     "telemetry_silent": dead,
                 }
             )
@@ -375,9 +533,7 @@ def build_features(
             buckets = _bucket_increase(data["buckets"], *bounds)
             edge_rows.append(
                 {
-                    "run_id": run_id,
-                    "window_start": datetime.fromtimestamp(window_start, tz=UTC),
-                    "window_end": datetime.fromtimestamp(window_end, tz=UTC),
+                    **common,
                     "caller_service": caller,
                     "dependency_identity": dependency,
                     "call_count": calls,
@@ -391,23 +547,70 @@ def build_features(
                     "caller_silent": silent.get(caller, False),
                 }
             )
+        for (consumer, queue), data in per_queue.items():
+            # Gauge: giá trị cuối trong cửa sổ, cộng theo series (có thể nhiều instance).
+            values = {
+                column: [last_value(item.times, item.values, *bounds) for item in items]
+                for column, items in data.items()
+            }
+            queue_rows.append(
+                {
+                    **common,
+                    "consumer_service": consumer,
+                    "queue": queue,
+                    "dead_letter": queue.endswith(".error"),
+                    **{
+                        column: sum(v for v in found if v is not None)
+                        if any(v is not None for v in found)
+                        else None
+                        for column, found in values.items()
+                    },
+                    "consumer_silent": silent.get(consumer, False),
+                }
+            )
 
+    trace_stats = (manifest.get("stats") or {}).get("traces") or {}
     meta = {
         "feature_version": FEATURE_VERSION,
+        "feature_config_version": FEATURE_VERSION,
+        "noise_filter_version": noise.version,
+        "noise_filter": {
+            "probe_routes": list(noise.probe_routes),
+            "probe_operations": list(noise.probe_operations),
+            "identity_aliases": dict(noise.identity_aliases),
+            "export": (manifest.get("export_config") or {}).get("noise_trace_root_names"),
+        },
+        "causality": {
+            "metrics": "mẫu có timestamp trong [window_start, window_end)",
+            "traces": "span có end_time trong [window_start, window_end)",
+            "logs": "dòng log có timestamp trong [window_start, window_end)",
+            "available_after_s": AVAILABLE_AFTER_S,
+            "query_started_at": _iso(_ts(queried_at)),
+            "query_started_at_source": queried_source,
+            "window_end_cutoff": _iso(end),
+            "windows_cut": len(windows(start, time_end, config)) - len(all_windows),
+        },
         "run_id": run_id,
         "config": asdict(config),
         "input_manifest_version": manifest.get("manifest_version"),
         "input_files": manifest.get("files"),
+        "modality_availability": availability,
+        "trace_stats": {
+            key: trace_stats.get(key)
+            for key in ("candidates", "selected", "dropped_by_budget", "search_limit_hit")
+        },
         "time_start": manifest["time_start"],
         "time_end": manifest["time_end"],
         "windows": len(all_windows),
         "service_rows": len(service_rows),
         "edge_rows": len(edge_rows),
+        "queue_rows": len(queue_rows),
         "edges": [f"{caller}->{dependency}" for caller, dependency in edges],
+        "queues": [f"{consumer}:{queue}" for consumer, queue in queues],
         "silent_windows": sum(1 for row in service_rows if row["telemetry_silent"]),
         "generated_at": _iso(datetime.now(UTC).timestamp()),
     }
-    return service_rows, edge_rows, meta
+    return FeatureTables(service_rows, edge_rows, queue_rows, meta)
 
 
 SERVICE_SCHEMA = pa.schema(
@@ -415,6 +618,7 @@ SERVICE_SCHEMA = pa.schema(
         ("run_id", pa.string()),
         ("window_start", pa.timestamp("ns", tz="UTC")),
         ("window_end", pa.timestamp("ns", tz="UTC")),
+        ("warmup", pa.bool_()),
         ("service_name", pa.string()),
         ("request_rate", pa.float64()),
         ("error_rate", pa.float64()),
@@ -431,6 +635,7 @@ SERVICE_SCHEMA = pa.schema(
         ("missing_metrics", pa.bool_()),
         ("missing_traces", pa.bool_()),
         ("missing_logs", pa.bool_()),
+        ("traces_truncated", pa.bool_()),
         ("telemetry_silent", pa.bool_()),
     ]
 )
@@ -440,6 +645,7 @@ EDGE_SCHEMA = pa.schema(
         ("run_id", pa.string()),
         ("window_start", pa.timestamp("ns", tz="UTC")),
         ("window_end", pa.timestamp("ns", tz="UTC")),
+        ("warmup", pa.bool_()),
         ("caller_service", pa.string()),
         ("dependency_identity", pa.string()),
         ("call_count", pa.float64()),
@@ -452,15 +658,40 @@ EDGE_SCHEMA = pa.schema(
     ]
 )
 
+QUEUE_SCHEMA = pa.schema(
+    [
+        ("run_id", pa.string()),
+        ("window_start", pa.timestamp("ns", tz="UTC")),
+        ("window_end", pa.timestamp("ns", tz="UTC")),
+        ("warmup", pa.bool_()),
+        ("consumer_service", pa.string()),
+        ("queue", pa.string()),
+        ("dead_letter", pa.bool_()),
+        ("messages_ready", pa.float64()),
+        ("messages_unacked", pa.float64()),
+        ("consumers", pa.float64()),
+        ("consumer_silent", pa.bool_()),
+    ]
+)
 
-def write_features(artifact_dir: Path, out_dir: Path | None = None) -> dict[str, Any]:
-    service_rows, edge_rows, meta = build_features(artifact_dir)
+#: Tên file của từng bảng trong thư mục feature.
+TABLES = {
+    "service": ("service_windows.parquet", SERVICE_SCHEMA),
+    "edge": ("edge_windows.parquet", EDGE_SCHEMA),
+    "queue": ("queue_windows.parquet", QUEUE_SCHEMA),
+}
+
+
+def write_features(
+    artifact_dir: Path, out_dir: Path | None = None, query_start: datetime | None = None
+) -> dict[str, Any]:
+    tables = build_features(artifact_dir, query_start=query_start)
+    meta = tables.meta
     target = out_dir or artifact_dir / "features"
     target.mkdir(parents=True, exist_ok=True)
-    pq.write_table(
-        pa.Table.from_pylist(service_rows, SERVICE_SCHEMA), target / "service_windows.parquet"
-    )
-    pq.write_table(pa.Table.from_pylist(edge_rows, EDGE_SCHEMA), target / "edge_windows.parquet")
+    rows = {"service": tables.service_rows, "edge": tables.edge_rows, "queue": tables.queue_rows}
+    for name, (file_name, schema) in TABLES.items():
+        pq.write_table(pa.Table.from_pylist(rows[name], schema), target / file_name)
     (target / "features-manifest.json").write_text(
         json.dumps(meta, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
     )
@@ -468,10 +699,18 @@ def write_features(artifact_dir: Path, out_dir: Path | None = None) -> dict[str,
 
 
 __all__ = [
+    "FEATURE_VERSION",
+    "NOISE_FILTER_VERSION",
+    "TABLES",
     "FeatureConfig",
+    "FeatureError",
+    "FeatureTables",
+    "NoiseFilter",
     "build_features",
     "histogram_quantile",
     "increase",
+    "query_start_sources",
+    "resolve_query_start",
     "windows",
     "write_features",
 ]

@@ -23,7 +23,7 @@
 | [task-02_find-load-knee-and-freeze-profiles](task-02_find-load-knee-and-freeze-profiles.md) | Pilot tìm `λ_knee`, chốt mức tải hai profile healthy theo workload-design-v1 mục 8.4 | Bách | Không có | Cao | Hoàn thành |
 | [task-03_pilot-mvp-fault-cases](task-03_pilot-mvp-fault-cases.md) | Pilot 4 case MVP (kể cả fault trùng cao điểm): chuỗi nhân quả, tín hiệu bắt buộc, độ trễ triệu chứng; chốt cường độ và thời lượng fault | Bách | Không có | Cao | Chờ review |
 | [task-04_collect-dataset-v0](task-04_collect-dataset-v0.md) | Dataset v0: kế hoạch phiên theo split, tập train healthy, tập validation, kiểm label/ground truth, manifest split theo run | Bách | Không có | Cao | Chờ review |
-| [task-05_build-feature-pipeline-v1](task-05_build-feature-pipeline-v1.md) | Feature pipeline v1 trên dữ liệu pilot/dataset v0, có kiểm tra chống leakage | Bách | Không có | Cao | Đã giao |
+| [task-05_build-feature-pipeline-v1](task-05_build-feature-pipeline-v1.md) | Feature pipeline v1 trên dữ liệu pilot/dataset v0, có kiểm tra chống leakage | Bách | Không có | Cao | Chờ review |
 | [task-06_update-evaluation-protocol-after-pilot](task-06_update-evaluation-protocol-after-pilot.md) | Cập nhật evaluation protocol bằng số đo pilot (không đụng test); chốt E7 | Bách | Không có | Cao | Chờ review |
 | [task-07_validate-workload-realism-v2](task-07_validate-workload-realism-v2.md) | Kiểm chứng độ thực v2: tiêu chí theo dao động tự nhiên của dữ liệu thật, đăng ký trước, chấm trên run dataset v0, báo cáo song song v1/v2 | Bách | Không có | Cao | Chờ review |
 | [task-08_verify-gate-m3](task-08_verify-gate-m3.md) | Gate M3: chạy lại từng case từ môi trường sạch theo runbook, export và xác nhận ground truth độc lập | Bách | Không có | Cao | Chờ review |
