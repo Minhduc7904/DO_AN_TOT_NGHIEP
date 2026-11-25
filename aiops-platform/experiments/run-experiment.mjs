@@ -59,7 +59,7 @@ export function defaultPaths(repoRoot = REPO_ROOT) {
     seedData: join(repoRoot, 'lms/scripts/seed-data.mjs'),
     faultControl: join(repoRoot, 'aiops-platform/faults/fault-control.mjs'),
     faultSchedule: join(repoRoot, 'aiops-platform/faults/fault-schedule.mjs'),
-    faultManifest: join(repoRoot, 'aiops-platform/faults/manifests/fault-manifest-v1.json'),
+    faultManifest: join(repoRoot, 'aiops-platform/faults/manifests/fault-manifest-v2.json'),
     composeFiles: [
       join(repoRoot, 'docker-compose/compose.full.yaml'),
       join(repoRoot, 'aiops-platform/faults/compose.faults.yaml'),
