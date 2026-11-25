@@ -500,3 +500,59 @@ def test_selection_rejects_two_ids_with_identical_identity():
     )
     assert {row["combination_id"] for row in chosen["ranking"]} == {"a", "b"}
     assert chosen["ranking"][0]["detector_config_sha256"] in {"d1", "d2"}
+
+
+# --- tie_rank: thứ tự hòa toàn phần do tập ứng viên khai báo ----------------------------------
+
+
+def test_tie_rank_orders_static_sets_with_same_threshold():
+    # Ngưỡng tĩnh: ba bộ strict/medium/loose cùng threshold 1.0, chỉ khác config.
+    results = [combo(name, 1.0, 120, matched=4, alarms=1) for name in ("strict", "medium", "loose")]
+    ranks = {"medium": 1, "strict": 2, "loose": 3}
+    chosen = select_combination(results, tie_rank=ranks)
+    assert [row["combination_id"] for row in chosen["ranking"]] == ["medium", "strict", "loose"]
+    assert chosen["tie_break"] == "tie_rank_asc"
+    assert [row["tie_rank"] for row in chosen["ranking"]] == [1, 2, 3]
+    # Không có tie_rank: giữ hành vi cũ (ngưỡng bằng nhau → combination_id).
+    legacy = select_combination(results)
+    assert [row["combination_id"] for row in legacy["ranking"]] == ["loose", "medium", "strict"]
+    assert legacy["tie_break"] == "threshold_desc"
+
+
+def test_tie_rank_applies_only_after_cap_matches_rate_and_tolerance():
+    # Fused: 2 bộ trọng số × 3 phân vị; threshold số khác nhau nhưng không quyết định khi hòa.
+    results = [
+        combo("w1-q95", 2.1, 120, matched=3, alarms=1),
+        combo("w1-q99", 2.8, 120, matched=3, alarms=1),
+        combo("w1-q999", 3.5, 120, matched=4, alarms=1),  # nhiều fault run khớp hơn
+        combo("w2-q95", 1.9, 120, matched=3, alarms=1),
+        combo("w2-q99", 2.6, 120, matched=3, alarms=0),  # ít báo động giả hơn
+        combo("w2-q999", 3.3, 120, matched=4, alarms=3),  # vượt cap
+    ]
+    ranks = {"w2-q999": 1, "w1-q999": 6, "w2-q99": 5, "w2-q95": 2, "w1-q95": 3, "w1-q99": 4}
+    ranking = [r["combination_id"] for r in select_combination(results, tie_rank=ranks)["ranking"]]
+    assert ranking == ["w1-q999", "w2-q99", "w2-q95", "w1-q95", "w1-q99", "w2-q999"]
+    # Theo hành vi cũ, nhóm hòa xếp theo ngưỡng lớn hơn.
+    legacy = [r["combination_id"] for r in select_combination(results)["ranking"]]
+    assert legacy[2:5] == ["w1-q99", "w1-q95", "w2-q95"]
+
+
+def test_tie_rank_in_fallback_keeps_late_tolerance_before_rank():
+    results = [
+        combo("a", 1.0, 135, matched=3, alarms=4),
+        combo("b", 1.0, 60, matched=3, alarms=4),
+        combo("c", 1.0, 60, matched=3, alarms=4),
+    ]
+    chosen = select_combination(results, tie_rank={"a": 1, "b": 3, "c": 2})
+    assert chosen["rule_applied"] == "fallback_min_false_alarms"
+    assert [row["combination_id"] for row in chosen["ranking"]] == ["c", "b", "a"]
+
+
+def test_tie_rank_must_cover_every_combination_and_be_unique():
+    results = [combo("a", 1.0, 60, 4, 0), combo("b", 1.0, 60, 4, 0)]
+    with pytest.raises(ValueError, match="Thiếu tie_rank"):
+        select_combination(results, tie_rank={"a": 1})
+    with pytest.raises(ValueError, match="cùng tie_rank"):
+        select_combination(results, tie_rank={"a": 1, "b": 1})
+    with pytest.raises(ValueError, match="số nguyên"):
+        select_combination(results, tie_rank={"a": 1, "b": 1.5})

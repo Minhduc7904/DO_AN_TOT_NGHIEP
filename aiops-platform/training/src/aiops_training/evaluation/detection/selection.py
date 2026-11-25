@@ -4,6 +4,11 @@
 báo động giả/giờ hơn → `late_tolerance` nhỏ hơn → ngưỡng lớn hơn. Không tổ hợp nào đạt: chọn tổ hợp
 ít báo động giả/giờ nhất, hòa theo cùng thứ tự, và ghi là không đạt điều kiện.
 
+Khi tập ứng viên khai báo thứ tự toàn phần (`tie_rank` nguyên theo `combination_id`, 1 là ưu tiên
+nhất), khóa hòa cuối "ngưỡng lớn hơn" được thay bằng `tie_rank` tăng dần: trường `threshold` số
+không phân biệt được các ứng viên chỉ khác config (ngưỡng tĩnh luôn 1.0, tham số incident cùng
+ngưỡng, fused khác trọng số).
+
 Tỉ lệ so bằng số hữu tỉ (`Fraction`) trên thời gian phơi nhiễm micro giây nguyên, không qua phép
 chia số thực. Chỉ so được các tổ hợp chấm trên cùng tập run, cùng evaluation config, cùng tập ứng
 viên và cùng detector.
@@ -11,7 +16,7 @@ viên và cùng detector.
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from fractions import Fraction
 from typing import Any
@@ -112,24 +117,41 @@ def _threshold_key(result: CombinationResult) -> float:
     return float("inf") if result.threshold is None else -result.threshold
 
 
-def _key_when_cap_met(result: CombinationResult) -> tuple:
+TieKey = Callable[[CombinationResult], tuple]
+
+
+def _default_tie(result: CombinationResult) -> tuple:
+    return (_threshold_key(result), result.combination_id)
+
+
+def _key_when_cap_met(result: CombinationResult, tie: TieKey = _default_tie) -> tuple:
     return (
         -result.matched_fault_runs,
         result.rate_key(),
         result.late_tolerance_seconds,
-        _threshold_key(result),
-        result.combination_id,
+        *tie(result),
     )
 
 
-def _key_fallback(result: CombinationResult) -> tuple:
+def _key_fallback(result: CombinationResult, tie: TieKey = _default_tie) -> tuple:
     return (
         result.rate_key(),
         -result.matched_fault_runs,
         result.late_tolerance_seconds,
-        _threshold_key(result),
-        result.combination_id,
+        *tie(result),
     )
+
+
+def _tie_rank_key(results: Sequence[CombinationResult], tie_rank: Mapping[str, int]) -> TieKey:
+    missing = sorted(r.combination_id for r in results if r.combination_id not in tie_rank)
+    if missing:
+        raise ValueError(f"Thiếu tie_rank cho tổ hợp: {missing}")
+    ranks = [tie_rank[r.combination_id] for r in results]
+    if any(isinstance(rank, bool) or not isinstance(rank, int) for rank in ranks):
+        raise ValueError("tie_rank phải là số nguyên")
+    if len(set(ranks)) != len(ranks):
+        raise ValueError("Hai tổ hợp có cùng tie_rank: thứ tự hòa không toàn phần")
+    return lambda result: (tie_rank[result.combination_id],)
 
 
 _SHARED = (
@@ -141,8 +163,14 @@ _SHARED = (
 )
 
 
-def select_combination(results: Sequence[CombinationResult]) -> dict[str, Any]:
-    """Trả tổ hợp được chọn, việc có đạt điều kiện không và bảng xếp hạng đầy đủ."""
+def select_combination(
+    results: Sequence[CombinationResult], tie_rank: Mapping[str, int] | None = None
+) -> dict[str, Any]:
+    """Trả tổ hợp được chọn, việc có đạt điều kiện không và bảng xếp hạng đầy đủ.
+
+    `tie_rank` (tùy chọn, khóa là `combination_id`): khóa hòa cuối thay cho "ngưỡng lớn hơn" rồi
+    `combination_id`; phải có cho mọi tổ hợp và không trùng nhau.
+    """
     if not results:
         raise ValueError("Không có tổ hợp nào để chọn")
     ids = [r.combination_id for r in results]
@@ -166,8 +194,9 @@ def select_combination(results: Sequence[CombinationResult]) -> dict[str, Any]:
                 "model): "
                 "cùng một tổ hợp bị chấm hai lần"
             )
-    passing = sorted((r for r in results if r.meets_cap), key=_key_when_cap_met)
-    failing = sorted((r for r in results if not r.meets_cap), key=_key_fallback)
+    tie = _default_tie if tie_rank is None else _tie_rank_key(results, tie_rank)
+    passing = sorted((r for r in results if r.meets_cap), key=lambda r: _key_when_cap_met(r, tie))
+    failing = sorted((r for r in results if not r.meets_cap), key=lambda r: _key_fallback(r, tie))
     table = [
         {
             "rank": index + 1,
@@ -184,6 +213,7 @@ def select_combination(results: Sequence[CombinationResult]) -> dict[str, Any]:
             "false_alarm_hours": result.false_alarm_hours,
             "false_alarms_per_hour": result.false_alarms_per_hour,
             "meets_cap": result.meets_cap,
+            "tie_rank": None if tie_rank is None else tie_rank[result.combination_id],
         }
         for index, result in enumerate(passing + failing)
     ]
@@ -191,6 +221,7 @@ def select_combination(results: Sequence[CombinationResult]) -> dict[str, Any]:
         "selected": table[0]["combination_id"],
         "meets_cap": table[0]["meets_cap"],
         "rule_applied": "cap_met" if passing else "fallback_min_false_alarms",
+        "tie_break": "threshold_desc" if tie_rank is None else "tie_rank_asc",
         "cap_per_hour": first.cap_per_hour,
         "detector": first.detector,
         "evaluation_config_version": first.evaluation_config_version,

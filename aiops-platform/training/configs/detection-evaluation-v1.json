@@ -124,7 +124,8 @@
     "false_alarm_comparison": "So sánh theo tỉ lệ mỗi giờ bằng số hữu tỉ: cap kiểm bằng false_alarms × 3600 s <= cap × exposure (exposure micro giây nguyên), thứ tự theo Fraction(false_alarms × 3600 s, exposure); tỉ lệ không xác định (exposure 0) không đạt cap và xếp sau cùng",
     "final_tie_break": "combination_id (chỉ để xác định, các tổ hợp khai báo không trùng nhau)",
     "comparable": "Chỉ so các tổ hợp có cùng tập run eligible, evaluation_config_version, sha256 của config ứng viên, detector và cap; lệch thì từ chối",
-    "cap_source": "false_alarm_rate.cap_per_hour (config này) ghi trong artifact; luật chọn đọc cap từ artifact, không mặc định cứng"
+    "cap_source": "false_alarm_rate.cap_per_hour (config này) ghi trong artifact; luật chọn đọc cap từ artifact, không mặc định cứng",
+    "tie_rank": "Tùy chọn select_combination(tie_rank={combination_id: int}): khi tập ứng viên (từ detection-candidates.v2) khai báo thứ tự toàn phần, khóa hòa cuối là tie_rank tăng dần (1 ưu tiên nhất), thay cho 'threshold lớn hơn' rồi combination_id. Thứ tự đầy đủ: đạt cap trước; nhiều fault run khớp nhất; tỉ lệ báo động giả thấp hơn; late_tolerance nhỏ hơn; tie_rank (fallback: tỉ lệ; fault run khớp; late_tolerance; tie_rank). Thiếu tie_rank cho một tổ hợp, hai tổ hợp trùng tie_rank hoặc tie_rank không nguyên thì từ chối. Lý do: threshold số không phân biệt các ứng viên chỉ khác config (ngưỡng tĩnh luôn 1.0, tham số incident cùng ngưỡng, fused khác trọng số). Không truyền tie_rank thì giữ luật của v1."
   },
   "precision_scope": {
     "primary": "pooled: TP/FP/FN, Precision, Recall, F1 trên mọi run eligible của split, FP của run khỏe tính vào (mục 17.6, 20.2)",
