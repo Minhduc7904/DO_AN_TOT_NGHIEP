@@ -108,19 +108,30 @@ uv run aiops-training evaluate-detection --dataset ../experiments/datasets/datas
 # Run ngoài dataset (pilot): thay --dataset/--split bằng --run-id lặp lại
 ```
 
-Module `src/aiops_training/evaluation/detection/`; chỉ harness (và gói `ground_truth`) đọc `ground-truth.json` (evaluation-protocol-v1 mục 3.3, có test kiểm). Mọi luật nằm trong [`configs/detection-evaluation-v1.json`](configs/detection-evaluation-v1.json) (`detection-evaluation.v1`):
+Module `src/aiops_training/evaluation/detection/`. Trong đường chấm, chỉ harness đọc `ground-truth.json`; ngoài gói `evaluation` chỉ gói `ground_truth` và lệnh `ground-truth`, `symptoms` của `cli.py` chạm tới file này (evaluation-protocol-v1 mục 3.3, có test kiểm). Mọi luật nằm trong [`configs/detection-evaluation-v1.json`](configs/detection-evaluation-v1.json) (`detection-evaluation.v1`):
 
 | Phần | Luật |
 | --- | --- |
 | Evaluation interval (mục 7.1) | `[workload_start + 360 s, workload_end]` của `RunGroundTruth`; incident ngoài khoảng chỉ ghi diagnostic |
 | Ghép incident (mục 17.2–17.4) | Early tolerance 0; `late_tolerance` tra từ `detection-candidates-v1.json` theo cặp window/persistence của incident record; incident sớm nhất trong `[fault_start, fault_end + late_tolerance]` là TP (hòa theo `incident_id`), còn lại là FP; không có thì FN |
-| Chỉ số | TP/FP/FN, Precision/Recall/F1 (`null` khi mẫu số 0); healthy-run FPR và FP/giờ khỏe theo profile; Detection Delay count/mean/median theo case và theo `align_peak` (FN không có delay) |
-| Báo động giả/giờ (luật chọn mục 6.1.2) | Tử: incident trên run khỏe + incident ngoài `[fault_start, fault_end + late_tolerance]` của fault run. Mẫu: evaluation interval của run khỏe + evaluation interval của fault run trừ `[fault_start, fault_end + late_tolerance]`. Đoạn `(fault_end, fault_end + late_tolerance]` bị trừ khỏi mẫu số vì tử số không đếm incident ở đó |
-| Đoạn cao điểm (`healthy-spike`) | Từ kế hoạch phát lại của run (`workload.plan_path`, kiểm `plan_sha256`, gốc `--load-dir`, mặc định `../load`): đoạn 600 s có nhiều lần bắt đầu phiên nhất, quét bước 30 s sau warm-up, hòa lấy sớm nhất (cùng luật `--align-peak` của `fault-schedule.mjs`) |
-| Bootstrap CI (mục 20.7) | Percentile 95%, 10.000 lần, seed 20261125, lấy mẫu lại theo run trong tầng (fault run theo case, run khỏe theo profile); tầng một run thì chỉ số báo `degenerate`, không có CI |
-| Run bị loại (mục 20.6) | `summary.excluded_by_reason`: slot chưa thu, thiếu/không hợp lệ ground truth, gate thực thi, chất lượng `fail`, thiếu incident record, interval không phủ khoảng ghép |
+| Tổ hợp được chấm | Mọi incident record trong một artifact phải cùng detector, version detector/incident, window, persistence, step và `threshold` (trường top-level, không có thì `lineage.threshold`); artifact ghi `threshold` |
+| Precision/Recall/F1 | **Chỉ số chính** `summary.pooled`: mọi run eligible, FP của run khỏe tính vào (mục 17.6, 20.2). **Chỉ số phụ** `summary.pooled_fault_runs`: chỉ fault run. `null` khi mẫu số 0. Thêm `per_case` |
+| Chỉ số khác | Healthy-run FPR và FP/giờ khỏe theo profile; Detection Delay count/mean/median theo case và theo `align_peak` (FN không có delay) |
+| Báo động giả/giờ (luật chọn mục 6.1.2) | Tử: incident trên run khỏe + incident ngoài `[fault_start, fault_end + late_tolerance]` của fault run. Mẫu: evaluation interval của run khỏe + evaluation interval của fault run trừ `[fault_start, fault_end + late_tolerance]`. Đoạn `(fault_end, fault_end + late_tolerance]` bị trừ khỏi mẫu số vì tử số không đếm incident ở đó. Mẫu số lưu bằng micro giây nguyên; cap so bằng `alarms × 3600 s <= cap × exposure` |
+| Đoạn cao điểm (`healthy-spike`) | Từ kế hoạch phát lại của run (`workload.plan_path`, kiểm `plan_sha256`): đoạn 600 s có nhiều lần bắt đầu phiên nhất, quét bước 30 s sau warm-up, hòa lấy sớm nhất (cùng luật `--align-peak` của `fault-schedule.mjs`) |
+| Bootstrap CI (mục 20.7) | Percentile 95%, 10.000 lần, seed 20261125, lấy mẫu lại theo run trong tầng (fault run theo case, run khỏe theo profile). Mọi tầng của chỉ số đều một run: `degenerate`, không có CI. Chỉ một phần tầng một run: có CI nhưng `partially_degenerate` kèm `degenerate_strata` |
+| Run bị loại (mục 20.6) | `summary.excluded_by_reason` theo lý do: `run_not_collected`, `run_manifest_missing`, `execution_gate_failed`, `telemetry_quality_fail`, `telemetry_quality_missing`, `ground_truth_missing`, `ground_truth_run_status_missing`, `ground_truth_<run_status>` (ví dụ `ground_truth_invalid`), `ground_truth_case_mismatch`, `incident_record_missing`, `evaluation_interval_invalid`. Kèm `included_by_quality` (`pass`/`partial`) và `replaced_runs` (run bị thay theo slot, không chấm) |
 
-Artifact `detection-evaluation-artifact.v1` gồm từng run (phần detection của mục 22, nhãn từng incident, lineage tới run manifest, ground truth, incident record kèm sha256), bảng tổng hợp, bootstrap và lineage tới evaluation config, `detection-candidates-v1.json` (sha256), dataset manifest, commit code. Luật chọn của mục 6.1.2 là `selection.select_combination` (đầu vào lấy từ artifact bằng `combination_from_artifact`). Chấm split `test` phải thêm `--final-test` (mục 6.3).
+Kế hoạch phát lại cho đoạn cao điểm không được commit (`load/.gitignore` bỏ `data/`): dựng lại bằng `aiops-platform/load/tools/build-replay-plan.mjs` theo dataset manifest; harness kiểm sha256 với run manifest, và `--load-dir` (mặc định `../load`) phải trỏ tới thư mục có `data/plans` (worktree mới không có sẵn). Run khỏe `healthy-spike` không tính được đoạn cao điểm (`peak_plan_missing`, `peak_plan_sha256_missing`, `peak_plan_sha256_mismatch`, `peak_plan_invalid`) vẫn được chấm các chỉ số khác, được liệt kê ở `summary.peak_unavailable_by_reason`, và CLI trả mã 1 trừ khi có `--allow-missing-peak`.
+
+Artifact `detection-evaluation-artifact.v1` gồm từng run (phần detection của mục 22, `scenario_id`, trạng thái verification của case, `evaluation_config_version`, nhãn từng incident, lineage tới run manifest, ground truth, incident record kèm sha256), bảng tổng hợp, bootstrap và lineage tới evaluation config, `detection-candidates-v1.json` (sha256), dataset manifest, commit code. `evaluation_artifact_id` chỉ băm sha256 nội dung và `run_id`, không băm đường dẫn. Luật chọn của mục 6.1.2 là `selection.select_combination`: đầu vào lấy từ artifact bằng `combination_from_artifact` (ngưỡng và cap đọc từ artifact) và chỉ so các tổ hợp cùng tập run eligible, evaluation config, sha256 tập ứng viên và detector.
+
+Chặn khi chấm:
+
+- **Split test:** run có `spec.split = test` trong run manifest chỉ được chấm với `--final-test` (API: `final_test=True`), ở mọi cách gọi kể cả `--run-id`; bước kiểm chạy trước khi đọc ground truth (mục 6.3).
+- **Code chưa commit:** `src`, `configs`, `pyproject.toml`, `uv.lock` của `training` có thay đổi chưa commit thì từ chối, trừ khi `--allow-dirty`; artifact ghi `analysis_code_dirty` và `allow_dirty`.
+
+Rủi ro đã biết: test của dataset-v0 chỉ có một run khỏe mỗi profile, nên CI của FP/giờ khỏe và healthy-run FPR sẽ suy biến, CI của báo động giả/giờ chỉ `partially_degenerate`. Cần quyết trước campaign tuần 19 (thêm run khỏe test hoặc ghi giới hạn).
 
 ## Cách export bảo vệ Tempo
 
