@@ -25,6 +25,7 @@ from .evaluation.detection.harness import (
     slot_from_run_manifest,
     slots_from_dataset,
 )
+from .evaluation.detector_selection import cli as selection_cli
 from .features.baseline import apply_baseline, fit_baseline, sha256_file
 from .features.leakage import check_leakage, is_healthy
 from .features.pipeline import FeatureConfig, FeatureError, write_features
@@ -477,6 +478,7 @@ def main(argv: list[str] | None = None) -> int:
     _evaluate_detection_parser(sub)
     anomaly_cli.register(sub)
     incident_cli.register(sub)
+    selection_cli.register(sub)
     args = parser.parse_args(argv)
     if args.command == "evaluate-detection":
         return _run_evaluate_detection(args)
@@ -484,6 +486,8 @@ def main(argv: list[str] | None = None) -> int:
         return anomaly_cli.dispatch(args)
     if args.command in incident_cli.COMMANDS:
         return incident_cli.dispatch(args)
+    if args.command in selection_cli.COMMANDS:
+        return selection_cli.dispatch(args)
     if args.command == "symptoms":
         return _run_symptoms(args)
     if args.command == "fit-baseline":

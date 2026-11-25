@@ -24,7 +24,7 @@
 | [task-03_build-incident-lifecycle](task-03_build-incident-lifecycle.md) | Incident lifecycle (persistence, recovery, merge, gộp nhiều service), `detected_at`, `estimated_start_time`, incident record | Bách | Không có | Cao | Hoàn thành |
 | [task-04_build-detection-evaluation-harness](task-04_build-detection-evaluation-harness.md) | Evaluation harness: ghép incident với fault, Precision/Recall/F1, healthy-run FPR, báo động giả/giờ (kể cả đoạn cao điểm), Detection Delay, bootstrap CI, hàm của luật chọn | Bách | Không có | Cao | Hoàn thành |
 | [task-05_declare-detection-candidates-v2](task-05_declare-detection-candidates-v2.md) | Khai báo trước mọi lần chấm validation phần còn mở của phát hiện: quy tắc gộp điểm, tham số incident, Isolation Forest, điểm hợp nhất, ngưỡng tĩnh E1 | Bách | Không có | Cao | Hoàn thành |
-| [task-06_select-detectors-on-validation](task-06_select-detectors-on-validation.md) | Chọn window/persistence và ngưỡng trên validation theo luật đã khai báo, freeze config; E1 sơ bộ trên validation; error analysis ban đầu | Bách | Không có | Cao | Đã giao |
+| [task-06_select-detectors-on-validation](task-06_select-detectors-on-validation.md) | Chọn window/persistence và ngưỡng trên validation theo luật đã khai báo, freeze config; E1 sơ bộ trên validation; error analysis ban đầu | Bách | Không có | Cao | Đang thực hiện |
 
 > Khi đọc tiến độ project-wide, chỉ coi hàng có trạng thái `Hoàn thành` trên nhánh canonical là hoàn thành; trạng thái đã finalization trên task branch chưa thay thế nguồn này.
 

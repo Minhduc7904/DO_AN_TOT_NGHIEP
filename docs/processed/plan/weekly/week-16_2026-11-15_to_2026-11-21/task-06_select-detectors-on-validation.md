@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-06_select-detectors-on-validation` |
 | Tuần | `week-16_2026-11-15_to_2026-11-21` |
-| Trạng thái | Đã giao |
+| Trạng thái | Đang thực hiện |
 | Người phụ trách | Bách |
 | Collaborator | Không có |
 | Ưu tiên | Cao |
@@ -88,5 +88,5 @@ Theo [evaluation-protocol-v1](../../../architecture/evaluation-protocol-v1.md) m
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 25/11/2026 — lập card.
+- Cập nhật gần nhất: 25/11/2026 — bắt đầu trên nhánh tách từ `main` tại `c6738ae` (chứa merge commit `f57c322` của PR #103): code chọn cấu hình `evaluation/detector_selection/` (lệnh `select-detectors`), chưa chấm validation. Trước đó: lập card.
 - Ghi chú/tồn đọng:

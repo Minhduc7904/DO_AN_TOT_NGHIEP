@@ -189,6 +189,28 @@ Chặn khi chấm:
 
 Rủi ro đã biết: test của dataset-v0 chỉ có một run khỏe mỗi profile, nên CI của FP/giờ khỏe và healthy-run FPR sẽ suy biến, CI của báo động giả/giờ chỉ `partially_degenerate`. Cần quyết trước campaign tuần 19 (thêm run khỏe test hoặc ghi giới hạn).
 
+## Chọn cấu hình phát hiện trên validation (`evaluation/detector_selection/`)
+
+Chạy đúng các bước đã khai báo ở `detection-candidates.v2` (evaluation-protocol-v1 mục 6.1.3), mỗi bước sau khi bước trước đã chọn:
+
+```bash
+R=<thư mục runs/ có 10 run dataset v0 đã apply baseline 30 s và 60 s>
+L=<thư mục load/ có data/plans của run validation>
+uv run aiops-training select-detectors setup  --runs-dir $R --load-dir $L  # kiểm commit, baseline; ghi sha đầu vào
+uv run aiops-training select-detectors step1  --runs-dir $R --load-dir $L  # 12 tổ hợp robust z
+uv run aiops-training select-detectors step2a --runs-dir $R --load-dir $L  # 4 bộ tham số incident
+uv run aiops-training select-detectors step2b --runs-dir $R --load-dir $L  # ngưỡng tĩnh, Isolation Forest, fused
+uv run aiops-training select-detectors freeze --runs-dir $R --load-dir $L  # configs/detector-e1-v1.json, incident-e1-v1.json
+uv run aiops-training select-detectors report                              # sinh lại evaluations/validation-v1/tables.md
+```
+
+- **Chặn:** mọi lần chấm cần HEAD chứa merge commit `f57c322` của PR #103 (khai báo v2) và code training đã commit. Một tổ hợp đã có trong ledger không được chấm lại; bước bị dừng giữa chừng chạy lại thì đọc lại artifact đã ghi (kiểm sha256).
+- **Ledger** `evaluations/validation-v1/ledger.jsonl` (setup, fit model, ngưỡng phân vị train, mỗi lần chấm, dùng lại, chọn, freeze). Nằm ngoài `configs/` vì harness coi thay đổi chưa commit trong `configs/` là code bẩn.
+- **Config của từng tổ hợp** sinh tất định từ ứng viên (`evaluations/validation-v1/configs/`); trước khi chọn, sha256 config detector/incident trong artifact được đối chiếu với config sinh từ ứng viên (`candidate_binding`).
+- **Ngưỡng phân vị** của Isolation Forest và fused tính trên 4 run train khỏe bằng baseline và model của cửa sổ chọn ở bước 1 (`train-thresholds-w<W>.json`). Model ghi ở `models/iforest-validation-v1-w<W>.joblib` (không commit; metadata chép vào `evaluations/validation-v1/models/`).
+- Đầu ra trung gian (bảng anomalies, incident record của mọi tổ hợp) ở `artifacts/validation-v1/` (không commit). Incident record của 4 tổ hợp E1 được chép vào `evaluations/validation-v1/e1/incidents/` cho error analysis.
+- Tái lập: chạy `all` với `--out-dir` và `--work-dir` mới rồi so bảng.
+
 ## Cách export bảo vệ Tempo
 
 Tempo của testbed bị giới hạn 512 MiB và từng bị OOM khi nhận truy vấn dồn dập. Adapter:
