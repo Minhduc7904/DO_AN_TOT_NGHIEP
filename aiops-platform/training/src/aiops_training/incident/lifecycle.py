@@ -5,17 +5,20 @@ hoàn toàn theo config:
 
 - Chỉ xét cửa sổ ngoài warm-up (cờ `warmup` của feature). Lifecycle không đọc mốc nào của
   `RunGroundTruth` hay evaluation interval; lọc theo evaluation interval là việc của harness.
-- **Cửa sổ không dữ liệu** (`skip_without_breaking_chain`, evaluation-protocol-v1 mục 6.1.2) bị
-  bỏ qua, không tính là vượt và không làm đứt chuỗi, ở hai mức:
-  - `flagged` rỗng (service không có giá trị triệu chứng nào);
-  - với chuỗi đang tích lũy: cửa sổ không vượt mà **không quan sát được** tín hiệu nào đang là bằng
-    chứng của chuỗi (`top_key` của các cửa sổ vượt trong chuỗi không có trong `observed_keys` của
-    cửa sổ này). Ví dụ C3: cạnh `ai-worker → ai-llm-provider` chỉ có lời gọi rải rác; cửa sổ không
-    có lời gọi nào vẫn có `log_error_rate` và hàng đợi nhưng không quan sát được cạnh, nên không
-    làm đứt chuỗi.
-- `NORMAL` + cửa sổ vượt → `SUSPECTED`. `SUSPECTED` + cửa sổ không vượt quan sát được bằng chứng
-  → `NORMAL` (chuỗi đứt). Đủ `persistence_windows` cửa sổ vượt (bỏ qua cửa sổ không dữ liệu) →
-  `OPEN`.
+- **Persistence theo từng khóa bằng chứng** (luật cửa sổ không dữ liệu theo feature,
+  `skip_without_breaking_chain`, evaluation-protocol-v1 mục 6.1.2). Mỗi cửa sổ vượt mang tập khóa
+  bằng chứng (`evidence_keys`: tín hiệu mà chính detector coi là bất thường, ví dụ
+  `edge.duration_p95@ai-worker|ai-worker-llm-provider`). Mỗi khóa có một chuỗi riêng:
+  - cửa sổ vượt cộng vào chuỗi của từng khóa trong bằng chứng của nó;
+  - một khóa chỉ đứt chuỗi khi một cửa sổ **quan sát được** khóa đó (`observed_keys`) mà khóa không
+    nằm trong bằng chứng của cửa sổ (tín hiệu có dữ liệu và bình thường);
+  - cửa sổ không quan sát được khóa (cạnh thưa không có lời gọi, như C3), hoặc `flagged` rỗng
+    (service không có giá trị triệu chứng nào), không cộng cũng không làm đứt chuỗi của khóa đó.
+
+  Bằng chứng của các tín hiệu khác nhau không cộng dồn với nhau: 3 cửa sổ vượt do cạnh thưa rồi
+  2 cửa sổ vượt do log là hai chuỗi dài 3 và 2, không phải một chuỗi dài 5.
+- `NORMAL` + cửa sổ vượt → `SUSPECTED` (có ít nhất một chuỗi). Khi mọi chuỗi đứt → `NORMAL`.
+  Một chuỗi bất kỳ đủ `persistence_windows` cửa sổ → `OPEN`.
 - `OPEN` + cửa sổ không vượt → `RECOVERING`; `RECOVERING` + cửa sổ vượt → `OPEN`;
   đủ `recovery_windows` cửa sổ không vượt liên tiếp (có dữ liệu) → `RESOLVED` (về `NORMAL` cho đợt
   sau). Recovery không đòi quan sát được bằng chứng: nếu đòi, một cạnh chỉ xuất hiện trong lúc
@@ -85,6 +88,7 @@ class WindowScore:
     top_signal: str | None = None
     top_entity: str | None = None
     top_key: str | None = None
+    evidence_keys: frozenset[str] = frozenset()
     observed_keys: frozenset[str] = frozenset()
 
 
@@ -99,6 +103,7 @@ class Episode:
     estimated_start_time: datetime
     resolved_at: datetime | None = None
     windows: list[WindowScore] = field(default_factory=list)
+    evidence_key: str | None = None  # khóa có chuỗi đủ persistence
     events: list[dict[str, Any]] = field(default_factory=list)
 
     def peak(self) -> WindowScore | None:
@@ -132,24 +137,23 @@ def service_episodes(
     step = timedelta(seconds=step_s)
     episodes: list[Episode] = []
     state = "NORMAL"
-    chain: list[WindowScore] = []
-    evidence: set[str] = set()
+    chains: dict[str, list[WindowScore]] = {}
     quiet = 0
     current: Episode | None = None
     for window in sorted(windows, key=lambda w: w.window_start):
         if window.warmup or window.flagged is None:
             continue
         if state in ("NORMAL", "SUSPECTED"):
-            if not window.flagged:
-                if state == "SUSPECTED" and not evidence & window.observed_keys:
-                    continue  # không quan sát được bằng chứng của chuỗi: cửa sổ null với chuỗi
-                state, chain, evidence = "NORMAL", [], set()
-                continue
-            chain.append(window)
-            if window.top_key:
-                evidence.add(window.top_key)
-            state = "SUSPECTED"
-            if len(chain) >= config.persistence_windows:
+            evidence = window.evidence_keys if window.flagged else frozenset()
+            for key in [k for k in chains if k in window.observed_keys and k not in evidence]:
+                del chains[key]  # tín hiệu có dữ liệu và bình thường: chuỗi của nó đứt
+            for key in evidence:
+                chains.setdefault(key, []).append(window)
+            state = "SUSPECTED" if chains else "NORMAL"
+            reached = [k for k, chain in chains.items() if len(chain) >= config.persistence_windows]
+            if reached:
+                key = min(reached, key=lambda k: (chains[k][0].window_start, k))
+                chain = chains[key]
                 opened_at = window.window_end + delay
                 current = Episode(
                     service=window.service,
@@ -158,11 +162,12 @@ def service_episodes(
                     opened_at=opened_at,
                     estimated_start_time=chain[0].window_end - step,
                     windows=list(chain),
+                    evidence_key=key,
                 )
                 current.events.append(_event("SUSPECTED", chain[0], chain[0].window_end + delay))
                 current.events.append(_event("OPEN", window, opened_at))
                 episodes.append(current)
-                state, chain, evidence, quiet = "OPEN", [], set(), 0
+                state, chains, quiet = "OPEN", {}, 0
             continue
         # OPEN hoặc RECOVERING
         assert current is not None
@@ -246,7 +251,8 @@ def correlate(
                 "detected_at": _iso(opener.opened_at),
                 "estimated_start_time": _iso(first.estimated_start_time),
                 "resolved_at": None if any(end is None for end in ends) else _iso(max(ends)),
-                # Chẩn đoán gộp quá rộng (incident còn mở hấp thụ mọi đợt về sau).
+                # Chẩn đoán gộp quá rộng (incident còn mở hấp thụ mọi đợt về sau). `duration_s`
+                # tính từ `detected_at` tới `resolved_at` lớn nhất.
                 "open_at_run_end": any(end is None for end in ends),
                 "duration_s": None
                 if any(end is None for end in ends)
@@ -263,7 +269,7 @@ def correlate(
                 },
                 "trigger_reason": (
                     f"{config.persistence_windows} cửa sổ vượt liên tiếp ở {opener.service} "
-                    f"({opener.opened.reason}: {opener.opened.top_signal or '—'})"
+                    f"({opener.opened.reason}: {opener.evidence_key or '—'})"
                 ),
                 "peak_score": _finite(peak.score) if peak else None,
                 "peak_score_infinite": bool(
@@ -272,6 +278,7 @@ def correlate(
                 "episodes": [
                     {
                         "service": e.service,
+                        "evidence_key": e.evidence_key,
                         "opened_at": _iso(e.opened_at),
                         "estimated_start_time": _iso(e.estimated_start_time),
                         "resolved_at": _iso(e.resolved_at),

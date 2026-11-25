@@ -64,6 +64,7 @@ def read_scores(anomalies: Path) -> list[WindowScore]:
             top_signal=row["top_signal"],
             top_entity=row["top_entity"],
             top_key=row.get("top_key"),
+            evidence_keys=frozenset(row.get("evidence_keys") or ()),
             observed_keys=frozenset(row.get("observed_keys") or ()),
         )
         for row in pq.read_table(anomalies).to_pylist()

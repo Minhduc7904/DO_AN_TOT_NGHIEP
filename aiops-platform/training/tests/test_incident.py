@@ -51,35 +51,31 @@ def _config(**overrides) -> IncidentConfig:
 def _windows(
     pattern: str, service: str = "course", window_s: int = 60, offset: int = 0, warmup: int = 0
 ) -> list[WindowScore]:
-    """`pattern`: mỗi ký tự một cửa sổ bước 15 s — `x` vượt, `.` không vượt (quan sát được tín hiệu
-    bằng chứng), `o` không vượt và **không** quan sát được tín hiệu bằng chứng (chỉ có tín hiệu
-    khác, như cạnh thưa không có lời gọi), `_` không dữ liệu, `s` im lặng (vượt, điểm rỗng),
-    `i` vượt với điểm vô cùng."""
-    evidence = f"edge.duration_p95@{service}|dep"
+    """`pattern`: mỗi ký tự một cửa sổ bước 15 s — `x` vượt (bằng chứng: cạnh), `.` không vượt
+    (quan sát được cạnh), `o` không vượt và **không** quan sát được cạnh (chỉ có log, như cạnh thưa
+    không có lời gọi), `_` không dữ liệu, `s` im lặng, `i` vượt với điểm vô cùng, `l` vượt do log,
+    `a` vượt mà detector không chỉ ra tín hiệu nào (bằng chứng = mọi tín hiệu quan sát được)."""
+    edge = f"edge.duration_p95@{service}|dep"
     silence = f"telemetry_silent@{service}"
-    other = f"service.log_error_rate@{service}"
+    log = f"service.log_error_rate@{service}"
+    full = {silence, log, edge}
+    table = {
+        # ký tự: (flagged, score, reason, observed, evidence, top_key)
+        "x": (True, None, "threshold", full, {edge}, edge),
+        ".": (False, 1.0, "below_threshold", full, set(), None),
+        "o": (False, 1.0, "below_threshold", {silence, log}, set(), None),
+        "_": (None, None, "no_data", {silence}, set(), None),
+        "s": (True, None, "telemetry_silent", {silence}, {silence}, silence),
+        "i": (True, math.inf, "threshold", full, {edge}, edge),
+        "l": (True, 5.0, "threshold", full, {log}, log),
+        "a": (True, 5.0, "threshold", full, full, None),
+    }
     result = []
     for index, char in enumerate(pattern):
         start = T0 + timedelta(seconds=STEP * (index + offset))
-        flagged = {"x": True, ".": False, "o": False, "_": None, "s": True, "i": True}[char]
-        score = {"x": 5.0 + index, ".": 1.0, "o": 1.0, "_": None, "s": None, "i": math.inf}[char]
-        reason = {
-            "x": "threshold",
-            ".": "below_threshold",
-            "o": "below_threshold",
-            "_": "no_data",
-            "s": "telemetry_silent",
-            "i": "threshold",
-        }[char]
-        observed = {
-            "x": {silence, other, evidence},
-            ".": {silence, other, evidence},
-            "o": {silence, other},
-            "_": {silence},
-            "s": {silence},
-            "i": {silence, other, evidence},
-        }[char]
-        top_key = {"x": evidence, "i": evidence, "s": silence}.get(char)
+        flagged, score, reason, observed, evidence, top_key = table[char]
+        if char == "x":
+            score = 5.0 + index
         result.append(
             WindowScore(
                 service=service,
@@ -89,9 +85,10 @@ def _windows(
                 flagged=flagged,
                 score=score,
                 reason=reason,
-                top_signal="edge.duration_p95" if top_key == evidence else None,
-                top_entity=f"{service}|dep" if top_key == evidence else None,
+                top_signal=top_key.split("@")[0] if top_key else None,
+                top_entity=top_key.split("@")[1] if top_key else None,
                 top_key=top_key,
+                evidence_keys=frozenset(evidence),
                 observed_keys=frozenset(observed),
             )
         )
@@ -133,6 +130,22 @@ def test_windows_without_the_evidence_signal_do_not_break_the_chain():
     assert episode.opened.window_end == _end(9)
     # Cửa sổ quan sát được chính cạnh đó mà không vượt thì đứt chuỗi.
     assert _episodes("xxo.xooox....", config=five) == []
+
+
+def test_evidence_of_different_signals_does_not_accumulate():
+    # 3 cửa sổ vượt do cạnh thưa, 10 phút yên không quan sát cạnh, rồi 2 cửa sổ vượt do log: hai
+    # chuỗi dài 3 và 2, không mở đợt (persistence 5).
+    five = _config(persistence_windows=5)
+    assert _episodes("xxx" + "o" * 40 + "ll" + "..", config=five) == []
+    # Cửa sổ vượt do log quan sát được cạnh mà cạnh bình thường: chuỗi của cạnh đứt.
+    assert _episodes("xxlxx" + "....", config=five) == []
+    (episode,) = _episodes("xxoxoxox....", config=five)
+    assert episode.evidence_key == "edge.duration_p95@course|dep"
+
+
+def test_flagged_window_without_named_signal_is_broken_by_any_normal_window():
+    # Bằng chứng = mọi tín hiệu quan sát được, nên cửa sổ bình thường làm đứt; 4 < 5.
+    assert _episodes("a" + "." * 99 + "aaaa", config=_config(persistence_windows=5)) == []
 
 
 def test_silent_chain_breaks_when_heartbeat_returns():
