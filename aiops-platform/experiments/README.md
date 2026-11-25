@@ -106,6 +106,9 @@ Runner không chuyển biến cấu hình k6 của shell (`PLAN`, `VUS`, `DURATI
 tail -2 aiops-platform/experiments/ledger.jsonl
 jq '{status, gates, error}' aiops-platform/experiments/runs/<run_id>/run-manifest.json
 less aiops-platform/experiments/runs/<run_id>/runner.log
+# Fault run cần đối chiếu ground truth độc lập (Gate M3): chạy ngay sau run, TRƯỚC khi chạy run sau,
+# vì reset của run sau xóa volume Prometheus/Tempo/Loki. Ghi runs/<run_id>/raw-verification.json; thoát 0 khi đạt.
+node aiops-platform/experiments/verify-raw-ground-truth.mjs aiops-platform/experiments/runs/<run_id>
 ```
 
 ### 4. Khi run lỗi hoặc bị ngắt

@@ -2,6 +2,8 @@
 
 > **Task:** R-12 — [bảng task refactor](../plan/refactor/refactor-board-v1.md)
 >
+> **Cập nhật 23/11/2026 (pilot tuần 15):** pilot 4 case MVP đã chạy; mô tả đã đo nằm ở [fault-pilot-report-v1](fault-pilot-report-v1.md) và evaluation-protocol-v1 mục 6.1.1, ưu tiên hơn mô tả trong file này. Hai điểm khác: C3 với trễ provider 30–35 s (nhỏ hơn `AI_COMPLETION_TIMEOUT_MS` 240 s) chỉ làm job chậm, không có `WORKER_INTERRUPTED` hay lỗi muộn ở `ai-worker → course`; chuỗi "media `PENDING` kẹt → job dọn xóa media" của C4 không lộ được trong run 48 phút, triệu chứng ngoài đường request của C4 là `media-worker` tạo thumbnail chậm.
+>
 > **Cập nhật 17/11/2026 ([ADR-007](../adr/adr-007-semi-real-workload-and-ai-evidence-v1.md)):** cơ chế gây lỗi của C2, C3, C4 nay đã có ở lớp fault `aiops-platform/faults/` ([PR #75](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/75), chưa merge): proxy toxiproxy `course-to-postgres` (C2), `media-to-minio` và `media-worker-to-minio` (C4), `llm-stub` (C3); các cơ chế đã chạy ở mức smoke, chưa pilot đầy đủ (số đo ở từng case). Mọi case chạy trên **workload bán thực** và mỗi case MVP có ít nhất một run test đặt fault trùng cao điểm tải (mục 3). Mục 1.5 thêm hành vi "series đứng yên khoảng 5 phút" khi runtime ngừng; mục 2 thêm lệch identity của relay `notification-worker`.
 >
 > **Cập nhật 17/11/2026 ([ADR-006](../adr/adr-006-trim-project-scope-v1.md)):** bộ case MVP còn C2, C3, C4, C6; C1, C5, C7 là Target. Cơ chế FC của C2 ("export CSV giữ kết nối DB") không khớp code vì export đọc từng khối 500 dòng; C2 viết lại thành chèn trễ có kiểm soát trên `course` → `course-postgres`. Phần "nơi lưu để MCP đọc" (mục 5.3) không còn là yêu cầu vì MCP ra Out-of-scope. Khi đoạn chi tiết mâu thuẫn, ADR-006 được ưu tiên.

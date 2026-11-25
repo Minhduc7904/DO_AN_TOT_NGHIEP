@@ -6,12 +6,12 @@
 | --- | --- |
 | Mã task | `task-08_verify-gate-m3` |
 | Tuần | `week-15_2026-11-08_to_2026-11-14` |
-| Trạng thái | Đã giao |
+| Trạng thái | Chờ review |
 | Người phụ trách | Bách |
 | Collaborator | Không có |
 | Ưu tiên | Cao |
 | Hạn dự kiến | 30/11/2026 (mốc bù tiến độ) |
-| Nhánh thực hiện | `docs/week-15/task-08-verify-gate-m3` |
+| Nhánh thực hiện | `feat/week-15/task-08-verify-gate-m3` |
 
 ## Yêu cầu và phạm vi
 
@@ -44,21 +44,21 @@ Theo [plan v0.4](../../plan-v0.4-24-weeks.md) tuần 15 (Gate M3: hai thành vi�
 
 ## Definition of Done
 
-- [ ] Checklist được commit trước khi chạy; mỗi mục có kết quả đạt/không đạt và bằng chứng.
-- [ ] Bốn case chạy được từ môi trường sạch chỉ theo runbook; mỗi run có ground truth được đối chiếu độc lập với telemetry thô.
-- [ ] Ngoại lệ một người của Gate M3 được ghi trung thực trong overview tuần.
-- [ ] PR mở vào `main`; URL PR ghi vào card.
+- [x] Checklist được commit trước khi chạy; mỗi mục có kết quả đạt/không đạt và bằng chứng.
+- [x] Bốn case chạy được từ môi trường sạch chỉ theo runbook; mỗi run có ground truth được đối chiếu độc lập với telemetry thô.
+- [x] Ngoại lệ một người của Gate M3 được ghi trung thực trong overview tuần.
+- [x] PR mở; URL PR ghi vào card (PR #96 xếp chồng trên nhánh task-03 vì PR #95 chưa merge; đổi base sang `main` sau khi #95 merge).
 
 ## Liên kết hồ sơ thực hiện
 
 - Input workspace: Không tạo (giai đoạn tự bắt kịp; bằng chứng nằm trong PR).
 - Output workspace: Không tạo.
-- Pull request: Chưa tạo.
-- Kết quả review: Chưa review.
+- Pull request: [#96](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/96).
+- Kết quả review: Chờ review.
 
 > URL/số PR và `Chờ review` phải được commit/push vào PR head trước review. Thành viên còn lại phải gửi `APPROVED` hợp lệ trên GitHub; sau đó người phụ trách finalization metadata, ghi `Hoàn thành` trên chính branch/PR và tự merge task của mình. Card chỉ canonically hoàn thành khi commit đó vào nhánh canonical; xem [vòng đời task canonical](../../../rules/git-and-pull-request-rules.md#vòng-đời-task-canonical).
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 19/11/2026 — lập card.
-- Ghi chú/tồn đọng:
+- Cập nhật gần nhất: 24/11/2026 — Gate M3 (ngoại lệ một người) đạt: checklist commit ở `909a6ce` trước run đầu tiên; 4 fault run C2, C3, C4, C6 chạy ngày 23/11/2026 từ worktree sạch theo runbook, đều `completed`, gate thực thi `pass`, ground truth `valid`, đối chiếu thô bằng `verify-raw-ground-truth.mjs` đạt ở cả 4 run ([checklist](gate-m3-checklist.md) mục Kết quả). Runbook thêm bước đối chiếu độc lập (mục 3).
+- Ghi chú/tồn đọng: độc lập ở đây là độc lập về code, không về người (ngoại lệ giai đoạn tự bắt kịp). Kiểm trước/sau của C3 đi qua nhánh dự phòng vì trước fault không có lời gọi LLM (checklist mục 12).

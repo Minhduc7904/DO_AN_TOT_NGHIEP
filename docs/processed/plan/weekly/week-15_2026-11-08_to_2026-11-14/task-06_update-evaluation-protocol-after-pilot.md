@@ -6,12 +6,12 @@
 | --- | --- |
 | Mã task | `task-06_update-evaluation-protocol-after-pilot` |
 | Tuần | `week-15_2026-11-08_to_2026-11-14` |
-| Trạng thái | Đã giao |
+| Trạng thái | Chờ review |
 | Người phụ trách | Bách |
 | Collaborator | Không có |
 | Ưu tiên | Cao |
 | Hạn dự kiến | 29/11/2026 (mốc bù tiến độ) |
-| Nhánh thực hiện | `docs/week-15/task-06-update-evaluation-protocol-after-pilot` |
+| Nhánh thực hiện | `feat/week-15/task-06-update-evaluation-protocol-after-pilot` (bảng task ghi tiền tố `docs/`; nhánh tạo với `feat/` vì có file cấu hình ứng viên `aiops-platform/training/configs/`) |
 
 ## Yêu cầu và phạm vi
 
@@ -44,22 +44,30 @@ Theo [evaluation-protocol-v1](../../../architecture/evaluation-protocol-v1.md) m
 
 ## Definition of Done
 
-- [ ] Mọi placeholder pilot được phép chốt ở mục 6.1 có giá trị và `run_id` nguồn, hoặc ghi lý do vẫn để mở.
-- [ ] Tập giá trị để validation chọn được khai báo trước khi chạy validation.
-- [ ] Quyết định đưa E7 ra khỏi kế hoạch được ghi trong protocol và plan v0.4 kèm lý do.
-- [ ] Tài liệu liên quan không còn giá trị mâu thuẫn với bản đã chốt.
-- [ ] PR mở vào `main`; URL PR ghi vào card.
+- [x] Mọi placeholder pilot được phép chốt ở mục 6.1 có giá trị và `run_id` nguồn, hoặc ghi lý do vẫn để mở.
+- [x] Tập giá trị để validation chọn được khai báo trước khi chạy validation. (Tập này được chốt trước mọi fault run validation và trước mọi feature hay detector trên validation. Hai run healthy validation đã chạy trước đó, và luật nhận (2) của bảng F được đặt sau khi xem thống kê export của run `healthy-spike`; protocol mục 6.1.1 ghi rõ việc này.)
+- [x] Quyết định đưa E7 ra khỏi kế hoạch được ghi trong protocol và plan v0.4 kèm lý do.
+- [x] Tài liệu liên quan không còn giá trị mâu thuẫn với bản đã chốt.
+- [x] PR mở vào `main`; URL PR ghi vào card. (PR #99 xếp chồng trên PR #97; sẽ vào `main` khi các PR trước được merge.)
 
 ## Liên kết hồ sơ thực hiện
 
 - Input workspace: Không tạo (giai đoạn tự bắt kịp; bằng chứng nằm trong PR).
 - Output workspace: Không tạo.
-- Pull request: Chưa tạo.
+- Pull request: [#99](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/99) (xếp chồng trên PR #97 của task-04; nên merge ngay sau PR #97).
 - Kết quả review: Chưa review.
 
 > URL/số PR và `Chờ review` phải được commit/push vào PR head trước review. Thành viên còn lại phải gửi `APPROVED` hợp lệ trên GitHub; sau đó người phụ trách finalization metadata, ghi `Hoàn thành` trên chính branch/PR và tự merge task của mình. Card chỉ canonically hoàn thành khi commit đó vào nhánh canonical; xem [vòng đời task canonical](../../../rules/git-and-pull-request-rules.md#vòng-đời-task-canonical).
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 19/11/2026 — lập card.
+- Cập nhật gần nhất: 24/11/2026 — [evaluation-protocol-v1](../../../architecture/evaluation-protocol-v1.md):
+  - Mục 6.1.1: bảng giá trị chốt sau pilot, mỗi giá trị kèm `run_id` nguồn. Bảng F là luật nhận run `partial`, khớp bộ kiểm `eligibility.v1` của task-04.
+  - Mục 6.1.2: tập ứng viên và luật chọn trên validation, commit 23/11/2026 (cuối cùng 21:20 +07), trước mọi fault run validation và trước khi tính feature hay chạy detector trên run validation.
+  - Mục 27: các giá trị còn mở và lý do.
+  - Quyết định đưa E7 ra khỏi kế hoạch được ghi trong protocol và plan v0.4.
+  - Các dòng chờ kết quả đã điền số của dataset v0 (task-04) và độ thực v2 (task-07).
 - Ghi chú/tồn đọng:
+  - Nhánh gộp task-04 (dataset manifest, eligibility), nên PR xếp chồng lên PR task-04.
+  - Hai run healthy validation (09:18Z và 12:33Z ngày 23/11) chạy trước thời điểm chốt cuối 14:20Z. Luật (2) của bảng F (nhận run healthy bỏ trace vì ngân sách) được đặt sau khi xem thống kê export của run `healthy-spike`. Đây là luật chất lượng dữ liệu, không chọn theo kết quả phát hiện; protocol ghi rõ thứ tự này.
+  - Tài liệu liên quan đã sửa cho khớp: blueprint mục 7.1 và config mẫu (giá trị minh họa, trỏ về mục 6.1.2), E7 trong blueprint, plan v0.4 và protocol. Trạng thái ngưỡng silent trong data dictionary mục 10 được cập nhật ở PR task-05 (cùng file).
