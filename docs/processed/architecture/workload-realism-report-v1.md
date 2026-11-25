@@ -2,7 +2,7 @@
 
 > **Task:** `task-04_validate-workload-realism` (tuần 14).
 >
-> **Trạng thái:** v1, cập nhật 24/11/2026. Số đo ở mục 0, 2, 4 và 5 lấy từ ba run `r2` chạy trên code workload đã merge (`main` `ba2d7da`, gồm PR #85 sau review và PR #90) với TTL service token mặc định 600 s. Lần đo pilot ngày 18/11/2026 (run `r1`, code trước review, TTL 60 s) giữ ở mục 7 để đối chiếu. Ngưỡng ở mục 1 không đổi giữa hai lần đo. Mục 10 (thêm ngày 19/11/2026, task-07 tuần 15) chấm lại `r2` theo [tiêu chí v2](workload-realism-criteria-v2.md). Mục 11–12 (24/11/2026) chấm 10 run train/validation của dataset v0, là bằng chứng chính của v2, và kết luận theo cả hai tiêu chí.
+> **Trạng thái:** v1, cập nhật 25/11/2026 (bổ sung nguồn đơn giản ở `healthy-spike`, mục 11–12); trước đó 24/11/2026. Số đo ở mục 0, 2, 4 và 5 lấy từ ba run `r2` chạy trên code workload đã merge (`main` `ba2d7da`, gồm PR #85 sau review và PR #90) với TTL service token mặc định 600 s. Lần đo pilot ngày 18/11/2026 (run `r1`, code trước review, TTL 60 s) giữ ở mục 7 để đối chiếu. Ngưỡng ở mục 1 không đổi giữa hai lần đo. Mục 10 (thêm ngày 19/11/2026, task-07 tuần 15) chấm lại `r2` theo [tiêu chí v2](workload-realism-criteria-v2.md). Mục 11–12 (24/11/2026) chấm 10 run train/validation của dataset v0, là bằng chứng chính của v2, và kết luận theo cả hai tiêu chí.
 >
 > **Tài liệu liên quan:** [ADR-007](../adr/adr-007-semi-real-workload-and-ai-evidence-v1.md) mục 2 và 4, [workload-design-v1](workload-design-v1.md) mục 10.4 và 13. Công cụ nằm ở `aiops-platform/load/tools/realism.mjs` và `validate-realism.mjs`.
 
@@ -13,7 +13,7 @@
 - **Khoảng lệch thời lượng không do cơ chế phát lại.** Run bán thực khớp kế hoạch của nó: KS D thời lượng giữa run và kế hoạch là 0,020. Phần lệch có sẵn trong dữ liệu xây: chính 60 ngày đầu của log Moodle so với 31 ngày hold-out đã lệch trung vị thời lượng −37% (mục 5).
 - **Số đo gần như không đổi so với pilot** (mục 7). Các đại lượng đo ở phía client do kế hoạch phiên quyết định; code sửa sau review chủ yếu đổi phía server (khóa seed đúng, không trùng tài khoản). Run `r2` không còn phiên `auth_failed` hay `unexpected_status`.
 - **Theo tiêu chí v2** (đăng ký 19/11/2026, [workload-realism-criteria-v2](workload-realism-criteria-v2.md)): chấm lại `r2` sau khi đã xem dữ liệu, bán thực **đạt**, mức 2 thuần và mức 1 không đạt (mục 10). Bằng chứng chính là 10 run train/validation của dataset v0, chạy sau thời điểm đăng ký: **10/10 run đạt v2** (4/4 nhóm ngày khác nhau) và **0/10 đạt v1** (mục 11).
-- **Kết luận** (mục 12): được viết "traffic học viên bán thực `normal-mixed` giống thật theo tiêu chí v2", kèm giới hạn: với bán thực, v2 chỉ kiểm bộ phát và nhóm ngày; dáng theo giờ của nhóm validation nằm ngoài dải; 1/4 ngày của mỗi nhóm đã nằm trong kế hoạch `r2`; chỉ có 2 nhóm ngày độc lập. Với `healthy-spike` chưa viết, vì chưa có nguồn đơn giản để so. Theo v1 vẫn chưa đạt.
+- **Kết luận** (mục 12): được viết "traffic học viên bán thực `normal-mixed` giống thật theo tiêu chí v2", kèm giới hạn: với bán thực, v2 chỉ kiểm bộ phát và nhóm ngày; dáng theo giờ của nhóm validation nằm ngoài dải; 1/4 ngày của mỗi nhóm đã nằm trong kế hoạch `r2`; chỉ có 2 nhóm ngày độc lập. Với `healthy-spike` cũng **được viết** sau khi chạy hai nguồn đơn giản theo cấu hình đăng ký trước khi chạy (25/11/2026): cả mức 1 và mức 2 thuần có điểm v2 1,000, cao hơn mọi run bán thực (≤ 0,919); kèm các giới hạn tương ứng (mục 11, phần bổ sung; mục 12). Theo v1 vẫn chưa đạt.
 - **Hai lỗi đo được sửa sau lần chạy pilot đầu tiên** (mục 6). Cả hai làm công cụ đo sai đại lượng, không phải ngưỡng.
 
 ## 1. Tiêu chí chốt trước
@@ -169,6 +169,16 @@ node tools/validate-realism.mjs \
   --run assumed=results/w14-t04-assumed-r2 \
   --run moodle=results/w14-t04-moodle-r2 --out results/realism-report-r2.json
 # Từ 19/11/2026 lệnh này in thêm điểm theo tiêu chí v2 (cần data/sessions/moodle-build-v1.json); mục 10.
+# Bổ sung 25/11/2026: nguồn đơn giản ở healthy-spike (mục 11, phần bổ sung). Từ thư mục gốc repository.
+node aiops-platform/experiments/run-experiment.mjs aiops-platform/experiments/specs/realism-v2/pilot-level2-assumed-healthy-spike.json \
+  --compose-env-file docker-compose/.env --confirm-reset aiops-lms
+# Mức 1: reset và seed như runner (down --volumes; FAULTS_SERVICE_TOKEN_TTL_SECONDS=60 up --build --wait;
+# lms/scripts/seed-data.mjs --profile small --seed 42), rồi:
+cd aiops-platform/load
+RUN_ID=w15-t07-level1-healthy-spike JOURNEYS=w1,w3 VUS_W1=3 VUS_W3=13 DURATION=48m SEED=402 ./run-k6.sh level-1 \
+  --system-tags=$TAGS --out json=/results/w15-t07-level1-healthy-spike/k6-points.json.gz
+node tools/validate-realism.mjs --profile healthy-spike --run level2=../experiments/runs/<run_id mức 2 thuần>/workload
+node tools/validate-realism.mjs --profile healthy-spike --run level1=results/w15-t07-level1-healthy-spike
 ```
 
 ## 10. Chấm lại `r2` theo tiêu chí v2 (19/11/2026, sau khi xem dữ liệu)
@@ -260,10 +270,53 @@ node tools/validate-realism.mjs --profile <normal-mixed|healthy-spike> \
   Không nhóm nào trùng nguyên với nhóm đã đo, và không ngày nào được chọn dựa trên kết quả độ thực. Điều kiện "chưa ai xem" đúng hoàn toàn với 2/4 ngày của nhóm train `healthy-spike` và 3/4 ngày của mỗi nhóm còn lại.
 - **Nhóm validation `normal-mixed` bất thường về lịch đến.** Pearson dáng theo giờ 0,68 (C6: 0,38) nằm ngoài khoảng 0,74–0,97 của nhóm ngày thật. Đại lượng này không có ngưỡng nên không làm run trượt v2. Dù vậy, câu "nhóm ngày không bất thường" chỉ đúng với bảy đại lượng mức phiên, không đúng với dáng theo giờ của nhóm này.
 - **Với bán thực, v2 chỉ kiểm hai điều** (criteria-v2 mục 3): bộ phát giữ được hình dạng phiên của kế hoạch, và nhóm ngày đã chọn không bất thường so với các ngày thật khác. Nó không chứng minh log Moodle giống người dùng của LMS này.
-- **Nguồn đơn giản chỉ có ở `normal-mixed`, và là điểm chấm sau khi xem dữ liệu.** Điều kiện thứ hai của kết luận (điểm v2 thấp hơn mức 1 và mức 2 thuần, criteria-v2 mục 2) chỉ so được với hai run `r2` cùng profile `normal-mixed` và `k` = 4, chấm ở mục 10: mức 1 và mức 2 thuần cùng điểm 1,000, tức thứ hạng tối đa.
+- **Nguồn đơn giản ở `normal-mixed` là điểm chấm sau khi xem dữ liệu.** Điều kiện thứ hai của kết luận (điểm v2 thấp hơn mức 1 và mức 2 thuần, criteria-v2 mục 2) chỉ so được với hai run `r2` cùng profile `normal-mixed` và `k` = 4, chấm ở mục 10: mức 1 và mức 2 thuần cùng điểm 1,000, tức thứ hạng tối đa.
   - Điểm này được chấm sau khi đã biết hai nguồn trượt v1 (criteria-v2 mục 4.1). Vì vậy điều kiện thứ hai chỉ là kiểm tra hợp lý, không phải bằng chứng độc lập.
   - Phép so cũng vượt lô: hai run `r2` khác run dataset ở TTL (600 s), số phiên (1.111–1.462 so với 947–1.262) và code (`ba2d7da` so với `ec98a55`/`dbb9ae1`/`9daed76`). Khoảng cách của hai nguồn này vượt xa phân vị 95% (ví dụ KS D thời lượng của mức 2 thuần là 0,288 so với 0,17), nên các khác biệt trên không kéo được điểm 1,000 xuống.
-  - Profile `healthy-spike` chưa có run mức 1 hay mức 2 thuần.
+  - Profile `healthy-spike`: hai nguồn đơn giản chạy ngày 25/11/2026 theo cấu hình đăng ký trước, ở phần bổ sung ngay dưới; khác với `normal-mixed`, đây là phép so đăng ký trước khi có số đo của nguồn đơn giản.
+
+### Bổ sung: nguồn đơn giản ở `healthy-spike` (đăng ký 25/11/2026, trước khi chạy)
+
+Phần này đăng ký cấu hình và luật kết luận cho điều kiện thứ hai của criteria-v2 mục 2 ở profile `healthy-spike`. Nó được commit và push trước khi chạy hai run dưới đây. Các run bán thực `healthy-spike` đã chấm ở bảng trên (điểm 0,499; 0,917; 0,919), nên luật đặt sau khi biết điểm bán thực nhưng trước khi có bất kỳ số đo nào của hai nguồn đơn giản.
+
+| | Mức 2 thuần | Mức 1 |
+| --- | --- | --- |
+| Cách chạy | Runner (`run-experiment.mjs`), spec `experiments/specs/realism-v2/pilot-level2-assumed-healthy-spike.json`: reset, dữ liệu seed, TTL service token 60 s, profile `healthy-spike` kèm lịch giảng viên/admin như run dataset | Reset và dữ liệu seed như runner (TTL 60 s), rồi `run-k6.sh level-1` như mục 9 |
+| Nguồn phiên | Kế hoạch `assumed-healthy-spike-k4-v1` (sha256 `ca43e8c0b2ac3e8f…`), dựng từ tham số giả định `params/student-assumed-v1.json`, không lấy ngày nào của log | `JOURNEYS=w1,w3`, `VUS_W1=3`, `VUS_W3=13`, `DURATION=48m` |
+| Seed | `workload_seed` 401 (split `pilot`, không thuộc dataset) | `SEED=402` |
+
+**Số VU của mức 1.** Mức 1 dùng VU cố định, không có profile (mục 2). Mức 1 tương ứng giữ tỉ lệ W1 : W3 = 1 : 4 của `r2` và nhân số VU để tổng request gần bằng số request học viên trung bình của ba run bán thực `healthy-spike` (37.147; 37.217; 37.000; trung bình 37.121). Ở `r2`, mỗi VU W1 sinh 1.889 request và mỗi VU W3 sinh 2.379 request trong 48 phút. Hệ số 37.121 / 11.405 = 3,26 cho 3 VU W1 và 13 VU W3, dự kiến khoảng 36.600 request. Đại lượng mức phiên của mức 1 không phụ thuộc số VU; số VU chỉ đổi số phiên quan sát, tức cỡ mẫu của nhóm tham chiếu.
+
+**Chấm:** `validate-realism.mjs --profile healthy-spike`, cùng hold-out, pool 16 ngày và mã chấm như các run dataset `healthy-spike` ở bảng trên.
+
+**Luật kết luận (chốt trước khi chạy):**
+
+- Được viết "traffic học viên bán thực `healthy-spike` giống thật theo tiêu chí v2" khi điểm v2 của **cả hai** nguồn đơn giản **lớn hơn** 0,919, tức điểm lớn nhất của ba run bán thực `healthy-spike`.
+- Nếu một nguồn có điểm ≤ 0,919 thì không viết, và ghi nguyên kết quả.
+- Mỗi nguồn chấm đúng một run. Chỉ chạy lại khi run hỏng ở gate thực thi vì lỗi hạ tầng, không chạy lại vì điểm. Run hỏng vẫn giữ trong ledger hoặc thư mục kết quả.
+
+**Giới hạn biết trước:** mỗi nguồn một run, một seed. Run mức 1 chạy ngoài runner nên không có dòng ledger, giống `r2`.
+
+#### Kết quả (25/11/2026, sau khi chạy)
+
+Run mức 2 thuần chạy trên commit đăng ký `53b9f9a`, cây sạch (`run-manifest.json`: `code.dirty` = false). Run mức 1 chạy liền sau trong cùng script trên cùng checkout; nó không có bản ghi commit riêng, nhưng dữ liệu seed có cùng fingerprint (`fe30935…`) với run mức 2 thuần, và commit kết quả `5af3a29` được tạo sau khi cả hai xong. Cả hai chạy trên máy Linux hiện tại với TTL service token 60 s, chấm bằng `validate-realism.mjs --profile healthy-spike` như các run dataset (pool 16 ngày, hold-out 9.709 phiên).
+
+| | Mức 2 thuần | Mức 1 |
+| --- | --- | --- |
+| Run | `pilot-healthy-healthy-spike-s401-20261125t030333z` (runner, dòng ledger) | `w15-t07-level1-healthy-spike` (`run-k6.sh level-1`, reset và dữ liệu seed như runner) |
+| Thời gian | 03:04Z–03:53Z | 04:42Z–05:30Z |
+| Thực thi | Gate thực thi `pass`, `RunGroundTruth` `valid`, chất lượng `partial` (`truncated_modality:traces`); kế hoạch sha256 `ca43e8c0b2ac3e8f…`; 40.460 request (học viên 39.332, còn lại giảng viên/admin), tỉ lệ lỗi 0,0025% (1 request), không iteration bị bỏ, không tài khoản dùng chồng | 16 VU (W1 3, W3 13) chạy đủ 48 phút, 6.216 iteration, không iteration bị ngắt; 38.435 request (W1 5.603, W3 32.831, 1 request của setup; dự kiến khoảng 36.600 request học viên), tỉ lệ lỗi 0 |
+| Phiên quan sát | 3.891 | 6.216 |
+| KS D thao tác/phiên; thời lượng; think time (khoảng cách v2, mốc thời gian làm tròn giây như mục 10) | 0,106; 0,270; 0,125 | 0,313; 0,682; 0,912 |
+| JSD tỉ lệ thao tác | 0,158 | 0,320 |
+| Thứ hạng lớn nhất (đại lượng) | 1,00 (KS D thời lượng, KS D think time, JSD) | 1,00 (6/7 đại lượng bằng 1,000; lệch trung vị thời lượng 0,999) |
+| **Điểm v2 / `tau`** | **1,000 / 0,988** | **1,000 / 0,987** |
+| Đạt v2 | không | không |
+| Quá trình đến (khoảng 2,5–97,5% của nhóm ngày `healthy-spike`): Pearson dáng theo giờ (0,65–0,95); đỉnh/trung bình (2,97–5,31); index of dispersion (23,9–41,7); Hurst (0,94–0,99) | 0,60; 2,55; 19,2; 1,00 | −0,04; 1,24; 0,55; 0,28 |
+
+Cả hai nguồn nằm ngoài khoảng của nhóm ngày thật ở cả bốn đại lượng của quá trình đến (không có ngưỡng, criteria-v2 mục 2.7). Ghi chú về phần đăng ký: hệ số 37.121 / 11.405 là 3,2548, tức 3,25 khi làm tròn (phần đăng ký ghi 3,26); số VU 3 và 13 không đổi.
+
+**Áp luật đã đăng ký:** điểm của cả hai nguồn đơn giản (1,000) lớn hơn 0,919, nên điều kiện thứ hai của criteria-v2 mục 2 được thỏa cho `healthy-spike`. Mức 2 thuần trượt rõ ở thời lượng phiên, think time và tỉ lệ thao tác, giống `r2` ở `normal-mixed`: tham số giả định không tái tạo được hành vi thật, dù trung vị số thao tác khớp. Mức 1 xa ngoài dải ở cả bảy đại lượng.
 
 ## 12. Kết luận theo v1 và v2
 
@@ -273,7 +326,13 @@ node tools/validate-realism.mjs --profile <normal-mixed|healthy-spike> \
   2. dáng theo giờ của nhóm validation nằm ngoài dải của nhóm ngày thật;
   3. 1/4 ngày của mỗi nhóm đã nằm trong kế hoạch `r2`;
   4. chỉ có 2 nhóm ngày độc lập, và phép so với nguồn đơn giản là chấm sau khi xem dữ liệu.
-- **Theo v2, profile `healthy-spike`:** bán thực đạt v2 ở 3/3 run và 2/2 nhóm ngày, nhưng **chưa viết "giống thật"** vì chưa có nguồn đơn giản để so ở profile này. Muốn viết thì cần chạy và chấm một run mức 2 thuần (`assumed-healthy-spike-k4-v1`) và một run mức 1 tương ứng ở `healthy-spike`. Mức 1 dùng VU cố định, không có profile (mục 2), nên phải định nghĩa trước mức 1 tương ứng, chẳng hạn số VU cho cùng tổng request với run bán thực. Việc này chưa có trong kế hoạch tuần 15.
+- **Theo v2, profile `healthy-spike`:** bán thực đạt v2 ở 3/3 run và 2/2 nhóm ngày (điểm 0,499–0,919). Hai nguồn đơn giản chạy ngày 25/11/2026 theo cấu hình và luật đăng ký trước (commit `53b9f9a`) đều có điểm 1,000 (mục 11, phần bổ sung). Cả hai điều kiện của criteria-v2 mục 2 được thỏa, nên **được viết: traffic học viên bán thực `healthy-spike` giống thật theo tiêu chí v2**. Khi viết phải kèm:
+  1. nghĩa của v2 với bán thực (bộ phát trung thành với kế hoạch, nhóm ngày không bất thường ở bảy đại lượng mức phiên). Ở `healthy-spike`, pool tham chiếu chỉ có 16 ngày và cả 8 ngày của hai nhóm bán thực đều nằm trong pool (một nửa pool; ở `normal-mixed` là 8/31), nên vế "nhóm ngày không bất thường so với các ngày thật khác" yếu hơn ở profile này;
+  2. 1/4 ngày của nhóm validation và 2/4 ngày của nhóm train đã nằm trong kế hoạch đã xem trước (mục 11);
+  3. chỉ có 2 nhóm ngày độc lập;
+  4. mỗi nguồn đơn giản một run, một seed; luật được đặt sau khi biết điểm bán thực nhưng trước khi có số đo của nguồn đơn giản.
+
+  Kết luận chỉ cho traffic học viên; giảng viên/admin là mức 2 giả định, không thuộc kết luận.
 - Tiêu chí v1 và v2 giữ nguyên. Các số đo trên không dẫn tới thay đổi tiêu chí.
 
 ## Tài liệu tham khảo

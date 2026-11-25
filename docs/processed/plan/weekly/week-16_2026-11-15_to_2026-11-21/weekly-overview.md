@@ -53,7 +53,7 @@
   - Không chạm split test: campaign tuần 19, E1 chính thức đo trên test ở tuần 20.
   - Phạm vi: MVP làm đầy đủ; change-point (Target) và deep model (Stretch) không làm tuần này. Diagnostic E1 trên run mức 1 (mục 17.8) không bắt buộc, không làm tuần này.
   - Tồn đọng mang từ tuần 15:
-    - Run mức 1 và mức 2 thuần ở `healthy-spike` cho kết luận độ thực: phần bổ sung **sau khi** task-07 tuần 15 đã `Hoàn thành`, trên nhánh `feat/week-15/task-07-healthy-spike-simple-sources` (cách dùng nhánh bổ sung giống PR #90 của task-03 tuần 14, nhưng PR #90 merge khi task đó còn `Đang thực hiện`). Card task-07 tuần 15 giữ `Hoàn thành` và ghi phần bổ sung cùng PR trong chính PR đó.
+    - Run mức 1 và mức 2 thuần ở `healthy-spike` cho kết luận độ thực (đã chạy 25/11/2026, cả hai điểm v2 1,000 nên được viết "giống thật theo v2"): phần bổ sung **sau khi** task-07 tuần 15 đã `Hoàn thành`, trên nhánh `feat/week-15/task-07-healthy-spike-simple-sources` (cách dùng nhánh bổ sung giống PR #90 của task-03 tuần 14, nhưng PR #90 merge khi task đó còn `Đang thực hiện`). Card task-07 tuần 15 giữ `Hoàn thành` và ghi phần bổ sung cùng PR trong chính PR đó.
     - Export chờ tới `time_end` + 10 s.
     - C2 ở cao điểm `healthy-spike` làm cạn pool `course`.
     - Chạy thử trên Windows (tuần 17–18).
