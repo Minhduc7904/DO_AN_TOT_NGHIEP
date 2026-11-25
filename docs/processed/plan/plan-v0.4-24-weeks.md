@@ -752,6 +752,27 @@ Giai đoạn này đáp ứng góp ý giữa kỳ. Nguyên tắc: **quyết đ�
 **A — Experiment primary**
 
 - final test: 4 case × 4 run (lần lặp 2–5), mỗi case ít nhất một run fault trùng cao điểm tải, cùng healthy final (normal mixed, high-load spike) với seed và đoạn log Moodle chưa dùng ở train/validation; biến thể case (Target) nếu thời gian cho phép;
+- **Chốt ngày 25/11/2026** (Bách duyệt; chỉ cụ thể hóa hai điểm mà [dataset-v0](../architecture/dataset-v0.md) mục 4 để tới freeze, không đổi milestone hay scope):
+  1. **Slot fault trùng cao điểm: lần lặp 5 của cả 4 case chạy trên profile `healthy-spike`, cửa sổ fault đặt bằng `--align-peak` theo kế hoạch test `healthy-spike`.**
+     - *Nguyên nhân:*
+       - Manifest test hiện chưa có slot nào trùng cao điểm. Trên validation, cả 4 detector đều khớp 4/4 và nhiều lựa chọn phải quyết bằng luật hòa ([detection-validation-report-v1](../architecture/detection-validation-report-v1.md) mục 0, 9), nên có nguy cơ kết quả test bão hòa.
+       - Trên kế hoạch test `normal-mixed`, lịch mặc định (giây 1080–1680) đã phủ 459/483 phiên của đoạn 600 s đông nhất, nên đặt theo cao điểm trên profile này gần như không khác lịch mặc định. Cao điểm thật nằm ở kế hoạch test `healthy-spike`: đoạn 600 s đông nhất có 1.659 phiên, khoảng 3,4 lần.
+     - *Hướng giải quyết:*
+       - Lịch tính bằng `fault-schedule.mjs plan --align-peak` trên kế hoạch test `healthy-spike`: C2 và C4 giây 1530–2130, C3 giây 1200–2100 (phủ trọn đoạn đông nhất), C6 giây 1530–1830; cả bốn trong giới hạn warm-up và recovery của fault manifest v2.
+       - Cùng `workload_seed` cho 4 case theo quy tắc seed của fault run.
+       - Không thêm run: 4 trong 16 slot fault đổi profile.
+     - *Phải chốt trước khi chạy:*
+       - Ngân sách export trace: run pilot C2 trên cao điểm sinh 50.923 trace, vượt ngân sách 20.000. Nâng ngân sách, hoặc giữ ngân sách và ghi trace là mẫu (bảng F của protocol mục 6.1.1).
+       - C2 làm cạn pool kết nối của `course` (504 ở gateway) là triệu chứng kỳ vọng của manifest v2, không phải run hỏng.
+  2. **Run khỏe test: 3 run mỗi profile thay vì 1** (thêm 4 run, seed 3007–3010).
+     - *Nguyên nhân:* với 1 run mỗi profile, thời gian khỏe chỉ khoảng 1,4 giờ. Báo động giả/giờ trên validation là 0–1 incident trên 3,54 giờ, nên mẫu số quá nhỏ để phân biệt detector và bootstrap CI rất rộng.
+     - *Hướng giải quyết:*
+       - `normal-mixed`: 2 kế hoạch mới dựng từ 8 trong 12 ngày test chưa dùng, theo cùng luật (`k` = 4, gần trung vị, rời nhau), để có thêm ngày khác nhau.
+       - `healthy-spike`: 4 ngày đông nhất của test đã nằm trong kế hoạch spike, ngày còn lại kém đông hơn hẳn, nên 2 run thêm dùng lại kế hoạch spike test với seed mới.
+       - Luật chọn ngày và seed ghi vào manifest test trước khi chạy run test nào.
+     - *Chi phí:* khoảng 5 giờ máy (1,3 giờ/run theo dataset v0). Campaign test thành 22 run, khoảng 29 giờ máy, chạy tuần tự.
+  3. **Không chạy lại run đã có.** 10 run train/validation và 13 run pilot không đổi. Hai thay đổi chỉ chạm slot test chưa chạy; lựa chọn trên validation vẫn hợp lệ (validation đã có run khỏe `healthy-spike` và một fault run đặt theo cao điểm `normal-mixed`). Fault trên cao điểm spike chưa có ở validation; đó là điều test đo, không phải lý do để chọn lại.
+  4. **Thực hiện khi freeze tuần 19:** sửa phần test của dataset manifest thành phiên bản mới. Không sửa `dataset-v0.json` trước đó, vì sha256 của nó đã nằm trong ledger chọn validation và lineage của config đã freeze (`detector-e1.v1`).
 - ledger; rerun run invalid và ghi lý do.
 
 **B — Evaluation primary**
