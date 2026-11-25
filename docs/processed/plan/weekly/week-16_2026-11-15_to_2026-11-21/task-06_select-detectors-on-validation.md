@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-06_select-detectors-on-validation` |
 | Tuần | `week-16_2026-11-15_to_2026-11-21` |
-| Trạng thái | Chờ review |
+| Trạng thái | Hoàn thành |
 | Người phụ trách | Bách |
 | Collaborator | Không có |
 | Ưu tiên | Cao |
@@ -82,13 +82,13 @@ Theo [evaluation-protocol-v1](../../../architecture/evaluation-protocol-v1.md) m
 - Input workspace: Không tạo (giai đoạn tự bắt kịp; bằng chứng nằm trong PR).
 - Output workspace: Không tạo.
 - Pull request: [#110](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/110).
-- Kết quả review: Chờ review. Code đã review bằng agent riêng hai vòng trước lần chấm đầu; báo cáo được soát số liệu bằng agent riêng (xem mô tả PR).
+- Kết quả review: Không có GitHub `APPROVED` (giai đoạn tự bắt kịp). Code đã review bằng agent riêng hai vòng trước lần chấm đầu; báo cáo được soát số liệu bằng agent riêng; các phát hiện đã sửa trong PR (xem mô tả PR). CI GitHub đạt trước khi merge. PR #110 được Bách (người phụ trách) merge ngày 25/11/2026 (merge commit `886d394`) trước khi finalization; card chuyển `Hoàn thành` bằng PR ghi nhận hậu kiểm trên `main` theo yêu cầu của Bách.
 
 > URL/số PR và `Chờ review` phải được commit/push vào PR head trước review. Thành viên còn lại phải gửi `APPROVED` hợp lệ trên GitHub; sau đó người phụ trách finalization metadata, ghi `Hoàn thành` trên chính branch/PR và tự merge task của mình. Card chỉ canonically hoàn thành khi commit đó vào nhánh canonical; xem [vòng đời task canonical](../../../rules/git-and-pull-request-rules.md#vòng-đời-task-canonical).
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 25/11/2026 — chọn và freeze xong ([detection-validation-report-v1](../../../architecture/detection-validation-report-v1.md)):
+- Cập nhật gần nhất: 25/11/2026 — đã merge PR #110 (`886d394`); ghi nhận hậu kiểm, chuyển Hoàn thành. Trước đó cùng ngày — chọn và freeze xong ([detection-validation-report-v1](../../../architecture/detection-validation-report-v1.md)):
   - Bằng chứng DoD: ledger [`evaluations/validation-v1/ledger.jsonl`](../../../../../aiops-platform/training/evaluations/validation-v1/ledger.jsonl); lần chấm đầu 08:19:33 UTC trên `175e1cf` (chứa `f57c322` của PR #103); 27 lần chấm, không `score_failed`. Ledger đặt ở `evaluations/` thay cho `configs/` vì harness coi `configs/` chưa commit là code bẩn (báo cáo mục 1).
   - Bước 1 chọn `w30-p4-z5`; bước 2a `merge300-chain120`; bước 2b `static-loose`, `iforest-q0.995`, `fused-equal-q0.999`. Hyperparameter Isolation Forest cố định theo v2 (không tune). Config `configs/detector-e1-v1.json`, `configs/incident-e1-v1.json` có version và lineage.
   - Bảng tái lập bằng `uv run aiops-training select-detectors report`; lượt `all` vào thư mục riêng cho 27/27 artifact, model và config freeze giống hệt.

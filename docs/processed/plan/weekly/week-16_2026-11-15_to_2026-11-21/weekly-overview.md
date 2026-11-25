@@ -7,7 +7,7 @@
 | Tuần | `week-16_2026-11-15_to_2026-11-21` |
 | Nguồn plan canonical | [Plan v0.4 — Tuần 16](../../plan-v0.4-24-weeks.md#tuần-16--anomaly-baselines-và-incident-detection) |
 | Mục tiêu tuần | Detector ngưỡng tĩnh, robust z-score và Isolation Forest fit trên run train khỏe của dataset v0; điểm hợp nhất metric/trace/log có fallback khi thiếu modality; feature cửa sổ 30 s cho tập ứng viên; incident lifecycle có `detected_at` và `estimated_start_time`; evaluation harness cho Precision/Recall/F1, healthy-run FPR, báo động giả/giờ và Detection Delay; khai báo tập ứng viên còn mở trước validation; chọn cấu hình trên validation, E1 sơ bộ và error analysis ban đầu |
-| Trạng thái tuần | Đang thực hiện — bảng task lập ngày 25/11/2026 (PR #102); task-01 đến task-05 đã hoàn thành và merge (PR #103–#107); task-06 đang làm; Gate R điều kiện 5 vẫn mở (ngoại lệ ở dưới) |
+| Trạng thái tuần | Đang thực hiện — bảng task lập ngày 25/11/2026 (PR #102); task-01 đến task-06 đã hoàn thành và merge (PR #103–#107, #110); Gate R điều kiện 5 vẫn mở (ngoại lệ ở dưới) |
 
 > Tuần canonical là 15/11/2026–21/11/2026. Kế hoạch được lập ngày 25/11/2026 để bù tiến độ; hạn task bên dưới là mốc bù tiến độ. Theo quyết định của Bách (19/11/2026), phạm vi MVP làm đầy đủ, không áp dụng phương án nén lịch của plan v0.4 mục 9 chỉ vì trễ lịch.
 
@@ -24,7 +24,7 @@
 | [task-03_build-incident-lifecycle](task-03_build-incident-lifecycle.md) | Incident lifecycle (persistence, recovery, merge, gộp nhiều service), `detected_at`, `estimated_start_time`, incident record | Bách | Không có | Cao | Hoàn thành |
 | [task-04_build-detection-evaluation-harness](task-04_build-detection-evaluation-harness.md) | Evaluation harness: ghép incident với fault, Precision/Recall/F1, healthy-run FPR, báo động giả/giờ (kể cả đoạn cao điểm), Detection Delay, bootstrap CI, hàm của luật chọn | Bách | Không có | Cao | Hoàn thành |
 | [task-05_declare-detection-candidates-v2](task-05_declare-detection-candidates-v2.md) | Khai báo trước mọi lần chấm validation phần còn mở của phát hiện: quy tắc gộp điểm, tham số incident, Isolation Forest, điểm hợp nhất, ngưỡng tĩnh E1 | Bách | Không có | Cao | Hoàn thành |
-| [task-06_select-detectors-on-validation](task-06_select-detectors-on-validation.md) | Chọn window/persistence và ngưỡng trên validation theo luật đã khai báo, freeze config; E1 sơ bộ trên validation; error analysis ban đầu | Bách | Không có | Cao | Chờ review |
+| [task-06_select-detectors-on-validation](task-06_select-detectors-on-validation.md) | Chọn window/persistence và ngưỡng trên validation theo luật đã khai báo, freeze config; E1 sơ bộ trên validation; error analysis ban đầu | Bách | Không có | Cao | Hoàn thành |
 
 > Khi đọc tiến độ project-wide, chỉ coi hàng có trạng thái `Hoàn thành` trên nhánh canonical là hoàn thành; trạng thái đã finalization trên task branch chưa thay thế nguồn này.
 
@@ -68,8 +68,12 @@
 
 ## Tiêu chí kết thúc tuần
 
-- [ ] Các task ưu tiên cao có trạng thái và bằng chứng được cập nhật.
+- [x] Các task ưu tiên cao có trạng thái và bằng chứng được cập nhật.
 - [x] Các task hoàn thành đã liên kết đến PR và bằng chứng DoD.
 - [x] Mọi lần chấm validation chạy trên commit đã có `detection-candidates.v2` và được ghi trong ledger chấm validation. Ledger `evaluations/validation-v1/ledger.jsonl` (task-06).
 - [ ] Gate R điều kiện 5 có bằng chứng của Bách (đóng ngoại lệ của tuần 13–16).
-- [ ] Tồn đọng và việc chuyển sang tuần 17 đã được ghi rõ.
+- [ ] Tồn đọng và việc chuyển sang tuần 17 đã được ghi rõ. Đã biết:
+  - Đồ thị phụ thuộc v2 (tuần 17) thay tương quan theo thời gian: ra `incident-e1` phiên bản mới và chọn lại bước 2a theo cùng luật (task-03, task-06).
+  - Isolation Forest có trần điểm theo service, nên với ngưỡng phân vị gộp mọi service, ở 0,780 `course` và `scheduler` không vượt được (task-06, báo cáo mục 5, 9). Muốn đổi phải ra tập ứng viên v3 và chọn lại **trước** campaign test (tuần 19); nếu giữ thì ghi thành giới hạn của E1.
+  - Bộ ngưỡng tĩnh `loose` vượt triệu chứng C2/C4 với biên hẹp, và delay C3 phụ thuộc lúc job AI đến (task-06, báo cáo mục 8.3, 9).
+  - Mang tiếp từ tuần 15: export chờ tới `time_end` + 10 s; C2 ở cao điểm `healthy-spike` làm cạn pool `course`; chạy thử trên Windows (tuần 17–18); Gate R điều kiện 5.
