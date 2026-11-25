@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-04_collect-dataset-v0` |
 | Tuần | `week-15_2026-11-08_to_2026-11-14` |
-| Trạng thái | Chờ review |
+| Trạng thái | Hoàn thành |
 | Người phụ trách | Bách |
 | Collaborator | Không có |
 | Ưu tiên | Cao |
@@ -57,18 +57,18 @@ Theo [evaluation-protocol-v1](../../../architecture/evaluation-protocol-v1.md) m
 
 - Input workspace: Không tạo (giai đoạn tự bắt kịp; bằng chứng nằm trong PR).
 - Output workspace: Không tạo.
-- Pull request: [#97](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/97) (xếp chồng trên nhánh task-03, PR #95).
-- Kết quả review: Chưa review.
+- Pull request: [#97](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/97) (mở xếp chồng trên PR #95; đổi base sang `main` sau khi PR #95 merge).
+- Kết quả review: Không có GitHub `APPROVED` (giai đoạn tự bắt kịp). Đã review bằng agent riêng; các phát hiện đã sửa trong PR (xem mô tả PR). CI GitHub đạt trước khi merge. PR #97 được Bách (người phụ trách) merge ngày 25/11/2026 trước khi finalization; card chuyển `Hoàn thành` bằng commit ghi nhận hậu kiểm trên `main` theo yêu cầu của Bách.
 
 > URL/số PR và `Chờ review` phải được commit/push vào PR head trước review. Thành viên còn lại phải gửi `APPROVED` hợp lệ trên GitHub; sau đó người phụ trách finalization metadata, ghi `Hoàn thành` trên chính branch/PR và tự merge task của mình. Card chỉ canonically hoàn thành khi commit đó vào nhánh canonical; xem [vòng đời task canonical](../../../rules/git-and-pull-request-rules.md#vòng-đời-task-canonical).
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 24/11/2026 — hàng đợi chạy xong (23/11 09:14Z → 24/11 01:48Z). 10/10 slot train/validation có run đạt gate thực thi `pass`, `RunGroundTruth` `valid`, chất lượng `partial` (lý do được nhận theo evaluation-protocol-v1 mục 6.1.1 bảng F). Run healthy validation `normal-mixed` đạt tiêu chí khỏe, nên giữ `k` = 4. `check-dataset.mjs --require-complete` không báo lỗi, cảnh báo hay phần còn thiếu nào. Bảng run và 6 run không giữ slot ở [dataset-v0](../../../architecture/dataset-v0.md) mục 6.
+- Cập nhật gần nhất: 25/11/2026 — đã merge PR #97; ghi nhận hậu kiểm, chuyển Hoàn thành. 24/11/2026 — hàng đợi chạy xong (23/11 09:14Z → 24/11 01:48Z). 10/10 slot train/validation có run đạt gate thực thi `pass`, `RunGroundTruth` `valid`, chất lượng `partial` (lý do được nhận theo evaluation-protocol-v1 mục 6.1.1 bảng F). Run healthy validation `normal-mixed` đạt tiêu chí khỏe, nên giữ `k` = 4. `check-dataset.mjs --require-complete` không báo lỗi, cảnh báo hay phần còn thiếu nào. Bảng run và 6 run không giữ slot ở [dataset-v0](../../../architecture/dataset-v0.md) mục 6.
 - Ghi chú/tồn đọng:
   - Run validation `healthy-spike` giữ slot với trace là mẫu 52,5% (ngân sách export cũ 20.000). Run sau dùng ngân sách 60.000 (dataset-v0 mục 6.1).
   - Sửa tài liệu cho khớp evaluation-protocol-v1 mục 8.6: run thay thế giữ seed của slot, không dùng seed mới. Đã sửa ở dataset-v0 mục 3, `seed_rule` của manifest, workload-design-v1 mục 11.4 và experiments/README.
   - Năm run đầu hỏng trước khi workload bắt đầu, vì worktree mới chưa `pnpm install` trong `lms/`: 4 run `failed` ở bước dữ liệu seed, 1 run `aborted` ở reset. Chúng giữ nguyên trong ledger và không vào `replaced_run_ids`. Luật cho trường hợp này được đặt sau khi chạy và ghi vào experiments/README (dataset-v0 mục 6.2). DoD 3 được tick theo luật đó.
   - Run `134927z` bị ngắt chủ động để đổi ngân sách trace. Việc này lệch khỏi câu chữ của evaluation-protocol-v1 mục 8.6; lý do ghi ở dataset-v0 mục 6.1.
   - `check-dataset.mjs` bỏ ngoại lệ cho slot có run bị thay được đổi seed, và kiểm thêm seed của run bị thay; có test.
-  - **Thứ tự merge:** dataset-v0 và `lib/eligibility.mjs` trỏ tới evaluation-protocol-v1 mục 6.1.1 bảng F, mà mục này nằm ở PR task-06. Nên merge PR task-06 ngay sau PR này.
+  - **Thứ tự merge:** dataset-v0 và `lib/eligibility.mjs` trỏ tới evaluation-protocol-v1 mục 6.1.1 bảng F (PR task-06). Đã merge PR #99 ngay sau PR #97 (25/11/2026).
