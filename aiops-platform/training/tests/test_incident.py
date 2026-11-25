@@ -245,6 +245,7 @@ def test_cli_builds_incidents_from_detector_output_without_ground_truth(tmp_path
     record = json.loads((out / "incidents-robust_z.json").read_text(encoding="utf-8"))
     assert record["schema"] == "incident-record.v1"
     assert record["window_seconds"] == 60 and record["persistence_windows"] == 5
+    assert record["threshold"] == 4
     assert record["lineage"]["anomalies_sha256"] and record["lineage"]["baseline_sha256"]
     (incident,) = record["incidents"]
     assert incident["affected_services"] == ["course"]

@@ -5,7 +5,8 @@ Schema `incident-record.v1` (đọc bởi harness `evaluation/detection`):
 
 ```
 {"schema", "run_id", "detector", "detector_config_version", "incident_config_version",
- "window_seconds", "persistence_windows", "step_seconds", "incident_config", "lineage",
+ "window_seconds", "persistence_windows", "step_seconds", "threshold", "incident_config",
+ "lineage",
  "incidents": [{"incident_id", "detected_at", "estimated_start_time", "resolved_at",
                 "affected_services", "first_symptom", "trigger_reason", "peak_score",
                 "peak_score_infinite", "episodes", "timeline"}]}
@@ -98,6 +99,8 @@ def build_incidents(
         "run_id": manifest["run_id"],
         **key,
         "step_seconds": int(manifest["step_s"]),
+        # Ngưỡng của detector: harness so khớp giữa các run của một tổ hợp (luật chọn mục 6.1.2).
+        "threshold": manifest.get("threshold"),
         "available_after_s": manifest["available_after_s"],
         "incident_config": asdict(config),
         "lineage": {
