@@ -23,7 +23,7 @@ Theo [ADR-006](../../../adr/adr-006-trim-project-scope-v1.md) mục 3.2, [evalua
   - Bắt đầu từ cùng cửa sổ incident do detector khai báo (`detected_at`/`estimated_start_time`, không dùng `fault_start`).
   - Lấy các trace lỗi/chậm nhất trong cửa sổ.
   - Đi theo span CLIENT lỗi hoặc chậm **sâu nhất**, kể cả qua cạnh async/auth sang service khác.
-  - Kết luận service sở hữu span đó (quy về candidate bằng bảng chủ sở hữu của task-01).
+  - Kết luận service sở hữu span đó (quy về candidate bằng bảng ánh xạ tĩnh identity → candidate của task-01; đây là bảng tra, không phải graph model).
 - **Chỉ dùng tín hiệu người thủ công có:** RED metric theo service, trace lỗi/chậm, log theo `trace_id`. Không dùng mô hình đã học, graph model, điểm bất thường học từ train hay ground truth.
 - **Nhật ký thao tác cho E4:** mỗi trace mở, mỗi truy vấn PromQL (một panel), mỗi truy vấn LogQL là một artifact. Đếm theo loại tới khi ra kết luận, ghi "kết luận đúng ở artifact thứ mấy" (do evaluator tính). Ghi thời gian chạy `T_base`.
 - **Đầu ra:** `RcaIncidentResult`, `analyst_kind = manual_baseline_auto`, ranking đủ 10 candidate; service không chạm trace nào xếp sau theo tie-break.

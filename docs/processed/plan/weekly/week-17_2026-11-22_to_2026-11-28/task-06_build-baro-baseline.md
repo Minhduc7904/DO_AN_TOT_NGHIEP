@@ -21,7 +21,9 @@ Theo [evaluation-protocol-v1](../../../architecture/evaluation-protocol-v1.md) m
 
 - **Dùng mã BARO trong RCAEval** (MIT, [GitHub](https://github.com/phamquiluan/RCAEval), `[L-RCAEval]`), ghim phiên bản. Cài trong nhóm dependency tùy chọn để không làm nặng môi trường chính. Ghi license và nguồn.
 - **Adapter:** đọc `metrics.parquet` của export thành ma trận chuỗi thời gian theo service, đúng định dạng RCAEval cần. Chỉ dùng metric như bản gốc; "multi-source BARO" của RCAEval chỉ là diagnostic.
-- **Kiểm adapter trước khi dùng trên testbed:** chạy BARO của RCAEval trên **một phần nhỏ** RE2, ví dụ một hệ thống và vài case. Đối chiếu kết quả với số đã công bố và ghi chênh lệch. Đây cũng là bước đầu của E6 (Target), chỉ làm phần nhỏ.
+- **Kiểm adapter trước khi dùng trên testbed** (protocol mục 15.2.1):
+  - Chọn vài case RE2-TT. Chạy BARO qua hai đường: loader gốc của RCAEval, và chuyển metric của case sang định dạng `metrics.parquet` của testbed rồi đi qua adapter. Hai đường phải cho cùng ranking.
+  - So với số công bố (BARO trên RE2-TT: AC@1 0,67; AC@3 0,82; Avg@5 0,80, protocol mục 15.7 bước 1) chỉ có nghĩa trên đủ 90 case RE2-TT. Đây là bước 1 của E6 (Target): chỉ chạy nếu RAM/thời gian cho phép, và lệch lớn thì dừng, sửa môi trường/adapter trước khi dùng (mục 15.7). Không chạy đủ thì ghi là chưa tái lập số công bố.
 - **Đầu ra:** `RcaIncidentResult`, `analyst_kind = baro_baseline`, ranking đủ 10 candidate. Điểm service là điểm lớn nhất trong các metric của service; cửa sổ do detector khai báo.
 - **Tham số:** giữ mặc định của RCAEval. Không gian chọn (độ dài dữ liệu trước/sau ∈ {5, 10} phút) khai báo lại ở task-07.
 - Số đo thời gian/RAM của BARO trên một run testbed và trên phần RE2 đã chạy.
@@ -51,7 +53,8 @@ Theo [evaluation-protocol-v1](../../../architecture/evaluation-protocol-v1.md) m
 
 - [ ] RCAEval được ghim phiên bản trong nhóm dependency tùy chọn; license và nguồn có ghi.
 - [ ] Adapter có test trên ma trận metric dựng tay (service thiếu metric, cửa sổ ngắn).
-- [ ] BARO chạy trên phần RE2 đã chọn; kết quả và chênh lệch so với số công bố được ghi.
+- [ ] Trên các case RE2-TT đã chọn, BARO qua loader gốc của RCAEval và qua adapter `metrics.parquet` cho cùng ranking.
+- [ ] Trạng thái tái lập số công bố trên RE2-TT được ghi: đã chạy đủ 90 case kèm AC@1/AC@3/Avg@5, hoặc chưa chạy kèm lý do.
 - [ ] Xuất `RcaIncidentResult` hợp lệ trên run pilot; số đo thời gian/RAM có ghi; test, lint đạt.
 
 ## Liên kết hồ sơ thực hiện

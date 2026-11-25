@@ -21,7 +21,7 @@ Theo [analysis-anomaly-rca-blueprint-v1](../../../architecture/analysis-anomaly-
 
 - **Max anomaly:** xếp service theo điểm bất thường lớn nhất trong cửa sổ incident.
 - **Earliest anomaly:** xếp theo thời điểm bất thường sớm nhất (onset ước lượng).
-- **Graph-aware simple:** điểm bất thường cộng quan hệ trên graph của task-01, chỉ cạnh sync (luật lan truyền hoặc centrality đơn giản). Đây là phía "graph-aware" trong so sánh RQ2 với "severity-only", nên mọi thứ khác giữ như Max anomaly (protocol mục 11).
+- **Graph-aware simple:** điểm bất thường cộng một luật lan truyền cố định trên graph của task-01, chỉ cạnh sync, giới hạn độ dài đường đi `max_path_length` (blueprint mục 11.1, 17.5; graph có vòng nên không giả định DAG). Đây là phía "graph-aware" trong so sánh RQ2 với "severity-only", nên mọi thứ khác giữ như Max anomaly (protocol mục 11).
 - **Ngưỡng tĩnh:** xếp service theo số tín hiệu vượt ngưỡng cố định (bộ ngưỡng của `detector-e1.v1`), có trong bảng chính E2 (protocol mục 15.2).
 
 Áp dụng chung:
@@ -29,7 +29,8 @@ Theo [analysis-anomaly-rca-blueprint-v1](../../../architecture/analysis-anomaly-
 - Quy tín hiệu về candidate bằng bảng chủ sở hữu của task-01.
 - Tie-break theo mục 18.1; policy cho candidate không có điểm (mục 18.2); deterministic (blueprint mục 12.7).
 - `evidence[]` truy ngược được về artifact telemetry; `model.graph_ref`, `model.config_ref` ghi đủ lineage.
-- Tham số còn mở (ví dụ luật lan truyền của Graph-aware simple) đưa vào tập ứng viên của task-07, không chọn ở task này.
+- `analyst_kind` theo protocol mục 3.2: ngưỡng tĩnh là `static_threshold_baseline`; ba baseline nội bộ là `rca_engine` (baseline nội bộ của engine, blueprint mục 12.6), phân biệt bằng `model.name`.
+- Tham số còn mở (`max_path_length` và hệ số lan truyền của Graph-aware simple) đưa vào tập ứng viên của task-07, không chọn ở task này.
 
 ### Không thực hiện
 

@@ -24,11 +24,16 @@ Theo [evaluation-protocol-v1](../../../architecture/evaluation-protocol-v1.md) m
 - **Ghép prediction với incident matched** của evaluation artifact phát hiện (mục 16.2, 17.4): chỉ incident matched được chấm RCA; `root_cause_service` lấy từ `RunGroundTruth`, chỉ evaluator đọc.
 - **Chỉ số:**
   - conditional Top-1/Top-3/MRR/Average Rank (mục 18.3);
-  - `eligible_fault_runs`, `matched_detected_runs`, `rca_output_runs`, `insufficient_evidence_runs`, `rca_coverage` (mục 18.5);
+  - `eligible_fault_runs`, `matched_detected_runs`, `rca_output_runs`, `insufficient_evidence_runs`, `rca_evaluable_runs`, `rca_coverage` (mục 18.5);
+  - owner-level Top-K là diagnostic phụ (mục 18.3, 20.3);
   - end-to-end với semantic miss (mục 18.6);
   - theo case và gộp; số đếm và mẫu số (mục 20.6).
 - **Mốc tham chiếu:** constant ranking theo thứ tự tie-break và random ranking (kỳ vọng Top-1 = 1/10, có seed) (mục 15.2, 18.4).
-- **Thống kê:** bootstrap CI theo run và McNemar exact cho Top-1 ghép cặp (mục 20.7), dùng ở test; trên validation chỉ báo số đếm.
+- **Thống kê** (mục 20.7), dùng ở test; trên validation chỉ báo số đếm:
+  - bootstrap CI theo incident/run, phân tầng theo case;
+  - McNemar exact cho Top-1 ghép cặp, kèm p-value hiệu chỉnh Holm cho họ so sánh;
+  - bootstrap ghép cặp CI cho chênh lệch MRR.
+- **`analyst_kind`** (trường của evaluation instance, protocol mục 3.2, không thuộc `RcaIncidentResult`): kiểm theo đúng enum `rca_engine | manual_baseline_auto | simplerca_baseline | baro_baseline | static_threshold_baseline | constant_ranking_reference | random_ranking_reference`; phân biệt các phương pháp cùng `analyst_kind` bằng `model.name`.
 - **Evaluation artifact RCA có lineage:** sha256 của prediction, incident artifact, config. Chặn split test khi không có `--final-test` và chặn code chưa commit, như harness phát hiện.
 
 ### Không thực hiện
@@ -56,7 +61,8 @@ Theo [evaluation-protocol-v1](../../../architecture/evaluation-protocol-v1.md) m
 - [ ] Schema `RcaIncidentResult` v0 được kiểm; prediction sai schema hoặc có candidate ngoài set bị đánh dấu `diagnostic_only` kèm lý do, có test.
 - [ ] Top-1/Top-3/MRR/Average Rank, coverage và end-to-end tính đúng trên prediction và ground truth dựng tay, gồm `insufficient_evidence`, run không có incident matched, hòa điểm.
 - [ ] Mốc constant và random có trong artifact; random tất định theo seed.
-- [ ] Bootstrap CI và McNemar exact có test với ví dụ tính tay.
+- [ ] Bootstrap CI, McNemar exact (kèm Holm) và bootstrap ghép cặp cho chênh lệch MRR có test với ví dụ tính tay.
+- [ ] `analyst_kind` ngoài enum của mục 3.2 bị từ chối, có test.
 - [ ] Split test bị chặn khi không có `--final-test`; artifact có lineage sha256; test, lint đạt.
 
 ## Liên kết hồ sơ thực hiện

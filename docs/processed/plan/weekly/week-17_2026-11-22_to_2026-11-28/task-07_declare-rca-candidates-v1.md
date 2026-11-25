@@ -24,16 +24,16 @@
   - Cửa sổ phân tích lấy từ incident (`estimated_start_time`/`detected_at`).
   - Artifact đã lọc nhiễu.
   - Candidate set `service-candidates.v1`.
-- **Luật cố định:** bảng quy về chủ sở hữu (task-01), tie-break (mục 18.1), policy điểm thiếu (mục 18.2), seed của random ranking.
+- **Luật cố định:** bảng quy về chủ sở hữu (task-01), tie-break (mục 18.1), policy điểm thiếu (mục 18.2), seed của random ranking. Danh sách từ khóa lỗi và luật P95 của SimpleRCA được khai báo cố định có lý do: mục 9.2 coi chúng là tham số chọn được, còn mục 15.2.1 cố định chúng.
 - **Không gian chọn của từng baseline:**
   - SimpleRCA: `k_sigma` ∈ {2, 3}, `m` ∈ {2, 3}, đoạn tham chiếu ∈ {5, 10} phút (mục 15.2.1).
   - BARO: độ dài dữ liệu trước/sau ∈ {5, 10} phút.
   - `base-manual-auto`: ngưỡng "chậm", số trace tối đa, quy ước đếm artifact (mục 15.2, 15.4).
-  - Graph-aware simple: luật lan truyền hoặc centrality.
+  - Graph-aware simple: `max_path_length` ∈ {…} và hệ số lan truyền ∈ {…} của luật cố định ở task-03 (blueprint mục 17.5).
   - Ngưỡng tĩnh: bộ ngưỡng lấy từ `detector-e1.v1`, cố định.
 - **Luật chọn và luật hòa** trên 4 fault run validation, ví dụ Top-1 nhiều nhất, rồi MRR, rồi `tie_rank` khai báo trước, kèm lý do. Ghi tổng số tổ hợp và vì sao vừa với validation nhỏ.
 - **Lý do của từng ứng viên:** từ bài gốc, tài liệu hoặc số đo train/pilot; không từ validation.
-- Ghi quyết định về tương quan incident bằng graph (overview tuần 17) sau khi Bách xác nhận.
+- Ghi rõ incident nuôi RCA dùng `incident-e1` nào. Quyết định về tương quan incident bằng graph là của phần phát hiện, ghi ở blueprint mục 10.3 và detection-validation-report-v1, không ở tập ứng viên RCA.
 - Merge vào `main` trước lần chấm RCA đầu tiên trên validation của task-08.
 
 ### Không thực hiện

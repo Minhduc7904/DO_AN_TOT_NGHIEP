@@ -7,7 +7,7 @@
 | Tuần | `week-17_2026-11-22_to_2026-11-28` |
 | Nguồn plan canonical | [Plan v0.4 — Tuần 17](../../plan-v0.4-24-weeks.md#tuần-17--dependency-graph-và-rca-baselines) |
 | Mục tiêu tuần | Dynamic dependency graph từ trace (cạnh sync, async, xác thực, hạ tầng) kèm graph validation với catalogue v2; RCA harness Top-1/Top-3/MRR có mốc constant/random; baseline nội bộ Max anomaly, Earliest anomaly, Graph-aware simple và baseline ngưỡng tĩnh; `base-manual-auto` có nhật ký thao tác cho E4; SimpleRCA và BARO; khai báo tập ứng viên RCA trước validation; kết quả RCA baseline trên validation |
-| Trạng thái tuần | Chưa bắt đầu — bảng task lập ngày 25/11/2026; chưa task nào bắt đầu |
+| Trạng thái tuần | Chưa bắt đầu — bảng task lập ngày 25/11/2026; chưa task nào bắt đầu. Hạn task-06 đến task-08 (02–05/12/2026) chồng lên tuần 18 canonical |
 
 > Tuần canonical là 22/11/2026–28/11/2026. Bảng được lập ngày 25/11/2026, ngay sau khi tuần 16 xong phần task; hạn task bên dưới là mốc bù tiến độ. Theo quyết định của Bách (19/11/2026), phạm vi MVP làm đầy đủ, không áp dụng phương án nén lịch của plan v0.4 mục 9 chỉ vì trễ lịch.
 
@@ -45,10 +45,10 @@
 - Quyết định cần chốt:
   - **Tương quan incident bằng graph (blueprint mục 10.3):** đề xuất **giữ** tương quan theo thời gian của `incident-e1.v1`, chỉ dùng graph cho RCA ở tuần 17. Lý do:
     - Config đã freeze sau khi chọn trên validation.
-    - Ở validation mỗi fault run cho đúng một incident gồm đủ service liên quan.
+    - Ở validation, mỗi fault run có đúng một incident (detection-validation-report-v1 mục 7). Danh sách service trong incident khác nhau theo detector; ví dụ incident C2 của Isolation Forest không có `course` (root cause), incident C3 chỉ có `ai-worker`.
     - Đổi sang graph phải ra `incident-e1` phiên bản mới và chọn lại bước 2a.
 
-    Bách xác nhận hoặc đổi trước khi task-07 khai báo.
+    Đây là **lệch khỏi** blueprint mục 10.3 (gộp theo connected subgraph) và đảo hướng đã ghi ở overview tuần 16 ("đồ thị v2 thay tương quan theo thời gian"). Bách xác nhận hoặc đổi trước khi task-07 khai báo. Nếu giữ, độ lệch được ghi vào blueprint mục 10.3 và detection-validation-report-v1 mục 9 (tài liệu của phần phát hiện), không ghi trong tập ứng viên RCA.
   - **Trần điểm Isolation Forest theo service** (tồn đọng tuần 16): giữ thành giới hạn của E1, hoặc ra `detection-candidates.v3` (phân vị theo service) và chọn lại trên validation. Phải chốt trước freeze campaign tuần 19; không thuộc task tuần 17.
   - Detector nào nuôi incident cho RCA (đề xuất: fused, theo blueprint mục 9.7) được khai báo ở task-07.
 - Quyết định đã chốt:

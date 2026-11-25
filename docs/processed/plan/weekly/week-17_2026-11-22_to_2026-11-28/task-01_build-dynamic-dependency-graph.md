@@ -19,19 +19,21 @@
 
 Theo [analysis-anomaly-rca-blueprint-v1](../../../architecture/analysis-anomaly-rca-blueprint-v1.md) mục 11 và 17.5, [evaluation-protocol-v1](../../../architecture/evaluation-protocol-v1.md) mục 11 (RQ2), [service-catalogue-and-topology-v2](../../../architecture/service-catalogue-and-topology-v2.md) mục 4–6. Module `graph/` trong `aiops-platform/training` dựng graph theo run và cửa sổ từ `spans.parquet` của export:
 
-- **Năm loại cạnh:**
-  - `sync`: span CLIENT/SERVER cùng trace và `dependency_identity` dạng `<caller>-<callee>`.
+- **Năm loại cạnh** (nguồn theo blueprint mục 11.1: span trace và metric `lms_dependency_*` trong `metrics.parquet`):
+  - `sync`: span CLIENT/SERVER cùng trace và `lms_dependency_*` với `dependency_identity` dạng `<caller>-<callee>`.
   - `async`: PRODUCER → CONSUMER cùng `trace_id`, nối theo queue đích, quy PRODUCER về chủ sở hữu command bằng queue/command catalogue, không bằng `service.name` của span (protocol mục 4.1).
   - `dependency`: tới PostgreSQL, MinIO, SMTP, LLM provider.
-  - `auth`: `<caller>-identity-token`, `<caller>-identity-jwks`.
+  - `auth`: `<caller>-identity-token`, `<caller>-identity-jwks`, từ span CLIENT và `lms_dependency_*` (cạnh tần suất thấp nên metric là nguồn chính khi cửa sổ không có trace).
   - `shared-resource` và `scheduler → scheduler-worker`: chỉ lấy từ topology thiết kế, đánh dấu "thiết kế".
 - **Bảng quy về chủ sở hữu** identity → candidate (blueprint mục 11.3), dùng chung cho các baseline RCA.
 - **Trọng số baseline** `normalized_call_count`. Graph không giả định DAG: vòng `course → ai → course` và cạnh tự lặp `notification-worker → notification-worker` được giữ.
 - **Graph artifact có version** (`graph_config_version`, sha256), tham chiếu được bằng `graph_ref` trong `RcaIncidentResult`; hạ tầng nằm trong evidence graph, không phải node candidate.
 - **Graph validation** (blueprint mục 11.6) so với cạnh `e01–e29` của catalogue v2:
   - cạnh ngoài catalogue, self-loop sai, caller/callee đảo chiều;
-  - async không nối được PRODUCER/CONSUMER;
-  - cạnh nhiễu từ `/ready` và thăm dò;
+  - async không nối được PRODUCER/CONSUMER, hoặc quy PRODUCER về sai owner;
+  - trace sampling làm mất cạnh; graph rời bất thường;
+  - cạnh nhiễu từ `/ready` và thăm dò của `scheduler-worker`;
+  - dependency edge xuất hiện đúng workflow;
   - coverage theo cạnh và theo run, tách cạnh chỉ có trong thiết kế.
 
   Chạy trên run train và pilot; ghi coverage và các cạnh thiếu, ví dụ `media → identity` (`e12`), có thể chưa kích hoạt.
@@ -61,7 +63,7 @@ Theo [analysis-anomaly-rca-blueprint-v1](../../../architecture/analysis-anomaly-
 
 ## Definition of Done
 
-- [ ] Graph dựng được cho mọi run train và pilot, có đủ năm loại cạnh; cạnh thiết kế đánh dấu riêng; artifact có `graph_config_version` và sha256.
+- [ ] Schema graph hỗ trợ đủ năm loại cạnh; graph dựng được cho mọi run train và pilot, kèm báo loại cạnh quan sát được ở từng run (run có thể không có lời gọi auth trong cửa sổ); cạnh thiết kế đánh dấu riêng; artifact có `graph_config_version` và sha256.
 - [ ] Async edge quy về owner theo queue/command, có test với trace dựng tay (gồm vòng `course → ai → course` và self-loop hợp lệ).
 - [ ] Graph validation chạy trên run train/pilot, báo coverage theo cạnh `e01–e29`, liệt kê cạnh thiếu và cạnh ngoài catalogue kèm giải thích.
 - [ ] Bảng quy về chủ sở hữu có test cho mọi loại identity của blueprint mục 11.3.
