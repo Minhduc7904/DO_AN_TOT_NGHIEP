@@ -7,7 +7,7 @@
 | Tuần | `week-15_2026-11-08_to_2026-11-14` |
 | Nguồn plan canonical | [Plan v0.4 — Tuần 15](../../plan-v0.4-24-weeks.md#tuần-15--experiment-runner-pilot-và-dataset-v0) |
 | Mục tiêu tuần | Runner một lệnh (reset-and-seed → workload → fault → ground truth → export → kiểm chất lượng) có ledger theo run; pilot tìm `λ_knee` và chốt mức tải của hai profile; pilot 4 case MVP (C2, C3, C4, C6) tới khi chuỗi nhân quả xảy ra thật, kể cả fault trùng cao điểm; thu tập train healthy và tập validation thành dataset v0 có manifest split theo run; feature pipeline v1 có kiểm tra chống leakage; cập nhật evaluation protocol bằng số đo pilot; kiểm chứng độ thực v2 (tiêu chí theo dao động tự nhiên của dữ liệu thật, đăng ký trước); Gate M3. |
-| Trạng thái tuần | Đang thực hiện — bảng task lập ngày 19/11/2026; task-01, task-02 đã hoàn thành và merge (PR #93, #94); Gate R điều kiện 5 vẫn mở (ngoại lệ ở dưới) |
+| Trạng thái tuần | Đang thực hiện — task-01 đến task-08 đã hoàn thành và merge (PR #93–#100; bảng task ở PR #92); Gate R điều kiện 5 vẫn mở (ngoại lệ ở dưới) |
 
 > Tuần canonical là 08/11/2026–14/11/2026. Kế hoạch được lập ngày 19/11/2026 (tuần lịch 17) để bù tiến độ; hạn task bên dưới là mốc bù tiến độ. Theo quyết định của Bách (19/11/2026), phạm vi MVP của tuần làm đầy đủ, không áp dụng phương án nén lịch của plan v0.4 mục 9 chỉ vì trễ lịch.
 
@@ -21,12 +21,12 @@
 | --- | --- | --- | --- | --- | --- |
 | [task-01_build-experiment-runner](task-01_build-experiment-runner.md) | Experiment runner một lệnh theo run, ledger, run manifest và experiment runbook | Bách | Không có | Cao | Hoàn thành |
 | [task-02_find-load-knee-and-freeze-profiles](task-02_find-load-knee-and-freeze-profiles.md) | Pilot tìm `λ_knee`, chốt mức tải hai profile healthy theo workload-design-v1 mục 8.4 | Bách | Không có | Cao | Hoàn thành |
-| [task-03_pilot-mvp-fault-cases](task-03_pilot-mvp-fault-cases.md) | Pilot 4 case MVP (kể cả fault trùng cao điểm): chuỗi nhân quả, tín hiệu bắt buộc, độ trễ triệu chứng; chốt cường độ và thời lượng fault | Bách | Không có | Cao | Chờ review |
-| [task-04_collect-dataset-v0](task-04_collect-dataset-v0.md) | Dataset v0: kế hoạch phiên theo split, tập train healthy, tập validation, kiểm label/ground truth, manifest split theo run | Bách | Không có | Cao | Chờ review |
-| [task-05_build-feature-pipeline-v1](task-05_build-feature-pipeline-v1.md) | Feature pipeline v1 trên dữ liệu pilot/dataset v0, có kiểm tra chống leakage | Bách | Không có | Cao | Chờ review |
-| [task-06_update-evaluation-protocol-after-pilot](task-06_update-evaluation-protocol-after-pilot.md) | Cập nhật evaluation protocol bằng số đo pilot (không đụng test); chốt E7 | Bách | Không có | Cao | Chờ review |
-| [task-07_validate-workload-realism-v2](task-07_validate-workload-realism-v2.md) | Kiểm chứng độ thực v2: tiêu chí theo dao động tự nhiên của dữ liệu thật, đăng ký trước, chấm trên run dataset v0, báo cáo song song v1/v2 | Bách | Không có | Cao | Chờ review |
-| [task-08_verify-gate-m3](task-08_verify-gate-m3.md) | Gate M3: chạy lại từng case từ môi trường sạch theo runbook, export và xác nhận ground truth độc lập | Bách | Không có | Cao | Chờ review |
+| [task-03_pilot-mvp-fault-cases](task-03_pilot-mvp-fault-cases.md) | Pilot 4 case MVP (kể cả fault trùng cao điểm): chuỗi nhân quả, tín hiệu bắt buộc, độ trễ triệu chứng; chốt cường độ và thời lượng fault | Bách | Không có | Cao | Hoàn thành |
+| [task-04_collect-dataset-v0](task-04_collect-dataset-v0.md) | Dataset v0: kế hoạch phiên theo split, tập train healthy, tập validation, kiểm label/ground truth, manifest split theo run | Bách | Không có | Cao | Hoàn thành |
+| [task-05_build-feature-pipeline-v1](task-05_build-feature-pipeline-v1.md) | Feature pipeline v1 trên dữ liệu pilot/dataset v0, có kiểm tra chống leakage | Bách | Không có | Cao | Hoàn thành |
+| [task-06_update-evaluation-protocol-after-pilot](task-06_update-evaluation-protocol-after-pilot.md) | Cập nhật evaluation protocol bằng số đo pilot (không đụng test); chốt E7 | Bách | Không có | Cao | Hoàn thành |
+| [task-07_validate-workload-realism-v2](task-07_validate-workload-realism-v2.md) | Kiểm chứng độ thực v2: tiêu chí theo dao động tự nhiên của dữ liệu thật, đăng ký trước, chấm trên run dataset v0, báo cáo song song v1/v2 | Bách | Không có | Cao | Hoàn thành |
+| [task-08_verify-gate-m3](task-08_verify-gate-m3.md) | Gate M3: chạy lại từng case từ môi trường sạch theo runbook, export và xác nhận ground truth độc lập | Bách | Không có | Cao | Hoàn thành |
 
 > Khi đọc tiến độ project-wide, chỉ coi hàng có trạng thái `Hoàn thành` trên nhánh canonical là hoàn thành; trạng thái đã finalization trên task branch chưa thay thế nguồn này.
 
@@ -57,8 +57,8 @@
 
 ## Tiêu chí kết thúc tuần
 
-- [ ] Các task ưu tiên cao có trạng thái và bằng chứng được cập nhật.
-- [ ] Các task hoàn thành đã liên kết đến PR và bằng chứng DoD.
-- [ ] Gate M3 có bằng chứng (ngoại lệ một người ghi trung thực).
+- [x] Các task ưu tiên cao có trạng thái và bằng chứng được cập nhật.
+- [x] Các task hoàn thành đã liên kết đến PR và bằng chứng DoD.
+- [x] Gate M3 có bằng chứng (ngoại lệ một người ghi trung thực).
 - [ ] Gate R điều kiện 5 có bằng chứng của Bách (đóng ngoại lệ của tuần 13, 14 và 15).
-- [ ] Tồn đọng và việc chuyển sang tuần 16 đã được ghi rõ.
+- [ ] Tồn đọng và việc chuyển sang tuần 16 đã được ghi rõ. Đã biết: run mức 1 và mức 2 thuần ở `healthy-spike` để kết luận độ thực cho profile này (task-07, chạy bổ sung từ 25/11/2026); export chờ tới `time_end` + 10 s (task-05); C2 ở cao điểm `healthy-spike` làm cạn pool `course` (task-03); chạy thử trên Windows (tuần 17–18); Gate R điều kiện 5.

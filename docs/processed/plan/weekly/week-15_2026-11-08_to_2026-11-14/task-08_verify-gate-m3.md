@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-08_verify-gate-m3` |
 | Tuần | `week-15_2026-11-08_to_2026-11-14` |
-| Trạng thái | Chờ review |
+| Trạng thái | Hoàn thành |
 | Người phụ trách | Bách |
 | Collaborator | Không có |
 | Ưu tiên | Cao |
@@ -53,12 +53,12 @@ Theo [plan v0.4](../../plan-v0.4-24-weeks.md) tuần 15 (Gate M3: hai thành vi�
 
 - Input workspace: Không tạo (giai đoạn tự bắt kịp; bằng chứng nằm trong PR).
 - Output workspace: Không tạo.
-- Pull request: [#96](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/96).
-- Kết quả review: Chờ review.
+- Pull request: [#96](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/96) (mở xếp chồng trên PR #95; đổi base sang `main` sau khi PR #95 merge).
+- Kết quả review: Không có GitHub `APPROVED` (giai đoạn tự bắt kịp). Đã review bằng agent riêng; các phát hiện đã sửa trong PR (xem mô tả PR). CI GitHub: lúc merge còn job `Reset/seed Testbed twice with stable fingerprint` đang chạy, job này đạt sau đó; các job khác đạt. PR #96 được Bách (người phụ trách) merge ngày 25/11/2026 trước khi finalization; card chuyển `Hoàn thành` bằng commit ghi nhận hậu kiểm trên `main` theo yêu cầu của Bách.
 
 > URL/số PR và `Chờ review` phải được commit/push vào PR head trước review. Thành viên còn lại phải gửi `APPROVED` hợp lệ trên GitHub; sau đó người phụ trách finalization metadata, ghi `Hoàn thành` trên chính branch/PR và tự merge task của mình. Card chỉ canonically hoàn thành khi commit đó vào nhánh canonical; xem [vòng đời task canonical](../../../rules/git-and-pull-request-rules.md#vòng-đời-task-canonical).
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 24/11/2026 — Gate M3 (ngoại lệ một người) đạt: checklist commit ở `909a6ce` trước run đầu tiên; 4 fault run C2, C3, C4, C6 chạy ngày 23/11/2026 từ worktree sạch theo runbook, đều `completed`, gate thực thi `pass`, ground truth `valid`, đối chiếu thô bằng `verify-raw-ground-truth.mjs` đạt ở cả 4 run ([checklist](gate-m3-checklist.md) mục Kết quả). Runbook thêm bước đối chiếu độc lập (mục 3).
+- Cập nhật gần nhất: 25/11/2026 — đã merge PR #96; ghi nhận hậu kiểm, chuyển Hoàn thành. 24/11/2026 — Gate M3 (ngoại lệ một người) đạt: checklist commit ở `909a6ce` trước run đầu tiên; 4 fault run C2, C3, C4, C6 chạy ngày 23/11/2026 từ worktree sạch theo runbook, đều `completed`, gate thực thi `pass`, ground truth `valid`, đối chiếu thô bằng `verify-raw-ground-truth.mjs` đạt ở cả 4 run ([checklist](gate-m3-checklist.md) mục Kết quả). Runbook thêm bước đối chiếu độc lập (mục 3).
 - Ghi chú/tồn đọng: độc lập ở đây là độc lập về code, không về người (ngoại lệ giai đoạn tự bắt kịp). Kiểm trước/sau của C3 đi qua nhánh dự phòng vì trước fault không có lời gọi LLM (checklist mục 12).

@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-06_update-evaluation-protocol-after-pilot` |
 | Tuần | `week-15_2026-11-08_to_2026-11-14` |
-| Trạng thái | Chờ review |
+| Trạng thái | Hoàn thành |
 | Người phụ trách | Bách |
 | Collaborator | Không có |
 | Ưu tiên | Cao |
@@ -54,14 +54,14 @@ Theo [evaluation-protocol-v1](../../../architecture/evaluation-protocol-v1.md) m
 
 - Input workspace: Không tạo (giai đoạn tự bắt kịp; bằng chứng nằm trong PR).
 - Output workspace: Không tạo.
-- Pull request: [#99](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/99) (xếp chồng trên PR #97 của task-04; nên merge ngay sau PR #97).
-- Kết quả review: Chưa review.
+- Pull request: [#99](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/99) (mở xếp chồng trên PR #97; đổi base sang `main` sau khi PR #97 merge).
+- Kết quả review: Không có GitHub `APPROVED` (giai đoạn tự bắt kịp). Đã review bằng agent riêng; các phát hiện đã sửa trong PR (xem mô tả PR). CI GitHub đạt trước khi merge. PR #99 được Bách (người phụ trách) merge ngày 25/11/2026 trước khi finalization; card chuyển `Hoàn thành` bằng commit ghi nhận hậu kiểm trên `main` theo yêu cầu của Bách.
 
 > URL/số PR và `Chờ review` phải được commit/push vào PR head trước review. Thành viên còn lại phải gửi `APPROVED` hợp lệ trên GitHub; sau đó người phụ trách finalization metadata, ghi `Hoàn thành` trên chính branch/PR và tự merge task của mình. Card chỉ canonically hoàn thành khi commit đó vào nhánh canonical; xem [vòng đời task canonical](../../../rules/git-and-pull-request-rules.md#vòng-đời-task-canonical).
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 24/11/2026 — [evaluation-protocol-v1](../../../architecture/evaluation-protocol-v1.md):
+- Cập nhật gần nhất: 25/11/2026 — đã merge PR #99; ghi nhận hậu kiểm, chuyển Hoàn thành. 24/11/2026 — [evaluation-protocol-v1](../../../architecture/evaluation-protocol-v1.md):
   - Mục 6.1.1: bảng giá trị chốt sau pilot, mỗi giá trị kèm `run_id` nguồn. Bảng F là luật nhận run `partial`, khớp bộ kiểm `eligibility.v1` của task-04.
   - Mục 6.1.2: tập ứng viên và luật chọn trên validation, commit 23/11/2026 (cuối cùng 21:20 +07), trước mọi fault run validation và trước khi tính feature hay chạy detector trên run validation.
   - Mục 27: các giá trị còn mở và lý do.
