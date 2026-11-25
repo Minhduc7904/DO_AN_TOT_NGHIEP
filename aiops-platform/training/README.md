@@ -87,7 +87,15 @@ uv run aiops-training features ../experiments/runs/<RUN_ID>/telemetry   # → ..
 uv run aiops-training fit-baseline --dataset ../experiments/datasets/dataset-v0.json --runs-dir ../experiments/runs --out baselines/dataset-v0.json
 uv run aiops-training apply-baseline ../experiments/runs/<RUN_ID>/telemetry/features --baseline baselines/dataset-v0.json
 uv run aiops-training check-leakage --dataset ../experiments/datasets/dataset-v0.json --runs-dir ../experiments/runs --baseline baselines/dataset-v0.json
+# Cửa sổ 30 s (tuần 16): thư mục riêng features-w30/, baseline riêng; baseline lệch cửa sổ bị từ chối.
+uv run aiops-training features ../experiments/runs/<RUN_ID>/telemetry --window-s 30   # → .../telemetry/features-w30/
+uv run aiops-training fit-baseline --dataset ../experiments/datasets/dataset-v0.json --runs-dir ../experiments/runs \
+  --features-subdir telemetry/features-w30 --out baselines/dataset-v0-w30.json
+uv run aiops-training check-leakage --dataset ../experiments/datasets/dataset-v0.json --runs-dir ../experiments/runs \
+  --features-subdir telemetry/features-w30 --baseline baselines/dataset-v0-w30.json
 ```
+
+Baseline dùng cho detector từ tuần 16: `baselines/dataset-v0-w60.json` và `baselines/dataset-v0-w30.json`, luật thang đo v2 (thang đo không nhỏ hơn sàn theo đơn vị). `baselines/dataset-v0.json` (luật v1) giữ để tái lập tuần 15.
 
 Cửa sổ 60 s bước 15 s:
 
