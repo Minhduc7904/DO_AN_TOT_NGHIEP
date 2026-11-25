@@ -34,9 +34,14 @@ APPLY_MANIFEST = "baseline-apply.json"
 MAD_TO_SIGMA = 1.4826
 #: Modified z-score (Iglewicz & Hoaglin): MAD = 0 thì dùng 1,2533 × độ lệch tuyệt đối trung bình.
 MEANAD_TO_SIGMA = 1.2533
-#: Quy tắc thang đo, khai báo trước validation (evaluation-protocol-v1 mục 6.1.2,
-#: `aiops-platform/training/configs/detection-candidates-v1.json`).
-SCALE_RULE = "mad|meanad|unit_floor.v1"
+#: Quy tắc thang đo. v1 (khai báo 23/11/2026, `detection-candidates-v1.json`): 1,4826 × MAD; MAD = 0
+#: thì 1,2533 × MeanAD; cả hai bằng 0 thì sàn theo đơn vị. v2 (25/11/2026, trước mọi lần chấm
+#: validation; khai báo ở `detection-candidates.v2`): như v1 nhưng thang đo **không nhỏ hơn** sàn
+#: theo đơn vị. Lý do: trên run train, MAD bằng sai số dấu phẩy động (8,7e-19 với
+#: `media-worker.downstream_latency_p95`) hoặc rất nhỏ (latency 0,1–1 ms) làm z tới 1e15 ngay trên
+#: run khỏe; sàn là thay đổi nhỏ nhất coi là có nghĩa nên cũng là thang đo nhỏ nhất hợp lý.
+SCALE_RULE = "mad|meanad|unit_floor.v2"
+SCALE_RULE_V1 = "mad|meanad|unit_floor.v1"
 #: Sàn thang đo theo đơn vị khi đặc trưng hằng trên train (MAD = MeanAD = 0): thay đổi nhỏ nhất
 #: coi là có nghĩa. z = 3 trên tỉ lệ lỗi hằng 0 là tăng 3 điểm phần trăm; mất một consumer là z = 5.
 UNIT_FLOOR: dict[str, float] = {
@@ -114,18 +119,23 @@ def read_feature_meta(features_dir: Path) -> dict[str, Any]:
     return json.loads((features_dir / FEATURE_MANIFEST).read_text(encoding="utf-8"))
 
 
-def robust_scale(samples: list[float], column: str) -> dict[str, float]:
-    """Median và thang đo của robust z theo `SCALE_RULE`."""
+def robust_scale(samples: list[float], column: str, rule: str = SCALE_RULE) -> dict[str, float]:
+    """Median và thang đo của robust z theo `rule` (mặc định `SCALE_RULE` v2)."""
+    if rule not in (SCALE_RULE, SCALE_RULE_V1):
+        raise BaselineError(f"Quy tắc thang đo không hỗ trợ: {rule}")
     median = statistics.median(samples)
     deviations = [abs(value - median) for value in samples]
     mad = statistics.median(deviations)
     meanad = statistics.fmean(deviations)
+    floor = UNIT_FLOOR[COLUMN_UNIT[column]]
     if mad > 0:
         scale, basis = MAD_TO_SIGMA * mad, "mad"
     elif meanad > 0:
         scale, basis = MEANAD_TO_SIGMA * meanad, "meanad"
     else:
-        scale, basis = UNIT_FLOOR[COLUMN_UNIT[column]], "unit_floor"
+        scale, basis = floor, "unit_floor"
+    if rule == SCALE_RULE and scale < floor:
+        scale, basis = floor, f"unit_floor>{basis}"
     return {
         "median": median,
         "mad": mad,
