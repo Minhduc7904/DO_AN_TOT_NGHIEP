@@ -53,11 +53,17 @@ export const LEVEL1_ROUTE_STATE = Object.freeze({
 /**
  * Gom request thành thao tác và phiên. `requests` là `{ sessionKey, actionKey, state, startMs, endMs }`;
  * một thao tác = các request cùng `actionKey` (mức 2) hoặc các request liên tiếp cùng trạng thái (mức 1).
+ *
+ * `timeResolutionMs` > 0 làm tròn xuống mốc thời gian của request theo độ phân giải đó trước khi tính
+ * khoảng nghỉ, giống log Moodle ghi thời điểm sự kiện theo giây (tiêu chí v2, realism-v2.mjs). Mặc
+ * định 0: giữ mili giây như tiêu chí v1.
  */
-export function sessionsFromRequests(requests, runStartMs) {
+export function sessionsFromRequests(requests, runStartMs, { timeResolutionMs = 0 } = {}) {
+  const snap = (ms) => (timeResolutionMs > 0 ? Math.floor(ms / timeResolutionMs) * timeResolutionMs : ms);
   const bySession = new Map();
-  for (const request of requests) {
-    if (PRELUDE_STATES.has(request.state)) continue;
+  for (const raw of requests) {
+    if (PRELUDE_STATES.has(raw.state)) continue;
+    const request = { ...raw, startMs: snap(raw.startMs), endMs: snap(raw.endMs) };
     if (!bySession.has(request.sessionKey)) bySession.set(request.sessionKey, []);
     bySession.get(request.sessionKey).push(request);
   }
@@ -95,7 +101,7 @@ export function sessionsFromRequests(requests, runStartMs) {
 }
 
 /** Từ `actions.jsonl` của k6 mức 2/2+ (chỉ vai trò học viên). */
-export function sessionsFromActionLog(records, runStartMs) {
+export function sessionsFromActionLog(records, runStartMs, options = {}) {
   const requests = records
     .filter((record) => record.role === 'student' && record.method !== 'WAIT')
     .map((record) => {
@@ -108,14 +114,14 @@ export function sessionsFromActionLog(records, runStartMs) {
         endMs,
       };
     });
-  return sessionsFromRequests(requests, runStartMs);
+  return sessionsFromRequests(requests, runStartMs, options);
 }
 
 /**
  * Từ output JSON của k6 (`--out json`) mức 1: điểm `http_req_duration` có tag `journey`, `name` và
  * metadata `vu`, `iter`. Một phiên = một lượt (VU, iteration) của hành trình học viên (W1, W3).
  */
-export function sessionsFromK6Points(points, runStartMs, journeys = ['w1', 'w3']) {
+export function sessionsFromK6Points(points, runStartMs, journeys = ['w1', 'w3'], options = {}) {
   const requests = [];
   for (const point of points) {
     if (point.type !== 'Point' || point.metric !== 'http_req_duration') continue;
@@ -133,7 +139,7 @@ export function sessionsFromK6Points(points, runStartMs, journeys = ['w1', 'w3']
       endMs,
     });
   }
-  return sessionsFromRequests(requests, runStartMs);
+  return sessionsFromRequests(requests, runStartMs, options);
 }
 
 /** Phiên của file `sessions.v1` (hold-out) → dạng quan sát, nén lịch theo `startOf(session)`. */
