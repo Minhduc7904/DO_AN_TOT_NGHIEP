@@ -591,6 +591,7 @@ def build_features(
             "windows_cut": len(windows(start, time_end, config)) - len(all_windows),
         },
         "run_id": run_id,
+        "window_s": config.window_s,
         "config": asdict(config),
         "input_manifest_version": manifest.get("manifest_version"),
         "input_files": manifest.get("files"),
@@ -682,12 +683,38 @@ TABLES = {
 }
 
 
+#: Độ dài cửa sổ mặc định; thư mục `features/` của nó giữ nguyên tên như trước task-02 tuần 16.
+DEFAULT_WINDOW_S = FeatureConfig().window_s
+
+
+def features_dir_name(window_s: int) -> str:
+    """Thư mục feature trong thư mục artifact: `features` (60 s), `features-w<N>` (cửa sổ khác).
+
+    Mỗi độ dài cửa sổ một thư mục để feature 30 s không ghi đè feature 60 s đã dùng fit baseline.
+    """
+    return "features" if window_s == DEFAULT_WINDOW_S else f"features-w{window_s}"
+
+
+def feature_window_s(meta: dict[str, Any]) -> int:
+    """Độ dài cửa sổ của một manifest feature; manifest trước task-02 chỉ có `config.window_s`."""
+    value = meta.get("window_s")
+    return int(value if value is not None else meta["config"]["window_s"])
+
+
 def write_features(
-    artifact_dir: Path, out_dir: Path | None = None, query_start: datetime | None = None
+    artifact_dir: Path,
+    out_dir: Path | None = None,
+    query_start: datetime | None = None,
+    config: FeatureConfig | None = None,
 ) -> dict[str, Any]:
-    tables = build_features(artifact_dir, query_start=query_start)
+    config = config or FeatureConfig()
+    if config.window_s <= 0 or config.window_s % config.step_s:
+        raise FeatureError(
+            f"Độ dài cửa sổ {config.window_s} s phải là bội dương của bước {config.step_s} s"
+        )
+    tables = build_features(artifact_dir, config=config, query_start=query_start)
     meta = tables.meta
-    target = out_dir or artifact_dir / "features"
+    target = out_dir or artifact_dir / features_dir_name(config.window_s)
     target.mkdir(parents=True, exist_ok=True)
     rows = {"service": tables.service_rows, "edge": tables.edge_rows, "queue": tables.queue_rows}
     for name, (file_name, schema) in TABLES.items():

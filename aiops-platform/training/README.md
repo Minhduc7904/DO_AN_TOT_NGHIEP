@@ -87,7 +87,15 @@ uv run aiops-training features ../experiments/runs/<RUN_ID>/telemetry   # → ..
 uv run aiops-training fit-baseline --dataset ../experiments/datasets/dataset-v0.json --runs-dir ../experiments/runs --out baselines/dataset-v0.json
 uv run aiops-training apply-baseline ../experiments/runs/<RUN_ID>/telemetry/features --baseline baselines/dataset-v0.json
 uv run aiops-training check-leakage --dataset ../experiments/datasets/dataset-v0.json --runs-dir ../experiments/runs --baseline baselines/dataset-v0.json
+# Cửa sổ 30 s (tuần 16): thư mục riêng features-w30/, baseline riêng; baseline lệch cửa sổ bị từ chối.
+uv run aiops-training features ../experiments/runs/<RUN_ID>/telemetry --window-s 30   # → .../telemetry/features-w30/
+uv run aiops-training fit-baseline --dataset ../experiments/datasets/dataset-v0.json --runs-dir ../experiments/runs \
+  --features-subdir telemetry/features-w30 --out baselines/dataset-v0-w30.json
+uv run aiops-training check-leakage --dataset ../experiments/datasets/dataset-v0.json --runs-dir ../experiments/runs \
+  --features-subdir telemetry/features-w30 --baseline baselines/dataset-v0-w30.json
 ```
+
+Baseline dùng cho detector từ tuần 16: `baselines/dataset-v0-w60.json` và `baselines/dataset-v0-w30.json`, luật thang đo v2 (thang đo không nhỏ hơn sàn theo đơn vị). `baselines/dataset-v0.json` (luật v1) giữ để tái lập tuần 15.
 
 Cửa sổ 60 s bước 15 s:
 
@@ -96,6 +104,54 @@ Cửa sổ 60 s bước 15 s:
 - `queue_windows.parquet`: message sẵn sàng/chưa ack và consumer theo hàng đợi RabbitMQ (cạnh async).
 
 `feature_config_version` (`feature.v1`) và `noise_filter_version` (`noise.v1`) ghi trong `features-manifest.json`, áp như nhau cho mọi run. `apply-baseline` ghi thêm `baseline-apply.json` (sha256 của baseline đã dùng). Cột `run_id` chỉ là khóa (tên run mã hóa split và case), detector phải bỏ. Cột, bộ lọc nhiễu, quy tắc thời điểm, baseline và kiểm leakage: [telemetry-data-dictionary-v2](../../docs/processed/architecture/telemetry-data-dictionary-v2.md) mục 9.
+
+## Detector bất thường (`anomaly/`)
+
+Bốn loại điểm theo (cửa sổ, service), cùng đầu ra, để E1 chỉ đổi detector (evaluation-protocol-v1 mục 17.8):
+
+| `--detector` | Đầu vào | Điểm | Vượt ngưỡng khi |
+| --- | --- | --- | --- |
+| `static` | Giá trị thô | max(giá trị / ngưỡng) với tín hiệu tăng; max(ngưỡng / giá trị) với `consumers` | điểm > 1 |
+| `robust_z` | z của baseline healthy | max z có hướng | điểm > `threshold` |
+| `iforest` | Vector z theo service, model fit trên train khỏe | −`score_samples` ∈ (0, 1] | điểm > `threshold` |
+| `fused` | z theo modality | trung bình có trọng số của max(0, max z) từng modality có dữ liệu | điểm > `threshold` |
+
+```bash
+# Isolation Forest: một model mỗi service, chỉ từ run train khỏe (case rỗng) của dataset.
+uv run aiops-training fit-iforest --dataset ../experiments/datasets/dataset-v0.json --runs-dir ../experiments/runs \
+  --features-subdir telemetry/features --config configs/detector-dev-v1.json \
+  --out models/iforest-w60.joblib   # + models/iforest-w60.joblib.json
+# Chạy trên thư mục feature đã apply-baseline; ghi anomalies-<detector>.parquet + .json (lineage).
+uv run aiops-training detect ../experiments/runs/<RUN_ID>/telemetry/features --detector robust_z --config configs/detector-dev-v1.json
+uv run aiops-training detect ../experiments/runs/<RUN_ID>/telemetry/features --detector iforest --config configs/detector-dev-v1.json --model models/iforest-w60.joblib
+```
+
+Quy tắc dùng chung (chi tiết ở docstring `anomaly/signals.py`, `anomaly/detectors.py`, `anomaly/iforest.py`):
+
+- **Tín hiệu** (`signals.v1`): triệu chứng lỗi, độ trễ, hàng đợi ứ, mất consumer. Không dùng tín hiệu tải (`request_rate`, `call_count`, CPU, bộ nhớ). Trace chỉ dùng `trace_error_rate`, không dùng số đếm tuyệt đối (bảng F, hệ quả (c)).
+- **Quy về service:** cạnh theo phía gọi, hàng đợi theo consumer. `consumers` chỉ xét hàng đợi thường; hàng đợi dead-letter không có consumer theo thiết kế.
+- **`telemetry_silent`:** luôn vượt ngưỡng ở cả bốn loại điểm (`reason = telemetry_silent`), không đi qua z.
+- **Cửa sổ không dữ liệu:** `flagged` rỗng chỉ khi service không có giá trị triệu chứng nào. Mỗi dòng ghi thêm `top_key` (tín hiệu làm cửa sổ vượt) và `observed_keys` (tín hiệu có giá trị) để lifecycle áp luật cửa sổ không dữ liệu theo từng tín hiệu.
+- **Điểm hợp nhất:** chỉ fallback khi modality thật sự không có dữ liệu; trọng số chuẩn hóa lại trên modality còn lại.
+- **Isolation Forest:** vector = max z có hướng của từng tín hiệu trên các thực thể của service; chiều thiếu điền 0 (median của train). Hyperparameter và seed đọc từ config detector (`detectors.iforest`). Artifact ghi thứ tự feature, baseline (scaler, phải fit trên đúng các run fit model), hyperparameter, seed, run fit, `window_s`, phiên bản và sha256 config, code commit, sha256 model. `detect` từ chối khi thiếu `baseline-apply.json`, khi bảng z sinh từ manifest feature khác bản hiện có, hoặc khi model khác `window_s`, khác baseline, khác bộ tín hiệu.
+
+`configs/detector-dev-v1.json` chỉ là giá trị phát triển để kiểm code chạy đúng. Ngưỡng dùng cho validation và test khai báo ở `detection-candidates.v2` và chọn ở task-06 tuần 16.
+
+Số đo (25/11/2026, `/usr/bin/time`, baseline luật thang đo v2): `fit-iforest` trên 4 run train 6,9–7,0 s, RSS 255–266 MB (cửa sổ 60 s: 668 cửa sổ mỗi service; 30 s: tương tự); `detect` trên một run 48 phút (2.101–2.123 cặp cửa sổ–service) 2–11 s, RSS 230–270 MB mỗi detector. Chạy hết chuỗi feature → detector → incident → harness trên 4 fault run pilot (C2, C3, C4, C6) và 1 run pilot khỏe với config phát triển: ngưỡng tĩnh, robust z, fused khớp 4/4 fault run, không báo giả; Isolation Forest ngưỡng 0,6 báo giả 4,4 lần/giờ. Pilot chỉ dùng để kiểm code, không để chọn ngưỡng.
+
+## Incident lifecycle (`incident/`)
+
+```bash
+# Gom cửa sổ bất thường của một detector thành incident; ghi incidents-<detector>.json cạnh đầu vào.
+uv run aiops-training incidents <dir>/anomalies-robust_z.parquet --config configs/incident-dev-v1.json
+```
+
+- **Máy trạng thái theo service** `NORMAL → SUSPECTED → OPEN → RECOVERING → RESOLVED`, persistence **theo từng khóa bằng chứng**: mỗi cửa sổ vượt cộng vào chuỗi của các tín hiệu mà detector coi là bất thường (`evidence_keys`); chuỗi của một tín hiệu chỉ đứt khi một cửa sổ quan sát được tín hiệu đó (`observed_keys`) mà nó bình thường. Cửa sổ không quan sát được tín hiệu (cạnh thưa của C3 giữa hai lời gọi) hay không có dữ liệu thì bỏ qua. Bằng chứng của các tín hiệu khác nhau không cộng dồn; hai cửa sổ vượt liên tiếp của cùng tín hiệu cách nhau quá `max_chain_gap_seconds` thì chuỗi bắt đầu lại. Đầu vào phải là `anomaly-record.v2` (có cột bằng chứng). Mở đợt khi một chuỗi đủ `persistence_windows`; hồi phục sau `recovery_windows` cửa sổ không vượt có dữ liệu.
+- **Thời điểm:** `detected_at` = `window_end` của cửa sổ hoàn tất persistence + `available_after_s` (10 s); `estimated_start_time` = `window_end` của cửa sổ vượt đầu tiên − bước 15 s; `resolved_at` rỗng nếu chưa hồi phục tới cuối run.
+- **Gộp (tạm thời, theo thời gian; đồ thị v2 thay ở tuần 17):** đợt mở trước khi incident đang xét hồi phục + `merge_gap_seconds`, hoặc trong `correlation_window_seconds` kể từ `detected_at` của incident, nhập vào incident đó.
+- **Record `incident-record.v1`:** `threshold` của detector; `incident_id` xác định (băm run, detector, ngưỡng, phiên bản và sha256 nội dung config detector/incident, window/persistence, cửa sổ mở); `open_at_run_end`, `duration_s` để chẩn đoán incident gộp quá rộng, `affected_services`, `first_symptom`, `trigger_reason`, `peak_score` (vô cùng ghi `peak_score_infinite`), từng đợt và timeline trỏ tới (service, tín hiệu, thực thể, cửa sổ, điểm), lineage tới detector, feature, baseline, model.
+
+`configs/incident-dev-v1.json` chỉ là giá trị phát triển; tham số incident khai báo ở `detection-candidates.v2`.
 
 ## Cách export bảo vệ Tempo
 
