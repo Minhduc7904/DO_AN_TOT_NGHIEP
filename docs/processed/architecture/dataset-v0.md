@@ -72,7 +72,7 @@ Phiên học viên mức 2+ lấy từ **đoạn xây** của log Moodle (ngày 
 - **Slot validation trùng cao điểm:** `validation-c2-normal-mixed-r1` (`align_peak: true`). C2 là case nhạy với tải nhất (ở cao điểm có thể cạn pool của `course`), nên validation có tổ hợp fault cùng tải cao hợp lệ để chỉnh ngưỡng. C3, C4, C6 theo lịch mặc định, đúng điều kiện đã đo khi freeze thời lượng (với 900 s, align-peak của C3 chỉ đặt được tới giây 1380).
 - **Không thêm profile healthy đối chứng** (`upload media peak healthy`, `AI job healthy`): run healthy `normal-mixed` đã có job AI và upload media trong đúng các cửa sổ fault, và bộ đo triệu chứng không vượt ngưỡng trên các cửa sổ đó (báo cáo pilot mục 6).
 
-Số run healthy test và slot cao điểm của test chốt khi freeze (tuần 19).
+Số run healthy test và slot cao điểm của test chốt khi freeze (tuần 19). *Chốt ngày 25/11/2026* ([plan-v0.4](../plan/plan-v0.4-24-weeks.md) tuần 19): lần lặp 5 của cả 4 case chạy trên `healthy-spike` với `--align-peak`; 3 run khỏe mỗi profile (thêm seed 3007–3010). Bảng trên giữ nguyên cho tới khi manifest test phiên bản mới được commit lúc freeze.
 
 ## 5. Kiểm tra tự động
 
