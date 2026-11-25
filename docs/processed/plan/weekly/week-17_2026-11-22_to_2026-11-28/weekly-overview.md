@@ -43,21 +43,28 @@
   - **BARO và RCAEval:** thêm dependency nặng và dữ liệu RE2 lớn. Chỉ tải một phần RE2 để kiểm adapter; cài trong nhóm dependency tùy chọn; theo dõi RAM (mỗi lúc một lệnh nặng).
   - **Mô tả SimpleRCA chưa đối chiếu từng dòng với mã tác giả** (protocol mục 15.2.1): bản cài phải ghi chỗ khác bài gốc.
 - Quyết định cần chốt:
-  - **Tương quan incident bằng graph (blueprint mục 10.3):** đề xuất **giữ** tương quan theo thời gian của `incident-e1.v1`, chỉ dùng graph cho RCA ở tuần 17. Lý do:
-    - Config đã freeze sau khi chọn trên validation.
-    - Ở validation, mỗi fault run có đúng một incident (detection-validation-report-v1 mục 7). Danh sách service trong incident khác nhau theo detector; ví dụ incident C2 của Isolation Forest không có `course` (root cause), incident C3 chỉ có `ai-worker`.
-    - Đổi sang graph phải ra `incident-e1` phiên bản mới và chọn lại bước 2a.
-
-    Đây là **lệch khỏi** blueprint mục 10.3 (gộp theo connected subgraph) và đảo hướng đã ghi ở overview tuần 16 ("đồ thị v2 thay tương quan theo thời gian"). Bách xác nhận hoặc đổi trước khi task-07 khai báo. Nếu giữ, độ lệch được ghi vào blueprint mục 10.3 và detection-validation-report-v1 mục 9 (tài liệu của phần phát hiện), không ghi trong tập ứng viên RCA.
-  - **Trần điểm Isolation Forest theo service** (tồn đọng tuần 16): giữ thành giới hạn của E1, hoặc ra `detection-candidates.v3` (phân vị theo service) và chọn lại trên validation. Phải chốt trước freeze campaign tuần 19; không thuộc task tuần 17.
   - Detector nào nuôi incident cho RCA (đề xuất: fused, theo blueprint mục 9.7) được khai báo ở task-07.
 - Quyết định đã chốt:
+  - **Giữ tương quan incident theo thời gian** của `incident-e1.v1`; graph chỉ dùng cho RCA. Bách giao agent chọn theo best practice, chốt ngày 25/11/2026. Lý do:
+    - **Cô lập đóng góp của graph cho RQ2.** Protocol mục 11 yêu cầu so sánh severity-only với graph-aware trên **cùng incident artifact**, chỉ thay phần graph. Nếu incident đã gộp theo graph thì phía "severity-only" cũng nhận incident do graph quyết định, nên không còn tách được đóng góp của graph.
+    - **Campaign có đúng một fault mỗi run.** Lợi ích chính của gộp theo graph là tách các incident độc lập xảy ra cùng lúc, mà kịch bản này không có. Trên validation, mỗi fault run cho đúng một incident ở cả 4 detector (detection-validation-report-v1 mục 7).
+    - **Graph thiếu cạnh có thể tách nhầm một fault.** Cạnh xác thực tần suất thấp và `scheduler → scheduler-worker` không cùng trace, nên gộp theo graph có nguy cơ tách một fault thành nhiều incident (C6: lỗi `*-identity-token` lộ muộn theo TTL).
+    - **Config đã freeze sau khi chọn trên validation.** Đổi phải ra `incident-e1` phiên bản mới và chọn lại bước 2a, tốn thêm lần chấm validation mà không có bằng chứng lợi ích.
+
+    Độ lệch so với blueprint mục 10.3 được ghi ở chính mục đó. Gộp theo graph là hướng mở rộng khi có kịch bản nhiều fault đồng thời.
+  - **Giữ `detector-e1.v1`, không ra `detection-candidates.v3` cho Isolation Forest**; báo trần điểm thành giới hạn và thành một phát hiện của E1. Bách giao agent chọn theo best practice, chốt ngày 25/11/2026. Lý do (số đo trên 4 run train khỏe, cửa sổ 30 s):
+    - **Ngưỡng theo service không sửa được gốc vấn đề.**
+      - Điểm Isolation Forest bão hòa: điểm của `course` trên train lớn nhất là 0,746, đã gặp ở 2 cửa sổ khỏe. Trong fault C2 trên validation, `course` cũng chỉ đạt 0,746.
+      - Ngưỡng nào bắt được cửa sổ fault của `course` thì cũng bắt các cửa sổ khỏe đạt cùng điểm. Phân vị 99,9% theo service của `course` bằng đúng 0,746 nên vẫn không vượt được; phân vị thấp hơn thì vượt được, nhưng cũng vượt ở các cửa sổ khỏe đạt cùng điểm.
+      - Model của `scheduler` suy biến: điểm luôn 0,5 ở cả 676 cửa sổ train.
+    - **Chọn lại sau khi đã xem kết quả làm tăng rủi ro khớp vào 6 run validation**, trong khi lợi ích không rõ (Isolation Forest vẫn khớp 4/4 qua `gateway` và `ai-worker`).
+    - **Đây là kết quả đúng nghĩa của E1:** detector học máy dựa trên cô lập điểm bị giới hạn khi đặc trưng train gần hằng và ít dữ liệu. Báo cáo kèm bảng trần điểm theo service (tính trên train, không cần test), để người đọc biết service nào Isolation Forest không thể báo.
   - Giai đoạn tự bắt kịp: mọi task do Bách phụ trách, không collaborator; review/merge theo ngoại lệ Bách xác nhận (plan v0.4 mục 0.1, dòng "Nhân sự").
   - Không chạm split test: campaign tuần 19, RCA chính thức đo trên test ở tuần 20.
   - Proposed ranker "Hướng 1", evidence aggregation và pipeline một lệnh làm ở tuần 18; E6 (RCAEval RE2 đầy đủ) là Target, chỉ bắt đầu khi M4 đúng hạn. Tuần này chỉ chạy BARO trên một phần RE2 để kiểm adapter (protocol mục 15.2.1).
   - Thử nghiệm người (E7) là Target, không làm.
   - Tồn đọng mang từ tuần 16:
-    - Trần điểm Isolation Forest theo service (quyết định ở trên).
+    - Trần điểm Isolation Forest theo service: đã chốt giữ thành giới hạn (ở trên).
     - Bộ ngưỡng tĩnh `loose` vượt triệu chứng C2/C4 với biên hẹp; delay C3 phụ thuộc lúc job AI đến (detection-validation-report-v1 mục 8.3, 9).
     - Export chờ tới `time_end` + 10 s; C2 ở cao điểm `healthy-spike` làm cạn pool `course` (từ tuần 15).
     - Chạy thử trên Windows (tuần 17–18).
