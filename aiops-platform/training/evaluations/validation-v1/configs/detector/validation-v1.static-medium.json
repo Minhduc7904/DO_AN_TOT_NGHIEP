@@ -1,0 +1,20 @@
+{
+  "candidate_set_version": "detection-candidates.v2",
+  "detector_config_version": "validation-v1.static-medium",
+  "detectors": {
+    "static": {
+      "thresholds": {
+        "edge.duration_p95": 1.0,
+        "edge.error_ratio": 0.05,
+        "edge.timeout_ratio": 0.05,
+        "queue.consumers": 1,
+        "queue.messages_ready": 100,
+        "queue.messages_unacked": 50,
+        "service.downstream_latency_p95": 1.0,
+        "service.error_rate": 0.05,
+        "service.latency_p95": 1.0,
+        "service.trace_error_rate": 0.05
+      }
+    }
+  }
+}

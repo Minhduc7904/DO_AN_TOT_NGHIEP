@@ -1,0 +1,14 @@
+{
+  "candidate_set_version": "detection-candidates.v2",
+  "detector_config_version": "validation-v1.fused-equal-q0.999-w30",
+  "detectors": {
+    "fused": {
+      "threshold": 1.769109848484799,
+      "weights": {
+        "logs": 0.3333333333333333,
+        "metrics": 0.3333333333333333,
+        "traces": 0.3333333333333333
+      }
+    }
+  }
+}

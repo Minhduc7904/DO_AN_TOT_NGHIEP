@@ -1,0 +1,115 @@
+{
+  "selected": "static-loose",
+  "meets_cap": true,
+  "rule_applied": "cap_met",
+  "tie_break": "tie_rank_asc",
+  "cap_per_hour": 1.0,
+  "detector": "static",
+  "evaluation_config_version": "detection-evaluation.v1",
+  "candidates_sha256": "be9be484c88fc4c72b6d730d89a5c6434fd5f5ab4b1c3823709cd7e2b7f3ee65",
+  "eligible_run_ids": [
+    "validation-c2-normal-mixed-s2001-20261123t182901z",
+    "validation-c3-normal-mixed-s2001-20261123t193231z",
+    "validation-c4-normal-mixed-s2001-20261123t203506z",
+    "validation-c6-normal-mixed-s2001-20261123t213759z",
+    "validation-healthy-healthy-spike-s2003-20261123t123352z",
+    "validation-healthy-normal-mixed-s2002-20261123t091816z"
+  ],
+  "ranking": [
+    {
+      "rank": 1,
+      "combination_id": "static-loose",
+      "threshold": 1.0,
+      "window_seconds": 30,
+      "persistence_windows": 4,
+      "detector_config_sha256": "77d3abca9e89703ac1b107ad8d61347d0a9114a5bfd092c433432217b42706e2",
+      "incident_config_sha256": "82f5ec0061d65e5f22d1f678bb1ac38cd32a1b12e30a778b6a1724851f101a99",
+      "model_sha256": null,
+      "late_tolerance_seconds": 75.0,
+      "matched_fault_runs": 4,
+      "false_alarms": 0,
+      "false_alarm_hours": 3.5412772222222224,
+      "false_alarms_per_hour": 0.0,
+      "meets_cap": true,
+      "tie_rank": 1
+    },
+    {
+      "rank": 2,
+      "combination_id": "static-medium",
+      "threshold": 1.0,
+      "window_seconds": 30,
+      "persistence_windows": 4,
+      "detector_config_sha256": "019e091e989fd16d5b17d143e7adcb9a03ba932c4377e01e463bc361725f1894",
+      "incident_config_sha256": "82f5ec0061d65e5f22d1f678bb1ac38cd32a1b12e30a778b6a1724851f101a99",
+      "model_sha256": null,
+      "late_tolerance_seconds": 75.0,
+      "matched_fault_runs": 4,
+      "false_alarms": 0,
+      "false_alarm_hours": 3.5412772222222224,
+      "false_alarms_per_hour": 0.0,
+      "meets_cap": true,
+      "tie_rank": 2
+    },
+    {
+      "rank": 3,
+      "combination_id": "static-strict",
+      "threshold": 1.0,
+      "window_seconds": 30,
+      "persistence_windows": 4,
+      "detector_config_sha256": "eeda5c50adb5a6f15994a6a9c7cc69610fec8fef1c71d026411ee2c7c2af975d",
+      "incident_config_sha256": "82f5ec0061d65e5f22d1f678bb1ac38cd32a1b12e30a778b6a1724851f101a99",
+      "model_sha256": null,
+      "late_tolerance_seconds": 75.0,
+      "matched_fault_runs": 4,
+      "false_alarms": 0,
+      "false_alarm_hours": 3.5412772222222224,
+      "false_alarms_per_hour": 0.0,
+      "meets_cap": true,
+      "tie_rank": 3
+    }
+  ],
+  "step": "2b-static",
+  "candidate_set_version": "detection-candidates.v2",
+  "chosen": {
+    "combination_id": "static-loose",
+    "detector": "static",
+    "window_seconds": 30,
+    "persistence_windows": 4,
+    "detector_section": {
+      "thresholds": {
+        "service.error_rate": 0.1,
+        "service.trace_error_rate": 0.1,
+        "edge.error_ratio": 0.1,
+        "edge.timeout_ratio": 0.1,
+        "service.latency_p95": 2.0,
+        "service.downstream_latency_p95": 2.0,
+        "edge.duration_p95": 2.0,
+        "queue.messages_ready": 200,
+        "queue.messages_unacked": 100,
+        "queue.consumers": 1
+      }
+    },
+    "incident": {
+      "persistence_windows": 4,
+      "recovery_windows": 3,
+      "merge_gap_seconds": 300,
+      "correlation_window_seconds": 300,
+      "max_chain_gap_seconds": 120
+    },
+    "detector_config_version": "validation-v1.static-loose",
+    "incident_config_version": "validation-v1.incident-w30-p4-m300-g120",
+    "candidate": {
+      "candidate_id": "static-loose"
+    }
+  },
+  "artifacts": {
+    "static-loose": "evaluations/validation-v1/step2b-static/static-loose.json",
+    "static-medium": "evaluations/validation-v1/step2b-static/static-medium.json",
+    "static-strict": "evaluations/validation-v1/step2b-static/static-strict.json"
+  },
+  "artifact_sha256": {
+    "static-loose": "f8f3e264d4e12c8a1c6a0c776e36e562e963beb19f9117f2346e945521094fcd",
+    "static-medium": "7410a27a07f36597fa2f72d93a5a0b720478b816f69b3ff59554e65995ee5e44",
+    "static-strict": "49e8b6e3ffad3f8dc6315ac402860e86c66806858f30289fcae94775a9edbbcd"
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "candidate_set_version": "detection-candidates.v2",
+  "detector_config_version": "validation-v1.train-scores-iforest-w30",
+  "detectors": {
+    "iforest": {
+      "hyperparameters": {
+        "bootstrap": false,
+        "max_features": 1.0,
+        "max_samples": 256,
+        "n_estimators": 200
+      },
+      "seed": 20260819,
+      "threshold": 1.0
+    }
+  }
+}

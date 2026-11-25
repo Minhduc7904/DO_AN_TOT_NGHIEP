@@ -1,0 +1,113 @@
+{
+  "selected": "iforest-q0.995",
+  "meets_cap": true,
+  "rule_applied": "cap_met",
+  "tie_break": "tie_rank_asc",
+  "cap_per_hour": 1.0,
+  "detector": "iforest",
+  "evaluation_config_version": "detection-evaluation.v1",
+  "candidates_sha256": "be9be484c88fc4c72b6d730d89a5c6434fd5f5ab4b1c3823709cd7e2b7f3ee65",
+  "eligible_run_ids": [
+    "validation-c2-normal-mixed-s2001-20261123t182901z",
+    "validation-c3-normal-mixed-s2001-20261123t193231z",
+    "validation-c4-normal-mixed-s2001-20261123t203506z",
+    "validation-c6-normal-mixed-s2001-20261123t213759z",
+    "validation-healthy-healthy-spike-s2003-20261123t123352z",
+    "validation-healthy-normal-mixed-s2002-20261123t091816z"
+  ],
+  "ranking": [
+    {
+      "rank": 1,
+      "combination_id": "iforest-q0.995",
+      "threshold": 0.7800339720962758,
+      "window_seconds": 30,
+      "persistence_windows": 4,
+      "detector_config_sha256": "6903d69b8cb66e831099d7e215e7ea2e7b8fe8a455de3d9b2036542c5a47cad4",
+      "incident_config_sha256": "82f5ec0061d65e5f22d1f678bb1ac38cd32a1b12e30a778b6a1724851f101a99",
+      "model_sha256": "7df97006fd975fdce85296bb136d0e304d71b4db45e43492f4ee39b8b5fc44be",
+      "late_tolerance_seconds": 75.0,
+      "matched_fault_runs": 4,
+      "false_alarms": 1,
+      "false_alarm_hours": 3.5412772222222224,
+      "false_alarms_per_hour": 0.2823839923417461,
+      "meets_cap": true,
+      "tie_rank": 2
+    },
+    {
+      "rank": 2,
+      "combination_id": "iforest-q0.99",
+      "threshold": 0.7439555717773466,
+      "window_seconds": 30,
+      "persistence_windows": 4,
+      "detector_config_sha256": "623fd8fd29bdc39f7d48f508dd08ec12221f5be165373ae137fd944214fdc7d1",
+      "incident_config_sha256": "82f5ec0061d65e5f22d1f678bb1ac38cd32a1b12e30a778b6a1724851f101a99",
+      "model_sha256": "7df97006fd975fdce85296bb136d0e304d71b4db45e43492f4ee39b8b5fc44be",
+      "late_tolerance_seconds": 75.0,
+      "matched_fault_runs": 4,
+      "false_alarms": 1,
+      "false_alarm_hours": 3.5412772222222224,
+      "false_alarms_per_hour": 0.2823839923417461,
+      "meets_cap": true,
+      "tie_rank": 3
+    },
+    {
+      "rank": 3,
+      "combination_id": "iforest-q0.999",
+      "threshold": 0.8420274477189386,
+      "window_seconds": 30,
+      "persistence_windows": 4,
+      "detector_config_sha256": "e6fe4ffb807aeed185c7b53f89d3f1a4c907f32214387d01b9afa363b2f7df48",
+      "incident_config_sha256": "82f5ec0061d65e5f22d1f678bb1ac38cd32a1b12e30a778b6a1724851f101a99",
+      "model_sha256": "7df97006fd975fdce85296bb136d0e304d71b4db45e43492f4ee39b8b5fc44be",
+      "late_tolerance_seconds": 75.0,
+      "matched_fault_runs": 2,
+      "false_alarms": 0,
+      "false_alarm_hours": 3.5412772222222224,
+      "false_alarms_per_hour": 0.0,
+      "meets_cap": true,
+      "tie_rank": 1
+    }
+  ],
+  "step": "2b-iforest",
+  "candidate_set_version": "detection-candidates.v2",
+  "chosen": {
+    "combination_id": "iforest-q0.995",
+    "detector": "iforest",
+    "window_seconds": 30,
+    "persistence_windows": 4,
+    "detector_section": {
+      "threshold": 0.7800339720962758,
+      "seed": 20260819,
+      "hyperparameters": {
+        "n_estimators": 200,
+        "max_samples": 256,
+        "max_features": 1.0,
+        "bootstrap": false
+      }
+    },
+    "incident": {
+      "persistence_windows": 4,
+      "recovery_windows": 3,
+      "merge_gap_seconds": 300,
+      "correlation_window_seconds": 300,
+      "max_chain_gap_seconds": 120
+    },
+    "detector_config_version": "validation-v1.iforest-q0.995-w30",
+    "incident_config_version": "validation-v1.incident-w30-p4-m300-g120",
+    "candidate": {
+      "candidate_id": "iforest-q0.995",
+      "quantile": 0.995,
+      "threshold_key": "iforest@0.995"
+    }
+  },
+  "artifacts": {
+    "iforest-q0.999": "evaluations/validation-v1/step2b-iforest/iforest-q0.999.json",
+    "iforest-q0.995": "evaluations/validation-v1/step2b-iforest/iforest-q0.995.json",
+    "iforest-q0.99": "evaluations/validation-v1/step2b-iforest/iforest-q0.99.json"
+  },
+  "artifact_sha256": {
+    "iforest-q0.999": "9d0a9c4efbb38365460b7742caeb42773a33803a650ed72e86ec71c9b89ce97c",
+    "iforest-q0.995": "5e34c7f544bb23e14ee412901e3f29c53cfd0188cafa43059bead83908ab74fe",
+    "iforest-q0.99": "251d0d0b475ee709a6c2cf6044cbb1b38da4d5f6ca43c61b6fd05d0b73bec396"
+  }
+}
