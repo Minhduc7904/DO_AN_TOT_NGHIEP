@@ -72,7 +72,7 @@
 - [x] Các task hoàn thành đã liên kết đến PR và bằng chứng DoD.
 - [x] Mọi lần chấm validation chạy trên commit đã có `detection-candidates.v2` và được ghi trong ledger chấm validation. Ledger `evaluations/validation-v1/ledger.jsonl` (task-06).
 - [ ] Gate R điều kiện 5 có bằng chứng của Bách (đóng ngoại lệ của tuần 13–16).
-- [ ] Tồn đọng và việc chuyển sang tuần 17 đã được ghi rõ. Đã biết:
+- [x] Tồn đọng và việc chuyển sang tuần 17 đã được ghi rõ; tuần 17 nhận vào overview (mục "Quyết định cần chốt", "Tồn đọng mang từ tuần 16"). Đã biết:
   - Đồ thị phụ thuộc v2 (tuần 17) thay tương quan theo thời gian: ra `incident-e1` phiên bản mới và chọn lại bước 2a theo cùng luật (task-03, task-06).
   - Isolation Forest có trần điểm theo service, nên với ngưỡng phân vị gộp mọi service, ở 0,780 `course` và `scheduler` không vượt được (task-06, báo cáo mục 5, 9). Muốn đổi phải ra tập ứng viên v3 và chọn lại **trước** campaign test (tuần 19); nếu giữ thì ghi thành giới hạn của E1.
   - Bộ ngưỡng tĩnh `loose` vượt triệu chứng C2/C4 với biên hẹp, và delay C3 phụ thuộc lúc job AI đến (task-06, báo cáo mục 8.3, 9).
