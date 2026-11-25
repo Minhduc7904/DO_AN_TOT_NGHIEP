@@ -977,13 +977,13 @@ Nguồn: ma trận fault FA–FH ở [data-ownership-and-fault-matrix-v2](data-o
 
 | Fault | Case | `fault_type` | `fault_target` | `fault_target_kind` | `root_cause_service` | `root_cause_component` | Ground-truth parameter tối thiểu | Trạng thái kiểm chứng (catalogue) |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| **FA** Chậm/ngắt MinIO | C4 | `dependency_latency` | `media-minio` | `dependency` | `media` | `media-minio` | kiểu tác động (chèn trễ hoặc ngắt kết nối), delay/jitter, proxy (`media-to-minio`, `media-worker-to-minio`), phạm vi operation (upload/promote), interval | Cơ chế đã chạy ở mức smoke (PR #75); chưa pilot |
+| **FA** Chậm/ngắt MinIO | C4 | `dependency_latency` | `media-minio` | `dependency` | `media` | `media-minio` | kiểu tác động (chèn trễ hoặc ngắt kết nối), delay/jitter, proxy (`media-to-minio`, `media-worker-to-minio`), phạm vi operation (upload/promote), interval | Cơ chế đã chạy ở mức smoke (PR #75); đã pilot tuần 15 (C4, `case_verification_status = run`) |
 | **FB** Backlog hàng đợi | C1 | `queue_backlog` | `notification-worker` | `consumer` | `notification-worker` | `notification-worker-rabbitmq` | cỡ batch (seed R-10: 100000 recipient), cách làm chậm worker (giới hạn CPU hoặc `docker pause` theo chu kỳ), interval | Đã đo tín hiệu; chuỗi lan sang `media-worker` là giả thuyết |
-| **FC** Độ trễ kết nối DB (viết lại theo ADR-006) | C2 | `dependency_latency` (ADR-006; bản trước `db_connection_hold`) | `course-postgres` | `dependency` | `course` | `course-postgres` | delay/jitter chèn trên proxy `course-to-postgres`, mức tải học chạy song song, interval | Cơ chế đã chạy ở mức smoke (PR #75); chưa pilot; metric pool chưa có |
-| **FD** Provider AI chậm | C3 | `dependency_latency` | `ai-llm-provider` | `dependency` | `ai` | `ai-llm-provider` | `latency_ms`, `jitter_ms`, `error_rate`, `error_status`/`error_mode`, seed của `llm-stub`, interval | Cơ chế đã chạy ở mức smoke (PR #75); chưa pilot |
+| **FC** Độ trễ kết nối DB (viết lại theo ADR-006) | C2 | `dependency_latency` (ADR-006; bản trước `db_connection_hold`) | `course-postgres` | `dependency` | `course` | `course-postgres` | delay/jitter chèn trên proxy `course-to-postgres`, mức tải học chạy song song, interval | Cơ chế đã chạy ở mức smoke (PR #75); đã pilot tuần 15 (C2, `case_verification_status = run`); metric pool chưa có |
+| **FD** Provider AI chậm | C3 | `dependency_latency` | `ai-llm-provider` | `dependency` | `ai` | `ai-llm-provider` | `latency_ms`, `jitter_ms`, `error_rate`, `error_status`/`error_mode`, seed của `llm-stub`, interval | Cơ chế đã chạy ở mức smoke (PR #75); đã pilot tuần 15 (C3, `case_verification_status = run`) |
 | **FE** Identity chậm | C5 | `dependency_latency` | `identity-postgres` | `dependency` | `identity` | `identity-postgres` | delay chèn vào truy vấn snapshot recipient, interval | Đã đo tín hiệu; chèn trễ chưa chạy |
 | **FF** Quá tải tài nguyên | không có case riêng | `resource_pressure` (đề xuất) | `<service>-instance` | `resource` | một service bất kỳ, ghi đúng một giá trị mỗi run | `<service>-instance` | tài nguyên (CPU hoặc bộ nhớ), giới hạn container, interval | CPU/RSS có thật, dùng làm bằng chứng phụ cho C1–C2 |
-| **FG** Độ trễ/ngắt xác thực | C6 | `dependency_unavailable` | `identity` | `service` | `identity` | `identity` | kiểu tác động (`pause`/dừng), `IDENTITY_SERVICE_TOKEN_TTL_SECONDS`, TTL cache JWKS, interval | **Đã chạy** bởi `tracing-smoke` |
+| **FG** Độ trễ/ngắt xác thực | C6 | `dependency_unavailable` | `identity` | `service` | `identity` | `identity` | kiểu tác động (`pause`/dừng), `IDENTITY_SERVICE_TOKEN_TTL_SECONDS`, TTL cache JWKS, interval | **Đã chạy** bởi `tracing-smoke`; đã pilot tuần 15 (C6, `case_verification_status = run`) |
 | **FH** Lệch khóa ký | C7 | `config_drift` | `identity-signing-key` | `config` | `identity` | `identity-jwks` | thay `IDENTITY_SIGNING_KEY_PEM`, có giữ khóa cũ (`IDENTITY_PREVIOUS_PUBLIC_KEY_PEM`) hay không, TTL cache JWKS, interval | Đã đo tín hiệu; cơ chế đổi khóa chưa chạy |
 
 Ghi chú:
@@ -997,7 +997,7 @@ Ghi chú:
 - FH: `identity-jwks` là nhãn component gom các identity `<caller>-identity-jwks` của mọi runtime verify token, không phải một `dependency_identity` đơn lẻ.
 - `fault_target_kind` thêm giá trị `config` cho `config_drift` (v0 chỉ có `service | dependency | resource | consumer`).
 
-Exact numeric intensity được pilot/freeze ngoài schema; sau freeze nó phải xuất hiện trong `fault_intensity`/`fault_parameters` và versioned experiment config.
+Exact numeric intensity được pilot/freeze ngoài schema; sau freeze nó phải xuất hiện trong `fault_intensity`/`fault_parameters` và versioned experiment config. Cường độ của bốn case MVP đã chốt sau pilot tuần 15 ở fault manifest v2 ([evaluation-protocol-v1](evaluation-protocol-v1.md) mục 6.1.1 bảng C).
 
 Mỗi FA–FH dùng cùng `RunGroundTruth` shape: fault identity/target/kind, service-level root cause, component evidence, actual injection interval/parameters, workload identity, expected symptom/propagation, verification/reset và execution provenance. Không có field special-case chỉ dành cho một fault; khác biệt scenario nằm trong `fault_parameters`, `expected_propagation_path`, `expected_evidence` và hai field tùy chọn cho fault có triệu chứng trễ (mục 9.1).
 
@@ -1028,9 +1028,9 @@ Quy tắc đi kèm:
 
 - **Nhãn và kỳ vọng của 4 case MVP** (C2/FC, C3/FD, C4/FA, C6/FG): `fault_id`, `fault_target`, `fault_target_kind`, `expected_symptom`, `expected_propagation_path`, `expected_evidence` (chỉ các tín hiệu có thật ở mục 10, `required=false` cho bằng chứng phụ), `expected_symptom_services` và nền của `expected_symptom_lag` nằm ở `aiops-platform/training/src/aiops_training/ground_truth/cases.py`; nhãn `fault_type`/`root_cause_*` và lệnh bật/tắt lấy từ fault manifest `aiops-platform/faults/manifests/fault-manifest-v2.json` (chốt sau pilot task-03 tuần 15; v1 của task-05 tuần 14 giữ cho các run pilot).
 - **Dựng bản ghi:** `uv run aiops-training ground-truth --k6-summary <k6-summary.json> --case C2 --fault-log <faults.jsonl> --fault-manifest <manifest> --artifact <thư mục export> --out ground-truth.json`. `fault_start`/`fault_end` là `ts` của sự kiện `fault.activate`/`fault.deactivate` do `fault-schedule.mjs` ghi khi lệnh điều khiển thành công; bật lỗi thì không ghi `fault_start` và `run_status = invalid`.
-- **`expected_symptom_lag` của FG** tính từ cấu hình: `{min_seconds: 0, max_seconds: TTL + 30, basis: IDENTITY_SERVICE_TOKEN_TTL_SECONDS}`, TTL đọc từ biến môi trường thật của container lúc precheck. Biên 30 s là giả định (chu kỳ làm mới token, độ trễ thu thập), chốt ở pilot.
+- **`expected_symptom_lag` của FG** tính từ cấu hình: `{min_seconds: 0, max_seconds: TTL + 30, basis: IDENTITY_SERVICE_TOKEN_TTL_SECONDS}`, TTL đọc từ biến môi trường thật của container lúc precheck. Biên 30 s (chu kỳ làm mới token, độ trễ thu thập) được giữ sau pilot tuần 15: với TTL 60 s, khoảng yên lặng đo được 10–20 s ở lịch mặc định và 1,2–10 s khi trùng cao điểm, nằm trong cận 90 s (evaluation-protocol-v1 mục 6.1.1 bảng D).
 - **`verification_checks`** trên metric đã export (counter/histogram lấy hiệu cuối − đầu từng series, series mới coi giá trị trước là 0): C2/C3/C4 `dependency_latency_increased` (latency trung bình của component trong cửa sổ fault, bỏ 15 s đầu, ≥ 2 × 300 s trước fault và ≥ 3 lời gọi); C6 `root_cause_heartbeat_stopped` (`process_cpu_time_seconds_total` của `identity` tăng trước fault, đứng yên khi fault) và `symptom_observed_within_lag_window` (`lms_dependency_error_count_total{dependency_identity="gateway-identity-token"}` tăng trước `fault_start + max_seconds`). Kiểm chứng không đạt thì `verification_result = failed`, `run_status = invalid` (mục 9.1).
-- **`run_status`** (mục 8.3): `failed` khi thiếu cửa sổ tải (run không hoàn tất); `invalid` khi precheck hỏng, bật/gỡ fault không trọn, fault bị ngắt giữa chừng (`reason = aborted`), khoảng fault nằm ngoài khoảng tải, hoặc fault run **chưa chạy kiểm chứng** (`verification_not_run`); còn lại `valid`. Nhật ký fault append qua nhiều lần chạy thì chỉ lấy lần lập lịch cuối của case. Ngưỡng là điểm khởi đầu, chốt ở pilot và ghi vào manifest thí nghiệm của T5.
+- **`run_status`** (mục 8.3): `failed` khi thiếu cửa sổ tải (run không hoàn tất); `invalid` khi precheck hỏng, bật/gỡ fault không trọn, fault bị ngắt giữa chừng (`reason = aborted`), khoảng fault nằm ngoài khoảng tải, hoặc fault run **chưa chạy kiểm chứng** (`verification_not_run`); còn lại `valid`. Nhật ký fault append qua nhiều lần chạy thì chỉ lấy lần lập lịch cuối của case. Ngưỡng kiểm chứng (đoạn mốc 300 s, bỏ 15 s đầu, ≥ 2 lần, ≥ 3 lời gọi, bỏ `ping`) giữ nguyên sau pilot tuần 15: 9/9 run pilot `valid` (evaluation-protocol-v1 mục 6.1.1 bảng F).
 - Chưa làm: reset/verification tự động trước run (`reset_*` để `not_applicable`), `service_versions` (runner tuần 15).
 ---
 
@@ -1151,7 +1151,7 @@ ground truth:
   FG interval + kiểu tác động + TTL + identity/identity ; expected_symptom_lag, expected_symptom_services (mục 9.1)
 ```
 
-Trạng thái: đã chạy ở `tracing-smoke` (login 504 ngay; token người dùng còn hạn vẫn 200; lỗi `gateway-identity-token` sau 70–74 giây khi TTL 60 giây; phục hồi sau `unpause`). Chưa có trong catalogue mục 1: tín hiệu riêng cho trạng thái circuit breaker mở (ma trận v2 mục 5 có nhắc; chưa kiểm chứng ở code).
+Trạng thái: đã chạy ở `tracing-smoke` (login 504 ngay; token người dùng còn hạn vẫn 200; lỗi `gateway-identity-token` sau 70–74 giây khi TTL 60 giây; phục hồi sau `unpause`). Pilot tuần 15 (2 run, TTL 60 giây) đo khoảng yên lặng 10–20 giây ở lịch mặc định và 1,2–10 giây khi trùng cao điểm, vì token dịch vụ của gateway làm mới theo chu kỳ ([fault-pilot-report-v1](fault-pilot-report-v1.md) mục 2.1). Chưa có trong catalogue mục 1: tín hiệu riêng cho trạng thái circuit breaker mở (ma trận v2 mục 5 có nhắc; chưa kiểm chứng ở code).
 
 ## 10.8. FH — Lệch khóa ký (C7)
 
@@ -1637,7 +1637,7 @@ Khác với v0, các mục dưới đây không ghi "Đạt" chỉ dựa vào th
 | Không leak truth label vào feature telemetry | Đề xuất | Mục 12 |
 | Field/resource signal có đường instrument/export; signal chưa có được ghi rõ | Đã đối chiếu code và catalogue mục 1 | Mục 13 |
 | Không phá topology/contract/fault semantics v2 | Đề xuất; điểm lệch còn lại ghi ở 17.1 | Mục 1–4, 17 |
-| Chạy thật chuỗi nhân quả FA–FF, FH trước khi dùng làm case đánh giá | **Chưa làm** (thuộc mảng AI); cơ chế FA, FC, FD đã chạy ở mức smoke (PR #75), pilot ở tuần 15 của [plan-v0.4](../plan/plan-v0.4-24-weeks.md) | Catalogue mục 3, 6 |
+| Chạy thật chuỗi nhân quả FA–FF, FH trước khi dùng làm case đánh giá | **Một phần**: FA, FC, FD, FG đã pilot ở tuần 15 (C4, C2, C3, C6; [fault-pilot-report-v1](fault-pilot-report-v1.md)); FB, FE, FH (Target) và FF (không có case riêng) chưa chạy | Catalogue mục 3, 6; evaluation-protocol-v1 mục 6.1.1 |
 
 ## 18.1. RQ compatibility checklist
 
@@ -1650,7 +1650,7 @@ Khác với v0, các mục dưới đây không ghi "Đạt" chỉ dựa vào th
 
 ## 18.2. Những giá trị cố ý chưa freeze ở T4
 
-Đây không phải thiếu schema; chúng thuộc T5/pilot/implementation config:
+Đây không phải thiếu schema; chúng thuộc T5/pilot/implementation config. Giá trị đã chốt sau pilot tuần 15 và tập ứng viên cho validation nằm ở [evaluation-protocol-v1](evaluation-protocol-v1.md) mục 6.1.1, 6.1.2; danh sách dưới đây giữ để biết phạm vi của schema:
 
 - exact scrape interval/data-quality thresholds (hiện Collector scrape broker 5 giây và SDK export 5 giây; đó là cấu hình testbed, chưa là ngưỡng chất lượng);
 - exact workload rates/stages/durations;
