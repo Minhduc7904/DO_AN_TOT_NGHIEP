@@ -917,6 +917,8 @@ Config phải ghi persistence steps, threshold, merge gap và recovery rule. Tra
 
 ### 10.3. Correlation
 
+> **Lệch khỏi thiết kế (chốt 25/11/2026, [overview tuần 17](../plan/weekly/week-17_2026-11-22_to_2026-11-28/weekly-overview.md)):** bản cài (`incident-e1.v1`, [evaluation-protocol-v1](evaluation-protocol-v1.md) mục 6.1.3) gộp chỉ theo thời gian (merge gap, cửa sổ tương quan), **không** theo connected subgraph. Lý do chính: RQ2 (protocol mục 11) cần cùng incident artifact cho severity-only và graph-aware để cô lập đóng góp của graph. Ngoài ra, campaign có một fault mỗi run, và graph thiếu cạnh tần suất thấp có thể tách nhầm một fault. Graph chỉ dùng cho RCA. Gộp theo graph là hướng mở rộng cho kịch bản nhiều fault đồng thời.
+
 Các anomaly được gộp nếu:
 
 - nằm trong time gap cho phép;
