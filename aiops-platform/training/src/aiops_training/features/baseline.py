@@ -24,7 +24,7 @@ from typing import Any
 import pyarrow as pa
 import pyarrow.parquet as pq
 
-from .pipeline import TABLES
+from .pipeline import DEFAULT_WINDOW_S, TABLES, feature_window_s
 
 BASELINE_SCHEMA = "feature-baseline.v2"
 FEATURE_MANIFEST = "features-manifest.json"
@@ -136,11 +136,37 @@ def robust_scale(samples: list[float], column: str) -> dict[str, float]:
     }
 
 
+def baseline_window_s(
+    baseline: dict[str, Any], train_dirs: dict[str, Path] | None = None
+) -> tuple[int, bool]:
+    """Độ dài cửa sổ của baseline và cờ legacy.
+
+    Baseline fit trước task-02 tuần 16 (`baselines/dataset-v0.json`) không có `window_s` và
+    **không** được ghi lại (đổi file làm đổi sha256 trong lineage). Khi đó suy từ manifest feature
+    của các run fit (`train_dirs`, như `check-leakage` có); không có thư mục thì lấy cửa sổ mặc
+    định 60 s, cửa sổ duy nhất có trước task-02. Cả hai trường hợp trả cờ legacy = True.
+    """
+    if baseline.get("window_s") is not None:
+        return int(baseline["window_s"]), False
+    if train_dirs:
+        sizes = {
+            feature_window_s(read_feature_meta(directory))
+            for run_id, directory in train_dirs.items()
+            if run_id in baseline.get("fit_runs", []) and (directory / FEATURE_MANIFEST).exists()
+        }
+        if len(sizes) == 1:
+            return sizes.pop(), True
+        if len(sizes) > 1:
+            raise BaselineError(f"Run fit của baseline có độ dài cửa sổ khác nhau: {sorted(sizes)}")
+    return DEFAULT_WINDOW_S, True
+
+
 def fit_baseline(feature_dirs: dict[str, Path], provenance: dict | None = None) -> dict[str, Any]:
     """`feature_dirs`: `run_id → thư mục feature` của các run train."""
     if not feature_dirs:
         raise BaselineError("Cần ít nhất một run train để fit")
     versions = set()
+    window_sizes = set()
     values: dict[str, dict[str, dict[str, list[float]]]] = {
         table: defaultdict(lambda: defaultdict(list)) for table in TABLES
     }
@@ -150,6 +176,7 @@ def fit_baseline(feature_dirs: dict[str, Path], provenance: dict | None = None) 
         if meta["run_id"] != run_id:
             raise BaselineError(f"{directory} là feature của {meta['run_id']}, không phải {run_id}")
         versions.add((meta["feature_config_version"], meta["noise_filter_version"]))
+        window_sizes.add(feature_window_s(meta))
         inputs[run_id] = sha256_file(directory / FEATURE_MANIFEST)
         for table, (file_name, _) in TABLES.items():
             path = directory / file_name
@@ -166,6 +193,8 @@ def fit_baseline(feature_dirs: dict[str, Path], provenance: dict | None = None) 
         raise BaselineError(
             f"Run train có phiên bản feature/lọc nhiễu khác nhau: {sorted(versions)}"
         )
+    if len(window_sizes) != 1:
+        raise BaselineError(f"Run train có độ dài cửa sổ khác nhau: {sorted(window_sizes)}")
     feature_version, noise_version = versions.pop()
     stats: dict[str, dict[str, dict[str, dict[str, float]]]] = {}
     for table, groups in values.items():
@@ -178,6 +207,7 @@ def fit_baseline(feature_dirs: dict[str, Path], provenance: dict | None = None) 
         "schema": BASELINE_SCHEMA,
         "feature_config_version": feature_version,
         "noise_filter_version": noise_version,
+        "window_s": window_sizes.pop(),
         "fit_runs": sorted(feature_dirs),
         "fit_inputs_sha256": inputs,
         "scale_rule": SCALE_RULE,
@@ -205,6 +235,12 @@ def apply_baseline(
             raise BaselineError(
                 f"{field} của run ({meta[field]}) khác baseline ({baseline[field]})"
             )
+    window_s, legacy = baseline_window_s(baseline)
+    if feature_window_s(meta) != window_s:
+        raise BaselineError(
+            f"Feature của run có cửa sổ {feature_window_s(meta)} s, baseline fit trên cửa sổ "
+            f"{window_s} s{' (legacy, suy ra)' if legacy else ''}"
+        )
     target = out_dir or features_dir
     target.mkdir(parents=True, exist_ok=True)
     counts = {}
@@ -241,6 +277,8 @@ def apply_baseline(
         "baseline_fit_runs": baseline["fit_runs"],
         "feature_config_version": baseline["feature_config_version"],
         "noise_filter_version": baseline["noise_filter_version"],
+        "window_s": window_s,
+        "baseline_window_s_legacy": legacy,
         "rows": counts,
     }
     (target / APPLY_MANIFEST).write_text(

@@ -10,8 +10,10 @@
 3. **Không có trường ground truth trong feature:** tên cột của mọi bảng feature và khóa trong
    `features-manifest.json` không chứa trường truth của mục 3.3 (`fault_*`, `root_cause_*`,
    `expected_*`, `scenario_id`, `case_id`…).
-4. **Cùng phiên bản:** mọi run và baseline dùng cùng `feature_config_version` và
-   `noise_filter_version` (mục 8.5: áp như nhau cho mọi run).
+4. **Cùng phiên bản và cùng độ dài cửa sổ:** mọi run và baseline dùng cùng
+   `feature_config_version` và `noise_filter_version` (mục 8.5: áp như nhau cho mọi run), và cùng
+   `window_s` (baseline cũ không ghi `window_s` thì suy từ manifest của run fit, xem
+   `baseline_window_s`).
 5. **Không dùng dữ liệu tương lai:**
    - manifest feature khai báo quy tắc gán theo thời điểm của pipeline hiện hành (span theo
      `end_time`, mẫu trong `[window_start, window_end)`) và độ trễ thu thập `AVAILABLE_AFTER_S`;
@@ -35,13 +37,20 @@ import pyarrow.compute as pc
 import pyarrow.parquet as pq
 
 from ..telemetry.window import parse_utc
-from .baseline import FEATURE_MANIFEST, read_feature_meta, sha256_file
+from .baseline import (
+    FEATURE_MANIFEST,
+    BaselineError,
+    baseline_window_s,
+    read_feature_meta,
+    sha256_file,
+)
 from .pipeline import (
     AVAILABLE_AFTER_S,
     FEATURE_VERSION,
     MAX_DELAY_S,
     NOISE_FILTER_VERSION,
     TABLES,
+    feature_window_s,
     query_start_sources,
 )
 
@@ -209,13 +218,22 @@ def check_leakage(
         errors += _check_baseline(baseline, manifest, slots, feature_dirs, manifest_sha256)
 
     versions = set()
+    window_sizes: dict[str, set[str]] = {}
     if baseline is not None:
         versions.add((baseline["feature_config_version"], baseline["noise_filter_version"]))
+        try:
+            size, legacy = baseline_window_s(baseline, feature_dirs)
+            window_sizes.setdefault(str(size), set()).add(
+                "baseline (legacy, suy ra)" if legacy else "baseline"
+            )
+        except BaselineError as error:
+            errors.append(f"baseline: {error}")
     for run_id, directory in sorted(feature_dirs.items()):
         meta = read_feature_meta(directory)
         if meta.get("run_id") != run_id:
             errors.append(f"{run_id}: features-manifest thuộc run {meta.get('run_id')}")
         versions.add((meta.get("feature_config_version"), meta.get("noise_filter_version")))
+        window_sizes.setdefault(str(feature_window_s(meta)), set()).add(run_id)
         leaked = _keys(meta) & TRUTH_FIELDS
         if leaked:
             errors.append(f"{run_id}: features-manifest có trường truth {sorted(leaked)}")
@@ -238,6 +256,9 @@ def check_leakage(
             errors.append(f"{run_id}: không có trong dataset manifest")
     if len(versions) > 1:
         errors.append(f"phiên bản feature/lọc nhiễu không đồng nhất: {sorted(map(str, versions))}")
+    if len(window_sizes) > 1:
+        detail = {size: sorted(names) for size, names in sorted(window_sizes.items())}
+        errors.append(f"độ dài cửa sổ không đồng nhất: {detail}")
     expected = (FEATURE_VERSION, NOISE_FILTER_VERSION)
     if versions and versions != {expected}:
         errors.append(f"cần {expected}, có {sorted(map(str, versions))}")
