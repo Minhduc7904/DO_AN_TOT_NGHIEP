@@ -272,6 +272,27 @@ def test_fused_falls_back_only_on_modalities_without_data():
         Fused(threshold=3, weights={"metric": 1.0})
 
 
+def test_each_detector_names_its_own_evidence_signals():
+    window = _window(
+        ("service.error_rate", 0.2, 6.0),
+        ("service.latency_p95", 0.5, 4.5),
+        ("service.log_error_rate", 0.0, -1.0),
+    )
+    # robust_z: mọi tín hiệu có z vượt ngưỡng.
+    assert RobustZ(threshold=4).score(window).evidence == (
+        "service.error_rate@course",
+        "service.latency_p95@course",
+    )
+    # static: tín hiệu vượt ngưỡng riêng của nó (không nhìn z).
+    static = StaticThreshold({"service.error_rate": 0.1, "service.latency_p95": 1.0})
+    assert static.score(window).evidence == ("service.error_rate@course",)
+    # fused: tín hiệu z > 0 của modality có đóng góp.
+    assert Fused(threshold=3).score(window).evidence == (
+        "service.error_rate@course",
+        "service.latency_p95@course",
+    )
+
+
 # --- Gom feature theo service và Isolation Forest -------------------------------------------------
 
 
@@ -368,7 +389,8 @@ def test_detect_writes_records_with_lineage_and_evidence_keys(tmp_path):
         not in (worker["observed_keys"])
     )
     assert worker["missing_modalities"] == ["traces"]
-    assert worker["top_key"] is None  # không vượt thì không có khóa bằng chứng
+    assert worker["top_key"] is None and worker["evidence_keys"] == []  # không vượt
+    assert {tuple(r["evidence_keys"]) for r in silent} == {("telemetry_silent@identity",)}
 
 
 def test_constant_train_signal_uses_unit_floor_scale(tmp_path):

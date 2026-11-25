@@ -38,6 +38,13 @@ class Score:
     components: dict[str, float | None] = field(default_factory=dict)
     top: Observation | None = None
     top_score: float | None = None
+    #: Khóa bằng chứng của cửa sổ vượt (`Observation.key`): tín hiệu mà chính detector coi là bất
+    #: thường. Lifecycle đếm persistence theo từng khóa (luật cửa sổ không dữ liệu theo feature).
+    evidence: tuple[str, ...] = ()
+
+
+def _keys(observations) -> tuple[str, ...]:
+    return tuple(sorted({obs.key for obs in observations}))
 
 
 class Detector(Protocol):
@@ -104,6 +111,7 @@ class StaticThreshold:
             return early
         best: float | None = None
         best_obs: Observation | None = None
+        over: list[Observation] = []
         components: dict[str, float | None] = {m: None for m in MODALITIES}
         for obs in window.observations:
             limit = self.thresholds.get(obs.signal.name)
@@ -116,6 +124,8 @@ class StaticThreshold:
             modality = obs.signal.modality
             current = components[modality]
             components[modality] = ratio if current is None else max(current, ratio)
+            if ratio > self.threshold:
+                over.append(obs)
             if best is None or ratio > best:
                 best, best_obs = ratio, obs
         if best is None:
@@ -123,7 +133,7 @@ class StaticThreshold:
             # cửa sổ null, để "không dữ liệu" có cùng nghĩa ở cả bốn detector).
             return Score(None, False, "below_threshold", components)
         flagged, reason = _decide(best, self.threshold)
-        return Score(best, flagged, reason, components, best_obs, best)
+        return Score(best, flagged, reason, components, best_obs, best, _keys(over))
 
 
 @dataclass
@@ -142,7 +152,8 @@ class RobustZ:
             # cửa sổ null (cùng nghĩa ở cả bốn detector).
             return Score(None, False, "below_threshold", components)
         flagged, reason = _decide(top, self.threshold)
-        return Score(top, flagged, reason, components, obs, top)
+        over = [o for o in window.observations if o.z is not None and o.z > self.threshold]
+        return Score(top, flagged, reason, components, obs, top, _keys(over))
 
 
 @dataclass
@@ -170,9 +181,13 @@ class Fused:
             return Score(None, False, "below_threshold", components)
         fused = sum(self.weights[m] * s for m, s in present.items()) / total
         # Tín hiệu đỉnh chỉ lấy từ modality có đóng góp vào điểm.
-        _, obs = _max_z([o for o in window.observations if o.signal.modality in present])
+        contributing = [o for o in window.observations if o.signal.modality in present]
+        _, obs = _max_z(contributing)
         flagged, reason = _decide(fused, self.threshold)
-        return Score(fused, flagged, reason, components, obs, obs.z if obs else None)
+        positive = [o for o in contributing if o.z is not None and o.z > 0]
+        return Score(
+            fused, flagged, reason, components, obs, obs.z if obs else None, _keys(positive)
+        )
 
 
 def build_detector(name: str, config: dict[str, Any], model: Any = None) -> Detector:

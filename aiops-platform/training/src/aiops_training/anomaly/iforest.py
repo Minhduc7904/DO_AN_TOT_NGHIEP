@@ -29,7 +29,7 @@ import joblib
 import numpy as np
 from sklearn.ensemble import IsolationForest
 
-from .detectors import Score, _decide, _max_z, _modality_scores, _silent_or_empty
+from .detectors import Score, _decide, _keys, _max_z, _modality_scores, _silent_or_empty
 from .signals import SIGNAL_SET_VERSION, SIGNALS, ServiceWindow, service_windows
 
 MODEL_SCHEMA = "iforest-model.v1"
@@ -198,4 +198,7 @@ class IForestDetector:
         value = float(-estimator.score_samples(np.asarray([vector(window)], dtype=float))[0])
         _, obs = _max_z(window.observations)
         flagged, reason = _decide(value, self.threshold)
-        return Score(value, flagged, reason, components, obs, obs.z if obs else None)
+        positive = [o for o in window.observations if o.z is not None and o.z > 0]
+        return Score(
+            value, flagged, reason, components, obs, obs.z if obs else None, _keys(positive)
+        )
