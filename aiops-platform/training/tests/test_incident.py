@@ -51,20 +51,35 @@ def _config(**overrides) -> IncidentConfig:
 def _windows(
     pattern: str, service: str = "course", window_s: int = 60, offset: int = 0, warmup: int = 0
 ) -> list[WindowScore]:
-    """`pattern`: mỗi ký tự một cửa sổ bước 15 s — `x` vượt, `.` không vượt, `_` không dữ liệu,
-    `s` im lặng (vượt, điểm rỗng), `i` vượt với điểm vô cùng."""
+    """`pattern`: mỗi ký tự một cửa sổ bước 15 s — `x` vượt, `.` không vượt (quan sát được tín hiệu
+    bằng chứng), `o` không vượt và **không** quan sát được tín hiệu bằng chứng (chỉ có tín hiệu
+    khác, như cạnh thưa không có lời gọi), `_` không dữ liệu, `s` im lặng (vượt, điểm rỗng),
+    `i` vượt với điểm vô cùng."""
+    evidence = f"edge.duration_p95@{service}|dep"
+    silence = f"telemetry_silent@{service}"
+    other = f"service.log_error_rate@{service}"
     result = []
     for index, char in enumerate(pattern):
         start = T0 + timedelta(seconds=STEP * (index + offset))
-        flagged = {"x": True, ".": False, "_": None, "s": True, "i": True}[char]
-        score = {"x": 5.0 + index, ".": 1.0, "_": None, "s": None, "i": math.inf}[char]
+        flagged = {"x": True, ".": False, "o": False, "_": None, "s": True, "i": True}[char]
+        score = {"x": 5.0 + index, ".": 1.0, "o": 1.0, "_": None, "s": None, "i": math.inf}[char]
         reason = {
             "x": "threshold",
             ".": "below_threshold",
+            "o": "below_threshold",
             "_": "no_data",
             "s": "telemetry_silent",
             "i": "threshold",
         }[char]
+        observed = {
+            "x": {silence, other, evidence},
+            ".": {silence, other, evidence},
+            "o": {silence, other},
+            "_": {silence},
+            "s": {silence},
+            "i": {silence, other, evidence},
+        }[char]
+        top_key = {"x": evidence, "i": evidence, "s": silence}.get(char)
         result.append(
             WindowScore(
                 service=service,
@@ -74,8 +89,10 @@ def _windows(
                 flagged=flagged,
                 score=score,
                 reason=reason,
-                top_signal="service.error_rate" if flagged else None,
-                top_entity=service if flagged else None,
+                top_signal="edge.duration_p95" if top_key == evidence else None,
+                top_entity=f"{service}|dep" if top_key == evidence else None,
+                top_key=top_key,
+                observed_keys=frozenset(observed),
             )
         )
     return result
@@ -106,6 +123,27 @@ def test_a_non_flagged_data_window_breaks_the_chain():
     assert _episodes("xx.xx.xx.") == []
     (episode,) = _episodes("xx.xxx...")
     assert episode.first.window_end == _end(3)
+
+
+def test_windows_without_the_evidence_signal_do_not_break_the_chain():
+    # C3: cạnh thưa. Cửa sổ giữa các lời gọi không vượt nhưng chỉ có log/hàng đợi, không quan sát
+    # được cạnh đang là bằng chứng → bỏ qua, chuỗi tích lũy tiếp.
+    five = _config(persistence_windows=5)
+    (episode,) = _episodes("xxooxooxox....", config=five)
+    assert episode.opened.window_end == _end(9)
+    # Cửa sổ quan sát được chính cạnh đó mà không vượt thì đứt chuỗi.
+    assert _episodes("xxo.xooox....", config=five) == []
+
+
+def test_silent_chain_breaks_when_heartbeat_returns():
+    # Khóa im lặng luôn được quan sát (nhịp tim có hay không): cửa sổ hết im lặng làm đứt chuỗi.
+    assert _episodes("ss.ss.ss.") == []
+
+
+def test_null_windows_during_recovery_do_not_count():
+    (episode,) = _episodes("xxx._._x..")
+    # Recovery cần 2 cửa sổ không vượt *có dữ liệu* liên tiếp: `._.` đủ 2 → RESOLVED ở cửa sổ 5.
+    assert episode.resolved_at == _end(5) + timedelta(seconds=DELAY)
 
 
 def test_recovery_reopen_and_resolution():
@@ -191,6 +229,37 @@ def test_merge_gap_joins_relapse_and_separates_later_episode():
     assert len(far) == 2
 
 
+def test_correlation_window_alone_joins_a_resolved_incident():
+    # course mở ở cửa sổ 2, hồi phục ở cửa sổ 4; media mở ở cửa sổ 12 (ngoài merge gap 0) nhưng
+    # trong cửa sổ tương quan 300 s kể từ detected_at → cùng incident.
+    (incident,) = _incidents(
+        _windows("xxx..........", "course"),
+        _windows("..........xxx", "media"),
+        merge_gap_seconds=0,
+        correlation_window_seconds=300,
+    )
+    assert incident["affected_services"] == ["course", "media"]
+    assert incident["open_at_run_end"] is True
+    split = _incidents(
+        _windows("xxx..........", "course"),
+        _windows("..........xxx", "media"),
+        merge_gap_seconds=0,
+        correlation_window_seconds=60,
+    )
+    assert len(split) == 2
+
+
+def test_first_symptom_can_come_from_a_later_opened_episode():
+    # media: chuỗi bắt đầu sớm hơn nhưng đạt persistence muộn hơn → first_symptom là media.
+    (incident,) = _incidents(
+        _windows("x_x_x_x....", "media"),
+        _windows(".xxxx......", "course"),
+        persistence_windows=4,
+    )
+    assert incident["episodes"][0]["service"] == "course"
+    assert incident["first_symptom"]["service"] == "media"
+
+
 def test_still_open_incident_absorbs_later_episodes():
     # course chưa hồi phục tới cuối run: incident còn mở, đợt của media về sau nhập vào nó; harness
     # sẽ tính FP (mở trước fault) + FN theo mục 17.2, lifecycle không tách theo mốc fault.
@@ -218,6 +287,11 @@ def test_incident_ids_and_output_are_deterministic_and_inf_scores_are_json_safe(
         {**KEY, "persistence_windows": 4},
     )
     assert other[0]["incident_id"] != first[0]["incident_id"]
+    # Hai ứng viên ngưỡng (cùng version config) không bao giờ trùng id.
+    episodes = service_episodes(_windows("xxx...", "course"), _config(), STEP, DELAY)
+    z3 = correlate(episodes, _config(), "run-1", {**KEY, "threshold": 3})
+    z4 = correlate(episodes, _config(), "run-1", {**KEY, "threshold": 4})
+    assert z3[0]["incident_id"] != z4[0]["incident_id"]
 
 
 def test_config_validation():

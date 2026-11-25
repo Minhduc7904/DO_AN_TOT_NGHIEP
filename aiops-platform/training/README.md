@@ -136,10 +136,10 @@ Quy tắc dùng chung (chi tiết ở docstring `anomaly/signals.py`, `anomaly/d
 uv run aiops-training incidents <dir>/anomalies-robust_z.parquet --config configs/incident-dev-v1.json
 ```
 
-- **Máy trạng thái theo service** `NORMAL → SUSPECTED → OPEN → RECOVERING → RESOLVED`: mở khi đủ `persistence_windows` cửa sổ vượt liên tiếp trên các cửa sổ có dữ liệu (cửa sổ không dữ liệu bỏ qua, không làm đứt chuỗi); hồi phục sau `recovery_windows` cửa sổ không vượt. Bỏ cửa sổ `warmup`; không đọc ground truth hay evaluation interval (harness lọc).
+- **Máy trạng thái theo service** `NORMAL → SUSPECTED → OPEN → RECOVERING → RESOLVED`: mở khi đủ `persistence_windows` cửa sổ vượt; cửa sổ không dữ liệu bỏ qua, không làm đứt chuỗi, gồm cả cửa sổ không vượt mà không quan sát được tín hiệu đang là bằng chứng của chuỗi (`top_key` không có trong `observed_keys`, ví dụ cạnh thưa của C3 giữa hai lời gọi); hồi phục sau `recovery_windows` cửa sổ không vượt có dữ liệu. Bỏ cửa sổ `warmup`; không đọc ground truth hay evaluation interval (harness lọc).
 - **Thời điểm:** `detected_at` = `window_end` của cửa sổ hoàn tất persistence + `available_after_s` (10 s); `estimated_start_time` = `window_end` của cửa sổ vượt đầu tiên − bước 15 s; `resolved_at` rỗng nếu chưa hồi phục tới cuối run.
 - **Gộp (tạm thời, theo thời gian; đồ thị v2 thay ở tuần 17):** đợt mở trước khi incident đang xét hồi phục + `merge_gap_seconds`, hoặc trong `correlation_window_seconds` kể từ `detected_at` của incident, nhập vào incident đó.
-- **Record `incident-record.v1`:** `incident_id` xác định (băm run, detector, phiên bản config, window/persistence, cửa sổ mở), `affected_services`, `first_symptom`, `trigger_reason`, `peak_score` (vô cùng ghi `peak_score_infinite`), từng đợt và timeline trỏ tới (service, tín hiệu, thực thể, cửa sổ, điểm), lineage tới detector, feature, baseline, model.
+- **Record `incident-record.v1`:** `threshold` của detector; `incident_id` xác định (băm run, detector, ngưỡng, phiên bản và sha256 nội dung config detector/incident, window/persistence, cửa sổ mở); `open_at_run_end`, `duration_s` để chẩn đoán incident gộp quá rộng, `affected_services`, `first_symptom`, `trigger_reason`, `peak_score` (vô cùng ghi `peak_score_infinite`), từng đợt và timeline trỏ tới (service, tín hiệu, thực thể, cửa sổ, điểm), lineage tới detector, feature, baseline, model.
 
 `configs/incident-dev-v1.json` chỉ là giá trị phát triển; tham số incident khai báo ở `detection-candidates.v2`.
 

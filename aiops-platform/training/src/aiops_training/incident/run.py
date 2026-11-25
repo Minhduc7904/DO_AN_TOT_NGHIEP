@@ -63,6 +63,8 @@ def read_scores(anomalies: Path) -> list[WindowScore]:
             reason=row["reason"],
             top_signal=row["top_signal"],
             top_entity=row["top_entity"],
+            top_key=row.get("top_key"),
+            observed_keys=frozenset(row.get("observed_keys") or ()),
         )
         for row in pq.read_table(anomalies).to_pylist()
     ]
@@ -93,7 +95,15 @@ def build_incidents(
         "window_seconds": int(manifest["window_s"]),
         "persistence_windows": config.persistence_windows,
     }
-    incidents = correlate(episodes, config, manifest["run_id"], key)
+    identity = {
+        **key,
+        "threshold": manifest.get("threshold"),
+        "detector_config_sha256": manifest.get("detector_config_sha256"),
+        "incident_config_sha256": hashlib.sha256(
+            json.dumps(asdict(config), sort_keys=True).encode("utf-8")
+        ).hexdigest(),
+    }
+    incidents = correlate(episodes, config, manifest["run_id"], identity)
     return {
         "schema": INCIDENT_SCHEMA,
         "run_id": manifest["run_id"],
@@ -106,7 +116,9 @@ def build_incidents(
         "lineage": {
             "anomalies_sha256": _sha256(anomalies),
             "anomalies_manifest_sha256": _sha256(manifest_path),
-            "incident_config_sha256": _sha256(config_path) if config_path else None,
+            "incident_config_file_sha256": _sha256(config_path) if config_path else None,
+            "incident_config_sha256": identity["incident_config_sha256"],
+            "detector_config_sha256": manifest.get("detector_config_sha256"),
             "threshold": manifest.get("threshold"),
             **manifest.get("lineage", {}),
         },

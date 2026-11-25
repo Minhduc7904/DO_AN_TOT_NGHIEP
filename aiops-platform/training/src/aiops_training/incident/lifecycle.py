@@ -5,23 +5,33 @@ hoàn toàn theo config:
 
 - Chỉ xét cửa sổ ngoài warm-up (cờ `warmup` của feature). Lifecycle không đọc mốc nào của
   `RunGroundTruth` hay evaluation interval; lọc theo evaluation interval là việc của harness.
-- **Cửa sổ không dữ liệu** (`flagged` rỗng) bị bỏ qua: không tính là vượt, không làm đứt chuỗi
-  (`skip_without_breaking_chain`, evaluation-protocol-v1 mục 6.1.2).
-- `NORMAL` + cửa sổ vượt → `SUSPECTED`. `SUSPECTED` + cửa sổ không vượt → `NORMAL` (chuỗi đứt).
-  Đủ `persistence_windows` cửa sổ vượt liên tiếp (trên các cửa sổ có dữ liệu) → `OPEN`.
+- **Cửa sổ không dữ liệu** (`skip_without_breaking_chain`, evaluation-protocol-v1 mục 6.1.2) bị
+  bỏ qua, không tính là vượt và không làm đứt chuỗi, ở hai mức:
+  - `flagged` rỗng (service không có giá trị triệu chứng nào);
+  - với chuỗi đang tích lũy: cửa sổ không vượt mà **không quan sát được** tín hiệu nào đang là bằng
+    chứng của chuỗi (`top_key` của các cửa sổ vượt trong chuỗi không có trong `observed_keys` của
+    cửa sổ này). Ví dụ C3: cạnh `ai-worker → ai-llm-provider` chỉ có lời gọi rải rác; cửa sổ không
+    có lời gọi nào vẫn có `log_error_rate` và hàng đợi nhưng không quan sát được cạnh, nên không
+    làm đứt chuỗi.
+- `NORMAL` + cửa sổ vượt → `SUSPECTED`. `SUSPECTED` + cửa sổ không vượt quan sát được bằng chứng
+  → `NORMAL` (chuỗi đứt). Đủ `persistence_windows` cửa sổ vượt (bỏ qua cửa sổ không dữ liệu) →
+  `OPEN`.
 - `OPEN` + cửa sổ không vượt → `RECOVERING`; `RECOVERING` + cửa sổ vượt → `OPEN`;
-  đủ `recovery_windows` cửa sổ không vượt liên tiếp → `RESOLVED` (về `NORMAL` cho đợt sau).
+  đủ `recovery_windows` cửa sổ không vượt liên tiếp (có dữ liệu) → `RESOLVED` (về `NORMAL` cho đợt
+  sau). Recovery không đòi quan sát được bằng chứng: nếu đòi, một cạnh chỉ xuất hiện trong lúc
+  fault sẽ giữ đợt mở mãi; cạnh thưa hồi phục sớm rồi mở lại thì được gộp lại bằng merge gap.
 - **Thời điểm:**
   - `opened_at` (= `detected_at` của đợt) = `window_end` của cửa sổ hoàn tất persistence +
     `available_after_s` của detector (metric 10 s, mục 6.1.2);
-  - `estimated_start_time` = `window_end` của cửa sổ vượt đầu tiên của chuỗi − `step_s`: cửa sổ
-    kết thúc sớm hơn một bước chưa vượt, nên phần dữ liệu mới làm cửa sổ này vượt nằm ở bước cuối
-    của nó (blueprint mục 10.4, "cửa sổ bất thường đầu tiên");
+  - `estimated_start_time` = `window_end` của cửa sổ vượt đầu tiên của chuỗi − `step_s`: khi cửa
+    sổ kết thúc sớm hơn một bước có dữ liệu và chưa vượt, phần dữ liệu mới làm cửa sổ này vượt nằm
+    ở bước cuối của nó (blueprint mục 10.4, "cửa sổ bất thường đầu tiên"). Giới hạn: nếu cửa sổ
+    trước đó không có dữ liệu (cạnh thưa) thì thời điểm thật có thể sớm tới `window_start`;
   - `resolved_at` = `window_end` của cửa sổ hoàn tất recovery + `available_after_s`; rỗng nếu tới
     cuối run vẫn chưa hồi phục.
 
 **Gộp thành incident** (tạm thời, chỉ theo thời gian; đồ thị phụ thuộc v2 thay ở tuần 17): đợt của
-mọi service sắp theo `opened_at`; một đợt nhập incident đang xét nếu nó mở trước
+mọi service sắp theo `opened_at`; một đợt nhập incident đang xét nếu nó mở không muộn hơn
 `incident_end + merge_gap_seconds` (incident_end = `resolved_at` lớn nhất, hoặc vô cùng khi còn
 mở) **hoặc** trong `correlation_window_seconds` kể từ `detected_at` của incident. Như vậy C6 (nhiều
 service lỗi cùng lúc) thành một incident có nhiều `affected_services`, và một service tái phát sau
@@ -29,8 +39,9 @@ khoảng ngắn không thành incident mới. Một incident mở trước fault
 incident (harness tính FP + FN theo mục 17.2); lifecycle không tách theo mốc fault vì không biết mốc
 đó.
 
-`incident_id` xác định: băm của `run_id`, detector, phiên bản config, cặp window/persistence và
-`window_end` của cửa sổ mở đầu tiên (mục 17.4 dùng nó để phá hòa).
+`incident_id` xác định: băm của `run_id`, detector, ngưỡng, phiên bản và sha256 nội dung của config
+detector và incident, cặp window/persistence và `window_end` của cửa sổ mở đầu tiên (mục 17.4 dùng
+nó để phá hòa; hai ứng viên ngưỡng không bao giờ trùng id).
 """
 
 from __future__ import annotations
@@ -73,6 +84,8 @@ class WindowScore:
     reason: str
     top_signal: str | None = None
     top_entity: str | None = None
+    top_key: str | None = None
+    observed_keys: frozenset[str] = frozenset()
 
 
 @dataclass
@@ -120,6 +133,7 @@ def service_episodes(
     episodes: list[Episode] = []
     state = "NORMAL"
     chain: list[WindowScore] = []
+    evidence: set[str] = set()
     quiet = 0
     current: Episode | None = None
     for window in sorted(windows, key=lambda w: w.window_start):
@@ -127,9 +141,13 @@ def service_episodes(
             continue
         if state in ("NORMAL", "SUSPECTED"):
             if not window.flagged:
-                state, chain = "NORMAL", []
+                if state == "SUSPECTED" and not evidence & window.observed_keys:
+                    continue  # không quan sát được bằng chứng của chuỗi: cửa sổ null với chuỗi
+                state, chain, evidence = "NORMAL", [], set()
                 continue
             chain.append(window)
+            if window.top_key:
+                evidence.add(window.top_key)
             state = "SUSPECTED"
             if len(chain) >= config.persistence_windows:
                 opened_at = window.window_end + delay
@@ -144,7 +162,7 @@ def service_episodes(
                 current.events.append(_event("SUSPECTED", chain[0], chain[0].window_end + delay))
                 current.events.append(_event("OPEN", window, opened_at))
                 episodes.append(current)
-                state, chain, quiet = "OPEN", [], 0
+                state, chain, evidence, quiet = "OPEN", [], set(), 0
             continue
         # OPEN hoặc RECOVERING
         assert current is not None
@@ -180,6 +198,9 @@ def _incident_id(run_id: str, key: dict[str, Any], opened: WindowScore) -> str:
             str(key["incident_config_version"]),
             str(key["window_seconds"]),
             str(key["persistence_windows"]),
+            str(key.get("threshold")),
+            str(key.get("detector_config_sha256")),
+            str(key.get("incident_config_sha256")),
             _iso(opened.window_end) or "",
         ]
     )
@@ -225,6 +246,11 @@ def correlate(
                 "detected_at": _iso(opener.opened_at),
                 "estimated_start_time": _iso(first.estimated_start_time),
                 "resolved_at": None if any(end is None for end in ends) else _iso(max(ends)),
+                # Chẩn đoán gộp quá rộng (incident còn mở hấp thụ mọi đợt về sau).
+                "open_at_run_end": any(end is None for end in ends),
+                "duration_s": None
+                if any(end is None for end in ends)
+                else (max(ends) - opener.opened_at).total_seconds(),
                 "affected_services": sorted({e.service for e in group}),
                 "first_symptom": {
                     "service": first.service,
