@@ -1,0 +1,9 @@
+{
+  "candidate_set_version": "detection-candidates.v2",
+  "detector_config_version": "validation-v1.robust_z-z5",
+  "detectors": {
+    "robust_z": {
+      "threshold": 5
+    }
+  }
+}

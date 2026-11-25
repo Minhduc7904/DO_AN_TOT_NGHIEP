@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-06_select-detectors-on-validation` |
 | Tuần | `week-16_2026-11-15_to_2026-11-21` |
-| Trạng thái | Đã giao |
+| Trạng thái | Chờ review |
 | Người phụ trách | Bách |
 | Collaborator | Không có |
 | Ưu tiên | Cao |
@@ -69,24 +69,30 @@ Theo [evaluation-protocol-v1](../../../architecture/evaluation-protocol-v1.md) m
 
 ## Definition of Done
 
-- [ ] Ledger chấm validation được commit; lần chấm đầu tiên chạy trên commit chứa merge commit của PR task-05 trên `main` (đối chiếu với timeline PR của task-05).
-- [ ] Bảng 12 tổ hợp robust z có đủ số fault run khớp, báo động giả/giờ và `late_tolerance`; tổ hợp được chọn đúng thứ tự luật, tái lập bằng một lệnh.
-- [ ] Tham số incident, ngưỡng và hyperparameter của ba detector còn lại được chọn trong `detection-candidates.v2`.
-- [ ] Config đã freeze được commit, có version và lineage (sha256 baseline, model, dataset manifest, config ứng viên).
-- [ ] Báo cáo E1 sơ bộ cho bốn detector: báo động giả/giờ (tách đoạn cao điểm), healthy-run FPR, Precision/Recall/F1, delay theo case (tách C2), số đếm và mẫu số, giới hạn mẫu nhỏ và trace mẫu.
-- [ ] Error analysis liệt kê từng FP và FN trên validation.
-- [ ] Không có lần chấm nào trên test; `check-leakage` đạt cho cả 30 s và 60 s.
+- [x] Ledger chấm validation được commit; lần chấm đầu tiên chạy trên commit chứa merge commit của PR task-05 trên `main` (đối chiếu với timeline PR của task-05).
+- [x] Bảng 12 tổ hợp robust z có đủ số fault run khớp, báo động giả/giờ và `late_tolerance`; tổ hợp được chọn đúng thứ tự luật, tái lập bằng một lệnh.
+- [x] Tham số incident, ngưỡng và hyperparameter của ba detector còn lại được chọn trong `detection-candidates.v2`.
+- [x] Config đã freeze được commit, có version và lineage (sha256 baseline, model, dataset manifest, config ứng viên).
+- [x] Báo cáo E1 sơ bộ cho bốn detector: báo động giả/giờ (tách đoạn cao điểm), healthy-run FPR, Precision/Recall/F1, delay theo case (tách C2), số đếm và mẫu số, giới hạn mẫu nhỏ và trace mẫu.
+- [x] Error analysis liệt kê từng FP và FN trên validation.
+- [x] Không có lần chấm nào trên test; `check-leakage` đạt cho cả 30 s và 60 s.
 
 ## Liên kết hồ sơ thực hiện
 
 - Input workspace: Không tạo (giai đoạn tự bắt kịp; bằng chứng nằm trong PR).
 - Output workspace: Không tạo.
-- Pull request: Chưa tạo.
-- Kết quả review: Chưa review.
+- Pull request: [#110](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/110).
+- Kết quả review: Chờ review. Code đã review bằng agent riêng hai vòng trước lần chấm đầu; báo cáo được soát số liệu bằng agent riêng (xem mô tả PR).
 
 > URL/số PR và `Chờ review` phải được commit/push vào PR head trước review. Thành viên còn lại phải gửi `APPROVED` hợp lệ trên GitHub; sau đó người phụ trách finalization metadata, ghi `Hoàn thành` trên chính branch/PR và tự merge task của mình. Card chỉ canonically hoàn thành khi commit đó vào nhánh canonical; xem [vòng đời task canonical](../../../rules/git-and-pull-request-rules.md#vòng-đời-task-canonical).
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 25/11/2026 — lập card.
+- Cập nhật gần nhất: 25/11/2026 — chọn và freeze xong ([detection-validation-report-v1](../../../architecture/detection-validation-report-v1.md)):
+  - Bằng chứng DoD: ledger [`evaluations/validation-v1/ledger.jsonl`](../../../../../aiops-platform/training/evaluations/validation-v1/ledger.jsonl); lần chấm đầu 08:19:33 UTC trên `175e1cf` (chứa `f57c322` của PR #103); 27 lần chấm, không `score_failed`. Ledger đặt ở `evaluations/` thay cho `configs/` vì harness coi `configs/` chưa commit là code bẩn (báo cáo mục 1).
+  - Bước 1 chọn `w30-p4-z5`; bước 2a `merge300-chain120`; bước 2b `static-loose`, `iforest-q0.995`, `fused-equal-q0.999`. Hyperparameter Isolation Forest cố định theo v2 (không tune). Config `configs/detector-e1-v1.json`, `configs/incident-e1-v1.json` có version và lineage.
+  - Bảng tái lập bằng `uv run aiops-training select-detectors report`; lượt `all` vào thư mục riêng cho 27/27 artifact, model và config freeze giống hệt.
+  - `check-leakage` cửa sổ 30 s và 60 s không lỗi (dòng `setup` của ledger); chỉ chấm split validation.
+  - Phát hiện ghi lại: Isolation Forest có trần điểm theo service nên ở ngưỡng 0,780 `course` và `scheduler` không vượt được.
+  - Trước đó cùng ngày: bắt đầu trên nhánh tách từ `main` tại `c6738ae`; lập card.
 - Ghi chú/tồn đọng:

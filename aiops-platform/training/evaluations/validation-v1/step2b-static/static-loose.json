@@ -1,0 +1,738 @@
+{
+  "schema": "detection-evaluation-artifact.v1",
+  "evaluation_artifact_id": "det-eval-f8fc21edd7aee928",
+  "protocol_version": "evaluation-protocol-v1",
+  "evaluation_config_version": "detection-evaluation.v1",
+  "generated_at": "2026-11-25T08:21:38.230754Z",
+  "dataset_id": "dataset-v0",
+  "split": "validation",
+  "final_test": false,
+  "detector": "static",
+  "detector_config_version": "validation-v1.static-loose",
+  "incident_config_version": "validation-v1.incident-w30-p4-m300-g120",
+  "threshold": 1.0,
+  "detector_config_sha256": "77d3abca9e89703ac1b107ad8d61347d0a9114a5bfd092c433432217b42706e2",
+  "incident_config_sha256": "82f5ec0061d65e5f22d1f678bb1ac38cd32a1b12e30a778b6a1724851f101a99",
+  "model_sha256": null,
+  "window_seconds": 30,
+  "persistence_windows": 4,
+  "step_seconds": 15,
+  "late_tolerance_seconds": 75.0,
+  "early_tolerance_seconds": 0.0,
+  "summary": {
+    "pooled": {
+      "n_runs": 6,
+      "n_fault_runs": 4,
+      "n_healthy_runs": 2,
+      "n_incidents": 4,
+      "tp": 4,
+      "fp": 0,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    "pooled_fault_runs": {
+      "n_runs": 4,
+      "n_fault_runs": 4,
+      "n_healthy_runs": 0,
+      "n_incidents": 4,
+      "tp": 4,
+      "fp": 0,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    "matched_fault_runs": 4,
+    "false_alarm_rate": {
+      "false_alarms": 0,
+      "exposure_us": 12748598000,
+      "hours": 3.5412772222222224,
+      "per_hour": 0.0,
+      "cap_per_hour": 1.0,
+      "meets_cap": true
+    },
+    "healthy": {
+      "n_runs": 2,
+      "n_runs_with_fp": 0,
+      "healthy_run_fpr": 0.0,
+      "fp_incidents": 0,
+      "hours": 1.430481111111111,
+      "fp_per_healthy_hour": 0.0,
+      "by_profile": {
+        "healthy-spike": {
+          "n_runs": 1,
+          "n_runs_with_fp": 0,
+          "healthy_run_fpr": 0.0,
+          "fp_incidents": 0,
+          "hours": 0.7152836111111112,
+          "fp_per_healthy_hour": 0.0
+        },
+        "normal-mixed": {
+          "n_runs": 1,
+          "n_runs_with_fp": 0,
+          "healthy_run_fpr": 0.0,
+          "fp_incidents": 0,
+          "hours": 0.7151974999999999,
+          "fp_per_healthy_hour": 0.0
+        }
+      }
+    },
+    "peak": {
+      "healthy-spike": {
+        "n_runs": 1,
+        "false_alarms": 0,
+        "hours": 0.16666666666666666,
+        "per_hour": 0.0
+      }
+    },
+    "detection_delay": {
+      "count": 4,
+      "fn": 0,
+      "mean_seconds": 251.95775,
+      "median_seconds": 97.47,
+      "values_seconds": [
+        76.343,
+        78.22,
+        116.72,
+        736.548
+      ],
+      "by_case": {
+        "C2": {
+          "count": 1,
+          "fn": 0,
+          "mean_seconds": 76.343,
+          "median_seconds": 76.343,
+          "values_seconds": [
+            76.343
+          ]
+        },
+        "C3": {
+          "count": 1,
+          "fn": 0,
+          "mean_seconds": 736.548,
+          "median_seconds": 736.548,
+          "values_seconds": [
+            736.548
+          ]
+        },
+        "C4": {
+          "count": 1,
+          "fn": 0,
+          "mean_seconds": 116.72,
+          "median_seconds": 116.72,
+          "values_seconds": [
+            116.72
+          ]
+        },
+        "C6": {
+          "count": 1,
+          "fn": 0,
+          "mean_seconds": 78.22,
+          "median_seconds": 78.22,
+          "values_seconds": [
+            78.22
+          ]
+        }
+      },
+      "by_align_peak": {
+        "false": {
+          "count": 3,
+          "fn": 0,
+          "mean_seconds": 310.49600000000004,
+          "median_seconds": 116.72,
+          "values_seconds": [
+            78.22,
+            116.72,
+            736.548
+          ]
+        },
+        "true": {
+          "count": 1,
+          "fn": 0,
+          "mean_seconds": 76.343,
+          "median_seconds": 76.343,
+          "values_seconds": [
+            76.343
+          ]
+        }
+      }
+    },
+    "per_case": {
+      "C2": {
+        "n_runs": 1,
+        "n_fault_runs": 1,
+        "n_healthy_runs": 0,
+        "n_incidents": 1,
+        "tp": 1,
+        "fp": 0,
+        "fn": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "detection_delay": {
+          "count": 1,
+          "fn": 0,
+          "mean_seconds": 76.343,
+          "median_seconds": 76.343,
+          "values_seconds": [
+            76.343
+          ]
+        }
+      },
+      "C3": {
+        "n_runs": 1,
+        "n_fault_runs": 1,
+        "n_healthy_runs": 0,
+        "n_incidents": 1,
+        "tp": 1,
+        "fp": 0,
+        "fn": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "detection_delay": {
+          "count": 1,
+          "fn": 0,
+          "mean_seconds": 736.548,
+          "median_seconds": 736.548,
+          "values_seconds": [
+            736.548
+          ]
+        }
+      },
+      "C4": {
+        "n_runs": 1,
+        "n_fault_runs": 1,
+        "n_healthy_runs": 0,
+        "n_incidents": 1,
+        "tp": 1,
+        "fp": 0,
+        "fn": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "detection_delay": {
+          "count": 1,
+          "fn": 0,
+          "mean_seconds": 116.72,
+          "median_seconds": 116.72,
+          "values_seconds": [
+            116.72
+          ]
+        }
+      },
+      "C6": {
+        "n_runs": 1,
+        "n_fault_runs": 1,
+        "n_healthy_runs": 0,
+        "n_incidents": 1,
+        "tp": 1,
+        "fp": 0,
+        "fn": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "detection_delay": {
+          "count": 1,
+          "fn": 0,
+          "mean_seconds": 78.22,
+          "median_seconds": 78.22,
+          "values_seconds": [
+            78.22
+          ]
+        }
+      }
+    },
+    "K": 4,
+    "R": {
+      "C2": 1,
+      "C3": 1,
+      "C4": 1,
+      "C6": 1
+    },
+    "n_slots": 6,
+    "eligible_run_ids": [
+      "validation-c2-normal-mixed-s2001-20261123t182901z",
+      "validation-c3-normal-mixed-s2001-20261123t193231z",
+      "validation-c4-normal-mixed-s2001-20261123t203506z",
+      "validation-c6-normal-mixed-s2001-20261123t213759z",
+      "validation-healthy-healthy-spike-s2003-20261123t123352z",
+      "validation-healthy-normal-mixed-s2002-20261123t091816z"
+    ],
+    "included_by_quality": {
+      "partial": 6
+    },
+    "excluded_count": 0,
+    "excluded_by_reason": {},
+    "replaced_runs": {},
+    "peak_unavailable_by_reason": {}
+  },
+  "bootstrap": null,
+  "runs": [
+    {
+      "run_id": "validation-healthy-normal-mixed-s2002-20261123t091816z",
+      "slot_id": "validation-healthy-normal-mixed-1",
+      "split": "validation",
+      "scenario_id": "healthy",
+      "case_id": null,
+      "case_verification_status": "not_applicable",
+      "profile": "normal-mixed",
+      "repeat_index": 0,
+      "align_peak": false,
+      "evaluation_config_version": "detection-evaluation.v1",
+      "inclusion_status": "eligible",
+      "exclusion_reasons": [],
+      "execution_status": "pass",
+      "telemetry_quality_status": "partial",
+      "ground_truth_run_status": "valid",
+      "evaluation_start": "2026-11-23T09:25:05.715000Z",
+      "evaluation_end": "2026-11-23T10:08:00.426000Z",
+      "fault_start": null,
+      "fault_end": null,
+      "matching_interval_end": null,
+      "matched_incident_id": null,
+      "detected": null,
+      "tp": 0,
+      "fp_incident_count": 0,
+      "fn": 0,
+      "detection_delay_seconds": null,
+      "healthy_run_false_positive": 0,
+      "false_alarms": 0,
+      "false_alarm_exposure_seconds": 2574.711,
+      "incidents": [],
+      "diagnostic_outside_interval": 0,
+      "lineage": {
+        "run_manifest_ref": {
+          "path": "/home/maikhoabach/DATN/wt-w15-t04/aiops-platform/experiments/runs/validation-healthy-normal-mixed-s2002-20261123t091816z/run-manifest.json",
+          "sha256": "0a0e23c95accd25c3b3147e32f3ec1b47e6cc6d6d2de71717d863848853692e5"
+        },
+        "run_ground_truth_ref": {
+          "path": "/home/maikhoabach/DATN/wt-w15-t04/aiops-platform/experiments/runs/validation-healthy-normal-mixed-s2002-20261123t091816z/ground-truth.json",
+          "sha256": "45df5cdfd4563d51a3817499788057f89fa266b1704fd0bbda06dc6fe111ce30"
+        },
+        "incident_artifact_ref": {
+          "path": "/home/maikhoabach/DATN/wt-w16-t06/aiops-platform/training/artifacts/validation-v1/incidents/step2b-static/static-loose/validation-healthy-normal-mixed-s2002-20261123t091816z.json",
+          "sha256": "7df6762dfff0a16c26046044cc14b13059b65ab815d6348a7dd53cba7776f8ae"
+        },
+        "incident_record_lineage": {
+          "anomalies_sha256": "f2e979493c7ebad09ef288ef4ce9436ca94ddbb12699aacedfffbea7a4d6926c",
+          "anomalies_manifest_sha256": "c36c553a7e5caa4e75f90c52206867cbf57631d0efa4c6099a96aa258c1ccba6",
+          "incident_config_file_sha256": "92010db0a901897058fb683a11c10ebf3b57022edbfb3edff3d1242e38d0b2bb",
+          "incident_config_sha256": "82f5ec0061d65e5f22d1f678bb1ac38cd32a1b12e30a778b6a1724851f101a99",
+          "detector_config_sha256": "77d3abca9e89703ac1b107ad8d61347d0a9114a5bfd092c433432217b42706e2",
+          "model_sha256": null,
+          "threshold": 1.0,
+          "features_manifest_sha256": "c38d83fd92800d67d4d733795105dda615bc68f77636771c22cadb50b479eb53",
+          "feature_config_version": "feature.v1",
+          "noise_filter_version": "noise.v1",
+          "baseline_sha256": "08ddaefb4c0e42068693c194f19cf89d38bd356427f1aac24edad216b90d8e5b",
+          "baseline_fit_runs": [
+            "train-healthy-healthy-spike-s1003-20261123t224223z",
+            "train-healthy-healthy-spike-s1004-20261124t002521z",
+            "train-healthy-normal-mixed-s1001-20261123t102740z",
+            "train-healthy-normal-mixed-s1002-20261123t113109z"
+          ],
+          "model_fit_runs": null
+        }
+      }
+    },
+    {
+      "run_id": "validation-healthy-healthy-spike-s2003-20261123t123352z",
+      "slot_id": "validation-healthy-healthy-spike-1",
+      "split": "validation",
+      "scenario_id": "healthy",
+      "case_id": null,
+      "case_verification_status": "not_applicable",
+      "profile": "healthy-spike",
+      "repeat_index": 0,
+      "align_peak": false,
+      "evaluation_config_version": "detection-evaluation.v1",
+      "inclusion_status": "eligible",
+      "exclusion_reasons": [],
+      "execution_status": "pass",
+      "telemetry_quality_status": "partial",
+      "ground_truth_run_status": "valid",
+      "evaluation_start": "2026-11-23T12:41:00.149000Z",
+      "evaluation_end": "2026-11-23T13:23:55.170000Z",
+      "fault_start": null,
+      "fault_end": null,
+      "matching_interval_end": null,
+      "matched_incident_id": null,
+      "detected": null,
+      "tp": 0,
+      "fp_incident_count": 0,
+      "fn": 0,
+      "detection_delay_seconds": null,
+      "healthy_run_false_positive": 0,
+      "false_alarms": 0,
+      "false_alarm_exposure_seconds": 2575.021,
+      "incidents": [],
+      "diagnostic_outside_interval": 0,
+      "peak_segment": {
+        "start": "2026-11-23T12:53:00.149000Z",
+        "end": "2026-11-23T13:03:00.149000Z",
+        "false_alarms": 0,
+        "exposure_seconds": 600.0
+      },
+      "peak_status": {
+        "status": "ok"
+      },
+      "lineage": {
+        "run_manifest_ref": {
+          "path": "/home/maikhoabach/DATN/wt-w15-t04/aiops-platform/experiments/runs/validation-healthy-healthy-spike-s2003-20261123t123352z/run-manifest.json",
+          "sha256": "f2e835fccec980a4fb653557e3ad6ec7675f3e7b627844e74e78438de0d23c18"
+        },
+        "run_ground_truth_ref": {
+          "path": "/home/maikhoabach/DATN/wt-w15-t04/aiops-platform/experiments/runs/validation-healthy-healthy-spike-s2003-20261123t123352z/ground-truth.json",
+          "sha256": "4f00e43978e9868a16ff5b9c02d640e7d49552f55cc347838b59c2f3f7369365"
+        },
+        "incident_artifact_ref": {
+          "path": "/home/maikhoabach/DATN/wt-w16-t06/aiops-platform/training/artifacts/validation-v1/incidents/step2b-static/static-loose/validation-healthy-healthy-spike-s2003-20261123t123352z.json",
+          "sha256": "087949568c443ad373785c93b70915995a103bbc4ec7e5cf90684db5ead3f72e"
+        },
+        "incident_record_lineage": {
+          "anomalies_sha256": "e5158c5e6e38ed465ec6d128937a3e5f725cbd42be47d43c62f27e2ef97a497b",
+          "anomalies_manifest_sha256": "72ab81ae7232481830356a1afbd406d335387f4e048fd475aa6db979f6136536",
+          "incident_config_file_sha256": "92010db0a901897058fb683a11c10ebf3b57022edbfb3edff3d1242e38d0b2bb",
+          "incident_config_sha256": "82f5ec0061d65e5f22d1f678bb1ac38cd32a1b12e30a778b6a1724851f101a99",
+          "detector_config_sha256": "77d3abca9e89703ac1b107ad8d61347d0a9114a5bfd092c433432217b42706e2",
+          "model_sha256": null,
+          "threshold": 1.0,
+          "features_manifest_sha256": "f826e9128213006854bfc26e10c21a950b1b3532a2cef17d1dd11c063c34d14c",
+          "feature_config_version": "feature.v1",
+          "noise_filter_version": "noise.v1",
+          "baseline_sha256": "08ddaefb4c0e42068693c194f19cf89d38bd356427f1aac24edad216b90d8e5b",
+          "baseline_fit_runs": [
+            "train-healthy-healthy-spike-s1003-20261123t224223z",
+            "train-healthy-healthy-spike-s1004-20261124t002521z",
+            "train-healthy-normal-mixed-s1001-20261123t102740z",
+            "train-healthy-normal-mixed-s1002-20261123t113109z"
+          ],
+          "model_fit_runs": null
+        },
+        "peak_plan_ref": {
+          "plan_id": "moodle-healthy-spike-k4-validation-v1",
+          "path": "/home/maikhoabach/DATN/wt-w15-t04/aiops-platform/load/data/plans/moodle-healthy-spike-k4-validation-v1.json",
+          "sha256": "3ac672522ce89e31a92694d1b138ee5a4fe67e4909edd268be30f0f74939d597",
+          "start_offset_seconds": 1080.0,
+          "end_offset_seconds": 1680.0,
+          "session_starts": 1450
+        }
+      }
+    },
+    {
+      "run_id": "validation-c2-normal-mixed-s2001-20261123t182901z",
+      "slot_id": "validation-c2-normal-mixed-r1",
+      "split": "validation",
+      "scenario_id": "C2",
+      "case_id": "C2",
+      "case_verification_status": "succeeded",
+      "profile": "normal-mixed",
+      "repeat_index": 1,
+      "align_peak": true,
+      "evaluation_config_version": "detection-evaluation.v1",
+      "inclusion_status": "eligible",
+      "exclusion_reasons": [],
+      "execution_status": "pass",
+      "telemetry_quality_status": "partial",
+      "ground_truth_run_status": "valid",
+      "evaluation_start": "2026-11-23T18:35:38.629000Z",
+      "evaluation_end": "2026-11-23T19:18:33.328000Z",
+      "fault_start": "2026-11-23T18:50:38.657000Z",
+      "fault_end": "2026-11-23T19:00:38.635000Z",
+      "matching_interval_end": "2026-11-23T19:01:53.635000Z",
+      "matched_incident_id": "inc-058d440f96f158a5",
+      "detected": true,
+      "tp": 1,
+      "fp_incident_count": 0,
+      "fn": 0,
+      "detection_delay_seconds": 76.343,
+      "healthy_run_false_positive": null,
+      "false_alarms": 0,
+      "false_alarm_exposure_seconds": 1899.721,
+      "incidents": [
+        {
+          "incident_id": "inc-058d440f96f158a5",
+          "detected_at": "2026-11-23T18:51:55Z",
+          "label": "tp"
+        }
+      ],
+      "diagnostic_outside_interval": 0,
+      "lineage": {
+        "run_manifest_ref": {
+          "path": "/home/maikhoabach/DATN/wt-w15-t04/aiops-platform/experiments/runs/validation-c2-normal-mixed-s2001-20261123t182901z/run-manifest.json",
+          "sha256": "922c815b27f7894d4dd038750e85db82a39e427167a9aeb494e22d85b6760c44"
+        },
+        "run_ground_truth_ref": {
+          "path": "/home/maikhoabach/DATN/wt-w15-t04/aiops-platform/experiments/runs/validation-c2-normal-mixed-s2001-20261123t182901z/ground-truth.json",
+          "sha256": "83e78d31ac067c5423173bc1907f95d1aa8c9c1f903d11e084a58a113c88dd20"
+        },
+        "incident_artifact_ref": {
+          "path": "/home/maikhoabach/DATN/wt-w16-t06/aiops-platform/training/artifacts/validation-v1/incidents/step2b-static/static-loose/validation-c2-normal-mixed-s2001-20261123t182901z.json",
+          "sha256": "01a0130f51abe5f473be22c2944c2a8e1020959c6ae4814a3930c57693727041"
+        },
+        "incident_record_lineage": {
+          "anomalies_sha256": "23200fd0f445411f546ea3e640a2d2c0380aa2a850404bdcdd9757034cd5cc82",
+          "anomalies_manifest_sha256": "b71e553c7e14b325c6951971ee9dac8634d543d631c43d81f901e653feae2ace",
+          "incident_config_file_sha256": "92010db0a901897058fb683a11c10ebf3b57022edbfb3edff3d1242e38d0b2bb",
+          "incident_config_sha256": "82f5ec0061d65e5f22d1f678bb1ac38cd32a1b12e30a778b6a1724851f101a99",
+          "detector_config_sha256": "77d3abca9e89703ac1b107ad8d61347d0a9114a5bfd092c433432217b42706e2",
+          "model_sha256": null,
+          "threshold": 1.0,
+          "features_manifest_sha256": "287b151feab77715bea33a1a9d79f32e327513091a3a3cb887d9cd3806aeba2e",
+          "feature_config_version": "feature.v1",
+          "noise_filter_version": "noise.v1",
+          "baseline_sha256": "08ddaefb4c0e42068693c194f19cf89d38bd356427f1aac24edad216b90d8e5b",
+          "baseline_fit_runs": [
+            "train-healthy-healthy-spike-s1003-20261123t224223z",
+            "train-healthy-healthy-spike-s1004-20261124t002521z",
+            "train-healthy-normal-mixed-s1001-20261123t102740z",
+            "train-healthy-normal-mixed-s1002-20261123t113109z"
+          ],
+          "model_fit_runs": null
+        }
+      }
+    },
+    {
+      "run_id": "validation-c3-normal-mixed-s2001-20261123t193231z",
+      "slot_id": "validation-c3-normal-mixed-r1",
+      "split": "validation",
+      "scenario_id": "C3",
+      "case_id": "C3",
+      "case_verification_status": "succeeded",
+      "profile": "normal-mixed",
+      "repeat_index": 1,
+      "align_peak": false,
+      "evaluation_config_version": "detection-evaluation.v1",
+      "inclusion_status": "eligible",
+      "exclusion_reasons": [],
+      "execution_status": "pass",
+      "telemetry_quality_status": "partial",
+      "ground_truth_run_status": "valid",
+      "evaluation_start": "2026-11-23T19:39:08.424000Z",
+      "evaluation_end": "2026-11-23T20:22:03.113000Z",
+      "fault_start": "2026-11-23T19:51:08.452000Z",
+      "fault_end": "2026-11-23T20:06:08.428000Z",
+      "matching_interval_end": "2026-11-23T20:07:23.428000Z",
+      "matched_incident_id": "inc-063585cdc1c42b01",
+      "detected": true,
+      "tp": 1,
+      "fp_incident_count": 0,
+      "fn": 0,
+      "detection_delay_seconds": 736.548,
+      "healthy_run_false_positive": null,
+      "false_alarms": 0,
+      "false_alarm_exposure_seconds": 1599.713,
+      "incidents": [
+        {
+          "incident_id": "inc-063585cdc1c42b01",
+          "detected_at": "2026-11-23T20:03:25Z",
+          "label": "tp"
+        }
+      ],
+      "diagnostic_outside_interval": 0,
+      "lineage": {
+        "run_manifest_ref": {
+          "path": "/home/maikhoabach/DATN/wt-w15-t04/aiops-platform/experiments/runs/validation-c3-normal-mixed-s2001-20261123t193231z/run-manifest.json",
+          "sha256": "6dad625b936f1ef0d6c072aeda6569265964bac26275c851c23e461dc7cf1ebb"
+        },
+        "run_ground_truth_ref": {
+          "path": "/home/maikhoabach/DATN/wt-w15-t04/aiops-platform/experiments/runs/validation-c3-normal-mixed-s2001-20261123t193231z/ground-truth.json",
+          "sha256": "22b2808b281fb5f6663d2a044cf65c7f0fc2cbac8f0e0a388ce30a54f0bad6bd"
+        },
+        "incident_artifact_ref": {
+          "path": "/home/maikhoabach/DATN/wt-w16-t06/aiops-platform/training/artifacts/validation-v1/incidents/step2b-static/static-loose/validation-c3-normal-mixed-s2001-20261123t193231z.json",
+          "sha256": "cc9e3f831997113a0b6ff5f95e6219c731015ad62f7d2a66218501d5b004bdb2"
+        },
+        "incident_record_lineage": {
+          "anomalies_sha256": "64ca930afcc1d4c1f09c885b4d86b91be8a6802ebe6539ffdac6455bb66faa1f",
+          "anomalies_manifest_sha256": "cb9b92622a7061168cb6034e194f4c75550f382c602e84b3f740a3a3a6569fa8",
+          "incident_config_file_sha256": "92010db0a901897058fb683a11c10ebf3b57022edbfb3edff3d1242e38d0b2bb",
+          "incident_config_sha256": "82f5ec0061d65e5f22d1f678bb1ac38cd32a1b12e30a778b6a1724851f101a99",
+          "detector_config_sha256": "77d3abca9e89703ac1b107ad8d61347d0a9114a5bfd092c433432217b42706e2",
+          "model_sha256": null,
+          "threshold": 1.0,
+          "features_manifest_sha256": "e78e75e5ecd97dab2cd0064d2d033d6ee730cf5d9ca7b4bae85d05c3bfbfa2d2",
+          "feature_config_version": "feature.v1",
+          "noise_filter_version": "noise.v1",
+          "baseline_sha256": "08ddaefb4c0e42068693c194f19cf89d38bd356427f1aac24edad216b90d8e5b",
+          "baseline_fit_runs": [
+            "train-healthy-healthy-spike-s1003-20261123t224223z",
+            "train-healthy-healthy-spike-s1004-20261124t002521z",
+            "train-healthy-normal-mixed-s1001-20261123t102740z",
+            "train-healthy-normal-mixed-s1002-20261123t113109z"
+          ],
+          "model_fit_runs": null
+        }
+      }
+    },
+    {
+      "run_id": "validation-c4-normal-mixed-s2001-20261123t203506z",
+      "slot_id": "validation-c4-normal-mixed-r1",
+      "split": "validation",
+      "scenario_id": "C4",
+      "case_id": "C4",
+      "case_verification_status": "succeeded",
+      "profile": "normal-mixed",
+      "repeat_index": 1,
+      "align_peak": false,
+      "evaluation_config_version": "detection-evaluation.v1",
+      "inclusion_status": "eligible",
+      "exclusion_reasons": [],
+      "execution_status": "pass",
+      "telemetry_quality_status": "partial",
+      "ground_truth_run_status": "valid",
+      "evaluation_start": "2026-11-23T20:41:43.249000Z",
+      "evaluation_end": "2026-11-23T21:24:37.953000Z",
+      "fault_start": "2026-11-23T20:53:43.280000Z",
+      "fault_end": "2026-11-23T21:03:43.257000Z",
+      "matching_interval_end": "2026-11-23T21:04:58.257000Z",
+      "matched_incident_id": "inc-caf9613932439c20",
+      "detected": true,
+      "tp": 1,
+      "fp_incident_count": 0,
+      "fn": 0,
+      "detection_delay_seconds": 116.72,
+      "healthy_run_false_positive": null,
+      "false_alarms": 0,
+      "false_alarm_exposure_seconds": 1899.727,
+      "incidents": [
+        {
+          "incident_id": "inc-caf9613932439c20",
+          "detected_at": "2026-11-23T20:55:40Z",
+          "label": "tp"
+        }
+      ],
+      "diagnostic_outside_interval": 0,
+      "lineage": {
+        "run_manifest_ref": {
+          "path": "/home/maikhoabach/DATN/wt-w15-t04/aiops-platform/experiments/runs/validation-c4-normal-mixed-s2001-20261123t203506z/run-manifest.json",
+          "sha256": "cfe472802e2b1f0ebcbb12cd542a13a6b295dfe3207e454cbb5eb8d4c25a0cbb"
+        },
+        "run_ground_truth_ref": {
+          "path": "/home/maikhoabach/DATN/wt-w15-t04/aiops-platform/experiments/runs/validation-c4-normal-mixed-s2001-20261123t203506z/ground-truth.json",
+          "sha256": "fc7e6617df2fdacd8cb92a18971836e614fc01b291e23c036668e4fa2a7c02d3"
+        },
+        "incident_artifact_ref": {
+          "path": "/home/maikhoabach/DATN/wt-w16-t06/aiops-platform/training/artifacts/validation-v1/incidents/step2b-static/static-loose/validation-c4-normal-mixed-s2001-20261123t203506z.json",
+          "sha256": "4ebfda6a8c90830e6ed85220b8ce4e2f6b243c14c9d63bf66eebc24796560a65"
+        },
+        "incident_record_lineage": {
+          "anomalies_sha256": "c01b9eca2a6ae5819794ef6a261904e7d288d185083be151cab50a914fc84be8",
+          "anomalies_manifest_sha256": "dbcd4079112b7f7c09e81ccb2d1979b5af99eca5435d48411e87042f7b8e8760",
+          "incident_config_file_sha256": "92010db0a901897058fb683a11c10ebf3b57022edbfb3edff3d1242e38d0b2bb",
+          "incident_config_sha256": "82f5ec0061d65e5f22d1f678bb1ac38cd32a1b12e30a778b6a1724851f101a99",
+          "detector_config_sha256": "77d3abca9e89703ac1b107ad8d61347d0a9114a5bfd092c433432217b42706e2",
+          "model_sha256": null,
+          "threshold": 1.0,
+          "features_manifest_sha256": "ab427bd1fd26d1c97d16bbc87fcccc472e1e5353d89cc482846aa0c0d38a64d0",
+          "feature_config_version": "feature.v1",
+          "noise_filter_version": "noise.v1",
+          "baseline_sha256": "08ddaefb4c0e42068693c194f19cf89d38bd356427f1aac24edad216b90d8e5b",
+          "baseline_fit_runs": [
+            "train-healthy-healthy-spike-s1003-20261123t224223z",
+            "train-healthy-healthy-spike-s1004-20261124t002521z",
+            "train-healthy-normal-mixed-s1001-20261123t102740z",
+            "train-healthy-normal-mixed-s1002-20261123t113109z"
+          ],
+          "model_fit_runs": null
+        }
+      }
+    },
+    {
+      "run_id": "validation-c6-normal-mixed-s2001-20261123t213759z",
+      "slot_id": "validation-c6-normal-mixed-r1",
+      "split": "validation",
+      "scenario_id": "C6",
+      "case_id": "C6",
+      "case_verification_status": "succeeded",
+      "profile": "normal-mixed",
+      "repeat_index": 1,
+      "align_peak": false,
+      "evaluation_config_version": "detection-evaluation.v1",
+      "inclusion_status": "eligible",
+      "exclusion_reasons": [],
+      "execution_status": "pass",
+      "telemetry_quality_status": "partial",
+      "ground_truth_run_status": "valid",
+      "evaluation_start": "2026-11-23T21:44:36.737000Z",
+      "evaluation_end": "2026-11-23T22:27:31.441000Z",
+      "fault_start": "2026-11-23T21:56:36.780000Z",
+      "fault_end": "2026-11-23T22:01:36.779000Z",
+      "matching_interval_end": "2026-11-23T22:02:51.779000Z",
+      "matched_incident_id": "inc-9800b8c3c6dcf6ec",
+      "detected": true,
+      "tp": 1,
+      "fp_incident_count": 0,
+      "fn": 0,
+      "detection_delay_seconds": 78.22,
+      "healthy_run_false_positive": null,
+      "false_alarms": 0,
+      "false_alarm_exposure_seconds": 2199.705,
+      "incidents": [
+        {
+          "incident_id": "inc-9800b8c3c6dcf6ec",
+          "detected_at": "2026-11-23T21:57:55Z",
+          "label": "tp"
+        }
+      ],
+      "diagnostic_outside_interval": 0,
+      "lineage": {
+        "run_manifest_ref": {
+          "path": "/home/maikhoabach/DATN/wt-w15-t04/aiops-platform/experiments/runs/validation-c6-normal-mixed-s2001-20261123t213759z/run-manifest.json",
+          "sha256": "efe7a3e29e7a1d81e5c221fa89fc17e96a6aef2241690ee31498fcdfb263a9b6"
+        },
+        "run_ground_truth_ref": {
+          "path": "/home/maikhoabach/DATN/wt-w15-t04/aiops-platform/experiments/runs/validation-c6-normal-mixed-s2001-20261123t213759z/ground-truth.json",
+          "sha256": "20c5490ffcf93dcee6bd0bc21530d22f4496f4a3ccf0d14c5b2a5da26d02ced8"
+        },
+        "incident_artifact_ref": {
+          "path": "/home/maikhoabach/DATN/wt-w16-t06/aiops-platform/training/artifacts/validation-v1/incidents/step2b-static/static-loose/validation-c6-normal-mixed-s2001-20261123t213759z.json",
+          "sha256": "4e37bc199a3ee7dd40b213bf5bab6861d528f127f9cfdb86cb0575dc91289071"
+        },
+        "incident_record_lineage": {
+          "anomalies_sha256": "7c26cb8c69ce7794cd96aea5af969189c203d454e6bb9944abd0c42524b395a5",
+          "anomalies_manifest_sha256": "78343546909365acd5d005e089eab421ae4531826029464f65eb5d3deb38e764",
+          "incident_config_file_sha256": "92010db0a901897058fb683a11c10ebf3b57022edbfb3edff3d1242e38d0b2bb",
+          "incident_config_sha256": "82f5ec0061d65e5f22d1f678bb1ac38cd32a1b12e30a778b6a1724851f101a99",
+          "detector_config_sha256": "77d3abca9e89703ac1b107ad8d61347d0a9114a5bfd092c433432217b42706e2",
+          "model_sha256": null,
+          "threshold": 1.0,
+          "features_manifest_sha256": "dffec47c2ca359160c2337edc03708ac4b73f1cd447a9882bddd5b36adfeb2d3",
+          "feature_config_version": "feature.v1",
+          "noise_filter_version": "noise.v1",
+          "baseline_sha256": "08ddaefb4c0e42068693c194f19cf89d38bd356427f1aac24edad216b90d8e5b",
+          "baseline_fit_runs": [
+            "train-healthy-healthy-spike-s1003-20261123t224223z",
+            "train-healthy-healthy-spike-s1004-20261124t002521z",
+            "train-healthy-normal-mixed-s1001-20261123t102740z",
+            "train-healthy-normal-mixed-s1002-20261123t113109z"
+          ],
+          "model_fit_runs": null
+        }
+      }
+    }
+  ],
+  "lineage": {
+    "evaluation_config": {
+      "path": "/home/maikhoabach/DATN/wt-w16-t06/aiops-platform/training/configs/detection-evaluation-v1.json",
+      "sha256": "5a674da8aff3c735aafa74825a6c9e9ad0309b98beecda61d9c7c5606b7bc531",
+      "evaluation_config_version": "detection-evaluation.v1"
+    },
+    "candidates_config": {
+      "path": "/home/maikhoabach/DATN/wt-w16-t06/aiops-platform/training/configs/detection-candidates-v1.json",
+      "sha256": "be9be484c88fc4c72b6d730d89a5c6434fd5f5ab4b1c3823709cd7e2b7f3ee65",
+      "candidate_set_version": "detection-candidates.v1"
+    },
+    "dataset_manifest": {
+      "path": "/home/maikhoabach/DATN/wt-w16-t06/aiops-platform/experiments/datasets/dataset-v0.json",
+      "sha256": "e42e093703ea5c7da1cfecced04901fca6bce2cb02834d3e17231e59af45efb2",
+      "dataset_id": "dataset-v0"
+    },
+    "analysis_code_commit": "d5f4c355b81c79ba69983e0b731caeca5632199e",
+    "analysis_code_dirty": false,
+    "allow_dirty": false
+  }
+}

@@ -1,0 +1,178 @@
+{
+  "schema": "incident-record.v1",
+  "run_id": "validation-c3-normal-mixed-s2001-20261123t193231z",
+  "detector": "fused",
+  "detector_config_version": "validation-v1.fused-equal-q0.999-w30",
+  "incident_config_version": "validation-v1.incident-w30-p4-m300-g120",
+  "window_seconds": 30,
+  "persistence_windows": 4,
+  "step_seconds": 15,
+  "threshold": 1.769109848484799,
+  "available_after_s": 10.0,
+  "incident_config": {
+    "incident_config_version": "validation-v1.incident-w30-p4-m300-g120",
+    "persistence_windows": 4,
+    "recovery_windows": 3,
+    "merge_gap_seconds": 300.0,
+    "correlation_window_seconds": 300.0,
+    "max_chain_gap_seconds": 120.0
+  },
+  "lineage": {
+    "anomalies_sha256": "e2ce6396b039c7a2f7912b1982bfbb0999bb0da4a8e20f8a694f9ded782e1b9a",
+    "anomalies_manifest_sha256": "c47042737b3e334eed4c50e2ff78056423e52f9e291a6ae364aec56747d33c62",
+    "incident_config_file_sha256": "92010db0a901897058fb683a11c10ebf3b57022edbfb3edff3d1242e38d0b2bb",
+    "incident_config_sha256": "82f5ec0061d65e5f22d1f678bb1ac38cd32a1b12e30a778b6a1724851f101a99",
+    "detector_config_sha256": "654ac5cfe911a4d6db23f42a614517f442047ac8655f459596701ca4f13cd5eb",
+    "model_sha256": null,
+    "threshold": 1.769109848484799,
+    "features_manifest_sha256": "e78e75e5ecd97dab2cd0064d2d033d6ee730cf5d9ca7b4bae85d05c3bfbfa2d2",
+    "feature_config_version": "feature.v1",
+    "noise_filter_version": "noise.v1",
+    "baseline_sha256": "08ddaefb4c0e42068693c194f19cf89d38bd356427f1aac24edad216b90d8e5b",
+    "baseline_fit_runs": [
+      "train-healthy-healthy-spike-s1003-20261123t224223z",
+      "train-healthy-healthy-spike-s1004-20261124t002521z",
+      "train-healthy-normal-mixed-s1001-20261123t102740z",
+      "train-healthy-normal-mixed-s1002-20261123t113109z"
+    ],
+    "model_fit_runs": null
+  },
+  "counts": {
+    "incidents": 1,
+    "episodes": 2,
+    "windows": 2123
+  },
+  "incidents": [
+    {
+      "incident_id": "inc-2ea74abaf606e3bf",
+      "detected_at": "2026-11-23T20:03:25Z",
+      "estimated_start_time": "2026-11-23T20:02:15Z",
+      "resolved_at": "2026-11-23T20:07:10Z",
+      "open_at_run_end": false,
+      "duration_s": 225.0,
+      "affected_services": [
+        "ai-worker"
+      ],
+      "first_symptom": {
+        "service": "ai-worker",
+        "signal": "edge.duration_p95",
+        "entity": "ai-worker|ai-llm-provider",
+        "evidence_key": "edge.duration_p95@ai-worker|ai-llm-provider",
+        "window_start": "2026-11-23T20:02:00Z",
+        "window_end": "2026-11-23T20:02:30Z",
+        "score": 499.76249999999993,
+        "reason": "threshold"
+      },
+      "trigger_reason": "4 cửa sổ vượt liên tiếp ở ai-worker (threshold: edge.duration_p95@ai-worker|ai-llm-provider)",
+      "peak_score": 499.76249999999993,
+      "peak_score_infinite": false,
+      "episodes": [
+        {
+          "service": "ai-worker",
+          "evidence_key": "edge.duration_p95@ai-worker|ai-llm-provider",
+          "opened_at": "2026-11-23T20:03:25Z",
+          "estimated_start_time": "2026-11-23T20:02:15Z",
+          "resolved_at": "2026-11-23T20:04:10Z"
+        },
+        {
+          "service": "ai-worker",
+          "evidence_key": "edge.duration_p95@ai-worker|ai-llm-provider",
+          "opened_at": "2026-11-23T20:06:25Z",
+          "estimated_start_time": "2026-11-23T20:05:00Z",
+          "resolved_at": "2026-11-23T20:07:10Z"
+        }
+      ],
+      "timeline": [
+        {
+          "state": "SUSPECTED",
+          "signal": "edge.duration_p95",
+          "entity": "ai-worker|ai-llm-provider",
+          "reason": "threshold",
+          "service": "ai-worker",
+          "at": "2026-11-23T20:02:40Z",
+          "window_start": "2026-11-23T20:02:00Z",
+          "window_end": "2026-11-23T20:02:30Z",
+          "score": 499.76249999999993
+        },
+        {
+          "state": "OPEN",
+          "signal": "edge.duration_p95",
+          "entity": "ai-worker|ai-llm-provider",
+          "reason": "threshold",
+          "service": "ai-worker",
+          "at": "2026-11-23T20:03:25Z",
+          "window_start": "2026-11-23T20:02:45Z",
+          "window_end": "2026-11-23T20:03:15Z",
+          "score": 499.76249999999993
+        },
+        {
+          "state": "RECOVERING",
+          "signal": "service.log_error_rate",
+          "entity": "ai-worker",
+          "reason": "below_threshold",
+          "service": "ai-worker",
+          "at": "2026-11-23T20:03:40Z",
+          "window_start": "2026-11-23T20:03:00Z",
+          "window_end": "2026-11-23T20:03:30Z",
+          "score": 0.0
+        },
+        {
+          "state": "RESOLVED",
+          "signal": "service.log_error_rate",
+          "entity": "ai-worker",
+          "reason": "below_threshold",
+          "service": "ai-worker",
+          "at": "2026-11-23T20:04:10Z",
+          "window_start": "2026-11-23T20:03:30Z",
+          "window_end": "2026-11-23T20:04:00Z",
+          "score": 0.0
+        },
+        {
+          "state": "SUSPECTED",
+          "signal": "edge.duration_p95",
+          "entity": "ai-worker|ai-llm-provider",
+          "reason": "threshold",
+          "service": "ai-worker",
+          "at": "2026-11-23T20:05:25Z",
+          "window_start": "2026-11-23T20:04:45Z",
+          "window_end": "2026-11-23T20:05:15Z",
+          "score": 499.76249999999993
+        },
+        {
+          "state": "OPEN",
+          "signal": "edge.duration_p95",
+          "entity": "ai-worker|ai-llm-provider",
+          "reason": "threshold",
+          "service": "ai-worker",
+          "at": "2026-11-23T20:06:25Z",
+          "window_start": "2026-11-23T20:05:45Z",
+          "window_end": "2026-11-23T20:06:15Z",
+          "score": 333.17499999999995
+        },
+        {
+          "state": "RECOVERING",
+          "signal": "service.log_error_rate",
+          "entity": "ai-worker",
+          "reason": "below_threshold",
+          "service": "ai-worker",
+          "at": "2026-11-23T20:06:40Z",
+          "window_start": "2026-11-23T20:06:00Z",
+          "window_end": "2026-11-23T20:06:30Z",
+          "score": 0.0
+        },
+        {
+          "state": "RESOLVED",
+          "signal": "service.log_error_rate",
+          "entity": "ai-worker",
+          "reason": "below_threshold",
+          "service": "ai-worker",
+          "at": "2026-11-23T20:07:10Z",
+          "window_start": "2026-11-23T20:06:30Z",
+          "window_end": "2026-11-23T20:07:00Z",
+          "score": 0.0
+        }
+      ]
+    }
+  ],
+  "generated_at": "2026-11-25T08:24:21.974986Z"
+}

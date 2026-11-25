@@ -24,7 +24,7 @@
 | [task-03_build-incident-lifecycle](task-03_build-incident-lifecycle.md) | Incident lifecycle (persistence, recovery, merge, gộp nhiều service), `detected_at`, `estimated_start_time`, incident record | Bách | Không có | Cao | Hoàn thành |
 | [task-04_build-detection-evaluation-harness](task-04_build-detection-evaluation-harness.md) | Evaluation harness: ghép incident với fault, Precision/Recall/F1, healthy-run FPR, báo động giả/giờ (kể cả đoạn cao điểm), Detection Delay, bootstrap CI, hàm của luật chọn | Bách | Không có | Cao | Hoàn thành |
 | [task-05_declare-detection-candidates-v2](task-05_declare-detection-candidates-v2.md) | Khai báo trước mọi lần chấm validation phần còn mở của phát hiện: quy tắc gộp điểm, tham số incident, Isolation Forest, điểm hợp nhất, ngưỡng tĩnh E1 | Bách | Không có | Cao | Hoàn thành |
-| [task-06_select-detectors-on-validation](task-06_select-detectors-on-validation.md) | Chọn window/persistence và ngưỡng trên validation theo luật đã khai báo, freeze config; E1 sơ bộ trên validation; error analysis ban đầu | Bách | Không có | Cao | Đã giao |
+| [task-06_select-detectors-on-validation](task-06_select-detectors-on-validation.md) | Chọn window/persistence và ngưỡng trên validation theo luật đã khai báo, freeze config; E1 sơ bộ trên validation; error analysis ban đầu | Bách | Không có | Cao | Chờ review |
 
 > Khi đọc tiến độ project-wide, chỉ coi hàng có trạng thái `Hoàn thành` trên nhánh canonical là hoàn thành; trạng thái đã finalization trên task branch chưa thay thế nguồn này.
 
@@ -70,6 +70,6 @@
 
 - [ ] Các task ưu tiên cao có trạng thái và bằng chứng được cập nhật.
 - [x] Các task hoàn thành đã liên kết đến PR và bằng chứng DoD.
-- [ ] Mọi lần chấm validation chạy trên commit đã có `detection-candidates.v2` và được ghi trong ledger chấm validation.
+- [x] Mọi lần chấm validation chạy trên commit đã có `detection-candidates.v2` và được ghi trong ledger chấm validation. Ledger `evaluations/validation-v1/ledger.jsonl` (task-06).
 - [ ] Gate R điều kiện 5 có bằng chứng của Bách (đóng ngoại lệ của tuần 13–16).
 - [ ] Tồn đọng và việc chuyển sang tuần 17 đã được ghi rõ.

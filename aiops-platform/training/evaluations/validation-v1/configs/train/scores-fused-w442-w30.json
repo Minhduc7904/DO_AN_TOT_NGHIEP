@@ -1,0 +1,14 @@
+{
+  "candidate_set_version": "detection-candidates.v2",
+  "detector_config_version": "validation-v1.train-scores-fused-w442-w30",
+  "detectors": {
+    "fused": {
+      "threshold": 1.0,
+      "weights": {
+        "logs": 0.2,
+        "metrics": 0.4,
+        "traces": 0.4
+      }
+    }
+  }
+}

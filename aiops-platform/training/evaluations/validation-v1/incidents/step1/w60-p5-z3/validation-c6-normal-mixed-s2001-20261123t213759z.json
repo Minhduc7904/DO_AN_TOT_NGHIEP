@@ -1,0 +1,179 @@
+{
+  "schema": "incident-record.v1",
+  "run_id": "validation-c6-normal-mixed-s2001-20261123t213759z",
+  "detector": "robust_z",
+  "detector_config_version": "validation-v1.robust_z-z3",
+  "incident_config_version": "validation-v1.incident-w60-p5-m120-g120",
+  "window_seconds": 60,
+  "persistence_windows": 5,
+  "step_seconds": 15,
+  "threshold": 3.0,
+  "available_after_s": 10.0,
+  "incident_config": {
+    "incident_config_version": "validation-v1.incident-w60-p5-m120-g120",
+    "persistence_windows": 5,
+    "recovery_windows": 5,
+    "merge_gap_seconds": 120.0,
+    "correlation_window_seconds": 300.0,
+    "max_chain_gap_seconds": 120.0
+  },
+  "lineage": {
+    "anomalies_sha256": "31b26d783097ecf607aeb1cae5fea614ad4231f2b7b3ec45ac759fafccaf7b9e",
+    "anomalies_manifest_sha256": "6708a8c22e25e35f8e507b882a1c9d5cd28cc39e7f1653ffcbcbdf58bcc4ec71",
+    "incident_config_file_sha256": "7d1d2880eaf34dec44d8f432cce62d40fcdcdd3b15571a695d26e82071dbb64d",
+    "incident_config_sha256": "4373902a54ea29317e778a5c150e471fda85c68bd16be63911a53b6904ace3a1",
+    "detector_config_sha256": "f9c80ee0e16244a28430dde7391aafd7b923be5006a80943e87ff0b69d1245d6",
+    "model_sha256": null,
+    "threshold": 3.0,
+    "features_manifest_sha256": "49998caf74e4e15d73a428185115109760b1d8590e921add35110d75c5d5d7db",
+    "feature_config_version": "feature.v1",
+    "noise_filter_version": "noise.v1",
+    "baseline_sha256": "9d8ffe388fe890b99abb3b90ff4c259ee75aea202b26c529f32ec27f06e85c1a",
+    "baseline_fit_runs": [
+      "train-healthy-healthy-spike-s1003-20261123t224223z",
+      "train-healthy-healthy-spike-s1004-20261124t002521z",
+      "train-healthy-normal-mixed-s1001-20261123t102740z",
+      "train-healthy-normal-mixed-s1002-20261123t113109z"
+    ],
+    "model_fit_runs": null
+  },
+  "counts": {
+    "incidents": 1,
+    "episodes": 2,
+    "windows": 2101
+  },
+  "incidents": [
+    {
+      "incident_id": "inc-03eddf68ddea1351",
+      "detected_at": "2026-11-23T21:58:10Z",
+      "estimated_start_time": "2026-11-23T21:56:45Z",
+      "resolved_at": "2026-11-23T22:04:10Z",
+      "open_at_run_end": false,
+      "duration_s": 360.0,
+      "affected_services": [
+        "gateway",
+        "identity"
+      ],
+      "first_symptom": {
+        "service": "gateway",
+        "signal": "edge.duration_p95",
+        "entity": "gateway|gateway-identity",
+        "evidence_key": "edge.duration_p95@gateway|gateway-identity",
+        "window_start": "2026-11-23T21:56:00Z",
+        "window_end": "2026-11-23T21:57:00Z",
+        "score": 892.295955882353,
+        "reason": "threshold"
+      },
+      "trigger_reason": "5 cửa sổ vượt liên tiếp ở gateway (threshold: edge.duration_p95@gateway|gateway-identity)",
+      "peak_score": 970.2371323529412,
+      "peak_score_infinite": false,
+      "episodes": [
+        {
+          "service": "gateway",
+          "evidence_key": "edge.duration_p95@gateway|gateway-identity",
+          "opened_at": "2026-11-23T21:58:10Z",
+          "estimated_start_time": "2026-11-23T21:56:45Z",
+          "resolved_at": "2026-11-23T22:04:10Z"
+        },
+        {
+          "service": "identity",
+          "evidence_key": "telemetry_silent@identity",
+          "opened_at": "2026-11-23T21:58:55Z",
+          "estimated_start_time": "2026-11-23T21:57:30Z",
+          "resolved_at": "2026-11-23T22:04:10Z"
+        }
+      ],
+      "timeline": [
+        {
+          "state": "SUSPECTED",
+          "signal": "edge.duration_p95",
+          "entity": "gateway|gateway-identity",
+          "reason": "threshold",
+          "service": "gateway",
+          "at": "2026-11-23T21:57:10Z",
+          "window_start": "2026-11-23T21:56:00Z",
+          "window_end": "2026-11-23T21:57:00Z",
+          "score": 892.295955882353
+        },
+        {
+          "state": "SUSPECTED",
+          "signal": null,
+          "entity": null,
+          "reason": "telemetry_silent",
+          "service": "identity",
+          "at": "2026-11-23T21:57:55Z",
+          "window_start": "2026-11-23T21:56:45Z",
+          "window_end": "2026-11-23T21:57:45Z",
+          "score": null
+        },
+        {
+          "state": "OPEN",
+          "signal": "edge.duration_p95",
+          "entity": "gateway|gateway-identity",
+          "reason": "threshold",
+          "service": "gateway",
+          "at": "2026-11-23T21:58:10Z",
+          "window_start": "2026-11-23T21:57:00Z",
+          "window_end": "2026-11-23T21:58:00Z",
+          "score": 965.957853073662
+        },
+        {
+          "state": "OPEN",
+          "signal": null,
+          "entity": null,
+          "reason": "telemetry_silent",
+          "service": "identity",
+          "at": "2026-11-23T21:58:55Z",
+          "window_start": "2026-11-23T21:57:45Z",
+          "window_end": "2026-11-23T21:58:45Z",
+          "score": null
+        },
+        {
+          "state": "RECOVERING",
+          "signal": "service.latency_p95",
+          "entity": "gateway",
+          "reason": "below_threshold",
+          "service": "gateway",
+          "at": "2026-11-23T22:03:10Z",
+          "window_start": "2026-11-23T22:02:00Z",
+          "window_end": "2026-11-23T22:03:00Z",
+          "score": 0.48382598996096204
+        },
+        {
+          "state": "RECOVERING",
+          "signal": "service.downstream_latency_p95",
+          "entity": "identity",
+          "reason": "below_threshold",
+          "service": "identity",
+          "at": "2026-11-23T22:03:10Z",
+          "window_start": "2026-11-23T22:02:00Z",
+          "window_end": "2026-11-23T22:03:00Z",
+          "score": 0.04108680057388816
+        },
+        {
+          "state": "RESOLVED",
+          "signal": "service.latency_p95",
+          "entity": "gateway",
+          "reason": "below_threshold",
+          "service": "gateway",
+          "at": "2026-11-23T22:04:10Z",
+          "window_start": "2026-11-23T22:03:00Z",
+          "window_end": "2026-11-23T22:04:00Z",
+          "score": 0.39746235359732346
+        },
+        {
+          "state": "RESOLVED",
+          "signal": "service.downstream_latency_p95",
+          "entity": "identity",
+          "reason": "below_threshold",
+          "service": "identity",
+          "at": "2026-11-23T22:04:10Z",
+          "window_start": "2026-11-23T22:03:00Z",
+          "window_end": "2026-11-23T22:04:00Z",
+          "score": 0.02800653834851615
+        }
+      ]
+    }
+  ],
+  "generated_at": "2026-11-25T08:19:56.528097Z"
+}

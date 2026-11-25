@@ -1,0 +1,95 @@
+{
+  "detector_config_version": "validation-v1.iforest-fit-w30",
+  "detector_config_sha256": "b8c69fecae423674efe4a8cb0967cbdaeff3a51f01e879cc3b5761710d5e5774",
+  "dataset_id": "dataset-v0",
+  "dataset_manifest_sha256": "e42e093703ea5c7da1cfecced04901fca6bce2cb02834d3e17231e59af45efb2",
+  "code_commit": "d5f4c355b81c79ba69983e0b731caeca5632199e",
+  "code_dirty": false,
+  "schema": "iforest-model.v1",
+  "signal_set_version": "signals.v1",
+  "feature_order": [
+    "service.error_rate",
+    "service.latency_p95",
+    "service.downstream_latency_p95",
+    "service.trace_error_rate",
+    "service.log_error_rate",
+    "edge.error_ratio",
+    "edge.timeout_ratio",
+    "edge.duration_p95",
+    "queue.messages_ready",
+    "queue.messages_unacked",
+    "queue.consumers"
+  ],
+  "aggregation": "max z có hướng trên các thực thể của service",
+  "fill_rule": "missing_dimension=0 (median của train)",
+  "scaler": "baseline healthy (median, thang đo robust) qua apply-baseline",
+  "baseline_sha256": "08ddaefb4c0e42068693c194f19cf89d38bd356427f1aac24edad216b90d8e5b",
+  "hyperparameters": {
+    "n_estimators": 200,
+    "max_samples": 256,
+    "max_features": 1.0,
+    "bootstrap": false
+  },
+  "seed": 20260819,
+  "window_s": 30,
+  "fit_runs": [
+    "train-healthy-healthy-spike-s1003-20261123t224223z",
+    "train-healthy-healthy-spike-s1004-20261124t002521z",
+    "train-healthy-normal-mixed-s1001-20261123t102740z",
+    "train-healthy-normal-mixed-s1002-20261123t113109z"
+  ],
+  "fit_inputs": {
+    "train-healthy-healthy-spike-s1003-20261123t224223z": {
+      "features_manifest_sha256": "9100ad37d0038a6a927fcbf0e05f5c9ab5d7dd6e121ad540400a3d8896997d36",
+      "baseline_fit_runs": [
+        "train-healthy-healthy-spike-s1003-20261123t224223z",
+        "train-healthy-healthy-spike-s1004-20261124t002521z",
+        "train-healthy-normal-mixed-s1001-20261123t102740z",
+        "train-healthy-normal-mixed-s1002-20261123t113109z"
+      ]
+    },
+    "train-healthy-healthy-spike-s1004-20261124t002521z": {
+      "features_manifest_sha256": "8160535d8549fa7db8f54f4991a8c500d98c7fdeac6304715fe8bb401ec51345",
+      "baseline_fit_runs": [
+        "train-healthy-healthy-spike-s1003-20261123t224223z",
+        "train-healthy-healthy-spike-s1004-20261124t002521z",
+        "train-healthy-normal-mixed-s1001-20261123t102740z",
+        "train-healthy-normal-mixed-s1002-20261123t113109z"
+      ]
+    },
+    "train-healthy-normal-mixed-s1001-20261123t102740z": {
+      "features_manifest_sha256": "6fa8ad18931046e6fdeb6cefe39ced422c32982d55319a401e6ed9c0db1752dc",
+      "baseline_fit_runs": [
+        "train-healthy-healthy-spike-s1003-20261123t224223z",
+        "train-healthy-healthy-spike-s1004-20261124t002521z",
+        "train-healthy-normal-mixed-s1001-20261123t102740z",
+        "train-healthy-normal-mixed-s1002-20261123t113109z"
+      ]
+    },
+    "train-healthy-normal-mixed-s1002-20261123t113109z": {
+      "features_manifest_sha256": "f18a0bb1cf2764050d9edd5844ef6bdaad83728a8abf320c4bcd144160b82b28",
+      "baseline_fit_runs": [
+        "train-healthy-healthy-spike-s1003-20261123t224223z",
+        "train-healthy-healthy-spike-s1004-20261124t002521z",
+        "train-healthy-normal-mixed-s1001-20261123t102740z",
+        "train-healthy-normal-mixed-s1002-20261123t113109z"
+      ]
+    }
+  },
+  "fit_windows": {
+    "ai": 676,
+    "ai-worker": 676,
+    "course": 676,
+    "gateway": 676,
+    "identity": 676,
+    "media": 676,
+    "media-worker": 676,
+    "notification": 676,
+    "notification-worker": 676,
+    "scheduler": 676,
+    "scheduler-worker": 676
+  },
+  "score": "-score_samples, (0, 1], cao hơn là bất thường hơn",
+  "model_file": "iforest-validation-v1-w30.joblib",
+  "model_sha256": "7df97006fd975fdce85296bb136d0e304d71b4db45e43492f4ee39b8b5fc44be"
+}

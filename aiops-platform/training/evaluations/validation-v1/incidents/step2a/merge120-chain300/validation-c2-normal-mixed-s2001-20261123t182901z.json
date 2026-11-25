@@ -1,0 +1,231 @@
+{
+  "schema": "incident-record.v1",
+  "run_id": "validation-c2-normal-mixed-s2001-20261123t182901z",
+  "detector": "robust_z",
+  "detector_config_version": "validation-v1.robust_z-z5",
+  "incident_config_version": "validation-v1.incident-w30-p4-m120-g300",
+  "window_seconds": 30,
+  "persistence_windows": 4,
+  "step_seconds": 15,
+  "threshold": 5.0,
+  "available_after_s": 10.0,
+  "incident_config": {
+    "incident_config_version": "validation-v1.incident-w30-p4-m120-g300",
+    "persistence_windows": 4,
+    "recovery_windows": 3,
+    "merge_gap_seconds": 120.0,
+    "correlation_window_seconds": 300.0,
+    "max_chain_gap_seconds": 300.0
+  },
+  "lineage": {
+    "anomalies_sha256": "54cc91c4ccc7eea291978691ba4e87e029a0a5991be0caa0b8777ede2733de71",
+    "anomalies_manifest_sha256": "60b74de5e0cf45e1b6c8c6157e3c10a77e7a6c0baea6c45d87ab25eee1851c0c",
+    "incident_config_file_sha256": "8c24b197a316def7c9bbebcc06c6200318a442fbe9d2aff185bb75e13b599c0e",
+    "incident_config_sha256": "f06a1e8f7d04c38e72627f8592815da6fa01533647cecba6d512d3872b78e909",
+    "detector_config_sha256": "0beabb42fdcba8dcf3c28a274c530eee10dea9e8012034fe4144fe625b91cf94",
+    "model_sha256": null,
+    "threshold": 5.0,
+    "features_manifest_sha256": "287b151feab77715bea33a1a9d79f32e327513091a3a3cb887d9cd3806aeba2e",
+    "feature_config_version": "feature.v1",
+    "noise_filter_version": "noise.v1",
+    "baseline_sha256": "08ddaefb4c0e42068693c194f19cf89d38bd356427f1aac24edad216b90d8e5b",
+    "baseline_fit_runs": [
+      "train-healthy-healthy-spike-s1003-20261123t224223z",
+      "train-healthy-healthy-spike-s1004-20261124t002521z",
+      "train-healthy-normal-mixed-s1001-20261123t102740z",
+      "train-healthy-normal-mixed-s1002-20261123t113109z"
+    ],
+    "model_fit_runs": null
+  },
+  "counts": {
+    "incidents": 1,
+    "episodes": 3,
+    "windows": 2123
+  },
+  "incidents": [
+    {
+      "incident_id": "inc-421cdf23bed5fd37",
+      "detected_at": "2026-11-23T18:51:40Z",
+      "estimated_start_time": "2026-11-23T18:50:30Z",
+      "resolved_at": "2026-11-23T19:01:55Z",
+      "open_at_run_end": false,
+      "duration_s": 615.0,
+      "affected_services": [
+        "ai-worker",
+        "course",
+        "gateway"
+      ],
+      "first_symptom": {
+        "service": "course",
+        "signal": "edge.duration_p95",
+        "entity": "course|course-postgres",
+        "evidence_key": "edge.duration_p95@course|course-postgres",
+        "window_start": "2026-11-23T18:50:15Z",
+        "window_end": "2026-11-23T18:50:45Z",
+        "score": 10.250223214285695,
+        "reason": "threshold"
+      },
+      "trigger_reason": "4 cửa sổ vượt liên tiếp ở course (threshold: edge.duration_p95@course|course-postgres)",
+      "peak_score": 229.8087338525836,
+      "peak_score_infinite": false,
+      "episodes": [
+        {
+          "service": "course",
+          "evidence_key": "edge.duration_p95@course|course-postgres",
+          "opened_at": "2026-11-23T18:51:40Z",
+          "estimated_start_time": "2026-11-23T18:50:30Z",
+          "resolved_at": "2026-11-23T19:01:55Z"
+        },
+        {
+          "service": "gateway",
+          "evidence_key": "edge.duration_p95@gateway|gateway-course",
+          "opened_at": "2026-11-23T18:51:55Z",
+          "estimated_start_time": "2026-11-23T18:50:45Z",
+          "resolved_at": "2026-11-23T19:01:55Z"
+        },
+        {
+          "service": "ai-worker",
+          "evidence_key": "edge.duration_p95@ai-worker|ai-worker-course",
+          "opened_at": "2026-11-23T18:58:25Z",
+          "estimated_start_time": "2026-11-23T18:54:45Z",
+          "resolved_at": "2026-11-23T18:59:55Z"
+        }
+      ],
+      "timeline": [
+        {
+          "state": "SUSPECTED",
+          "signal": "service.latency_p95",
+          "entity": "course",
+          "reason": "threshold",
+          "service": "course",
+          "at": "2026-11-23T18:50:55Z",
+          "window_start": "2026-11-23T18:50:15Z",
+          "window_end": "2026-11-23T18:50:45Z",
+          "score": 10.250223214285695
+        },
+        {
+          "state": "SUSPECTED",
+          "signal": "edge.duration_p95",
+          "entity": "gateway|gateway-course",
+          "reason": "threshold",
+          "service": "gateway",
+          "at": "2026-11-23T18:51:10Z",
+          "window_start": "2026-11-23T18:50:30Z",
+          "window_end": "2026-11-23T18:51:00Z",
+          "score": 198.80958333333328
+        },
+        {
+          "state": "OPEN",
+          "signal": "service.latency_p95",
+          "entity": "course",
+          "reason": "threshold",
+          "service": "course",
+          "at": "2026-11-23T18:51:40Z",
+          "window_start": "2026-11-23T18:51:00Z",
+          "window_end": "2026-11-23T18:51:30Z",
+          "score": 220.26766507475077
+        },
+        {
+          "state": "OPEN",
+          "signal": "edge.duration_p95",
+          "entity": "gateway|gateway-course",
+          "reason": "threshold",
+          "service": "gateway",
+          "at": "2026-11-23T18:51:55Z",
+          "window_start": "2026-11-23T18:51:15Z",
+          "window_end": "2026-11-23T18:51:45Z",
+          "score": 222.23300675675674
+        },
+        {
+          "state": "SUSPECTED",
+          "signal": "edge.duration_p95",
+          "entity": "ai-worker|ai-worker-course",
+          "reason": "threshold",
+          "service": "ai-worker",
+          "at": "2026-11-23T18:55:10Z",
+          "window_start": "2026-11-23T18:54:30Z",
+          "window_end": "2026-11-23T18:55:00Z",
+          "score": 227.02499999999995
+        },
+        {
+          "state": "OPEN",
+          "signal": "edge.duration_p95",
+          "entity": "ai-worker|ai-worker-course",
+          "reason": "threshold",
+          "service": "ai-worker",
+          "at": "2026-11-23T18:58:25Z",
+          "window_start": "2026-11-23T18:57:45Z",
+          "window_end": "2026-11-23T18:58:15Z",
+          "score": 23.775
+        },
+        {
+          "state": "RECOVERING",
+          "signal": "service.log_error_rate",
+          "entity": "ai-worker",
+          "reason": "below_threshold",
+          "service": "ai-worker",
+          "at": "2026-11-23T18:59:25Z",
+          "window_start": "2026-11-23T18:58:45Z",
+          "window_end": "2026-11-23T18:59:15Z",
+          "score": 0.0
+        },
+        {
+          "state": "RESOLVED",
+          "signal": "service.log_error_rate",
+          "entity": "ai-worker",
+          "reason": "below_threshold",
+          "service": "ai-worker",
+          "at": "2026-11-23T18:59:55Z",
+          "window_start": "2026-11-23T18:59:15Z",
+          "window_end": "2026-11-23T18:59:45Z",
+          "score": 0.0
+        },
+        {
+          "state": "RECOVERING",
+          "signal": "edge.duration_p95",
+          "entity": "course|course-ai",
+          "reason": "below_threshold",
+          "service": "course",
+          "at": "2026-11-23T19:01:25Z",
+          "window_start": "2026-11-23T19:00:45Z",
+          "window_end": "2026-11-23T19:01:15Z",
+          "score": 1.2499999999999998
+        },
+        {
+          "state": "RECOVERING",
+          "signal": "edge.duration_p95",
+          "entity": "gateway|gateway-course",
+          "reason": "below_threshold",
+          "service": "gateway",
+          "at": "2026-11-23T19:01:25Z",
+          "window_start": "2026-11-23T19:00:45Z",
+          "window_end": "2026-11-23T19:01:15Z",
+          "score": 0.14977941176470624
+        },
+        {
+          "state": "RESOLVED",
+          "signal": "service.latency_p95",
+          "entity": "course",
+          "reason": "below_threshold",
+          "service": "course",
+          "at": "2026-11-23T19:01:55Z",
+          "window_start": "2026-11-23T19:01:15Z",
+          "window_end": "2026-11-23T19:01:45Z",
+          "score": 0.07441676267281143
+        },
+        {
+          "state": "RESOLVED",
+          "signal": "edge.duration_p95",
+          "entity": "gateway|gateway-course",
+          "reason": "below_threshold",
+          "service": "gateway",
+          "at": "2026-11-23T19:01:55Z",
+          "window_start": "2026-11-23T19:01:15Z",
+          "window_end": "2026-11-23T19:01:45Z",
+          "score": 0.07078125000000053
+        }
+      ]
+    }
+  ],
+  "generated_at": "2026-11-25T08:20:29.706471Z"
+}

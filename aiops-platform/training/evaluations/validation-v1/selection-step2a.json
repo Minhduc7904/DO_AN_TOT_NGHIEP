@@ -1,0 +1,123 @@
+{
+  "selected": "merge300-chain120",
+  "meets_cap": true,
+  "rule_applied": "cap_met",
+  "tie_break": "tie_rank_asc",
+  "cap_per_hour": 1.0,
+  "detector": "robust_z",
+  "evaluation_config_version": "detection-evaluation.v1",
+  "candidates_sha256": "be9be484c88fc4c72b6d730d89a5c6434fd5f5ab4b1c3823709cd7e2b7f3ee65",
+  "eligible_run_ids": [
+    "validation-c2-normal-mixed-s2001-20261123t182901z",
+    "validation-c3-normal-mixed-s2001-20261123t193231z",
+    "validation-c4-normal-mixed-s2001-20261123t203506z",
+    "validation-c6-normal-mixed-s2001-20261123t213759z",
+    "validation-healthy-healthy-spike-s2003-20261123t123352z",
+    "validation-healthy-normal-mixed-s2002-20261123t091816z"
+  ],
+  "ranking": [
+    {
+      "rank": 1,
+      "combination_id": "merge300-chain120",
+      "threshold": 5.0,
+      "window_seconds": 30,
+      "persistence_windows": 4,
+      "detector_config_sha256": "0beabb42fdcba8dcf3c28a274c530eee10dea9e8012034fe4144fe625b91cf94",
+      "incident_config_sha256": "82f5ec0061d65e5f22d1f678bb1ac38cd32a1b12e30a778b6a1724851f101a99",
+      "model_sha256": null,
+      "late_tolerance_seconds": 75.0,
+      "matched_fault_runs": 4,
+      "false_alarms": 0,
+      "false_alarm_hours": 3.5412772222222224,
+      "false_alarms_per_hour": 0.0,
+      "meets_cap": true,
+      "tie_rank": 1
+    },
+    {
+      "rank": 2,
+      "combination_id": "merge300-chain300",
+      "threshold": 5.0,
+      "window_seconds": 30,
+      "persistence_windows": 4,
+      "detector_config_sha256": "0beabb42fdcba8dcf3c28a274c530eee10dea9e8012034fe4144fe625b91cf94",
+      "incident_config_sha256": "959f42341c669a9deec48255feae7909ab9f6fdb07fe9eb6cb0e747b5d364f10",
+      "model_sha256": null,
+      "late_tolerance_seconds": 75.0,
+      "matched_fault_runs": 4,
+      "false_alarms": 0,
+      "false_alarm_hours": 3.5412772222222224,
+      "false_alarms_per_hour": 0.0,
+      "meets_cap": true,
+      "tie_rank": 2
+    },
+    {
+      "rank": 3,
+      "combination_id": "merge120-chain120",
+      "threshold": 5.0,
+      "window_seconds": 30,
+      "persistence_windows": 4,
+      "detector_config_sha256": "0beabb42fdcba8dcf3c28a274c530eee10dea9e8012034fe4144fe625b91cf94",
+      "incident_config_sha256": "bb17bddc71bb29d19fbcb61bddf41822e927621344883564484288d4879fc8f3",
+      "model_sha256": null,
+      "late_tolerance_seconds": 75.0,
+      "matched_fault_runs": 4,
+      "false_alarms": 0,
+      "false_alarm_hours": 3.5412772222222224,
+      "false_alarms_per_hour": 0.0,
+      "meets_cap": true,
+      "tie_rank": 3
+    },
+    {
+      "rank": 4,
+      "combination_id": "merge120-chain300",
+      "threshold": 5.0,
+      "window_seconds": 30,
+      "persistence_windows": 4,
+      "detector_config_sha256": "0beabb42fdcba8dcf3c28a274c530eee10dea9e8012034fe4144fe625b91cf94",
+      "incident_config_sha256": "f06a1e8f7d04c38e72627f8592815da6fa01533647cecba6d512d3872b78e909",
+      "model_sha256": null,
+      "late_tolerance_seconds": 75.0,
+      "matched_fault_runs": 4,
+      "false_alarms": 0,
+      "false_alarm_hours": 3.5412772222222224,
+      "false_alarms_per_hour": 0.0,
+      "meets_cap": true,
+      "tie_rank": 4
+    }
+  ],
+  "step": "2a",
+  "candidate_set_version": "detection-candidates.v2",
+  "chosen": {
+    "combination_id": "merge300-chain120",
+    "detector": "robust_z",
+    "window_seconds": 30,
+    "persistence_windows": 4,
+    "detector_section": {
+      "threshold": 5
+    },
+    "incident": {
+      "persistence_windows": 4,
+      "recovery_windows": 3,
+      "merge_gap_seconds": 300,
+      "correlation_window_seconds": 300,
+      "max_chain_gap_seconds": 120
+    },
+    "detector_config_version": "validation-v1.robust_z-z5",
+    "incident_config_version": "validation-v1.incident-w30-p4-m300-g120",
+    "candidate": {
+      "candidate_id": "merge300-chain120"
+    }
+  },
+  "artifacts": {
+    "merge300-chain120": "evaluations/validation-v1/step2a/merge300-chain120.json",
+    "merge300-chain300": "evaluations/validation-v1/step2a/merge300-chain300.json",
+    "merge120-chain120": "evaluations/validation-v1/step1/w30-p4-z5.json",
+    "merge120-chain300": "evaluations/validation-v1/step2a/merge120-chain300.json"
+  },
+  "artifact_sha256": {
+    "merge300-chain120": "9a8273e906da2a0c2c0561bde08b80aed936e7b23d4ac0dd1864565d71c7c3d8",
+    "merge300-chain300": "460ea200a7adec42cb48e9a725ced74ddf8e587b999c2d58c8eaec91a01b450c",
+    "merge120-chain120": "63b83df4928e3c6b4ac7e6dc646a0ced033ed660d5e087ac5c55bdc0288375e4",
+    "merge120-chain300": "0752e1269c8bebc000a25712894046e333b949f6b68a518d9d4503160c0d34d5"
+  }
+}
