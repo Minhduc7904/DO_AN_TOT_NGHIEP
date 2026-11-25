@@ -80,6 +80,7 @@ class Context:
         # Lượt chính ghi config đã freeze vào `configs/`; lượt tái lập (`--out-dir` khác) ghi vào
         # thư mục kết quả của chính nó để không đụng config đã commit.
         self.freeze_dir = root / "configs" if self.out_dir is None else self.out_dir / "frozen"
+        self.models_dir = root / "models" if self.out_dir is None else self.out_dir / "models-bin"
         self.out_dir = self.out_dir or root / "evaluations" / "validation-v1"
         self.work_dir = self.work_dir or root / "artifacts" / "validation-v1"
         self.v1_path = root / "configs" / "detection-candidates-v1.json"
@@ -243,7 +244,7 @@ def model_for(ctx: Context, window_seconds: int) -> tuple[Path, Any]:
     """
     if window_seconds in ctx._models:
         return ctx._models[window_seconds]
-    path = ctx.training_root / "models" / f"iforest-{PREFIX}-w{window_seconds}.joblib"
+    path = ctx.models_dir / f"iforest-{PREFIX}-w{window_seconds}.joblib"
     section = iforest_section(ctx.v2, threshold=0.0)
     recorded = ctx.ledger.find("fit_model", window_seconds=window_seconds)
     if not path.exists() or not recorded:

@@ -5,3 +5,5 @@ __pycache__/
 .ruff_cache/
 # Model đã fit (sinh lại được bằng fit-iforest cùng seed); metadata .json đi kèm có sha256.
 models/*.joblib
+# Metadata đi kèm model của lượt chọn validation đã chép vào evaluations/validation-v1/models/.
+models/*.joblib.json

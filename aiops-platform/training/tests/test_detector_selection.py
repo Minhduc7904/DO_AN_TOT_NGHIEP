@@ -283,8 +283,10 @@ def test_reproduction_run_freezes_into_its_own_directory(ctx, tmp_path):
     from aiops_training.evaluation.detector_selection.runner import Context
 
     assert ctx.freeze_dir == tmp_path / "out" / "frozen"
+    assert ctx.models_dir == tmp_path / "out" / "models-bin"
     default = Context(runs_dir=tmp_path, load_dir=tmp_path)
     assert default.freeze_dir == TRAINING_ROOT / "configs"
+    assert default.models_dir == TRAINING_ROOT / "models"
     assert default.out_dir == TRAINING_ROOT / "evaluations" / "validation-v1"
 
 

@@ -62,7 +62,11 @@ def ranking_table(ctx: Context, step: str) -> list[str]:
             f"`{r['combination_id']}`" + (" **(chọn)**" if r["rank"] == 1 else ""),
             r["window_seconds"],
             r["persistence_windows"],
-            fmt(r["threshold"], 3) if r["threshold"] is not None else "—",
+            # Ngưỡng tĩnh: `threshold` của artifact chỉ là mốc tỉ lệ giá trị/ngưỡng (1), không phải
+            # bộ ngưỡng; tên bộ ngưỡng nằm ở tên tổ hợp.
+            "bộ ngưỡng"
+            if step == "2b-static"
+            else (fmt(r["threshold"], 3) if r["threshold"] is not None else "—"),
             r["late_tolerance_seconds"],
             f"{r['matched_fault_runs']}/{fault_runs[r['combination_id']]}",
             r["false_alarms"],
@@ -116,7 +120,9 @@ def e1_table(ctx: Context) -> list[str]:
         row("Tổ hợp", lambda d, s, a: f"`{selections[d]['selected']}`"),
         row(
             "Ngưỡng",
-            lambda d, s, a: fmt(a["threshold"], 3) if a["threshold"] is not None else "bộ ngưỡng",
+            lambda d, s, a: (
+                f"bộ `{selections[d]['selected']}`" if d == "static" else fmt(a["threshold"], 3)
+            ),
         ),
         row("Đạt ≤ 1 BĐG/giờ", lambda d, s, a: fmt(selections[d]["meets_cap"])),
         row(
