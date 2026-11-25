@@ -23,7 +23,7 @@
 | [task-02_add-30s-window-features](task-02_add-30s-window-features.md) | Feature và baseline cửa sổ 30 s cho tập ứng viên, tách khỏi cửa sổ 60 s về version, thư mục và kiểm leakage | Bách | Không có | Cao | Chờ review |
 | [task-03_build-incident-lifecycle](task-03_build-incident-lifecycle.md) | Incident lifecycle (persistence, recovery, merge, gộp nhiều service), `detected_at`, `estimated_start_time`, incident record | Bách | Không có | Cao | Chờ review |
 | [task-04_build-detection-evaluation-harness](task-04_build-detection-evaluation-harness.md) | Evaluation harness: ghép incident với fault, Precision/Recall/F1, healthy-run FPR, báo động giả/giờ (kể cả đoạn cao điểm), Detection Delay, bootstrap CI, hàm của luật chọn | Bách | Không có | Cao | Chờ review |
-| [task-05_declare-detection-candidates-v2](task-05_declare-detection-candidates-v2.md) | Khai báo trước mọi lần chấm validation phần còn mở của phát hiện: quy tắc gộp điểm, tham số incident, Isolation Forest, điểm hợp nhất, ngưỡng tĩnh E1 | Bách | Không có | Cao | Đã giao |
+| [task-05_declare-detection-candidates-v2](task-05_declare-detection-candidates-v2.md) | Khai báo trước mọi lần chấm validation phần còn mở của phát hiện: quy tắc gộp điểm, tham số incident, Isolation Forest, điểm hợp nhất, ngưỡng tĩnh E1 | Bách | Không có | Cao | Chờ review |
 | [task-06_select-detectors-on-validation](task-06_select-detectors-on-validation.md) | Chọn window/persistence và ngưỡng trên validation theo luật đã khai báo, freeze config; E1 sơ bộ trên validation; error analysis ban đầu | Bách | Không có | Cao | Đã giao |
 
 > Khi đọc tiến độ project-wide, chỉ coi hàng có trạng thái `Hoàn thành` trên nhánh canonical là hoàn thành; trạng thái đã finalization trên task branch chưa thay thế nguồn này.
@@ -48,7 +48,7 @@
   - **RAM:** mỗi lúc một lệnh nặng; không tính feature khi stack đang chạy run.
 - Quyết định đã chốt:
   - Giai đoạn tự bắt kịp: mọi task do Bách phụ trách, không collaborator; review/merge theo ngoại lệ Bách xác nhận (plan v0.4 mục 0.1, dòng "Nhân sự").
-  - `detection-candidates.v1` (window, persistence, ngưỡng robust z, luật chọn) đã khai báo ngày 23/11/2026, không đổi. Task-05 khai báo phần còn mở của phát hiện thành v2. Phần RCA (SimpleRCA, BARO, `base-manual-auto`, trọng số RCA) khai báo ở tuần 17–18.
+  - `detection-candidates.v1` (window, persistence, ngưỡng robust z, luật chọn) đã khai báo ngày 23/11/2026; lưới và luật chọn không đổi, còn luật thang đo và luật cửa sổ không dữ liệu được thay ở v2 (mục 6.1.3, 25/11/2026). Task-05 khai báo phần còn mở của phát hiện thành v2. Phần RCA (SimpleRCA, BARO, `base-manual-auto`, trọng số RCA) khai báo ở tuần 17–18.
   - Baseline ngưỡng tĩnh là đối chứng phát hiện cho E1 và RQ6 (plan v0.4 tuần 16).
   - Không chạm split test: campaign tuần 19, E1 chính thức đo trên test ở tuần 20.
   - Phạm vi: MVP làm đầy đủ; change-point (Target) và deep model (Stretch) không làm tuần này. Diagnostic E1 trên run mức 1 (mục 17.8) không bắt buộc, không làm tuần này.

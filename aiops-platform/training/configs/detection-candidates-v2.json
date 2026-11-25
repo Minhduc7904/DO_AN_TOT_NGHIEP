@@ -1,0 +1,190 @@
+{
+  "candidate_set_version": "detection-candidates.v2",
+  "declared_at": "2026-11-25",
+  "extends": "detection-candidates.v1",
+  "source": "docs/processed/architecture/evaluation-protocol-v1.md, mục 6.1.3",
+  "evidence_used": "chỉ 4 run train khỏe của dataset v0 và số đo pilot tuần 15; không số đo nào của validation",
+  "disclosure": [
+    "Bảng z của 6 run validation đã được sinh hai lần chỉ để chạy check-leakage: 24/11/2026 theo baseline luật thang đo v1 (task-05 tuần 15) và 25/11/2026 theo baseline v2 60 s (task-02 tuần 16). Không bảng nào được đọc, thống kê hay chạy detector; mọi số đo của v2 chỉ từ run train.",
+    "Lưới ngưỡng robust z {3, 4, 5} của v1 được đặt khi thang đo theo luật v1; đổi sang luật v2 thì ý nghĩa của lưới đổi theo. Trên train với luật v2 (cửa sổ 60 s), phân vị 99,9% của điểm robust z theo (cửa sổ, service) là 4,88, max 5,79; lưới giữ nguyên.",
+    "Bộ ngưỡng tĩnh được đặt khi đã biết độ lớn triệu chứng ở pilot (C2 khoảng 0,29 s; C4 khoảng 0,3–0,6 s): chỉ bộ strict (0,5 s) có thể bắt C4 qua edge.duration_p95."
+  ],
+  "implemented_in": {
+    "anomaly_and_incident": "nhánh feat/week-16/task-03-build-incident-lifecycle (đã gộp task-01), commit 0f8be19",
+    "baseline_scale_rule_and_window": "nhánh feat/week-16/task-02-add-30s-window-features, commit ca0a6a5",
+    "harness_and_selection": "nhánh feat/week-16/task-04-build-detection-evaluation-harness, commit 9070f9c (select_combination nhận tie_rank)",
+    "change_rule": "sau khi v2 vào main, thay đổi anomaly/, incident/, features/baseline.py hay evaluation/detection/selection.py làm lệch một luật cố định dưới đây thì phải ra v3, ghi lý do và thứ tự thời gian"
+  },
+  "merge_order": "task-02, task-01, task-03, task-04 và task-05 tuần 16 phải nằm trên main trước lần chấm validation đầu tiên; nhánh task-06 chứa cả năm",
+  "harness_reads": "harness đọc late_tolerance và step_seconds từ detection-candidates-v1.json (v2 không định nghĩa lại); sha256 của v2 ghi vào ledger chấm validation và vào config đã freeze",
+  "v1_kept": ["window_persistence", "robust_z_thresholds", "detected_at", "selection_rule (bước 1)"],
+  "v1_superseded": {
+    "scale_rule": {
+      "v1": "mad|meanad|unit_floor.v1",
+      "v2": "mad|meanad|unit_floor.v2",
+      "change": "thang đo không nhỏ hơn sàn theo đơn vị",
+      "reason": "trên run train, MAD bằng sai số dấu phẩy động (8,7e-19 ở media-worker.downstream_latency_p95) hoặc vài phần mười mili giây, làm robust z tới 1e15 trên chính run khỏe; sàn là thay đổi nhỏ nhất coi là có nghĩa nên cũng là thang đo nhỏ nhất hợp lý",
+      "baselines": {
+        "60": "aiops-platform/training/baselines/dataset-v0-w60.json",
+        "30": "aiops-platform/training/baselines/dataset-v0-w30.json (fit ở task-02 tuần 16; sha256 của cả hai ghi vào ledger trước bước 1)"
+      },
+      "not_used": "aiops-platform/training/baselines/dataset-v0.json (luật v1, giữ để tái lập tuần 15)"
+    },
+    "null_window_rule": {
+      "v1": "skip_without_breaking_chain: chuỗi theo service trên các cửa sổ có dữ liệu liên tiếp",
+      "v2": "per_evidence_key + max_chain_gap",
+      "change": "persistence đếm theo từng khóa bằng chứng <bảng>.<cột>@<thực thể>; chuỗi của một khóa chỉ đứt khi một cửa sổ quan sát được khóa đó mà khóa không nằm trong bằng chứng của cửa sổ; bằng chứng của các khóa khác nhau không cộng dồn; hai cửa sổ vượt liên tiếp của cùng khóa cách nhau quá max_chain_gap_seconds thì chuỗi bắt đầu lại",
+      "reason": "trên run train, log_error_rate có giá trị ở 100% cửa sổ của mọi service và worker luôn có tín hiệu hàng đợi, nên chuỗi theo service gần như không bao giờ gặp cửa sổ null; cạnh thưa của C3 (protocol 6.1.2 nêu làm ví dụ) không tích lũy được persistence. Cách theo khóa là cách đọc theo từng feature của chính câu chữ 6.1.2; max_chain_gap ngăn hai sự kiện đơn lẻ cách nhau lâu cộng thành một chuỗi",
+      "applies_to": "mọi bước, kể cả 12 tổ hợp robust z của bước 1"
+    }
+  },
+  "fixed_rules": {
+    "signal_set": {
+      "version": "signals.v1",
+      "signals": [
+        "service.error_rate (tăng)", "service.latency_p95 (tăng)", "service.downstream_latency_p95 (tăng)",
+        "service.trace_error_rate (tăng)", "service.log_error_rate (tăng)",
+        "edge.error_ratio (tăng)", "edge.timeout_ratio (tăng)", "edge.duration_p95 (tăng)",
+        "queue.messages_ready (tăng)", "queue.messages_unacked (tăng)",
+        "queue.consumers (giảm; chỉ hàng đợi không phải dead-letter)"
+      ],
+      "excluded": "tín hiệu tải: request_rate, call_count, cpu_usage, memory_usage; trùng thông tin: latency_p50/p99, duration_mean/p99",
+      "trace": "chỉ trace_error_rate (tỉ lệ), không số đếm tuyệt đối (bảng F, hệ quả (c))"
+    },
+    "attribution": "cạnh → caller_service; hàng đợi → consumer_service",
+    "service_score": "max z có hướng trên các thực thể của service",
+    "telemetry_silent": "luôn vượt ngưỡng ở cả bốn detector, không đi qua z; khóa bằng chứng telemetry_silent@<service>; khóa này luôn được quan sát, nên cửa sổ có nhịp tim làm đứt chuỗi im lặng",
+    "flagged_null": "flagged rỗng chỉ khi service không có giá trị triệu chứng nào; có giá trị mà không có căn cứ để vượt (static không có tín hiệu có ngưỡng, robust_z thiếu baseline, fused chỉ có modality trọng số 0, iforest service không có model) là không vượt",
+    "evidence_keys": {
+      "static": "tín hiệu tăng có giá trị/ngưỡng > 1; consumers có ngưỡng/giá trị > 1",
+      "robust_z": "tín hiệu có z > ngưỡng",
+      "fused": "tín hiệu có z > 0 thuộc modality có đóng góp",
+      "iforest": "tín hiệu có z > 0",
+      "empty": "detector vượt mà không chỉ ra tín hiệu nào: mọi tín hiệu quan sát được"
+    },
+    "fused": "điểm modality = max(0, max z có hướng); chỉ bỏ modality không có giá trị nào trong cửa sổ rồi chuẩn hóa lại trọng số; modality có giá trị nhưng thiếu baseline cho điểm 0 và vẫn tính trọng số",
+    "iforest": {
+      "models": "một model mỗi service và mỗi độ dài cửa sổ; fit trên cửa sổ sau warm-up, không im lặng, có dữ liệu của 4 run train khỏe",
+      "vector": "max z có hướng của từng tín hiệu signals.v1; chiều thiếu điền 0; worker có các chiều HTTP luôn 0 trên train",
+      "hyperparameters": { "n_estimators": 200, "max_samples": "min(256, số cửa sổ fit của service)", "max_features": 1.0, "bootstrap": false },
+      "seed": 20260819,
+      "no_model": "service không có cửa sổ train thì không bao giờ vượt, trừ telemetry_silent",
+      "reason": "không tune hyperparameter: 6 run validation không đủ để chọn thêm chiều"
+    },
+    "incident": {
+      "recovery_windows": "window_seconds / 15 + 1 (3 với cửa sổ 30 s, 5 với 60 s), đếm theo service trên các cửa sổ có dữ liệu",
+      "recovery_reason": "W/15 + 1 cửa sổ sạch liên tiếp phủ 2W giây, nên cửa sổ sạch cuối không chồng lên cửa sổ sạch đầu: mọi dữ liệu bất thường đã ra khỏi cửa sổ. Recovery theo service, không theo khóa; cửa sổ không dữ liệu không được đếm nên thời gian thực có thể dài hơn 2W",
+      "correlation_window_seconds": 300,
+      "correlation_reason": "triệu chứng của cùng fault trên các service lộ cách nhau: C3 khoảng 30 s (ai-worker chờ ack rồi lời gọi provider), C4 khoảng 55 s (media rồi media-worker gọi MinIO), C2 khoảng 290 s (course-postgres ở 10 s, ai-worker → course ở 300 s, chỉ khi có job AI). 300 s giữ được cả C2 nhưng sát biên; ghi thành rủi ro"
+    }
+  },
+  "quantile_threshold_rule": {
+    "applies_to": ["iforest", "fused"],
+    "pooling": "gộp mọi (cửa sổ, service) của 4 run train khỏe",
+    "exclude": ["warmup", "telemetry_silent", "flagged rỗng", "score rỗng"],
+    "interpolation": "numpy.quantile, method = linear",
+    "computed_with": "chính baseline (dataset-v0-w<cửa sổ>.json) và model Isolation Forest đã fit cho độ dài cửa sổ được chọn ở bước 1; ghi sha256 baseline, model và giá trị ngưỡng vào ledger",
+    "quantiles": [0.99, 0.995, 0.999]
+  },
+  "step1": {
+    "grid": "12 tổ hợp window/persistence × ngưỡng robust z của v1",
+    "incident_values": { "merge_gap_seconds": 120, "max_chain_gap_seconds": 120 },
+    "reason": "giá trị nhỏ của mỗi tập bước 2a: bảo thủ, tách được nhiều incident hơn nên báo động giả không bị đánh giá thấp khi chọn window/persistence",
+    "selection_rule": "như v1 (detection-candidates-v1.json)"
+  },
+  "step2a_incident": {
+    "detector": "robust_z với window/persistence và ngưỡng z đã chọn ở bước 1",
+    "candidates": [
+      { "tie_rank": 1, "id": "merge300-chain120", "merge_gap_seconds": 300, "max_chain_gap_seconds": 120 },
+      { "tie_rank": 2, "id": "merge300-chain300", "merge_gap_seconds": 300, "max_chain_gap_seconds": 300 },
+      { "tie_rank": 3, "id": "merge120-chain120", "merge_gap_seconds": 120, "max_chain_gap_seconds": 120 },
+      { "tie_rank": 4, "id": "merge120-chain300", "merge_gap_seconds": 120, "max_chain_gap_seconds": 300 }
+    ],
+    "reuse": "merge120-chain120 trùng tổ hợp đã chấm ở bước 1; dùng lại artifact đó, nên tổng số lần chấm khác nhau là 27",
+    "reason": {
+      "merge_gap": "correlate so opened_at của đợt mới với resolved_at của đợt cũ (đã gồm recovery). Với khoảng lặng g của một fault, đợt chỉ hồi phục khi g ≥ 2W và đợt mới mở sau khoảng (P − 1) × 15 s, nên khoảng cách opened_at − resolved_at ≈ g − 2W + (P − 1) × 15. Fault bị tách thành hai incident khi khoảng này > merge gap và đợt mới cũng mở sau detected_at + 300 s (cửa sổ tương quan): với W = 60, P = 5, merge 120 tách khi g > 180 s, merge 300 tách khi g > 360 s",
+      "max_chain_gap": "C3 ở pilot: fault 600 s, 11–15 lời gọi provider (mỗi lời gọi 30–35 s) liên tiếp sau khi job AI đầu tiên đến; 120 s chịu được 3–4 lời gọi không có dữ liệu. 300 s là giả định cho khoảng trống giữa các đợt job (pilot chưa đo khoảng này); manifest v2 dùng fault C3 900 s"
+    }
+  },
+  "step2b": {
+    "note": "mỗi detector độc lập, với window/persistence của bước 1 và tham số incident của bước 2a; robust z của E1 dùng ngưỡng của bước 1, không chọn lại",
+    "static": {
+      "candidates": [
+        { "tie_rank": 1, "id": "static-loose", "thresholds": {
+          "service.error_rate": 0.1, "service.trace_error_rate": 0.1, "edge.error_ratio": 0.1, "edge.timeout_ratio": 0.1,
+          "service.latency_p95": 2.0, "service.downstream_latency_p95": 2.0, "edge.duration_p95": 2.0,
+          "queue.messages_ready": 200, "queue.messages_unacked": 100, "queue.consumers": 1 } },
+        { "tie_rank": 2, "id": "static-medium", "thresholds": {
+          "service.error_rate": 0.05, "service.trace_error_rate": 0.05, "edge.error_ratio": 0.05, "edge.timeout_ratio": 0.05,
+          "service.latency_p95": 1.0, "service.downstream_latency_p95": 1.0, "edge.duration_p95": 1.0,
+          "queue.messages_ready": 100, "queue.messages_unacked": 50, "queue.consumers": 1 } },
+        { "tie_rank": 3, "id": "static-strict", "thresholds": {
+          "service.error_rate": 0.01, "service.trace_error_rate": 0.01, "edge.error_ratio": 0.01, "edge.timeout_ratio": 0.01,
+          "service.latency_p95": 0.5, "service.downstream_latency_p95": 0.5, "edge.duration_p95": 0.5,
+          "queue.messages_ready": 50, "queue.messages_unacked": 20, "queue.consumers": 1 } }
+      ],
+      "reason": "mô phỏng cảnh báo vận hành thủ công ở mức thường gặp (tỉ lệ lỗi 1–10%, latency p95 0,5–2 s); không đặt ngưỡng cho log_error_rate (dòng/giây, phụ thuộc tải). Xem disclosure về độ lớn triệu chứng ở pilot"
+    },
+    "iforest": {
+      "candidates": [
+        { "tie_rank": 1, "id": "iforest-q0.999", "quantile": 0.999 },
+        { "tie_rank": 2, "id": "iforest-q0.995", "quantile": 0.995 },
+        { "tie_rank": 3, "id": "iforest-q0.99", "quantile": 0.99 }
+      ],
+      "reason": "ngưỡng theo phân vị điểm của train (quantile_threshold_rule). Không dùng phân vị 100% (max in-sample do một cửa sổ quyết định, thiên thấp vì model fit trên chính các cửa sổ đó)"
+    },
+    "fused": {
+      "weights": {
+        "equal": { "metrics": 0.3333333333333333, "traces": 0.3333333333333333, "logs": 0.3333333333333333 },
+        "w442": { "metrics": 0.4, "traces": 0.4, "logs": 0.2 }
+      },
+      "candidates": [
+        { "tie_rank": 1, "id": "fused-equal-q0.999", "weights": "equal", "quantile": 0.999 },
+        { "tie_rank": 2, "id": "fused-w442-q0.999", "weights": "w442", "quantile": 0.999 },
+        { "tie_rank": 3, "id": "fused-equal-q0.995", "weights": "equal", "quantile": 0.995 },
+        { "tie_rank": 4, "id": "fused-w442-q0.995", "weights": "w442", "quantile": 0.995 },
+        { "tie_rank": 5, "id": "fused-equal-q0.99", "weights": "equal", "quantile": 0.99 },
+        { "tie_rank": 6, "id": "fused-w442-q0.99", "weights": "w442", "quantile": 0.99 }
+      ],
+      "reason": "trọng số bằng nhau là baseline bắt buộc (blueprint 9.7); 0,4/0,4/0,2 giảm trọng số log vì log_error_rate phụ thuộc tải (known_risks). Ngưỡng tính riêng cho từng bộ trọng số theo quantile_threshold_rule"
+    }
+  },
+  "selection_rule": {
+    "same_as": "detection-candidates.v1 selection_rule",
+    "false_alarm_cap_per_hour": 1,
+    "false_alarm_denominator": "theo configs/detection-evaluation-v1.json (detection-evaluation.v1)",
+    "order": [
+      "đạt giới hạn báo động giả trước",
+      "nhiều fault run có incident khớp nhất",
+      "ít báo động giả/giờ hơn",
+      "bước 1: late_tolerance nhỏ hơn rồi ngưỡng z lớn hơn (như v1); bước 2a/2b: tie_rank nhỏ hơn"
+    ],
+    "fallback_if_none_meet_cap": "ít báo động giả/giờ nhất, rồi cùng thứ tự; ghi là không đạt điều kiện",
+    "harness": "select_combination với tham số tie_rank đọc từ danh sách ứng viên của v2 (task-04 tuần 16)",
+    "candidate_binding": "combination_id của mỗi artifact phải bằng id của ứng viên trong v2; trước khi gọi select_combination, task-06 đối chiếu sha256 nội dung config detector/incident của từng tổ hợp (lineage.detector_config_sha256, lineage.incident_config_sha256) với config sinh từ ứng viên v2 và ghi vào ledger; tổ hợp bước 1 dùng lại cho bước 2a được ghi nhãn merge120-chain120"
+  },
+  "combinations": { "step1": 12, "step2a_incident": 4, "step2b_static": 3, "step2b_iforest": 3, "step2b_fused": 6, "total": 28, "distinct": 27 },
+  "train_evidence": {
+    "command": "aiops-platform/training/scripts/train_candidate_evidence.py <runs_dir> <dataset> <out_dir> configs/detection-candidates-v2.json, sau khi apply-baseline dataset-v0-w60.json (luật v2) cho 4 run train; script tự fit Isolation Forest bằng configs/detector-dev-v1.json; code anomaly/incident của nhánh task-03 commit 0f8be19",
+    "window_s": 60,
+    "train_hours_post_warmup": 2.83,
+    "incident_config": "persistence 5, recovery 5, merge 120 s, tương quan 300 s, max_chain_gap 120 s",
+    "incidents_per_hour": {
+      "robust_z": { "3": 0.71, "4": 0.35, "5": 0.0 },
+      "static": { "loose": 0.0, "medium": 0.0, "strict": 0.0 },
+      "iforest": { "q0.99 (0,744)": 0.35, "q0.995 (0,785)": 0.0, "q0.999 (0,828)": 0.0 },
+      "fused-equal": { "q0.99 (1,125)": 1.06, "q0.995 (1,412)": 0.35, "q0.999 (1,625)": 0.0 },
+      "fused-w442": { "q0.99 (1,350)": 1.06, "q0.995 (1,695)": 0.35, "q0.999 (1,950)": 0.0 }
+    },
+    "note": "in-sample trên train, cửa sổ 60 s; giá trị ngưỡng thật tính lại theo cửa sổ được chọn"
+  },
+  "known_risks": [
+    "log_error_rate là số dòng lỗi/giây, có thể tăng theo tải ở healthy-spike",
+    "bằng chứng của fused và iforest (z > 0) rộng hơn robust_z và static, nên persistence của hai detector này dễ đạt hơn",
+    "ngân sách chọn không đều: robust_z chọn qua 12 tổ hợp và tham số incident cũng chọn bằng robust_z; fused 6 tổ hợp; static và iforest mỗi detector 3. So sánh E1 vì vậy hơi nghiêng về robust_z và fused; ghi thành giới hạn của E1",
+    "một incident báo giả trong 300 s trước fault_start, hoặc một incident còn mở, nuốt đợt của fault qua cửa sổ tương quan/merge gap và thành FP + FN (mục 17.2)",
+    "cửa sổ tương quan 300 s sát khoảng 290 s của C2 (ai-worker → course)",
+    "tương quan incident chỉ theo thời gian cho tới khi có đồ thị v2 (tuần 17); khi thay phải tăng incident_config_version và chọn lại bước 2a",
+    "run validation healthy-spike có trace mẫu 52,5%: báo động giả của detector dùng trace đo trên mẫu (bảng F, hệ quả (a))"
+  ]
+}
