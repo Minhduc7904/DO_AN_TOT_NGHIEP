@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-07_validate-workload-realism-v2` |
 | Tuần | `week-15_2026-11-08_to_2026-11-14` |
-| Trạng thái | Chờ review |
+| Trạng thái | Hoàn thành |
 | Người phụ trách | Bách |
 | Collaborator | Không có |
 | Ưu tiên | Cao |
@@ -57,14 +57,14 @@ Theo [workload-realism-report-v1](../../../architecture/workload-realism-report-
 
 - Input workspace: Không tạo (giai đoạn tự bắt kịp; bằng chứng nằm trong PR).
 - Output workspace: Không tạo.
-- Pull request: [#98](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/98) (xếp chồng trên PR #97 của task-04).
-- Kết quả review: Chưa review.
+- Pull request: [#98](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/98) (mở xếp chồng trên PR #97; đổi base sang `main` sau khi PR #97 merge).
+- Kết quả review: Không có GitHub `APPROVED` (giai đoạn tự bắt kịp). Đã review bằng agent riêng; các phát hiện đã sửa trong PR (xem mô tả PR). CI GitHub đạt trước khi merge. PR #98 được Bách (người phụ trách) merge ngày 25/11/2026 trước khi finalization; card chuyển `Hoàn thành` bằng commit ghi nhận hậu kiểm trên `main` theo yêu cầu của Bách.
 
 > URL/số PR và `Chờ review` phải được commit/push vào PR head trước review. Thành viên còn lại phải gửi `APPROVED` hợp lệ trên GitHub; sau đó người phụ trách finalization metadata, ghi `Hoàn thành` trên chính branch/PR và tự merge task của mình. Card chỉ canonically hoàn thành khi commit đó vào nhánh canonical; xem [vòng đời task canonical](../../../rules/git-and-pull-request-rules.md#vòng-đời-task-canonical).
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 24/11/2026 — chấm 10 run train/validation của dataset v0 theo v1 và v2 ([báo cáo](../../../architecture/workload-realism-report-v1.md) mục 11–12). Kết quả: 10/10 run đạt v2 (4/4 nhóm ngày khác nhau), 0/10 đạt v1. Được viết "traffic học viên bán thực `normal-mixed` giống thật theo v2", kèm bốn giới hạn ở mục 12: (1) với bán thực, v2 chỉ kiểm bộ phát và nhóm ngày; (2) dáng theo giờ của nhóm validation nằm ngoài dải; (3) 1/4 ngày của mỗi nhóm đã nằm trong kế hoạch `r2`; (4) chỉ có 2 nhóm ngày độc lập, và phép so với nguồn đơn giản là chấm sau khi xem dữ liệu. `healthy-spike` đạt v2 nhưng chưa viết "giống thật", vì chưa có run mức 1 và mức 2 thuần ở profile này. Trước đó (19/11/2026): tiêu chí v2 và mã chấm được push ở commit `602230b` (15:18 +07) trước khi chấm. Chấm lại `r2`: bán thực đạt v2 (điểm 0,490, `tau` 0,986), mức 2 thuần và mức 1 không đạt (mục 10).
+- Cập nhật gần nhất: 25/11/2026 — đã merge PR #98; ghi nhận hậu kiểm, chuyển Hoàn thành. 24/11/2026 — chấm 10 run train/validation của dataset v0 theo v1 và v2 ([báo cáo](../../../architecture/workload-realism-report-v1.md) mục 11–12). Kết quả: 10/10 run đạt v2 (4/4 nhóm ngày khác nhau), 0/10 đạt v1. Được viết "traffic học viên bán thực `normal-mixed` giống thật theo v2", kèm bốn giới hạn ở mục 12: (1) với bán thực, v2 chỉ kiểm bộ phát và nhóm ngày; (2) dáng theo giờ của nhóm validation nằm ngoài dải; (3) 1/4 ngày của mỗi nhóm đã nằm trong kế hoạch `r2`; (4) chỉ có 2 nhóm ngày độc lập, và phép so với nguồn đơn giản là chấm sau khi xem dữ liệu. `healthy-spike` đạt v2 nhưng chưa viết "giống thật", vì chưa có run mức 1 và mức 2 thuần ở profile này. Trước đó (19/11/2026): tiêu chí v2 và mã chấm được push ở commit `602230b` (15:18 +07) trước khi chấm. Chấm lại `r2`: bán thực đạt v2 (điểm 0,490, `tau` 0,986), mức 2 thuần và mức 1 không đạt (mục 10).
 - Ghi chú/tồn đọng:
   - Nhánh gộp task-04 để có dataset v0, nên PR xếp chồng lên PR task-04.
   - Run mức 1 và mức 2 thuần ở `healthy-spike` chưa có trong kế hoạch; cần có nếu muốn kết luận "giống thật" cho profile này.

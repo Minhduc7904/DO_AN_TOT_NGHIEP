@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-03_pilot-mvp-fault-cases` |
 | Tuần | `week-15_2026-11-08_to_2026-11-14` |
-| Trạng thái | Chờ review |
+| Trạng thái | Hoàn thành |
 | Người phụ trách | Bách |
 | Collaborator | Không có |
 | Ưu tiên | Cao |
@@ -64,13 +64,13 @@ Theo [plan v0.4 tuần 15](../../plan-v0.4-24-weeks.md#tuần-15--experiment-run
 - Input workspace: Không tạo (giai đoạn tự bắt kịp; bằng chứng nằm trong PR).
 - Output workspace: Không tạo.
 - Pull request: [#95](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/95).
-- Kết quả review: Chờ review. Đã review bằng agent riêng hai vòng và sửa các điểm nêu (xem mô tả PR).
+- Kết quả review: Không có GitHub `APPROVED` (giai đoạn tự bắt kịp). Đã review bằng agent riêng; các phát hiện đã sửa trong PR (xem mô tả PR). CI GitHub đạt trước khi merge. PR #95 được Bách (người phụ trách) merge ngày 25/11/2026 trước khi finalization; card chuyển `Hoàn thành` bằng commit ghi nhận hậu kiểm trên `main` theo yêu cầu của Bách.
 
 > URL/số PR và `Chờ review` phải được commit/push vào PR head trước review. Thành viên còn lại phải gửi `APPROVED` hợp lệ trên GitHub; sau đó người phụ trách finalization metadata, ghi `Hoàn thành` trên chính branch/PR và tự merge task của mình. Card chỉ canonically hoàn thành khi commit đó vào nhánh canonical; xem [vòng đời task canonical](../../../rules/git-and-pull-request-rules.md#vòng-đời-task-canonical).
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 23/11/2026 — chạy xong 9 run pilot (20/11 và 23/11), chốt fault manifest v2, hoàn tất [báo cáo pilot](../../../architecture/fault-pilot-report-v1.md).
+- Cập nhật gần nhất: 25/11/2026 — đã merge PR #95; ghi nhận hậu kiểm, chuyển Hoàn thành. 23/11/2026 — chạy xong 9 run pilot (20/11 và 23/11), chốt fault manifest v2, hoàn tất [báo cáo pilot](../../../architecture/fault-pilot-report-v1.md).
 - Kết quả: cả 4 case `case_verification_status = run`; C3 tăng thời lượng fault lên 900 s; C4 bỏ chuỗi job dọn media khỏi mô tả; không thêm profile healthy đối chứng.
 - Sửa môi trường trong lúc pilot: Tempo 1,5 GiB (OOM khi export), tắt tự nâng plugin của Grafana, tiêu chí bộ nhớ mục 8.4 đo bằng `anon` của cgroup; bộ đo triệu chứng `aiops-training symptoms`.
 - Ghi chú/tồn đọng:

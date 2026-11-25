@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-05_build-feature-pipeline-v1` |
 | Tuần | `week-15_2026-11-08_to_2026-11-14` |
-| Trạng thái | Chờ review |
+| Trạng thái | Hoàn thành |
 | Người phụ trách | Bách |
 | Collaborator | Không có |
 | Ưu tiên | Cao |
@@ -54,14 +54,14 @@ Theo [evaluation-protocol-v1](../../../architecture/evaluation-protocol-v1.md) m
 
 - Input workspace: Không tạo (giai đoạn tự bắt kịp; bằng chứng nằm trong PR).
 - Output workspace: Không tạo.
-- Pull request: [#100](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/100) (xếp chồng trên PR #97 của task-04).
-- Kết quả review: Chưa review.
+- Pull request: [#100](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/100) (mở xếp chồng trên PR #97; đổi base sang `main` sau khi PR #97 merge).
+- Kết quả review: Không có GitHub `APPROVED` (giai đoạn tự bắt kịp). Đã review bằng agent riêng; các phát hiện đã sửa trong PR (xem mô tả PR). CI GitHub đạt trước khi merge. PR #100 được Bách (người phụ trách) merge ngày 25/11/2026 trước khi finalization; card chuyển `Hoàn thành` bằng commit ghi nhận hậu kiểm trên `main` theo yêu cầu của Bách.
 
 > URL/số PR và `Chờ review` phải được commit/push vào PR head trước review. Thành viên còn lại phải gửi `APPROVED` hợp lệ trên GitHub; sau đó người phụ trách finalization metadata, ghi `Hoàn thành` trên chính branch/PR và tự merge task của mình. Card chỉ canonically hoàn thành khi commit đó vào nhánh canonical; xem [vòng đời task canonical](../../../rules/git-and-pull-request-rules.md#vòng-đời-task-canonical).
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 24/11/2026 — chạy trên 10 run train/validation của dataset v0 ([telemetry-data-dictionary-v2](../../../architecture/telemetry-data-dictionary-v2.md) mục 9.6):
+- Cập nhật gần nhất: 25/11/2026 — đã merge PR #100; ghi nhận hậu kiểm, chuyển Hoàn thành. 24/11/2026 — chạy trên 10 run train/validation của dataset v0 ([telemetry-data-dictionary-v2](../../../architecture/telemetry-data-dictionary-v2.md) mục 9.6):
   - `features` thoát 0 ở cả 10 run (`feature.v1`, `noise.v1`).
   - `fit-baseline` đọc đúng 4 run train healthy. Baseline `aiops-platform/training/baselines/dataset-v0.json` được commit, có sha256 của dataset manifest.
   - `apply-baseline` chạy cho cả 10 run. `check-leakage` trên dataset manifest v0 không báo vi phạm nào.
