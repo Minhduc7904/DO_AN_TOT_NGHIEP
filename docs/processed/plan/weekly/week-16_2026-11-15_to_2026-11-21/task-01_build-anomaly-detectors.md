@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-01_build-anomaly-detectors` |
 | Tuần | `week-16_2026-11-15_to_2026-11-21` |
-| Trạng thái | Đã giao |
+| Trạng thái | Chờ review |
 | Người phụ trách | Bách |
 | Collaborator | Không có |
 | Ưu tiên | Cao |
@@ -59,22 +59,24 @@ Theo [analysis-anomaly-rca-blueprint-v1](../../../architecture/analysis-anomaly-
 
 ## Definition of Done
 
-- [ ] Ba detector và điểm hợp nhất có unit test: cửa sổ null, MAD = 0, thiếu modality, worker, `telemetry_silent` cho cả bốn loại điểm; `uv run pytest` và `ruff` đạt.
-- [ ] Isolation Forest fit chỉ từ cửa sổ sau warm-up của run train khỏe; artifact có đủ trường ở blueprint mục 9.4; fit lại cùng seed cho cùng kết quả (test).
-- [ ] Không đặc trưng trace nào trong detector là số đếm tuyệt đối (test hoặc kiểm danh sách feature).
-- [ ] Isolation Forest có model cho cả cửa sổ 30 s và 60 s, artifact ghi `window_s`; cả bốn loại điểm chạy được ở cả hai độ dài cửa sổ trên ít nhất một run train khỏe và (60 s) một fault run pilot; ghi thời gian và RAM.
-- [ ] Không code nào của detector đọc ground truth (kiểm bằng test hoặc `check-leakage`).
+- [x] Ba detector và điểm hợp nhất có unit test: cửa sổ null, MAD = 0, thiếu modality, worker, `telemetry_silent` cho cả bốn loại điểm; `uv run pytest` và `ruff` đạt.
+- [x] Isolation Forest fit chỉ từ cửa sổ sau warm-up của run train khỏe; artifact có đủ trường ở blueprint mục 9.4; fit lại cùng seed cho cùng kết quả (test).
+- [x] Không đặc trưng trace nào trong detector là số đếm tuyệt đối (test hoặc kiểm danh sách feature).
+- [x] Isolation Forest có model cho cả cửa sổ 30 s và 60 s, artifact ghi `window_s`; cả bốn loại điểm chạy được ở cả hai độ dài cửa sổ trên ít nhất một run train khỏe và (60 s) một fault run pilot; ghi thời gian và RAM.
+- [x] Không code nào của detector đọc ground truth (kiểm bằng test hoặc `check-leakage`).
 
 ## Liên kết hồ sơ thực hiện
 
 - Input workspace: Không tạo (giai đoạn tự bắt kịp; bằng chứng nằm trong PR).
 - Output workspace: Không tạo.
 - Pull request: Chưa tạo.
-- Kết quả review: Chưa review.
+- Kết quả review: Chờ review. Đã review bằng agent riêng ba vòng và sửa các điểm nêu (xem mô tả PR).
 
 > URL/số PR và `Chờ review` phải được commit/push vào PR head trước review. Thành viên còn lại phải gửi `APPROVED` hợp lệ trên GitHub; sau đó người phụ trách finalization metadata, ghi `Hoàn thành` trên chính branch/PR và tự merge task của mình. Card chỉ canonically hoàn thành khi commit đó vào nhánh canonical; xem [vòng đời task canonical](../../../rules/git-and-pull-request-rules.md#vòng-đời-task-canonical).
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 25/11/2026 — lập card.
+- Cập nhật gần nhất: 25/11/2026 — module `anomaly/` (ngưỡng tĩnh, robust z, Isolation Forest, fused; `AnomalyRecord` `anomaly-record.v2` có khóa bằng chứng), lệnh `fit-iforest`, `detect`; chạy trên run train ở cửa sổ 30 s và 60 s, và hết chuỗi trên 4 fault run pilot + 1 run pilot khỏe (README training, mục Detector).
 - Ghi chú/tồn đọng:
+  - Review phát hiện luật cửa sổ không dữ liệu theo service gần như không kích hoạt (`log_error_rate` luôn có giá trị) và thang đo baseline cỡ sai số dấu phẩy động; sửa bằng khóa bằng chứng (task-01, task-03) và luật thang đo v2 (task-02); khai báo ở `detection-candidates.v2` (task-05).
+  - Phần `tie_rank` và chọn ngưỡng thuộc task-04, task-06.
