@@ -76,6 +76,10 @@ def build_incidents(
     """`anomalies`: `anomalies-<detector>.parquet`; manifest `.json` cùng tên nằm cạnh."""
     manifest_path = anomalies.with_suffix(".json")
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    if not isinstance(manifest.get("detector_config_version"), str):
+        # Harness so khớp tổ hợp theo phiên bản config; record không có phiên bản thì không dùng
+        # được để chọn trên validation.
+        raise ValueError(f"{manifest_path}: thiếu detector_config_version (chuỗi)")
     scores = read_scores(anomalies)
     by_service: dict[str, list[WindowScore]] = defaultdict(list)
     for score in scores:
@@ -119,6 +123,7 @@ def build_incidents(
             "incident_config_file_sha256": _sha256(config_path) if config_path else None,
             "incident_config_sha256": identity["incident_config_sha256"],
             "detector_config_sha256": manifest.get("detector_config_sha256"),
+            "model_sha256": (manifest.get("lineage") or {}).get("model_sha256"),
             "threshold": manifest.get("threshold"),
             **manifest.get("lineage", {}),
         },

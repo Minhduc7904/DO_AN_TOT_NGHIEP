@@ -314,6 +314,15 @@ def test_cli_builds_incidents_from_detector_output_without_ground_truth(tmp_path
     detect(fault, RobustZ(threshold=4), out, config={"threshold": 4})
     config = Path(__file__).parents[1] / "configs" / "incident-dev-v1.json"
     anomalies = out / "anomalies-robust_z.parquet"
+    # Đầu ra detector không có phiên bản config: không dùng được cho harness → từ chối.
+    with pytest.raises(ValueError, match="detector_config_version"):
+        main(["incidents", str(anomalies), "--config", str(config)])
+    detect(
+        fault,
+        RobustZ(threshold=4),
+        out,
+        config={"threshold": 4, "detector_config_version": "d-test.v1"},
+    )
     assert main(["incidents", str(anomalies), "--config", str(config)]) == 0
     capsys.readouterr()
     record = json.loads((out / "incidents-robust_z.json").read_text(encoding="utf-8"))
