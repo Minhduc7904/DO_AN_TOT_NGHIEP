@@ -438,7 +438,8 @@ def test_iforest_requires_scaler_fitted_on_the_same_runs(tmp_path):
 
 def test_detector_and_lifecycle_never_import_ground_truth():
     root = Path(__file__).parents[1] / "src" / "aiops_training"
-    for path in sorted((root / "anomaly").glob("*.py")):
+    paths = [*(root / "anomaly").glob("*.py"), *(root / "incident").glob("*.py")]
+    for path in sorted(paths):
         tree = ast.parse(path.read_text(encoding="utf-8"))
         imported = [
             node.module or "" for node in ast.walk(tree) if isinstance(node, ast.ImportFrom)
