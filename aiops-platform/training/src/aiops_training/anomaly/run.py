@@ -28,7 +28,7 @@ from .signals import (
     service_windows,
 )
 
-ANOMALY_SCHEMA_VERSION = "anomaly-record.v1"
+ANOMALY_SCHEMA_VERSION = "anomaly-record.v2"  # v2: thêm top_key, evidence_keys, observed_keys…
 ANOMALY_SCHEMA = pa.schema(
     [
         ("run_id", pa.string()),
