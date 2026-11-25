@@ -61,4 +61,4 @@
 - [x] Các task hoàn thành đã liên kết đến PR và bằng chứng DoD.
 - [x] Gate M3 có bằng chứng (ngoại lệ một người ghi trung thực).
 - [ ] Gate R điều kiện 5 có bằng chứng của Bách (đóng ngoại lệ của tuần 13, 14 và 15).
-- [ ] Tồn đọng và việc chuyển sang tuần 16 đã được ghi rõ. Đã biết: run mức 1 và mức 2 thuần ở `healthy-spike` để kết luận độ thực cho profile này (task-07, chạy bổ sung từ 25/11/2026); export chờ tới `time_end` + 10 s (task-05); C2 ở cao điểm `healthy-spike` làm cạn pool `course` (task-03); chạy thử trên Windows (tuần 17–18); Gate R điều kiện 5.
+- [ ] Tồn đọng và việc chuyển sang tuần 16 đã được ghi rõ. Đã biết: run mức 1 và mức 2 thuần ở `healthy-spike` (task-07, đã chạy bổ sung 25/11/2026: được viết "giống thật theo v2", PR riêng); export chờ tới `time_end` + 10 s (task-05); C2 ở cao điểm `healthy-spike` làm cạn pool `course` (task-03); chạy thử trên Windows (tuần 17–18); Gate R điều kiện 5.
