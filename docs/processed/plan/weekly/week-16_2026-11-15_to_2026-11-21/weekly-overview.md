@@ -7,7 +7,7 @@
 | Tuần | `week-16_2026-11-15_to_2026-11-21` |
 | Nguồn plan canonical | [Plan v0.4 — Tuần 16](../../plan-v0.4-24-weeks.md#tuần-16--anomaly-baselines-và-incident-detection) |
 | Mục tiêu tuần | Detector ngưỡng tĩnh, robust z-score và Isolation Forest fit trên run train khỏe của dataset v0; điểm hợp nhất metric/trace/log có fallback khi thiếu modality; feature cửa sổ 30 s cho tập ứng viên; incident lifecycle có `detected_at` và `estimated_start_time`; evaluation harness cho Precision/Recall/F1, healthy-run FPR, báo động giả/giờ và Detection Delay; khai báo tập ứng viên còn mở trước validation; chọn cấu hình trên validation, E1 sơ bộ và error analysis ban đầu |
-| Trạng thái tuần | Đang thực hiện — bảng task lập ngày 25/11/2026; Gate R điều kiện 5 vẫn mở (ngoại lệ ở dưới) |
+| Trạng thái tuần | Đang thực hiện — bảng task lập ngày 25/11/2026 (PR #102); task-01 đến task-05 đã hoàn thành và merge (PR #103–#107); task-06 đang làm; Gate R điều kiện 5 vẫn mở (ngoại lệ ở dưới) |
 
 > Tuần canonical là 15/11/2026–21/11/2026. Kế hoạch được lập ngày 25/11/2026 để bù tiến độ; hạn task bên dưới là mốc bù tiến độ. Theo quyết định của Bách (19/11/2026), phạm vi MVP làm đầy đủ, không áp dụng phương án nén lịch của plan v0.4 mục 9 chỉ vì trễ lịch.
 
@@ -19,11 +19,11 @@
 
 | Mã task | Task | Người phụ trách | Collaborator | Ưu tiên | Trạng thái |
 | --- | --- | --- | --- | --- | --- |
-| [task-01_build-anomaly-detectors](task-01_build-anomaly-detectors.md) | Detector ngưỡng tĩnh, robust z-score, Isolation Forest fit trên train khỏe; điểm hợp nhất M/T/L có fallback khi thiếu modality; `telemetry_silent` | Bách | Không có | Cao | Chờ review |
-| [task-02_add-30s-window-features](task-02_add-30s-window-features.md) | Feature và baseline cửa sổ 30 s cho tập ứng viên, tách khỏi cửa sổ 60 s về version, thư mục và kiểm leakage | Bách | Không có | Cao | Chờ review |
-| [task-03_build-incident-lifecycle](task-03_build-incident-lifecycle.md) | Incident lifecycle (persistence, recovery, merge, gộp nhiều service), `detected_at`, `estimated_start_time`, incident record | Bách | Không có | Cao | Chờ review |
-| [task-04_build-detection-evaluation-harness](task-04_build-detection-evaluation-harness.md) | Evaluation harness: ghép incident với fault, Precision/Recall/F1, healthy-run FPR, báo động giả/giờ (kể cả đoạn cao điểm), Detection Delay, bootstrap CI, hàm của luật chọn | Bách | Không có | Cao | Chờ review |
-| [task-05_declare-detection-candidates-v2](task-05_declare-detection-candidates-v2.md) | Khai báo trước mọi lần chấm validation phần còn mở của phát hiện: quy tắc gộp điểm, tham số incident, Isolation Forest, điểm hợp nhất, ngưỡng tĩnh E1 | Bách | Không có | Cao | Chờ review |
+| [task-01_build-anomaly-detectors](task-01_build-anomaly-detectors.md) | Detector ngưỡng tĩnh, robust z-score, Isolation Forest fit trên train khỏe; điểm hợp nhất M/T/L có fallback khi thiếu modality; `telemetry_silent` | Bách | Không có | Cao | Hoàn thành |
+| [task-02_add-30s-window-features](task-02_add-30s-window-features.md) | Feature và baseline cửa sổ 30 s cho tập ứng viên, tách khỏi cửa sổ 60 s về version, thư mục và kiểm leakage | Bách | Không có | Cao | Hoàn thành |
+| [task-03_build-incident-lifecycle](task-03_build-incident-lifecycle.md) | Incident lifecycle (persistence, recovery, merge, gộp nhiều service), `detected_at`, `estimated_start_time`, incident record | Bách | Không có | Cao | Hoàn thành |
+| [task-04_build-detection-evaluation-harness](task-04_build-detection-evaluation-harness.md) | Evaluation harness: ghép incident với fault, Precision/Recall/F1, healthy-run FPR, báo động giả/giờ (kể cả đoạn cao điểm), Detection Delay, bootstrap CI, hàm của luật chọn | Bách | Không có | Cao | Hoàn thành |
+| [task-05_declare-detection-candidates-v2](task-05_declare-detection-candidates-v2.md) | Khai báo trước mọi lần chấm validation phần còn mở của phát hiện: quy tắc gộp điểm, tham số incident, Isolation Forest, điểm hợp nhất, ngưỡng tĩnh E1 | Bách | Không có | Cao | Hoàn thành |
 | [task-06_select-detectors-on-validation](task-06_select-detectors-on-validation.md) | Chọn window/persistence và ngưỡng trên validation theo luật đã khai báo, freeze config; E1 sơ bộ trên validation; error analysis ban đầu | Bách | Không có | Cao | Đã giao |
 
 > Khi đọc tiến độ project-wide, chỉ coi hàng có trạng thái `Hoàn thành` trên nhánh canonical là hoàn thành; trạng thái đã finalization trên task branch chưa thay thế nguồn này.
@@ -69,7 +69,7 @@
 ## Tiêu chí kết thúc tuần
 
 - [ ] Các task ưu tiên cao có trạng thái và bằng chứng được cập nhật.
-- [ ] Các task hoàn thành đã liên kết đến PR và bằng chứng DoD.
+- [x] Các task hoàn thành đã liên kết đến PR và bằng chứng DoD.
 - [ ] Mọi lần chấm validation chạy trên commit đã có `detection-candidates.v2` và được ghi trong ledger chấm validation.
 - [ ] Gate R điều kiện 5 có bằng chứng của Bách (đóng ngoại lệ của tuần 13–16).
 - [ ] Tồn đọng và việc chuyển sang tuần 17 đã được ghi rõ.

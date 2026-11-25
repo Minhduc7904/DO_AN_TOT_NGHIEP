@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-02_add-30s-window-features` |
 | Tuần | `week-16_2026-11-15_to_2026-11-21` |
-| Trạng thái | Chờ review |
+| Trạng thái | Hoàn thành |
 | Người phụ trách | Bách |
 | Collaborator | Không có |
 | Ưu tiên | Cao |
@@ -62,13 +62,13 @@
 - Input workspace: Không tạo (giai đoạn tự bắt kịp; bằng chứng nằm trong PR).
 - Output workspace: Không tạo.
 - Pull request: [#104](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/104).
-- Kết quả review: Chờ review. Đã review bằng agent riêng (cùng vòng review task-01/03); phát hiện luật thang đo đã sửa (xem mô tả PR).
+- Kết quả review: Không có GitHub `APPROVED` (giai đoạn tự bắt kịp). Đã review bằng agent riêng (cùng vòng review task-01/03); phát hiện về luật thang đo đã sửa trong PR (xem mô tả PR). CI GitHub đạt trước khi merge. PR #104 được Bách (người phụ trách) merge ngày 25/11/2026 (merge commit `4244401`) trước khi finalization; card chuyển `Hoàn thành` bằng PR ghi nhận hậu kiểm trên `main` theo yêu cầu của Bách.
 
 > URL/số PR và `Chờ review` phải được commit/push vào PR head trước review. Thành viên còn lại phải gửi `APPROVED` hợp lệ trên GitHub; sau đó người phụ trách finalization metadata, ghi `Hoàn thành` trên chính branch/PR và tự merge task của mình. Card chỉ canonically hoàn thành khi commit đó vào nhánh canonical; xem [vòng đời task canonical](../../../rules/git-and-pull-request-rules.md#vòng-đời-task-canonical).
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 25/11/2026 — feature 30 s cho 10 run (61–74 s, RSS 1.618–1.849 MB mỗi run), baseline `dataset-v0-w30.json` và `dataset-v0-w60.json` theo luật thang đo v2, hồi quy 60 s bằng hệt, `check-leakage` không lỗi với cả ba baseline ([data dictionary](../../../architecture/telemetry-data-dictionary-v2.md) mục 9.7).
+- Cập nhật gần nhất: 25/11/2026 — đã merge PR #104 (`4244401`); ghi nhận hậu kiểm, chuyển Hoàn thành. Trước đó cùng ngày — feature 30 s cho 10 run (61–74 s, RSS 1.618–1.849 MB mỗi run), baseline `dataset-v0-w30.json` và `dataset-v0-w60.json` theo luật thang đo v2, hồi quy 60 s bằng hệt, `check-leakage` không lỗi với cả ba baseline ([data dictionary](../../../architecture/telemetry-data-dictionary-v2.md) mục 9.7).
 - Ghi chú/tồn đọng:
   - Thêm ngoài card: luật thang đo v2 (thang đo không nhỏ hơn sàn theo đơn vị), phát hiện khi review task-01 (MAD bằng sai số dấu phẩy động làm z tới 1e15 trên run khỏe); khai báo ở evaluation-protocol-v1 mục 6.1.3 (PR #103). Baseline mới là file mới, `dataset-v0.json` giữ nguyên.
   - Card dự đoán số cửa sổ 30 s gấp đôi; thực tế 193 so với 191 (cùng bước 15 s), RAM ngang bản 60 s.
