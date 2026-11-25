@@ -11,6 +11,39 @@ import { DAY_S } from './moodle/sessionize.mjs';
 export const PLAN_SCHEMA = 'replay-plan.v1';
 
 /**
+ * Luật chia ngày của đoạn xây cho dataset (task-04 tuần 15, evaluation-protocol-v1 mục 5.4): mỗi ngày
+ * thuộc đúng một split, nên phiên của train, validation, test đến từ các đoạn log tách rời; hold-out
+ * (ngày 60–90) không nằm trong đoạn xây nên không bao giờ vào split nào.
+ *
+ * Phân tầng theo tải: xếp ngày theo số phiên giảm dần (bằng nhau thì ngày nhỏ trước) rồi chia kiểu
+ * rắn bò theo `order` (test, validation, train, train, validation, test, …). Số phiên tăng dần theo
+ * học kỳ (ngày 0–19 cao nhất 832, ngày 40 là 1.376), nên cắt thành ba khối liền nhau sẽ cho ba split
+ * tải rất khác nhau; chia phân tầng giữ phân bố tải ngày giống nhau giữa các split. Ngày đông nhất
+ * vào test để E1 (báo động giả khi tải cao hợp lệ) được đo ở tải thật cao nhất, còn train/validation
+ * thấy tải thấp hơn một chút: lệch về phía bất lợi cho phương pháp, không phải có lợi.
+ */
+export const DAY_SPLIT = Object.freeze({
+  rule: 'day-split-v1',
+  order: Object.freeze(['test', 'validation', 'train']),
+});
+
+/** `perDay` là `[{ day, sessions }]`; trả `{ <split>: [ngày tăng dần] }` theo `order`. */
+export function assignDaySplits(perDay, order = DAY_SPLIT.order) {
+  if (order.length === 0 || new Set(order).size !== order.length) {
+    throw new Error('order phải là danh sách split khác nhau, không rỗng');
+  }
+  const ranked = [...perDay].sort((a, b) => b.sessions - a.sessions || a.day - b.day);
+  const splits = Object.fromEntries(order.map((name) => [name, []]));
+  ranked.forEach((item, rank) => {
+    const round = Math.floor(rank / order.length);
+    const position = rank % order.length;
+    splits[order[round % 2 === 0 ? position : order.length - 1 - position]].push(item.day);
+  });
+  for (const days of Object.values(splits)) days.sort((a, b) => a - b);
+  return splits;
+}
+
+/**
  * Chọn `k` ngày trong đoạn xây.
  * - `normal-mixed`: k ngày có số phiên gần trung vị nhất (một ngày học thường).
  * - `healthy-spike`: ngày cao điểm và k − 1 ngày đông kế tiếp (đỉnh trước hạn quiz).

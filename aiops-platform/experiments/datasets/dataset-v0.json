@@ -1,0 +1,506 @@
+{
+  "schema": "dataset-manifest.v0",
+  "dataset_id": "dataset-v0",
+  "status": "draft",
+  "created": "2026-11-20",
+  "sources": "evaluation-protocol-v1 mục 5, 6.1, 8; workload-design-v1 mục 11.4; card task-04 tuần 15",
+  "data_seed": {
+    "profile": "small",
+    "seed": 42
+  },
+  "fault_manifest": {
+    "path": "aiops-platform/faults/manifests/fault-manifest-v2.json",
+    "manifest_version": "2.0.0",
+    "note": "Chốt ở pilot task-03 tuần 15 (docs/processed/architecture/fault-pilot-report-v1.md)."
+  },
+  "day_split": {
+    "rule": "day-split-v1",
+    "description": "Xếp 60 ngày đoạn xây theo số phiên giảm dần (bằng nhau thì ngày nhỏ trước), chia rắn bò theo thứ tự test, validation, train (aiops-platform/load/tools/replay-plan.mjs DAY_SPLIT). Ngày đông nhất vào test.",
+    "source": "data/sessions/moodle-build-v1.json",
+    "source_sha256": "6d582ed8bc79cb8992aa68071d598d8f4f334fbc0ccb4f3f54b6bd3b81270e4e",
+    "holdout_days": [
+      60,
+      90
+    ],
+    "days": {
+      "test": [
+        1,
+        3,
+        4,
+        7,
+        21,
+        23,
+        27,
+        28,
+        30,
+        32,
+        34,
+        35,
+        37,
+        40,
+        43,
+        45,
+        53,
+        55,
+        57,
+        58
+      ],
+      "validation": [
+        0,
+        2,
+        5,
+        6,
+        10,
+        11,
+        13,
+        17,
+        18,
+        19,
+        24,
+        29,
+        41,
+        44,
+        46,
+        47,
+        50,
+        52,
+        54,
+        56
+      ],
+      "train": [
+        8,
+        9,
+        12,
+        14,
+        15,
+        16,
+        20,
+        22,
+        25,
+        26,
+        31,
+        33,
+        36,
+        38,
+        39,
+        42,
+        48,
+        49,
+        51,
+        59
+      ]
+    }
+  },
+  "plan_rule": "Mỗi split: normal-mixed = k ngày gần trung vị của split nhất, healthy-spike = k ngày đông nhất của split; k = 4 (task-02 tuần 15). Sinh bằng build-replay-plan.mjs --source moodle --k 4 --split <split>.",
+  "seed_rule": "Fault run các case cùng split và repeat_index dùng cùng workload_seed (workload-design-v1 mục 11.4, chốt ở task-04 tuần 15); mỗi run healthy một seed riêng; run thay thế giữ nguyên cấu hình của slot, kể cả workload_seed (evaluation-protocol-v1 mục 8.6; sửa 24/11/2026, bản khai báo trước khi chạy ghi nhầm là seed mới).",
+  "plans": {
+    "train": {
+      "normal-mixed": {
+        "path": "data/plans/moodle-normal-mixed-k4-train-v1.json",
+        "plan_id": "moodle-normal-mixed-k4-train-v1",
+        "sha256": "53016eb917db6e46d84625e725d84e13ddd59b2c4a25549d05143ea4d13f5fde",
+        "days": [
+          36,
+          42,
+          31,
+          48
+        ],
+        "sessions": 1266,
+        "actions": 6026
+      },
+      "healthy-spike": {
+        "path": "data/plans/moodle-healthy-spike-k4-train-v1.json",
+        "plan_id": "moodle-healthy-spike-k4-train-v1",
+        "sha256": "902857f50a244495c671f8e9639951d875280c3b5d2c6da122d9e0897a2ab8ff",
+        "days": [
+          39,
+          26,
+          33,
+          20
+        ],
+        "sessions": 3372,
+        "actions": 17490
+      }
+    },
+    "validation": {
+      "normal-mixed": {
+        "path": "data/plans/moodle-normal-mixed-k4-validation-v1.json",
+        "plan_id": "moodle-normal-mixed-k4-validation-v1",
+        "sha256": "29b39b72a70315683c5188bc51031ff2dafde1b03e2c96fa8cec63ffd93c06f3",
+        "days": [
+          6,
+          52,
+          29,
+          13
+        ],
+        "sessions": 1161,
+        "actions": 5065
+      },
+      "healthy-spike": {
+        "path": "data/plans/moodle-healthy-spike-k4-validation-v1.json",
+        "plan_id": "moodle-healthy-spike-k4-validation-v1",
+        "sha256": "3ac672522ce89e31a92694d1b138ee5a4fe67e4909edd268be30f0f74939d597",
+        "days": [
+          46,
+          41,
+          19,
+          44
+        ],
+        "sessions": 3400,
+        "actions": 17666
+      }
+    },
+    "test": {
+      "normal-mixed": {
+        "path": "data/plans/moodle-normal-mixed-k4-test-v1.json",
+        "plan_id": "moodle-normal-mixed-k4-test-v1",
+        "sha256": "3fb1e15ad4f6deb7d98731d4f9cf8e30d41e2b9c7248c95e6663af8e52ad4188",
+        "days": [
+          30,
+          43,
+          35,
+          28
+        ],
+        "sessions": 1151,
+        "actions": 5305
+      },
+      "healthy-spike": {
+        "path": "data/plans/moodle-healthy-spike-k4-test-v1.json",
+        "plan_id": "moodle-healthy-spike-k4-test-v1",
+        "sha256": "407cf1d763494125877fb8dd307a8df11e546115537564ab57fd29ceaee9eced",
+        "days": [
+          40,
+          32,
+          45,
+          37
+        ],
+        "sessions": 3748,
+        "actions": 21443
+      }
+    }
+  },
+  "slots": [
+    {
+      "slot_id": "train-healthy-normal-mixed-1",
+      "split": "train",
+      "profile": "normal-mixed",
+      "case": null,
+      "repeat_index": 0,
+      "workload_seed": 1001,
+      "align_peak": false,
+      "run_id": "train-healthy-normal-mixed-s1001-20261123t102740z",
+      "replaced_run_ids": []
+    },
+    {
+      "slot_id": "train-healthy-normal-mixed-2",
+      "split": "train",
+      "profile": "normal-mixed",
+      "case": null,
+      "repeat_index": 0,
+      "workload_seed": 1002,
+      "align_peak": false,
+      "run_id": "train-healthy-normal-mixed-s1002-20261123t113109z",
+      "replaced_run_ids": []
+    },
+    {
+      "slot_id": "train-healthy-healthy-spike-1",
+      "split": "train",
+      "profile": "healthy-spike",
+      "case": null,
+      "repeat_index": 0,
+      "workload_seed": 1003,
+      "align_peak": false,
+      "run_id": "train-healthy-healthy-spike-s1003-20261123t224223z",
+      "replaced_run_ids": [
+        "train-healthy-healthy-spike-s1003-20261123t134927z"
+      ]
+    },
+    {
+      "slot_id": "train-healthy-healthy-spike-2",
+      "split": "train",
+      "profile": "healthy-spike",
+      "case": null,
+      "repeat_index": 0,
+      "workload_seed": 1004,
+      "align_peak": false,
+      "run_id": "train-healthy-healthy-spike-s1004-20261124t002521z",
+      "replaced_run_ids": []
+    },
+    {
+      "slot_id": "validation-healthy-normal-mixed-1",
+      "split": "validation",
+      "profile": "normal-mixed",
+      "case": null,
+      "repeat_index": 0,
+      "workload_seed": 2002,
+      "align_peak": false,
+      "run_id": "validation-healthy-normal-mixed-s2002-20261123t091816z",
+      "replaced_run_ids": []
+    },
+    {
+      "slot_id": "validation-healthy-healthy-spike-1",
+      "split": "validation",
+      "profile": "healthy-spike",
+      "case": null,
+      "repeat_index": 0,
+      "workload_seed": 2003,
+      "align_peak": false,
+      "run_id": "validation-healthy-healthy-spike-s2003-20261123t123352z",
+      "replaced_run_ids": []
+    },
+    {
+      "slot_id": "validation-c2-normal-mixed-r1",
+      "split": "validation",
+      "profile": "normal-mixed",
+      "case": "C2",
+      "repeat_index": 1,
+      "workload_seed": 2001,
+      "align_peak": true,
+      "run_id": "validation-c2-normal-mixed-s2001-20261123t182901z",
+      "replaced_run_ids": []
+    },
+    {
+      "slot_id": "validation-c3-normal-mixed-r1",
+      "split": "validation",
+      "profile": "normal-mixed",
+      "case": "C3",
+      "repeat_index": 1,
+      "workload_seed": 2001,
+      "align_peak": false,
+      "run_id": "validation-c3-normal-mixed-s2001-20261123t193231z",
+      "replaced_run_ids": []
+    },
+    {
+      "slot_id": "validation-c4-normal-mixed-r1",
+      "split": "validation",
+      "profile": "normal-mixed",
+      "case": "C4",
+      "repeat_index": 1,
+      "workload_seed": 2001,
+      "align_peak": false,
+      "run_id": "validation-c4-normal-mixed-s2001-20261123t203506z",
+      "replaced_run_ids": []
+    },
+    {
+      "slot_id": "validation-c6-normal-mixed-r1",
+      "split": "validation",
+      "profile": "normal-mixed",
+      "case": "C6",
+      "repeat_index": 1,
+      "workload_seed": 2001,
+      "align_peak": false,
+      "run_id": "validation-c6-normal-mixed-s2001-20261123t213759z",
+      "replaced_run_ids": []
+    },
+    {
+      "slot_id": "test-c2-normal-mixed-r2",
+      "split": "test",
+      "profile": "normal-mixed",
+      "case": "C2",
+      "repeat_index": 2,
+      "workload_seed": 3001,
+      "align_peak": null,
+      "run_id": null,
+      "replaced_run_ids": []
+    },
+    {
+      "slot_id": "test-c3-normal-mixed-r2",
+      "split": "test",
+      "profile": "normal-mixed",
+      "case": "C3",
+      "repeat_index": 2,
+      "workload_seed": 3001,
+      "align_peak": null,
+      "run_id": null,
+      "replaced_run_ids": []
+    },
+    {
+      "slot_id": "test-c4-normal-mixed-r2",
+      "split": "test",
+      "profile": "normal-mixed",
+      "case": "C4",
+      "repeat_index": 2,
+      "workload_seed": 3001,
+      "align_peak": null,
+      "run_id": null,
+      "replaced_run_ids": []
+    },
+    {
+      "slot_id": "test-c6-normal-mixed-r2",
+      "split": "test",
+      "profile": "normal-mixed",
+      "case": "C6",
+      "repeat_index": 2,
+      "workload_seed": 3001,
+      "align_peak": null,
+      "run_id": null,
+      "replaced_run_ids": []
+    },
+    {
+      "slot_id": "test-c2-normal-mixed-r3",
+      "split": "test",
+      "profile": "normal-mixed",
+      "case": "C2",
+      "repeat_index": 3,
+      "workload_seed": 3002,
+      "align_peak": null,
+      "run_id": null,
+      "replaced_run_ids": []
+    },
+    {
+      "slot_id": "test-c3-normal-mixed-r3",
+      "split": "test",
+      "profile": "normal-mixed",
+      "case": "C3",
+      "repeat_index": 3,
+      "workload_seed": 3002,
+      "align_peak": null,
+      "run_id": null,
+      "replaced_run_ids": []
+    },
+    {
+      "slot_id": "test-c4-normal-mixed-r3",
+      "split": "test",
+      "profile": "normal-mixed",
+      "case": "C4",
+      "repeat_index": 3,
+      "workload_seed": 3002,
+      "align_peak": null,
+      "run_id": null,
+      "replaced_run_ids": []
+    },
+    {
+      "slot_id": "test-c6-normal-mixed-r3",
+      "split": "test",
+      "profile": "normal-mixed",
+      "case": "C6",
+      "repeat_index": 3,
+      "workload_seed": 3002,
+      "align_peak": null,
+      "run_id": null,
+      "replaced_run_ids": []
+    },
+    {
+      "slot_id": "test-c2-normal-mixed-r4",
+      "split": "test",
+      "profile": "normal-mixed",
+      "case": "C2",
+      "repeat_index": 4,
+      "workload_seed": 3003,
+      "align_peak": null,
+      "run_id": null,
+      "replaced_run_ids": []
+    },
+    {
+      "slot_id": "test-c3-normal-mixed-r4",
+      "split": "test",
+      "profile": "normal-mixed",
+      "case": "C3",
+      "repeat_index": 4,
+      "workload_seed": 3003,
+      "align_peak": null,
+      "run_id": null,
+      "replaced_run_ids": []
+    },
+    {
+      "slot_id": "test-c4-normal-mixed-r4",
+      "split": "test",
+      "profile": "normal-mixed",
+      "case": "C4",
+      "repeat_index": 4,
+      "workload_seed": 3003,
+      "align_peak": null,
+      "run_id": null,
+      "replaced_run_ids": []
+    },
+    {
+      "slot_id": "test-c6-normal-mixed-r4",
+      "split": "test",
+      "profile": "normal-mixed",
+      "case": "C6",
+      "repeat_index": 4,
+      "workload_seed": 3003,
+      "align_peak": null,
+      "run_id": null,
+      "replaced_run_ids": []
+    },
+    {
+      "slot_id": "test-c2-normal-mixed-r5",
+      "split": "test",
+      "profile": "normal-mixed",
+      "case": "C2",
+      "repeat_index": 5,
+      "workload_seed": 3004,
+      "align_peak": null,
+      "run_id": null,
+      "replaced_run_ids": []
+    },
+    {
+      "slot_id": "test-c3-normal-mixed-r5",
+      "split": "test",
+      "profile": "normal-mixed",
+      "case": "C3",
+      "repeat_index": 5,
+      "workload_seed": 3004,
+      "align_peak": null,
+      "run_id": null,
+      "replaced_run_ids": []
+    },
+    {
+      "slot_id": "test-c4-normal-mixed-r5",
+      "split": "test",
+      "profile": "normal-mixed",
+      "case": "C4",
+      "repeat_index": 5,
+      "workload_seed": 3004,
+      "align_peak": null,
+      "run_id": null,
+      "replaced_run_ids": []
+    },
+    {
+      "slot_id": "test-c6-normal-mixed-r5",
+      "split": "test",
+      "profile": "normal-mixed",
+      "case": "C6",
+      "repeat_index": 5,
+      "workload_seed": 3004,
+      "align_peak": null,
+      "run_id": null,
+      "replaced_run_ids": []
+    },
+    {
+      "slot_id": "test-healthy-normal-mixed-1",
+      "split": "test",
+      "profile": "normal-mixed",
+      "case": null,
+      "repeat_index": 0,
+      "workload_seed": 3005,
+      "align_peak": false,
+      "run_id": null,
+      "replaced_run_ids": []
+    },
+    {
+      "slot_id": "test-healthy-healthy-spike-1",
+      "split": "test",
+      "profile": "healthy-spike",
+      "case": null,
+      "repeat_index": 0,
+      "workload_seed": 3006,
+      "align_peak": false,
+      "run_id": null,
+      "replaced_run_ids": []
+    }
+  ],
+  "decisions": [
+    {
+      "decision": "Không thêm profile healthy đối chứng upload media peak (C4) / AI job (C3)",
+      "source": "fault-pilot-report-v1 mục 6",
+      "why": "Run healthy normal-mixed đã có job AI và upload media trong đúng các cửa sổ fault; bộ đo triệu chứng không vượt ngưỡng trên các cửa sổ đó."
+    },
+    {
+      "decision": "Slot validation trùng cao điểm: validation-c2-normal-mixed-r1 (align_peak true); ba fault run validation còn lại theo lịch mặc định",
+      "source": "evaluation-protocol-v1 mục 5.3; fault-pilot-report-v1 mục 2.2, 5",
+      "why": "C2 là case nhạy với tải nhất (ở cao điểm có thể cạn pool), nên validation có cả tổ hợp fault + tải cao hợp lệ để chỉnh ngưỡng; C3 900 s chỉ đặt được align-peak tới giây 1380 nên giữ lịch mặc định như điều kiện đã freeze ở pilot."
+    }
+  ]
+}

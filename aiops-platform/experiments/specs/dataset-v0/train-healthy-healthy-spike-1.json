@@ -1,0 +1,12 @@
+{
+  "schema": "run-spec.v1",
+  "split": "train",
+  "repeat_index": 0,
+  "workload": {
+    "profile": "healthy-spike",
+    "seed": 1003,
+    "plan": "data/plans/moodle-healthy-spike-k4-train-v1.json"
+  },
+  "fault": null,
+  "notes": "dataset-v0, slot train-healthy-healthy-spike-1 (task-04 tuần 15)."
+}

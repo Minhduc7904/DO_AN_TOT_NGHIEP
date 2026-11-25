@@ -50,7 +50,7 @@ Cột của từng bảng khai báo ở `src/aiops_training/telemetry/schema.py`
 | `--out` | `artifacts` | Thư mục kết quả |
 | `--prometheus-url`, `--tempo-url`, `--loki-url` | `http://127.0.0.1:9090`, `:3200`, `:3100` | Backend (cổng loopback của stack) |
 | `--step-seconds` | `5` | Bước lấy mẫu metric (bằng chu kỳ scrape) |
-| `--max-traces` | `20000` | Giới hạn số trace tải về; vượt thì chọn cách đều theo thời gian và ghi số bị bỏ |
+| `--max-traces` | `60000` | Giới hạn số trace tải về; vượt thì chọn cách đều theo thời gian và ghi số bị bỏ (`dropped_by_budget`). Trước 23/11/2026 là `20000`: run `healthy-spike` (~38.000 trace không nhiễu) bị bỏ 47% |
 | `--trace-delay-ms` | `20` | Nghỉ giữa hai lần tải trace |
 | `--include-noise-traces` | tắt | Giữ cả trace nhiễu (probe, thăm dò DB của `scheduler-worker`) |
 | `--include-probe-logs` | tắt | Giữ cả access log của probe |

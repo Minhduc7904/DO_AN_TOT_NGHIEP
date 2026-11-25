@@ -5,7 +5,10 @@
  *   node aiops-platform/load/tools/build-replay-plan.mjs --source moodle --profile normal-mixed --k 4
  *   node aiops-platform/load/tools/build-replay-plan.mjs --source assumed --profile normal-mixed --k 4
  *   node aiops-platform/load/tools/build-replay-plan.mjs --source learned --profile normal-mixed --k 4
+ *   node aiops-platform/load/tools/build-replay-plan.mjs --source moodle --profile normal-mixed --k 4 --split train
  *
+ * `--split train|validation|test` (dataset, chỉ với `moodle`): chọn ngày trong nhóm ngày của split theo
+ * luật `DAY_SPLIT` (replay-plan.mjs), kế hoạch tên `moodle-<profile>-k<k>-<split>-v1`.
  * - `moodle`  (mức 2+): phiên thật của k ngày trong đoạn xây (chọn theo profile), giờ bắt đầu thật.
  * - `assumed` (mức 2 thuần): phiên sinh từ bảng giả định, giờ bắt đầu chia đều theo `w(h)` giả định.
  * - `learned` (sinh thêm kiểu WESSBAS): phiên sinh từ ma trận học từ đoạn xây.
@@ -24,7 +27,7 @@ import {
   generateLearnedSessions,
   phaseOfProfile,
 } from './markov.mjs';
-import { buildPlan, selectDays } from './replay-plan.mjs';
+import { assignDaySplits, buildPlan, DAY_SPLIT, selectDays } from './replay-plan.mjs';
 import { sessionsPerDay } from './session-stats.mjs';
 
 const LOAD_DIR = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -48,12 +51,13 @@ function main() {
       build: { type: 'string', default: join(LOAD_DIR, 'data/sessions/moodle-build-v1.json') },
       stats: { type: 'string', default: join(LOAD_DIR, 'data/sessions/moodle-stats-v1.json') },
       params: { type: 'string', default: join(LOAD_DIR, 'params/student-assumed-v1.json') },
+      split: { type: 'string' },
       out: { type: 'string' },
     },
   });
   const k = Number(values.k);
   const seed = Number(values.seed);
-  const { profile, source } = values;
+  const { profile, source, split } = values;
   const common = {
     profile,
     k,
@@ -62,11 +66,21 @@ function main() {
   };
 
   const build = readJson(values.build);
-  const perDay = sessionsPerDay(build.json.sessions);
+  const allDays = sessionsPerDay(build.json.sessions);
+  let perDay = allDays;
+  let splitMeta = null;
+  if (split !== undefined) {
+    // Dataset: chỉ chọn ngày trong nhóm ngày của split (luật DAY_SPLIT, ghi trước khi sinh kế hoạch).
+    if (source !== 'moodle') throw new Error('--split chỉ dùng với --source moodle');
+    const splits = assignDaySplits(allDays);
+    if (!(split in splits)) throw new Error(`--split lạ: ${split} (${Object.keys(splits).join(' | ')})`);
+    perDay = allDays.filter((item) => splits[split].includes(item.day));
+    splitMeta = { name: split, rule: DAY_SPLIT.rule, order: DAY_SPLIT.order, days: splits };
+  }
   const { days, median } = selectDays(perDay, profile, k);
   const moodleCount = build.json.sessions.filter((s) => days.includes(s.day_index)).length;
   const count = values.sessions === undefined ? moodleCount : Number(values.sessions);
-  const planId = `${source}-${profile}-k${k}-v1`;
+  const planId = `${source}-${profile}-k${k}${split ? `-${split}` : ''}-v1`;
 
   let result;
   if (source === 'moodle') {
@@ -76,7 +90,11 @@ function main() {
       source: build.json.source,
       days,
       prelude: build.json.prelude,
-      meta: { selection: { median_sessions_per_day: median }, input_sha256: build.sha256 },
+      meta: {
+        selection: { median_sessions_per_day: median },
+        ...(splitMeta ? { split: splitMeta } : {}),
+        input_sha256: build.sha256,
+      },
     });
   } else if (source === 'assumed') {
     const params = readJson(values.params);

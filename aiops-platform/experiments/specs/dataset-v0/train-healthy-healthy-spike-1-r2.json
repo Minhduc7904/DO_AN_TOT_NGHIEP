@@ -1,0 +1,13 @@
+{
+  "schema": "run-spec.v1",
+  "split": "train",
+  "repeat_index": 0,
+  "workload": {
+    "profile": "healthy-spike",
+    "seed": 1003,
+    "plan": "data/plans/moodle-healthy-spike-k4-train-v1.json"
+  },
+  "fault": null,
+  "replacement_for_run_id": "train-healthy-healthy-spike-s1003-20261123t134927z",
+  "notes": "dataset-v0, slot train-healthy-healthy-spike-1, chạy lại (task-04 tuần 15): run trước bị ngắt có chủ đích lúc 14:04Z để nâng ngân sách export trace từ 20.000 lên 60.000 (run validation healthy-spike bỏ 18.099/38.099 trace)."
+}

@@ -1,0 +1,16 @@
+{
+  "schema": "run-spec.v1",
+  "split": "validation",
+  "repeat_index": 1,
+  "workload": {
+    "profile": "normal-mixed",
+    "seed": 2001,
+    "plan": "data/plans/moodle-normal-mixed-k4-validation-v1.json"
+  },
+  "fault": {
+    "case": "C3",
+    "align_peak": false,
+    "manifest": "aiops-platform/faults/manifests/fault-manifest-v2.json"
+  },
+  "notes": "dataset-v0, slot validation-c3-normal-mixed-r1 (task-04 tuần 15)."
+}
