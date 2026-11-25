@@ -1,0 +1,152 @@
+{
+  "candidate_set_version": "detection-candidates.v2",
+  "declared_at": "2026-11-25",
+  "extends": "detection-candidates.v1",
+  "source": "docs/processed/architecture/evaluation-protocol-v1.md#613-tập-ứng-viên-v2-của-phần-phát-hiện-25112026",
+  "evidence_used": "chỉ run train khỏe của dataset v0 và số đo pilot tuần 15; không số đo nào của validation",
+  "v1_kept": [
+    "window_persistence",
+    "robust_z_thresholds",
+    "null_window_rule",
+    "detected_at",
+    "selection_rule (bước 1)"
+  ],
+  "v1_superseded": {
+    "scale_rule": {
+      "v1": "mad|meanad|unit_floor.v1",
+      "v2": "mad|meanad|unit_floor.v2",
+      "change": "thang đo không nhỏ hơn sàn theo đơn vị",
+      "reason": "trên run train, MAD bằng sai số dấu phẩy động (8,7e-19 ở media-worker.downstream_latency_p95) hoặc vài phần mười mili giây làm robust z tới 1e15 trên chính run khỏe; sàn là thay đổi nhỏ nhất coi là có nghĩa nên cũng là thang đo nhỏ nhất hợp lý",
+      "baselines": {
+        "60": "aiops-platform/training/baselines/dataset-v0-w60.json",
+        "30": "aiops-platform/training/baselines/dataset-v0-w30.json"
+      },
+      "legacy_baseline_not_used": "aiops-platform/training/baselines/dataset-v0.json (luật v1, giữ để tái lập tuần 15)"
+    }
+  },
+  "fixed_rules": {
+    "signal_set": {
+      "version": "signals.v1",
+      "signals": [
+        "service.error_rate (tăng)",
+        "service.latency_p95 (tăng)",
+        "service.downstream_latency_p95 (tăng)",
+        "service.trace_error_rate (tăng)",
+        "service.log_error_rate (tăng)",
+        "edge.error_ratio (tăng)",
+        "edge.timeout_ratio (tăng)",
+        "edge.duration_p95 (tăng)",
+        "queue.messages_ready (tăng)",
+        "queue.messages_unacked (tăng)",
+        "queue.consumers (giảm, chỉ hàng đợi không phải dead-letter)"
+      ],
+      "excluded": "tín hiệu tải: request_rate, call_count, cpu_usage, memory_usage; trùng thông tin: latency_p50/p99, duration_mean/p99",
+      "trace": "chỉ trace_error_rate (tỉ lệ), không số đếm tuyệt đối (bảng F, hệ quả (c))"
+    },
+    "attribution": "cạnh → caller_service; hàng đợi → consumer_service",
+    "service_score": "max z có hướng trên các thực thể của service",
+    "telemetry_silent": "luôn vượt ngưỡng ở cả bốn detector, không đi qua z; khóa bằng chứng telemetry_silent@<service>",
+    "null_window": {
+      "service_level": "flagged rỗng khi service không có giá trị triệu chứng nào",
+      "persistence": "theo từng khóa bằng chứng <bảng>.<cột>@<thực thể>: cửa sổ vượt cộng vào chuỗi của các khóa trong evidence_keys; chuỗi của một khóa chỉ đứt khi một cửa sổ quan sát được khóa đó mà khóa không nằm trong bằng chứng của cửa sổ; bằng chứng của các khóa khác nhau không cộng dồn",
+      "evidence_keys": {
+        "static": "tín hiệu có giá trị/ngưỡng > 1",
+        "robust_z": "tín hiệu có z > ngưỡng",
+        "fused": "tín hiệu có z > 0 thuộc modality có đóng góp",
+        "iforest": "tín hiệu có z > 0",
+        "empty": "mọi tín hiệu quan sát được"
+      }
+    },
+    "fused_fallback": "chỉ bỏ modality không có giá trị nào trong cửa sổ, chuẩn hóa lại trọng số; không theo chất lượng export của run",
+    "iforest": {
+      "models": "một model mỗi service, mỗi độ dài cửa sổ; fit trên cửa sổ sau warm-up, không im lặng, có dữ liệu của 4 run train khỏe",
+      "vector": "max z có hướng của từng tín hiệu signals.v1; chiều thiếu điền 0",
+      "hyperparameters": { "n_estimators": 200, "max_samples": 256, "max_features": 1.0, "bootstrap": false },
+      "seed": 20260819,
+      "reason": "không tune hyperparameter: 6 run validation không đủ để chọn thêm chiều"
+    },
+    "incident": {
+      "recovery_windows": "window_seconds / 15 + 1 (3 với cửa sổ 30 s, 5 với 60 s)",
+      "recovery_reason": "một sự kiện đơn lẻ nằm trong window/15 cửa sổ chồng nhau; cần thêm một cửa sổ sạch hoàn toàn mới coi là hồi phục, đối xứng với persistence nhỏ nhất của v1",
+      "correlation_window_seconds": 300,
+      "correlation_reason": "triệu chứng nhiều service của cùng fault lộ cách nhau tới vài phút (C4 lan sang media-worker, gateway; C3 job đến muộn 275–305 s); 300 s giữ các triệu chứng đó trong một incident mà vẫn ngắn hơn khoảng 720 s trước fault của lịch mặc định"
+    }
+  },
+  "step1_incident_values": {
+    "merge_gap_seconds": 120,
+    "max_chain_gap_seconds": 120,
+    "reason": "giá trị nhỏ của mỗi tập ứng viên bước 2; dùng cố định khi chạy lưới 12 tổ hợp robust z của v1"
+  },
+  "step2": {
+    "order": [
+      "2a: tham số incident dùng chung, chọn bằng robust z với window/persistence/ngưỡng z đã chọn ở bước 1",
+      "2b: ngưỡng tĩnh, Isolation Forest, điểm hợp nhất, mỗi detector độc lập, với window/persistence và tham số incident đã cố định"
+    ],
+    "incident": {
+      "merge_gap_seconds": [120, 300],
+      "max_chain_gap_seconds": [120, 300],
+      "reason": "C3: 11–15 lời gọi provider trong 900 s cửa sổ fault, khoảng cách trung bình 60–82 s; 120 s nối được các lời gọi liên tiếp, 300 s chịu được khoảng trống dài giữa các đợt job. Merge gap phải lớn hơn khoảng cách đó cộng thời gian recovery để một fault không tách thành nhiều incident"
+    },
+    "static": {
+      "threshold_sets": {
+        "strict": {
+          "service.error_rate": 0.01, "service.trace_error_rate": 0.01, "edge.error_ratio": 0.01, "edge.timeout_ratio": 0.01,
+          "service.latency_p95": 0.5, "service.downstream_latency_p95": 0.5, "edge.duration_p95": 0.5,
+          "queue.messages_ready": 50, "queue.messages_unacked": 20, "queue.consumers": 1
+        },
+        "medium": {
+          "service.error_rate": 0.05, "service.trace_error_rate": 0.05, "edge.error_ratio": 0.05, "edge.timeout_ratio": 0.05,
+          "service.latency_p95": 1.0, "service.downstream_latency_p95": 1.0, "edge.duration_p95": 1.0,
+          "queue.messages_ready": 100, "queue.messages_unacked": 50, "queue.consumers": 1
+        },
+        "loose": {
+          "service.error_rate": 0.1, "service.trace_error_rate": 0.1, "edge.error_ratio": 0.1, "edge.timeout_ratio": 0.1,
+          "service.latency_p95": 2.0, "service.downstream_latency_p95": 2.0, "edge.duration_p95": 2.0,
+          "queue.messages_ready": 200, "queue.messages_unacked": 100, "queue.consumers": 1
+        }
+      },
+      "order_for_tie": ["loose", "medium", "strict"],
+      "reason": "mô phỏng cảnh báo vận hành thủ công: tỉ lệ lỗi 1–10% và latency 0,5–2 s là mức cảnh báo thường gặp; không học từ dữ liệu. Không đặt ngưỡng cho log_error_rate (dòng/giây phụ thuộc tải)"
+    },
+    "iforest": {
+      "threshold_rule": "phân vị q của điểm cửa sổ trên 4 run train khỏe (sau warm-up, bỏ cửa sổ im lặng và không dữ liệu), tính bằng chính model và baseline đã fit cho độ dài cửa sổ được chọn",
+      "quantiles": [0.995, 0.999, 1.0],
+      "reason": "ngưỡng cố định 0,6 của config phát triển cho 1–3 incident mỗi run train khỏe; trên train cửa sổ 60 s, phân vị 99,5% / 99,9% / max là 0,785 / 0,828 / 0,849 (số đo 25/11/2026 với baseline v2, chỉ để minh họa thang điểm)"
+    },
+    "fused": {
+      "weights": [
+        { "metrics": 0.3333333333333333, "traces": 0.3333333333333333, "logs": 0.3333333333333333 },
+        { "metrics": 0.4, "traces": 0.4, "logs": 0.2 }
+      ],
+      "threshold_rule": "phân vị q của điểm cửa sổ trên 4 run train khỏe như Isolation Forest, tính riêng cho từng bộ trọng số",
+      "quantiles": [0.995, 0.999, 1.0],
+      "order_for_tie": "trọng số bằng nhau trước",
+      "reason": "trọng số bằng nhau là baseline bắt buộc (blueprint 9.7); 0,4/0,4/0,2 là giá trị khởi điểm của blueprint 17.3. Trên train cửa sổ 60 s, phân vị 99,5% / 99,9% / max của trọng số bằng nhau là 1,41 / 1,63 / 2,44"
+    },
+    "selection_rule": {
+      "same_as": "detection-candidates.v1 selection_rule",
+      "false_alarm_cap_per_hour": 1,
+      "false_alarm_denominator": "theo configs/detection-evaluation-v1.json (detection-evaluation.v1)",
+      "order": [
+        "max fault runs with a matched incident (among combos meeting the cap)",
+        "min false alarms per hour",
+        "larger threshold (static: loose > medium > strict; iforest, fused: quantile lớn hơn; incident: merge gap lớn hơn rồi max_chain_gap nhỏ hơn)"
+      ],
+      "fallback_if_none_meet_cap": "min false alarms per hour, then the same order; recorded as not meeting the cap"
+    },
+    "combinations": {
+      "step1": 12,
+      "step2a_incident": 4,
+      "step2b_static": 3,
+      "step2b_iforest": 3,
+      "step2b_fused": 6,
+      "total": 28
+    }
+  },
+  "known_risks": [
+    "log_error_rate là số dòng lỗi/giây, có thể tăng theo tải ở healthy-spike",
+    "bằng chứng của fused và iforest (z > 0) rộng hơn robust_z và static, nên persistence của hai detector này dễ đạt hơn",
+    "tương quan incident chỉ theo thời gian cho tới khi có đồ thị v2 (tuần 17); khi thay phải tăng incident_config_version và chọn lại bước 2a",
+    "run validation healthy-spike có trace mẫu 52,5%: báo động giả của detector dùng trace đo trên mẫu (bảng F, hệ quả (a))"
+  ]
+}

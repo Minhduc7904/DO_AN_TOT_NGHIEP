@@ -599,7 +599,7 @@ Tổng 4 cặp (window, persistence) × 3 ngưỡng = 12 tổ hợp. `late_toler
 
 Lưu ý khi đọc kết quả (không đổi pipeline): với recall chỉ có 5 mức (0/4 tới 4/4) và báo động giả đo trên khoảng 2 giờ, chênh lệch giữa các tổ hợp gần nhau không có ý nghĩa thống kê; validation chỉ dùng để chọn, kết luận lấy ở test (mục 6.3).
 
-**Còn lại cho validation, khai báo trong versioned config trước khi dùng.** Các giá trị dưới đây vẫn do validation chọn (mục 6.2, 9.2) nhưng chưa có tập ứng viên, vì detector, RCA engine và baseline chưa cài. Không gian ứng viên của từng giá trị phải được commit trong versioned config **trước** lần chạy validation đầu tiên dùng nó (tuần 16–18 của [plan-v0.4](../plan/plan-v0.4-24-weeks.md)):
+**Còn lại cho validation, khai báo trong versioned config trước khi dùng.** Phần thuộc phát hiện (Isolation Forest, điểm hợp nhất, tham số incident, ngưỡng tĩnh của E1) đã khai báo ở mục 6.1.3 (`detection-candidates.v2`). Các giá trị dưới đây vẫn do validation chọn (mục 6.2, 9.2) nhưng chưa có tập ứng viên, vì detector, RCA engine và baseline chưa cài. Không gian ứng viên của từng giá trị phải được commit trong versioned config **trước** lần chạy validation đầu tiên dùng nó (tuần 16–18 của [plan-v0.4](../plan/plan-v0.4-24-weeks.md)):
 
 - ngưỡng và hyperparameter của Isolation Forest; ngưỡng của điểm hợp nhất (fused);
 - fusion weight (hoặc equal weight làm baseline) và RCA weight;
@@ -610,6 +610,48 @@ Lưu ý khi đọc kết quả (không đổi pipeline): với recall chỉ có 
 - tie/fallback rule.
 
 Ngưỡng data-quality và luật lọc nhiễu đã chốt ở mục 6.1.1. Validation chỉ xác nhận chúng khả thi (mục 6.2), không chọn lại.
+
+### 6.1.3. Tập ứng viên v2 của phần phát hiện (25/11/2026)
+
+Khai báo ngày 25/11/2026, **trước mọi lần chấm validation** của detector, kể cả bước 1 của mục 6.1.2 (bước 1 đã đếm incident và báo động giả nên cần cả quy tắc gộp điểm lẫn tham số incident). Phiên bản `detection-candidates.v2`, file [`detection-candidates-v2.json`](../../../aiops-platform/training/configs/detection-candidates-v2.json). V2 mở rộng v1: giữ nguyên lưới window/persistence, ngưỡng robust z, luật cửa sổ không dữ liệu, `detected_at` và luật chọn bước 1. Căn cứ chỉ là 4 run train khỏe của dataset v0 và số đo pilot tuần 15; không dùng số đo nào của validation.
+
+**Thay một luật của v1 (thang đo của robust z).** Luật v1 lấy 1,4826 × MAD, rồi 1,2533 × MeanAD, rồi sàn theo đơn vị. Trên run train, MAD có lúc chỉ là sai số dấu phẩy động (8,7e-19 ở `media-worker.downstream_latency_p95`) hoặc vài phần mười mili giây, làm robust z tới 1e15 ngay trên run khỏe. Luật v2 (`mad|meanad|unit_floor.v2`) giữ thứ tự đó nhưng **thang đo không nhỏ hơn sàn theo đơn vị**: sàn là thay đổi nhỏ nhất coi là có nghĩa, nên cũng là thang đo nhỏ nhất hợp lý. Trên 2 run train `normal-mixed` với cùng config phát triển, robust z đi từ 2 incident (một incident gồm 6 service kéo dài 20 phút) xuống 1. Baseline theo luật v2 là `dataset-v0-w60.json` và `dataset-v0-w30.json`; `dataset-v0.json` (luật v1) chỉ giữ để tái lập tuần 15.
+
+**Luật cố định (không chọn trên validation)**, đã cài ở `aiops_training/anomaly/` và `incident/` (task-01, task-03 tuần 16):
+
+| Luật | Nội dung |
+| --- | --- |
+| Tín hiệu (`signals.v1`) | Lỗi, độ trễ, hàng đợi ứ, mất consumer của service, cạnh và hàng đợi. Không dùng tín hiệu tải (`request_rate`, `call_count`, CPU, bộ nhớ); trace chỉ dùng `trace_error_rate` (bảng F, hệ quả (c)) |
+| Gộp về service | Cạnh về phía gọi, hàng đợi về consumer; điểm robust z của service = max z có hướng trên các thực thể. `consumers` chỉ xét hàng đợi không phải dead-letter |
+| `telemetry_silent` | Luôn vượt ngưỡng ở cả bốn detector, không đi qua z |
+| Cửa sổ không dữ liệu | `flagged` rỗng khi service không có giá trị triệu chứng nào. Persistence đếm **theo từng khóa bằng chứng** (`<bảng>.<cột>@<thực thể>`): cửa sổ vượt cộng vào chuỗi của các tín hiệu mà detector coi là bất thường; chuỗi của một tín hiệu chỉ đứt khi một cửa sổ quan sát được tín hiệu đó mà nó bình thường. Nhờ vậy cạnh thưa của C3 tích lũy được persistence dù service luôn có tín hiệu khác (`log_error_rate`, hàng đợi), và bằng chứng của các tín hiệu khác nhau không cộng dồn |
+| Bằng chứng theo detector | Ngưỡng tĩnh: tín hiệu vượt ngưỡng riêng; robust z: z vượt ngưỡng; fused, Isolation Forest: z > 0 |
+| Fallback của fused | Chỉ bỏ modality không có giá trị nào trong cửa sổ, chuẩn hóa lại trọng số |
+| Isolation Forest | Một model mỗi service và mỗi độ dài cửa sổ, fit trên 4 run train khỏe; `n_estimators` 200, `max_samples` 256, seed 20260819; không tune vì 6 run validation không đủ để chọn thêm chiều |
+| Recovery | `window / 15 + 1` cửa sổ không vượt có dữ liệu (3 với cửa sổ 30 s, 5 với 60 s), đối xứng với persistence nhỏ nhất của v1 |
+| Cửa sổ tương quan | 300 s: triệu chứng của cùng fault lộ cách nhau tới vài phút (C3 job đến muộn 275–305 s; C4 lan sang `media-worker`, `gateway`), vẫn ngắn hơn khoảng 720 s trước fault |
+
+**Bước 1** chạy lưới 12 tổ hợp robust z của v1 với merge gap 120 s và `max_chain_gap_seconds` 120 s (giá trị nhỏ của tập bước 2a).
+
+**Bước 2a, tham số incident dùng chung**, chọn bằng robust z với window/persistence/ngưỡng của bước 1, rồi cố định cho cả bốn detector của E1:
+
+- `merge_gap_seconds` ∈ {120, 300} và `max_chain_gap_seconds` ∈ {120, 300}. C3 có 11–15 lời gọi provider trong 900 s cửa sổ fault, cách nhau trung bình 60–82 s; 120 s nối được các lời gọi liên tiếp, 300 s chịu được khoảng trống dài giữa các đợt job. Merge gap phải lớn hơn khoảng cách đó cộng thời gian recovery để một fault không tách thành nhiều incident.
+
+**Bước 2b, ngưỡng của ba detector còn lại**, mỗi detector độc lập, với window/persistence và tham số incident đã cố định:
+
+| Detector | Ứng viên | Lý do |
+| --- | --- | --- |
+| Ngưỡng tĩnh | 3 bộ ngưỡng `strict`, `medium`, `loose`: tỉ lệ lỗi (service, trace, cạnh, timeout) 1% / 5% / 10%; latency p95 (service, downstream, cạnh) 0,5 / 1 / 2 s; message sẵn sàng 50 / 100 / 200; chờ ack 20 / 50 / 100; consumer < 1 | Mô phỏng cảnh báo vận hành thủ công ở mức thường gặp, không học từ dữ liệu. Không đặt ngưỡng cho `log_error_rate` (dòng/giây, phụ thuộc tải) |
+| Isolation Forest | Ngưỡng = phân vị q ∈ {99,5%; 99,9%; 100%} của điểm cửa sổ trên 4 run train khỏe (sau warm-up, bỏ cửa sổ im lặng và không dữ liệu), tính bằng chính model đã fit | Ngưỡng cố định 0,6 của config phát triển cho 1–3 incident mỗi run train khỏe. Trên train cửa sổ 60 s, ba phân vị là 0,785 / 0,828 / 0,849 (minh họa thang điểm; giá trị thật tính lại theo cửa sổ được chọn) |
+| Điểm hợp nhất | Trọng số {bằng nhau; 0,4/0,4/0,2} × ngưỡng phân vị q ∈ {99,5%; 99,9%; 100%} như Isolation Forest, tính riêng cho từng bộ trọng số | Trọng số bằng nhau là baseline bắt buộc (blueprint 9.7); 0,4/0,4/0,2 là giá trị khởi điểm của blueprint 17.3 |
+
+**Luật chọn** giống bước 1 của mục 6.1.2: điều kiện báo động giả ≤ 1 incident/giờ (mẫu số theo `detection-evaluation.v1`); trong các tổ hợp đạt, nhiều fault run có incident khớp nhất; hòa thì ít báo động giả/giờ hơn; hòa tiếp thì ngưỡng "lớn hơn" (ngưỡng tĩnh: `loose` > `medium` > `strict`; Isolation Forest và fused: phân vị lớn hơn, fused ưu tiên trọng số bằng nhau; incident: merge gap lớn hơn rồi `max_chain_gap_seconds` nhỏ hơn). Không tổ hợp nào đạt điều kiện thì chọn tổ hợp ít báo động giả nhất và ghi là không đạt.
+
+Tổng 28 lần chấm (12 + 4 + 3 + 3 + 6), giữ nhỏ vì recall trên validation chỉ có 5 mức và báo động giả đo trên khoảng 2 giờ (mục 6.1.2).
+
+**Rủi ro biết trước** (ghi trong file v2): `log_error_rate` có thể tăng theo tải ở `healthy-spike`; bằng chứng của fused và Isolation Forest (z > 0) rộng hơn robust z và ngưỡng tĩnh, nên persistence của hai detector này dễ đạt hơn; tương quan incident chỉ theo thời gian tới tuần 17; trace của run validation `healthy-spike` là mẫu 52,5% (bảng F, hệ quả (a)).
+
+Mọi lần chấm validation chạy trên commit chứa merge commit của PR khai báo v2 trên `main`, và được ghi vào ledger chấm validation (task-06 tuần 16).
 
 ### 6.2. Validation
 
