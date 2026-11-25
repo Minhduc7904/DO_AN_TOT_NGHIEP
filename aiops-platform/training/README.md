@@ -129,7 +129,8 @@ Quy tắc dùng chung (chi tiết ở docstring `anomaly/signals.py`, `anomaly/d
 
 `configs/detector-dev-v1.json` chỉ là giá trị phát triển để kiểm code chạy đúng. Ngưỡng dùng cho validation và test khai báo ở `detection-candidates.v2` và chọn ở task-06 tuần 16.
 
-<<<<<<< HEAD
+Số đo (25/11/2026, `/usr/bin/time`, baseline luật thang đo v2): `fit-iforest` trên 4 run train 6,9–7,0 s, RSS 255–266 MB (cửa sổ 60 s: 668 cửa sổ mỗi service; 30 s: tương tự); `detect` trên một run 48 phút (2.101–2.123 cặp cửa sổ–service) 2–11 s, RSS 230–270 MB mỗi detector. Chạy hết chuỗi feature → detector → incident → harness trên 4 fault run pilot (C2, C3, C4, C6) và 1 run pilot khỏe với config phát triển: ngưỡng tĩnh, robust z, fused khớp 4/4 fault run, không báo giả; Isolation Forest ngưỡng 0,6 báo giả 4,4 lần/giờ. Pilot chỉ dùng để kiểm code, không để chọn ngưỡng.
+
 ## Incident lifecycle (`incident/`)
 
 ```bash
@@ -143,9 +144,6 @@ uv run aiops-training incidents <dir>/anomalies-robust_z.parquet --config config
 - **Record `incident-record.v1`:** `threshold` của detector; `incident_id` xác định (băm run, detector, ngưỡng, phiên bản và sha256 nội dung config detector/incident, window/persistence, cửa sổ mở); `open_at_run_end`, `duration_s` để chẩn đoán incident gộp quá rộng, `affected_services`, `first_symptom`, `trigger_reason`, `peak_score` (vô cùng ghi `peak_score_infinite`), từng đợt và timeline trỏ tới (service, tín hiệu, thực thể, cửa sổ, điểm), lineage tới detector, feature, baseline, model.
 
 `configs/incident-dev-v1.json` chỉ là giá trị phát triển; tham số incident khai báo ở `detection-candidates.v2`.
-=======
-Số đo (25/11/2026, `/usr/bin/time`, baseline luật thang đo v2): `fit-iforest` trên 4 run train 6,9–7,0 s, RSS 255–266 MB (cửa sổ 60 s: 668 cửa sổ mỗi service; 30 s: tương tự); `detect` trên một run 48 phút (2.101–2.123 cặp cửa sổ–service) 2–11 s, RSS 230–270 MB mỗi detector. Chạy hết chuỗi feature → detector → incident → harness trên 4 fault run pilot (C2, C3, C4, C6) và 1 run pilot khỏe với config phát triển: ngưỡng tĩnh, robust z, fused khớp 4/4 fault run, không báo giả; Isolation Forest ngưỡng 0,6 báo giả 4,4 lần/giờ. Pilot chỉ dùng để kiểm code, không để chọn ngưỡng.
->>>>>>> feat/week-16/task-01-build-anomaly-detectors
 
 ## Cách export bảo vệ Tempo
 
