@@ -5,6 +5,7 @@
     "persistence_windows": 5,
     "recovery_windows": 4,
     "merge_gap_seconds": 120,
-    "correlation_window_seconds": 300
+    "correlation_window_seconds": 300,
+    "max_chain_gap_seconds": 120
   }
 }

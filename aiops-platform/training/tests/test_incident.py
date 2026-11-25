@@ -43,6 +43,7 @@ def _config(**overrides) -> IncidentConfig:
         "recovery_windows": 2,
         "merge_gap_seconds": 60,
         "correlation_window_seconds": 120,
+        "max_chain_gap_seconds": 600,
     }
     values.update(overrides)
     return IncidentConfig(**values)
@@ -141,6 +142,31 @@ def test_evidence_of_different_signals_does_not_accumulate():
     assert _episodes("xxlxx" + "....", config=five) == []
     (episode,) = _episodes("xxoxoxox....", config=five)
     assert episode.evidence_key == "edge.duration_p95@course|dep"
+
+
+def test_old_chain_restarts_after_max_gap():
+    # Cạnh thưa: lời gọi chậm (4 cửa sổ), 20 phút không có lời gọi, lời gọi chậm nữa (4 cửa sổ).
+    pattern = "xxxx" + "o" * 80 + "xxxx" + "...."
+    assert (
+        _episodes(pattern, config=_config(persistence_windows=5, max_chain_gap_seconds=120)) == []
+    )
+    # Không giới hạn (khoảng lớn hơn 20 phút): hai sự kiện đơn lẻ cộng thành một chuỗi.
+    (episode,) = _episodes(
+        pattern, config=_config(persistence_windows=5, max_chain_gap_seconds=3600)
+    )
+    assert episode.estimated_start_time == _end(0) - timedelta(seconds=STEP)
+    # C3 thật: hai lời gọi cách nhau 75 s (khoảng giữa hai cửa sổ vượt ≈ 30 s) vẫn nối được.
+    (c3,) = _episodes(
+        "xxxxoxxxx....", config=_config(persistence_windows=5, max_chain_gap_seconds=120)
+    )
+    assert c3.evidence_key == "edge.duration_p95@course|dep"
+
+
+def test_flagged_window_without_evidence_is_rejected():
+    window = _windows("x")[0]
+    bad = WindowScore(**{**window.__dict__, "evidence_keys": frozenset()})
+    with pytest.raises(ValueError, match="evidence_keys"):
+        service_episodes([bad], _config(), STEP, DELAY)
 
 
 def test_flagged_window_without_named_signal_is_broken_by_any_normal_window():
@@ -312,6 +338,8 @@ def test_config_validation():
         _config(persistence_windows=0)
     with pytest.raises(ValueError):
         _config(merge_gap_seconds=-1)
+    with pytest.raises(ValueError):
+        _config(max_chain_gap_seconds=-1)
 
 
 # --- Hết chuỗi feature → detector → incident ------------------------------------------------------
@@ -327,6 +355,13 @@ def test_cli_builds_incidents_from_detector_output_without_ground_truth(tmp_path
     detect(fault, RobustZ(threshold=4), out, config={"threshold": 4})
     config = Path(__file__).parents[1] / "configs" / "incident-dev-v1.json"
     anomalies = out / "anomalies-robust_z.parquet"
+    # Đầu ra detector schema cũ (thiếu cột bằng chứng) bị từ chối thay vì ra 0 incident.
+    manifest_path = anomalies.with_suffix(".json")
+    original = manifest_path.read_text(encoding="utf-8")
+    manifest_path.write_text(original.replace("anomaly-record.v2", "anomaly-record.v1"), "utf-8")
+    with pytest.raises(ValueError, match="schema"):
+        main(["incidents", str(anomalies), "--config", str(config)])
+    manifest_path.write_text(original, "utf-8")
     # Đầu ra detector không có phiên bản config: không dùng được cho harness → từ chối.
     with pytest.raises(ValueError, match="detector_config_version"):
         main(["incidents", str(anomalies), "--config", str(config)])

@@ -25,6 +25,7 @@ from typing import Any
 
 import pyarrow.parquet as pq
 
+from ..anomaly.run import ANOMALY_SCHEMA_VERSION
 from .lifecycle import (
     INCIDENT_SCHEMA,
     IncidentConfig,
@@ -48,6 +49,7 @@ def load_config(path: Path) -> IncidentConfig:
         recovery_windows=int(section["recovery_windows"]),
         merge_gap_seconds=float(section["merge_gap_seconds"]),
         correlation_window_seconds=float(section["correlation_window_seconds"]),
+        max_chain_gap_seconds=float(section["max_chain_gap_seconds"]),
     )
 
 
@@ -77,6 +79,15 @@ def build_incidents(
     """`anomalies`: `anomalies-<detector>.parquet`; manifest `.json` cùng tên nằm cạnh."""
     manifest_path = anomalies.with_suffix(".json")
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    if manifest.get("schema") != ANOMALY_SCHEMA_VERSION:
+        raise ValueError(
+            f"{manifest_path}: schema {manifest.get('schema')}, cần {ANOMALY_SCHEMA_VERSION} "
+            "(đầu ra detector cũ không có cột bằng chứng: chạy lại detect)"
+        )
+    columns = set(pq.read_schema(anomalies).names)
+    missing = {"top_key", "evidence_keys", "observed_keys"} - columns
+    if missing:
+        raise ValueError(f"{anomalies}: thiếu cột {sorted(missing)}")
     if not isinstance(manifest.get("detector_config_version"), str):
         # Harness so khớp tổ hợp theo phiên bản config; record không có phiên bản thì không dùng
         # được để chọn trên validation.

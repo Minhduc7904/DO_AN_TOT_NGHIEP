@@ -15,6 +15,9 @@ hoàn toàn theo config:
   - cửa sổ không quan sát được khóa (cạnh thưa không có lời gọi, như C3), hoặc `flagged` rỗng
     (service không có giá trị triệu chứng nào), không cộng cũng không làm đứt chuỗi của khóa đó.
 
+  - hai cửa sổ vượt liên tiếp của cùng khóa cách nhau quá `max_chain_gap_seconds` thì chuỗi của
+    khóa bắt đầu lại.
+
   Bằng chứng của các tín hiệu khác nhau không cộng dồn với nhau: 3 cửa sổ vượt do cạnh thưa rồi
   2 cửa sổ vượt do log là hai chuỗi dài 3 và 2, không phải một chuỗi dài 5.
 - `NORMAL` + cửa sổ vượt → `SUSPECTED` (có ít nhất một chuỗi). Khi mọi chuỗi đứt → `NORMAL`.
@@ -66,12 +69,21 @@ class IncidentConfig:
     recovery_windows: int
     merge_gap_seconds: float
     correlation_window_seconds: float
+    #: Khoảng tối đa giữa hai cửa sổ vượt liên tiếp **của cùng một khóa bằng chứng** (tính theo
+    #: `window_end`). Quá khoảng này thì chuỗi của khóa bắt đầu lại: hai sự kiện đơn lẻ trên một
+    #: cạnh thưa cách nhau lâu không cộng thành một chuỗi (persistence vẫn lọc được sự kiện đơn lẻ).
+    max_chain_gap_seconds: float
 
     def __post_init__(self) -> None:
         if self.persistence_windows < 1 or self.recovery_windows < 1:
             raise ValueError("persistence_windows và recovery_windows phải ≥ 1")
-        if self.merge_gap_seconds < 0 or self.correlation_window_seconds < 0:
-            raise ValueError("merge_gap_seconds và correlation_window_seconds phải ≥ 0")
+        if (
+            min(self.merge_gap_seconds, self.correlation_window_seconds, self.max_chain_gap_seconds)
+            < 0
+        ):
+            raise ValueError(
+                "merge_gap_seconds, correlation_window_seconds, max_chain_gap_seconds phải ≥ 0"
+            )
 
 
 @dataclass(frozen=True)
@@ -138,6 +150,7 @@ def service_episodes(
     episodes: list[Episode] = []
     state = "NORMAL"
     chains: dict[str, list[WindowScore]] = {}
+    max_gap = timedelta(seconds=config.max_chain_gap_seconds)
     quiet = 0
     current: Episode | None = None
     for window in sorted(windows, key=lambda w: w.window_start):
@@ -147,8 +160,15 @@ def service_episodes(
             evidence = window.evidence_keys if window.flagged else frozenset()
             for key in [k for k in chains if k in window.observed_keys and k not in evidence]:
                 del chains[key]  # tín hiệu có dữ liệu và bình thường: chuỗi của nó đứt
+            if window.flagged and not evidence:
+                raise ValueError(
+                    f"{window.service} {window.window_start}: cửa sổ vượt không có evidence_keys"
+                )
             for key in evidence:
-                chains.setdefault(key, []).append(window)
+                chain = chains.setdefault(key, [])
+                if chain and (window.window_end - chain[-1].window_end) > max_gap:
+                    chain.clear()  # chuỗi quá cũ: bắt đầu lại từ cửa sổ này
+                chain.append(window)
             state = "SUSPECTED" if chains else "NORMAL"
             reached = [k for k, chain in chains.items() if len(chain) >= config.persistence_windows]
             if reached:
@@ -260,8 +280,10 @@ def correlate(
                 "affected_services": sorted({e.service for e in group}),
                 "first_symptom": {
                     "service": first.service,
-                    "signal": first.first.top_signal,
-                    "entity": first.first.top_entity,
+                    "signal": (first.evidence_key or "").split("@")[0] or first.first.top_signal,
+                    "entity": (first.evidence_key or "@").split("@", 1)[1]
+                    or first.first.top_entity,
+                    "evidence_key": first.evidence_key,
                     "window_start": _iso(first.first.window_start),
                     "window_end": _iso(first.first.window_end),
                     "score": _finite(first.first.score),
