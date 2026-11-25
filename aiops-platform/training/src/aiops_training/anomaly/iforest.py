@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -60,8 +61,14 @@ def fit_models(
     feature_dirs: dict[str, Path],
     hyperparameters: dict[str, Any] | None = None,
     seed: int = DEFAULT_SEED,
+    provenance: dict[str, Any] | None = None,
 ) -> tuple[dict[str, IsolationForest], dict[str, Any]]:
-    """`feature_dirs`: `run_id → thư mục feature đã apply-baseline` của run train khỏe."""
+    """`feature_dirs`: `run_id → thư mục feature đã apply-baseline` của run train khỏe.
+
+    Scaler (baseline) phải được fit trên **đúng** các run này: `baseline_fit_runs` trong
+    `baseline-apply.json` của mọi run phải bằng tập `feature_dirs`. `provenance` (detector config
+    version, code commit, dataset…) được chép vào metadata.
+    """
     if not feature_dirs:
         raise ValueError("Cần ít nhất một run train để fit")
     params = {**DEFAULT_HYPERPARAMETERS, **(hyperparameters or {})}
@@ -85,6 +92,14 @@ def fit_models(
         raise ValueError(
             f"Run train phải cùng một baseline đã ghi sha256: {sorted(map(str, baselines))}"
         )
+    scaler_runs = {
+        tuple(sorted(entry.get("baseline_fit_runs") or [])) for entry in applied.values()
+    }
+    if scaler_runs != {tuple(sorted(feature_dirs))}:
+        raise ValueError(
+            f"Baseline (scaler) fit trên {sorted(scaler_runs)}, "
+            f"model fit trên {sorted(feature_dirs)}"
+        )
     models: dict[str, IsolationForest] = {}
     counts: dict[str, int] = {}
     for service, matrix in sorted(rows.items()):
@@ -100,6 +115,7 @@ def fit_models(
         models[service] = model
         counts[service] = len(matrix)
     metadata = {
+        **(provenance or {}),
         "schema": MODEL_SCHEMA,
         "signal_set_version": SIGNAL_SET_VERSION,
         "feature_order": [signal.name for signal in SIGNALS],
@@ -122,6 +138,21 @@ def fit_models(
         "score": "-score_samples, (0, 1], cao hơn là bất thường hơn",
     }
     return models, metadata
+
+
+def code_provenance(training_dir: Path) -> dict[str, Any]:
+    """Commit của code và cờ có thay đổi chưa commit trong `aiops-platform/training`."""
+
+    def git(*args: str) -> str:
+        result = subprocess.run(
+            ["git", "-C", str(training_dir), *args], capture_output=True, text=True, check=False
+        )
+        return result.stdout.strip() if result.returncode == 0 else ""
+
+    return {
+        "code_commit": git("rev-parse", "HEAD") or None,
+        "code_dirty": bool(git("status", "--porcelain", "--", ".")),
+    }
 
 
 def save_models(models: dict[str, IsolationForest], metadata: dict[str, Any], out: Path) -> dict:
@@ -162,8 +193,8 @@ class IForestDetector:
         components = _modality_scores(window)
         estimator = models.get(window.service)
         if estimator is None:
-            # Service không có cửa sổ train nào: không đủ căn cứ.
-            return Score(None, None, "no_data", components)
+            # Service không có cửa sổ train nào: không có căn cứ để vượt (không phải cửa sổ null).
+            return Score(None, False, "below_threshold", components)
         value = float(-estimator.score_samples(np.asarray([vector(window)], dtype=float))[0])
         _, obs = _max_z(window.observations)
         flagged, reason = _decide(value, self.threshold)

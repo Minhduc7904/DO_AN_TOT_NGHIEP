@@ -14,7 +14,8 @@
   export của run.
 
 Quy tắc chung (`signals.py`): cửa sổ im lặng (`telemetry_silent`) **luôn** vượt ngưỡng ở cả bốn loại
-điểm với `reason = "telemetry_silent"` và điểm rỗng; cửa sổ không có dữ liệu có `flagged = None`
+điểm với `reason = "telemetry_silent"` và điểm rỗng; `flagged = None` **chỉ** khi service không có
+giá trị triệu chứng nào (cùng nghĩa ở cả bốn detector; luật null theo từng tín hiệu ở lifecycle)
 (không bất thường, không làm đứt persistence).
 """
 
@@ -92,6 +93,11 @@ class StaticThreshold:
     threshold: float = 1.0
     name: str = "static"
 
+    def __post_init__(self) -> None:
+        bad = {name: limit for name, limit in self.thresholds.items() if not limit > 0}
+        if bad:
+            raise ValueError(f"Ngưỡng tĩnh phải dương: {bad}")
+
     def score(self, window: ServiceWindow) -> Score:
         early = _silent_or_empty(window)
         if early:
@@ -112,6 +118,10 @@ class StaticThreshold:
             components[modality] = ratio if current is None else max(current, ratio)
             if best is None or ratio > best:
                 best, best_obs = ratio, obs
+        if best is None:
+            # Có dữ liệu triệu chứng nhưng không tín hiệu nào có ngưỡng: không vượt (không phải
+            # cửa sổ null, để "không dữ liệu" có cùng nghĩa ở cả bốn detector).
+            return Score(None, False, "below_threshold", components)
         flagged, reason = _decide(best, self.threshold)
         return Score(best, flagged, reason, components, best_obs, best)
 
@@ -128,8 +138,9 @@ class RobustZ:
         top, obs = _max_z(window.observations)
         components = _modality_scores(window)
         if top is None:
-            # Có giá trị nhưng mọi nhóm đều thiếu baseline: không đủ căn cứ, coi như không dữ liệu.
-            return Score(None, None, "no_data", components)
+            # Có giá trị nhưng mọi nhóm đều thiếu baseline: không có căn cứ để vượt; không phải
+            # cửa sổ null (cùng nghĩa ở cả bốn detector).
+            return Score(None, False, "below_threshold", components)
         flagged, reason = _decide(top, self.threshold)
         return Score(top, flagged, reason, components, obs, top)
 
@@ -155,9 +166,11 @@ class Fused:
         present = {m: s for m, s in components.items() if s is not None and self.weights.get(m, 0)}
         total = sum(self.weights[m] for m in present)
         if not present or total == 0:
-            return Score(None, None, "no_data", components)
+            # Chỉ có modality trọng số 0: không có căn cứ để vượt (không phải cửa sổ null).
+            return Score(None, False, "below_threshold", components)
         fused = sum(self.weights[m] * s for m, s in present.items()) / total
-        _, obs = _max_z(window.observations)
+        # Tín hiệu đỉnh chỉ lấy từ modality có đóng góp vào điểm.
+        _, obs = _max_z([o for o in window.observations if o.signal.modality in present])
         flagged, reason = _decide(fused, self.threshold)
         return Score(fused, flagged, reason, components, obs, obs.z if obs else None)
 

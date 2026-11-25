@@ -18,9 +18,15 @@ bảng F, 6.1.2, 17.8 — E1 chỉ đổi detector):
   hàng đợi theo **consumer** (`consumer_service`).
 - **Im lặng:** `telemetry_silent` của service (runtime ngừng nhịp tim) là tín hiệu riêng, không
   đi qua z; `caller_silent`/`consumer_silent` là cùng cờ của runtime đó.
-- **Cửa sổ không dữ liệu:** service không có giá trị nào của tín hiệu triệu chứng (và không im lặng)
-  là cửa sổ null: không bất thường, không làm đứt persistence (`skip_without_breaking_chain`, áp ở
-  incident lifecycle).
+- **Cửa sổ không dữ liệu** (`skip_without_breaking_chain`, evaluation-protocol-v1 mục 6.1.2) xét ở
+  hai mức, như nhau cho mọi detector:
+  - service không có giá trị nào của tín hiệu triệu chứng (và không im lặng): `flagged` rỗng;
+  - mức tín hiệu: mỗi cửa sổ ghi khóa của các tín hiệu có giá trị (`observed_keys`, dạng
+    `<bảng>.<cột>@<thực thể>`) và khóa của tín hiệu làm nó vượt (`top`). Lifecycle chỉ để một
+    cửa sổ không vượt làm đứt chuỗi khi nó **quan sát được** ít nhất một tín hiệu đang là bằng chứng
+    của chuỗi; nếu mọi tín hiệu bằng chứng đều rỗng (cạnh thưa không có lời gọi, như C3) thì cửa sổ
+    là null với chuỗi đó. Tín hiệu luôn có giá trị (`log_error_rate`, hàng đợi) vì vậy không che
+    mất luật này.
 """
 
 from __future__ import annotations
@@ -32,6 +38,8 @@ from pathlib import Path
 from typing import Any
 
 import pyarrow.parquet as pq
+
+from ..features.pipeline import AVAILABLE_AFTER_S as PIPELINE_AVAILABLE_AFTER_S
 
 SIGNAL_SET_VERSION = "signals.v1"
 MODALITIES = ("metrics", "traces", "logs")
@@ -81,9 +89,9 @@ Z_FILES: dict[str, str] = {
     "edge": "edge_windows_z.parquet",
     "queue": "queue_windows_z.parquet",
 }
-#: Độ trễ thu thập của modality chậm nhất mà detector dùng (metric, mục 6.1.2): cộng vào
-#: `detected_at` ở incident lifecycle.
-AVAILABLE_AFTER_S = {"metrics": 10.0, "traces": 3.0, "logs": 2.0}
+#: Độ trễ thu thập theo modality của feature pipeline: modality chậm nhất mà detector dùng (metric
+#: 10 s, mục 6.1.2) cộng vào `detected_at` ở incident lifecycle.
+AVAILABLE_AFTER_S = PIPELINE_AVAILABLE_AFTER_S
 
 
 def directional(signal: Signal, z: float | None) -> float | None:
@@ -101,6 +109,12 @@ class Observation:
     value: float | None
     z: float | None  # z đã có hướng; None khi không có giá trị hoặc thiếu baseline
 
+    @property
+    def key(self) -> str:
+        """Khóa bằng chứng `<bảng>.<cột>@<thực thể>`: lifecycle dùng để biết cửa sổ sau có quan sát
+        được đúng tín hiệu đã làm cửa sổ trước vượt hay không (luật cửa sổ không dữ liệu)."""
+        return f"{self.signal.name}@{self.entity}"
+
 
 @dataclass
 class ServiceWindow:
@@ -115,6 +129,10 @@ class ServiceWindow:
     @property
     def has_data(self) -> bool:
         return any(obs.value is not None for obs in self.observations)
+
+    def observed_keys(self) -> list[str]:
+        """Khóa của các tín hiệu có giá trị trong cửa sổ."""
+        return sorted(obs.key for obs in self.observations if obs.value is not None)
 
     def available(self, modality: str) -> bool:
         return any(
@@ -144,6 +162,9 @@ def service_windows(features_dir: Path) -> list[ServiceWindow]:
             continue
         for row in pq.read_table(path).to_pylist():
             owner = row[OWNER[table]]
+            if not owner:
+                # Không quy được về service nào (dữ liệu thật chưa gặp): bỏ dòng, không đoán.
+                continue
             key = (row["window_start"], owner)
             window = by_key.get(key)
             if window is None:

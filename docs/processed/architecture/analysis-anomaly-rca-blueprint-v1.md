@@ -778,7 +778,8 @@ Bước này là phần đầu của chuỗi kết luận tự động: không c
 > - **Quy về service:** cạnh quy về phía gọi, hàng đợi quy về consumer. Tín hiệu `consumers` chỉ xét hàng đợi thường, vì hàng đợi dead-letter không có consumer theo thiết kế.
 > - **Worker (câu hỏi "chờ pilot" ở 9.4):** một model Isolation Forest mỗi service. Chiều không áp dụng (HTTP của worker) luôn 0 trên train nên cây không tách theo chiều đó; thực chất là vector con.
 > - **`telemetry_silent`:** luôn vượt ngưỡng ở cả bốn loại điểm, không đi qua z (evaluation-protocol-v1 mục 6.1.2).
-> - **Fallback của 9.7:** chỉ khi modality không có dữ liệu trong cửa sổ, không theo chất lượng export của run (protocol mục 6.1.1 bảng F, hệ quả (c)).
+> - **Fallback của 9.7:** chỉ khi modality không có dữ liệu trong cửa sổ; detector không đổi cách chạy theo chất lượng export của run. Trace chỉ dùng tỉ lệ `trace_error_rate`, không dùng số đếm tuyệt đối (protocol mục 6.1.1 bảng F, hệ quả (c)).
+> - **Cửa sổ không dữ liệu** (protocol mục 6.1.2) áp ở hai mức, như nhau cho cả bốn detector: `flagged` rỗng khi service không có giá trị triệu chứng nào; và ở lifecycle, cửa sổ không vượt chỉ làm đứt chuỗi khi nó quan sát được tín hiệu đang là bằng chứng của chuỗi (khóa `observed_keys`, `top_key` trong `AnomalyRecord`). Nhờ vậy cạnh thưa (C3) vẫn tích lũy được persistence dù service luôn có tín hiệu khác (`log_error_rate`, hàng đợi).
 >
 > Ngưỡng, hyperparameter và trọng số chọn trên validation trong tập ứng viên `detection-candidates.v2`. Cách chạy ở [README của training](../../../aiops-platform/training/README.md).
 

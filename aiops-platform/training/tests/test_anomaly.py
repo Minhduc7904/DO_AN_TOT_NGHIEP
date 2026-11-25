@@ -5,6 +5,7 @@ Bảng feature dựng bằng schema thật của pipeline v1; baseline fit/apply
 
 from __future__ import annotations
 
+import ast
 import json
 import math
 from datetime import UTC, datetime, timedelta
@@ -224,8 +225,12 @@ def test_static_threshold_uses_raw_values_and_direction():
     assert slow.top.signal.name == "service.latency_p95"
     lost = detector.score(_window(("queue.consumers", 0.0, -5.0)))
     assert lost.flagged is True and math.isinf(lost.score)
-    # Tín hiệu không có ngưỡng trong config bị bỏ qua.
-    assert detector.score(_window(("edge.error_ratio", 0.9, 50.0))).flagged is None
+    # Tín hiệu không có ngưỡng trong config bị bỏ qua: có dữ liệu nên là "không vượt", không phải
+    # cửa sổ null (cùng nghĩa với ba detector kia).
+    unthresholded = detector.score(_window(("edge.error_ratio", 0.9, 50.0)))
+    assert unthresholded.flagged is False and unthresholded.score is None
+    with pytest.raises(ValueError, match="dương"):
+        StaticThreshold({"service.error_rate": 0.0})
 
 
 def test_robust_z_is_max_directional_z_and_ignores_missing_baseline():
@@ -235,8 +240,10 @@ def test_robust_z_is_max_directional_z_and_ignores_missing_baseline():
     )
     assert result.flagged is True and result.score == 5.0
     assert result.top.signal.name == "service.error_rate"
-    # Giá trị có nhưng mọi nhóm thiếu baseline (z rỗng): không đủ căn cứ, không phải bất thường.
-    assert detector.score(_window(("edge.error_ratio", 0.5, None))).reason == "no_data"
+    # Giá trị có nhưng mọi nhóm thiếu baseline (z rỗng): không có căn cứ để vượt, và không phải
+    # cửa sổ null vì service có dữ liệu.
+    missing = detector.score(_window(("edge.error_ratio", 0.5, None)))
+    assert missing.flagged is False and missing.reason == "below_threshold"
     assert detector.score(_window(("service.error_rate", 0.0, 2.9))).flagged is False
 
 
@@ -338,36 +345,88 @@ def test_fit_rejects_mixed_window_lengths(tmp_path):
 # --- Chạy trên một run và CLI ---------------------------------------------------------------------
 
 
-def test_detect_writes_records_with_lineage_and_never_reads_ground_truth(tmp_path):
+def test_detect_writes_records_with_lineage_and_evidence_keys(tmp_path):
     fault = _feature_dir(tmp_path, "pilot-fault", silent_identity={20, 21})
     _train_and_apply(tmp_path, {"pilot-fault": fault})
-    # Ground truth nằm cạnh run nhưng hỏng: detector không được đọc nó.
-    (fault.parent.parent / "ground-truth.json").write_text("{not json", encoding="utf-8")
     out = tmp_path / "out"
     manifest = detect(fault, RobustZ(threshold=4), out, config={"threshold": 4})
     rows = pq.read_table(out / "anomalies-robust_z.parquet").to_pylist()
     assert len(rows) == manifest["rows"] == 40 * 3
     silent = [r for r in rows if r["service_name"] == "identity" and r["telemetry_silent"]]
-    assert len(silent) == 2 and all(
-        r["flagged"] and r["reason"] == "telemetry_silent" for r in silent
-    )
+    assert len(silent) == 2
+    assert all(r["flagged"] and r["reason"] == "telemetry_silent" for r in silent)
+    assert {r["top_key"] for r in silent} == {"telemetry_silent@identity"}
     assert manifest["counts"]["telemetry_silent"] == 2
     assert manifest["lineage"]["baseline_sha256"] and manifest["window_s"] == 60
     assert manifest["available_after_s"] == 10.0
+    worker = next(r for r in rows if r["service_name"] == "media-worker" and not r["warmup"])
+    # Mọi cửa sổ ghi khóa im lặng và khóa của tín hiệu có giá trị; worker không có trace/HTTP.
+    assert "telemetry_silent@media-worker" in worker["observed_keys"]
+    assert "edge.duration_p95@media-worker|media-minio" in worker["observed_keys"]
+    assert (
+        "queue.consumers@media-worker|media-worker--generate-media-thumbnail-v1.error"
+        not in (worker["observed_keys"])
+    )
+    assert worker["missing_modalities"] == ["traces"]
+    assert worker["top_key"] is None  # không vượt thì không có khóa bằng chứng
 
 
-def test_detect_rejects_model_of_other_window_length(tmp_path):
+def test_constant_train_signal_uses_unit_floor_scale(tmp_path):
+    # messages_unacked hằng 0 trên train → MAD = MeanAD = 0 → thang đo = sàn 1 message, nên một
+    # message chờ ack ở run khác cho z = 1 (không phải vô cùng hay 1e15).
+    train = {name: _feature_dir(tmp_path, name) for name in ("train-a", "train-b")}
+    baseline = fit_baseline(train)
+    stat = baseline["stats"]["queue"]["media-worker|media-worker--generate-media-thumbnail-v1"][
+        "messages_unacked"
+    ]
+    assert stat["scale_basis"] == "unit_floor" and stat["scale"] == 1.0
+    window = _window(("queue.messages_unacked", 1.0, (1.0 - stat["median"]) / stat["scale"]))
+    assert RobustZ(threshold=0.5).score(window).score == pytest.approx(1.0)
+
+
+def test_detect_checks_lineage(tmp_path):
     train = _train_and_apply(tmp_path)
+    directory = train["train-a"]
     models, metadata = fit_models(train)
-    other = {**metadata, "window_s": 30, "model_sha256": "m"}
-    with pytest.raises(ValueError, match="cửa sổ"):
-        detect(
-            train["train-a"],
-            build_detector("iforest", {"threshold": 0.6}, (models, other)),
-            tmp_path / "out",
-            config={},
-            model_metadata=other,
-        )
+    detector = build_detector("iforest", {"threshold": 0.6}, (models, metadata))
+    out = tmp_path / "out"
+    for changed, message in (
+        ({"window_s": 30}, "cửa sổ"),
+        ({"baseline_sha256": "khác"}, "hai baseline"),
+        ({"feature_order": list(reversed(metadata["feature_order"]))}, "bộ tín hiệu"),
+    ):
+        with pytest.raises(ValueError, match=message):
+            detect(directory, detector, out, config={}, model_metadata={**metadata, **changed})
+    # Feature sinh lại sau apply-baseline: bảng z cũ không được dùng.
+    manifest = directory / "features-manifest.json"
+    manifest.write_text(manifest.read_text(encoding="utf-8") + " ", encoding="utf-8")
+    with pytest.raises(ValueError, match="manifest feature khác"):
+        detect(directory, RobustZ(threshold=4), out, config={})
+    (directory / "baseline-apply.json").unlink()
+    with pytest.raises(ValueError, match="apply-baseline"):
+        detect(directory, RobustZ(threshold=4), out, config={})
+
+
+def test_iforest_requires_scaler_fitted_on_the_same_runs(tmp_path):
+    train = _train_and_apply(tmp_path)
+    with pytest.raises(ValueError, match="scaler"):
+        fit_models({"train-a": train["train-a"]})
+
+
+def test_detector_and_lifecycle_never_import_ground_truth():
+    root = Path(__file__).parents[1] / "src" / "aiops_training"
+    for path in sorted((root / "anomaly").glob("*.py")):
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        imported = [
+            node.module or "" for node in ast.walk(tree) if isinstance(node, ast.ImportFrom)
+        ] + [
+            alias.name
+            for node in ast.walk(tree)
+            if isinstance(node, ast.Import)
+            for alias in node.names
+        ]
+        assert not any("ground_truth" in name or "evaluation" in name for name in imported), path
+        assert "ground-truth.json" not in path.read_text(encoding="utf-8"), path
 
 
 def test_cli_fit_iforest_and_detect_end_to_end(tmp_path, capsys):
@@ -381,25 +440,27 @@ def test_cli_fit_iforest_and_detect_end_to_end(tmp_path, capsys):
     ] + [{"slot_id": "v0", "split": "validation", "case": "C2", "run_id": "validation-x"}]
     dataset.write_text(json.dumps({"dataset_id": "ds", "slots": slots}), encoding="utf-8")
     model = tmp_path / "models" / "iforest-w60.joblib"
-    assert (
-        main(
-            [
-                "fit-iforest",
-                "--dataset",
-                str(dataset),
-                "--runs-dir",
-                str(runs),
-                "--features-subdir",
-                "telemetry/features",
-                "--out",
-                str(model),
-            ]
-        )
-        == 0
-    )
+    config = Path(__file__).parents[1] / "configs" / "detector-dev-v1.json"
+    fit = [
+        "fit-iforest",
+        "--dataset",
+        str(dataset),
+        "--runs-dir",
+        str(runs),
+        "--features-subdir",
+        "telemetry/features",
+        "--out",
+        str(model),
+        "--config",
+        str(config),
+    ]
+    assert main(fit) == 0
     fitted = json.loads(model.with_suffix(".joblib.json").read_text(encoding="utf-8"))
     assert fitted["fit_runs"] == ["train-a", "train-b"]  # run validation không vào fit
-    config = Path(__file__).parents[1] / "configs" / "detector-dev-v1.json"
+    # Artifact đủ trường của blueprint mục 9.4.
+    assert fitted["detector_config_version"] == "detector-dev.v1"
+    assert fitted["seed"] == 20260819 and fitted["hyperparameters"]["n_estimators"] == 200
+    assert "code_commit" in fitted and "code_dirty" in fitted
     for name in ("static", "robust_z", "fused", "iforest"):
         args = ["detect", str(train["train-a"]), "--detector", name, "--config", str(config)]
         assert main(args + (["--model", str(model)] if name == "iforest" else [])) == 0
@@ -408,4 +469,6 @@ def test_cli_fit_iforest_and_detect_end_to_end(tmp_path, capsys):
         )
         assert produced["detector_config_version"] == "detector-dev.v1"
         assert produced["detector_config_sha256"]
+        rows = pq.read_table(train["train-a"] / "anomalies" / f"anomalies-{name}.parquet")
+        assert set(rows.column("detector_config_version").to_pylist()) == {"detector-dev.v1"}
     capsys.readouterr()
