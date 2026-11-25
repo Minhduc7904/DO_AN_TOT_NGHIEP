@@ -53,6 +53,7 @@ ANOMALY_SCHEMA = pa.schema(
         # `telemetry_silent@<service>`) và khóa các tín hiệu có giá trị trong cửa sổ: lifecycle dùng
         # để áp luật cửa sổ không dữ liệu theo từng tín hiệu (`signals.py`).
         ("top_key", pa.string()),
+        ("evidence_keys", pa.list_(pa.string())),
         ("observed_keys", pa.list_(pa.string())),
         ("missing_modalities", pa.list_(pa.string())),
         ("detector_config_version", pa.string()),
@@ -117,8 +118,14 @@ def detect(
         observed = [silence_key(window.service), *window.observed_keys()]
         if result.reason == "telemetry_silent":
             top_key = silence_key(window.service)
+            evidence = [top_key]
+        elif result.flagged:
+            top_key = top.key if top is not None else None
+            # Detector không chỉ ra được tín hiệu nào: mọi tín hiệu quan sát được là bằng chứng,
+            # nên cửa sổ có dữ liệu nào sau đó cũng có thể làm đứt chuỗi.
+            evidence = list(result.evidence) or window.observed_keys()
         else:
-            top_key = top.key if top is not None and result.flagged else None
+            top_key, evidence = None, []
         rows.append(
             {
                 "run_id": window.run_id,
@@ -140,6 +147,7 @@ def detect(
                 "top_value": top.value if top else None,
                 "top_score": result.top_score,
                 "top_key": top_key,
+                "evidence_keys": evidence,
                 "observed_keys": observed,
                 "missing_modalities": [m for m in MODALITIES if not window.available(m)],
                 "detector_config_version": config.get("detector_config_version"),
