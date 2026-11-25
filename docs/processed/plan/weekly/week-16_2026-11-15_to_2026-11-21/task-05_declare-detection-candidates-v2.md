@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-05_declare-detection-candidates-v2` |
 | Tuần | `week-16_2026-11-15_to_2026-11-21` |
-| Trạng thái | Đã giao |
+| Trạng thái | Chờ review |
 | Người phụ trách | Bách |
 | Collaborator | Không có |
 | Ưu tiên | Cao |
@@ -61,22 +61,24 @@ File config mới `detection-candidates.v2` (giữ nguyên v1) và mục 6.1.2 c
 
 ## Definition of Done
 
-- [ ] Mọi giá trị "còn lại cho validation" thuộc phần phát hiện ở mục 6.1.2 có tập ứng viên trong v2, hoặc được khai báo là luật cố định có lý do.
-- [ ] Tham số incident dùng ở bước 1 và luật chọn tham số incident dùng chung cho E1 được ghi rõ.
-- [ ] Mỗi ứng viên có lý do từ train/pilot hoặc tài liệu; không trích số đo nào của validation.
-- [ ] Luật chọn và luật hòa cho từng detector ghi đủ; tổng số tổ hợp có ghi.
+- [x] Mọi giá trị "còn lại cho validation" thuộc phần phát hiện ở mục 6.1.2 có tập ứng viên trong v2, hoặc được khai báo là luật cố định có lý do.
+- [x] Tham số incident dùng ở bước 1 và luật chọn tham số incident dùng chung cho E1 được ghi rõ.
+- [x] Mỗi ứng viên có lý do từ train/pilot hoặc tài liệu; không trích số đo nào của validation.
+- [x] Luật chọn và luật hòa cho từng detector ghi đủ; tổng số tổ hợp có ghi.
 - [ ] PR được merge vào `main` trước lần chấm validation đầu tiên của task-06 (task-06 đối chiếu bằng ledger chấm validation và timeline PR).
 
 ## Liên kết hồ sơ thực hiện
 
 - Input workspace: Không tạo (giai đoạn tự bắt kịp; bằng chứng nằm trong PR).
 - Output workspace: Không tạo.
-- Pull request: Chưa tạo.
-- Kết quả review: Chưa review.
+- Pull request: [#103](https://github.com/Minhduc7904/DO_AN_TOT_NGHIEP/pull/103).
+- Kết quả review: Chờ review. Đã review bằng agent riêng ba vòng và sửa các điểm nêu (xem mô tả PR).
 
 > URL/số PR và `Chờ review` phải được commit/push vào PR head trước review. Thành viên còn lại phải gửi `APPROVED` hợp lệ trên GitHub; sau đó người phụ trách finalization metadata, ghi `Hoàn thành` trên chính branch/PR và tự merge task của mình. Card chỉ canonically hoàn thành khi commit đó vào nhánh canonical; xem [vòng đời task canonical](../../../rules/git-and-pull-request-rules.md#vòng-đời-task-canonical).
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 25/11/2026 — lập card.
+- Cập nhật gần nhất: 25/11/2026 — khai báo `detection-candidates.v2` ([config](../../../../../aiops-platform/training/configs/detection-candidates-v2.json), evaluation-protocol-v1 mục 6.1.3): luật cố định, hai luật thay v1 (thang đo `unit_floor.v2`, persistence theo khóa bằng chứng), ứng viên bước 2a/2b có `tie_rank` (28 tổ hợp, 27 lần chấm khác nhau), căn cứ incident/giờ trên 4 run train.
 - Ghi chú/tồn đọng:
+  - DoD cuối (PR merge trước lần chấm validation đầu tiên) được kiểm ở task-06 bằng ledger chấm validation.
+  - v2 mô tả code ở PR task-01 đến task-04; cả năm PR phải nằm trên `main` trước task-06.
