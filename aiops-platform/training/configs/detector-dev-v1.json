@@ -1,0 +1,26 @@
+{
+  "detector_config_version": "detector-dev.v1",
+  "status": "Giá trị phát triển để kiểm code chạy đúng trên run train/pilot. Chưa chọn và không dùng cho validation/test: tập ứng viên khai báo ở detection-candidates.v2 (task-05 tuần 16), chọn ở task-06.",
+  "detectors": {
+    "static": {
+      "thresholds": {
+        "service.error_rate": 0.05,
+        "service.latency_p95": 1.0,
+        "service.downstream_latency_p95": 1.0,
+        "service.trace_error_rate": 0.05,
+        "edge.error_ratio": 0.05,
+        "edge.timeout_ratio": 0.01,
+        "edge.duration_p95": 1.0,
+        "queue.messages_ready": 100,
+        "queue.messages_unacked": 50,
+        "queue.consumers": 1
+      }
+    },
+    "robust_z": { "threshold": 4 },
+    "iforest": { "threshold": 0.6 },
+    "fused": {
+      "threshold": 3,
+      "weights": { "metrics": 0.3333333333333333, "traces": 0.3333333333333333, "logs": 0.3333333333333333 }
+    }
+  }
+}
