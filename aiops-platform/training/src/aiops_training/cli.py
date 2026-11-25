@@ -21,6 +21,7 @@ from .features.pipeline import FeatureError, write_features
 from .ground_truth.build import build_ground_truth, read_jsonl
 from .ground_truth.symptoms import SymptomConfig, measure_from_ground_truth, measure_symptoms
 from .ground_truth.validate import apply_verification, verify
+from .incident import cli as incident_cli
 from .telemetry.adapters.loki import LokiAdapter
 from .telemetry.adapters.prometheus import PrometheusAdapter
 from .telemetry.adapters.tempo import TempoAdapter, TempoExportOptions
@@ -340,9 +341,12 @@ def main(argv: list[str] | None = None) -> int:
     _symptoms_parser(sub)
     _baseline_parsers(sub)
     anomaly_cli.register(sub)
+    incident_cli.register(sub)
     args = parser.parse_args(argv)
     if args.command in anomaly_cli.COMMANDS:
         return anomaly_cli.dispatch(args)
+    if args.command in incident_cli.COMMANDS:
+        return incident_cli.dispatch(args)
     if args.command == "symptoms":
         return _run_symptoms(args)
     if args.command == "fit-baseline":

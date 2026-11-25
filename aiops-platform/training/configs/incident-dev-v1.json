@@ -1,0 +1,10 @@
+{
+  "incident_config_version": "incident-dev.v1",
+  "status": "Giá trị phát triển để kiểm code chạy đúng trên run train/pilot. Chưa chọn và không dùng cho validation/test: persistence theo detection-candidates.v1, merge gap/recovery/cửa sổ tương quan khai báo ở detection-candidates.v2 (task-05 tuần 16).",
+  "incident": {
+    "persistence_windows": 5,
+    "recovery_windows": 4,
+    "merge_gap_seconds": 120,
+    "correlation_window_seconds": 300
+  }
+}
