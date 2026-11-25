@@ -102,7 +102,7 @@
     ],
     "reuse": "merge120-chain120 trùng tổ hợp đã chấm ở bước 1; dùng lại artifact đó, nên tổng số lần chấm khác nhau là 27",
     "reason": {
-      "merge_gap": "correlate so opened_at của đợt mới với resolved_at của đợt cũ (đã gồm recovery). Với khoảng lặng g của một fault, đợt chỉ hồi phục khi g ≥ 2W và đợt mới mở sau khoảng (P − 1) × 15 s, nên khoảng cách opened_at − resolved_at ≈ g − 2W + (P − 1) × 15. Fault bị tách thành hai incident khi khoảng này > merge gap: với W = 60, P = 5, merge 120 tách khi g > 180 s, merge 300 tách khi g > 360 s",
+      "merge_gap": "correlate so opened_at của đợt mới với resolved_at của đợt cũ (đã gồm recovery). Với khoảng lặng g của một fault, đợt chỉ hồi phục khi g ≥ 2W và đợt mới mở sau khoảng (P − 1) × 15 s, nên khoảng cách opened_at − resolved_at ≈ g − 2W + (P − 1) × 15. Fault bị tách thành hai incident khi khoảng này > merge gap và đợt mới cũng mở sau detected_at + 300 s (cửa sổ tương quan): với W = 60, P = 5, merge 120 tách khi g > 180 s, merge 300 tách khi g > 360 s",
       "max_chain_gap": "C3 ở pilot: fault 600 s, 11–15 lời gọi provider (mỗi lời gọi 30–35 s) liên tiếp sau khi job AI đầu tiên đến; 120 s chịu được 3–4 lời gọi không có dữ liệu. 300 s là giả định cho khoảng trống giữa các đợt job (pilot chưa đo khoảng này); manifest v2 dùng fault C3 900 s"
     }
   },
