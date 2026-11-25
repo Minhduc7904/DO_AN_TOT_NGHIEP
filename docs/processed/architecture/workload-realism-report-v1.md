@@ -265,6 +265,28 @@ node tools/validate-realism.mjs --profile <normal-mixed|healthy-spike> \
   - Phép so cũng vượt lô: hai run `r2` khác run dataset ở TTL (600 s), số phiên (1.111–1.462 so với 947–1.262) và code (`ba2d7da` so với `ec98a55`/`dbb9ae1`/`9daed76`). Khoảng cách của hai nguồn này vượt xa phân vị 95% (ví dụ KS D thời lượng của mức 2 thuần là 0,288 so với 0,17), nên các khác biệt trên không kéo được điểm 1,000 xuống.
   - Profile `healthy-spike` chưa có run mức 1 hay mức 2 thuần.
 
+### Bổ sung: nguồn đơn giản ở `healthy-spike` (đăng ký 25/11/2026, trước khi chạy)
+
+Phần này đăng ký cấu hình và luật kết luận cho điều kiện thứ hai của criteria-v2 mục 2 ở profile `healthy-spike`. Nó được commit và push trước khi chạy hai run dưới đây. Các run bán thực `healthy-spike` đã chấm ở bảng trên (điểm 0,499; 0,917; 0,919), nên luật đặt sau khi biết điểm bán thực nhưng trước khi có bất kỳ số đo nào của hai nguồn đơn giản.
+
+| | Mức 2 thuần | Mức 1 |
+| --- | --- | --- |
+| Cách chạy | Runner (`run-experiment.mjs`), spec `experiments/specs/realism-v2/pilot-level2-assumed-healthy-spike.json`: reset, dữ liệu seed, TTL service token 60 s, profile `healthy-spike` kèm lịch giảng viên/admin như run dataset | Reset và dữ liệu seed như runner (TTL 60 s), rồi `run-k6.sh level-1` như mục 9 |
+| Nguồn phiên | Kế hoạch `assumed-healthy-spike-k4-v1` (sha256 `ca43e8c0b2ac3e8f…`), dựng từ tham số giả định `params/student-assumed-v1.json`, không lấy ngày nào của log | `JOURNEYS=w1,w3`, `VUS_W1=3`, `VUS_W3=13`, `DURATION=48m` |
+| Seed | `workload_seed` 401 (split `pilot`, không thuộc dataset) | `SEED=402` |
+
+**Số VU của mức 1.** Mức 1 dùng VU cố định, không có profile (mục 2). Mức 1 tương ứng giữ tỉ lệ W1 : W3 = 1 : 4 của `r2` và nhân số VU để tổng request gần bằng số request học viên trung bình của ba run bán thực `healthy-spike` (37.147; 37.217; 37.000; trung bình 37.121). Ở `r2`, mỗi VU W1 sinh 1.889 request và mỗi VU W3 sinh 2.379 request trong 48 phút. Hệ số 37.121 / 11.405 = 3,26 cho 3 VU W1 và 13 VU W3, dự kiến khoảng 36.600 request. Đại lượng mức phiên của mức 1 không phụ thuộc số VU; số VU chỉ đổi số phiên quan sát, tức cỡ mẫu của nhóm tham chiếu.
+
+**Chấm:** `validate-realism.mjs --profile healthy-spike`, cùng hold-out, pool 16 ngày và mã chấm như các run dataset `healthy-spike` ở bảng trên.
+
+**Luật kết luận (chốt trước khi chạy):**
+
+- Được viết "traffic học viên bán thực `healthy-spike` giống thật theo tiêu chí v2" khi điểm v2 của **cả hai** nguồn đơn giản **lớn hơn** 0,919, tức điểm lớn nhất của ba run bán thực `healthy-spike`.
+- Nếu một nguồn có điểm ≤ 0,919 thì không viết, và ghi nguyên kết quả.
+- Mỗi nguồn chấm đúng một run. Chỉ chạy lại khi run hỏng ở gate thực thi vì lỗi hạ tầng, không chạy lại vì điểm. Run hỏng vẫn giữ trong ledger hoặc thư mục kết quả.
+
+**Giới hạn biết trước:** mỗi nguồn một run, một seed. Run mức 1 chạy ngoài runner nên không có dòng ledger, giống `r2`.
+
 ## 12. Kết luận theo v1 và v2
 
 - **Theo v1** (ngưỡng cố định, mục 1): **chưa đạt** ở run nào, gồm `r2` và cả 10 run dataset. Vẫn không được dùng cụm "giống thật" theo v1.

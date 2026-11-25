@@ -1,0 +1,12 @@
+{
+  "schema": "run-spec.v1",
+  "split": "pilot",
+  "repeat_index": 0,
+  "workload": {
+    "profile": "healthy-spike",
+    "seed": 401,
+    "plan": "data/plans/assumed-healthy-spike-k4-v1.json"
+  },
+  "fault": null,
+  "notes": "Nguồn đơn giản mức 2 thuần ở healthy-spike cho kết luận độ thực v2 (workload-realism-report-v1 mục 11, phần bổ sung); không thuộc dataset."
+}
