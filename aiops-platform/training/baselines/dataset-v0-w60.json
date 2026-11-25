@@ -1,0 +1,2757 @@
+{
+  "schema": "feature-baseline.v2",
+  "feature_config_version": "feature.v1",
+  "noise_filter_version": "noise.v1",
+  "window_s": 60,
+  "fit_runs": [
+    "train-healthy-healthy-spike-s1003-20261123t224223z",
+    "train-healthy-healthy-spike-s1004-20261124t002521z",
+    "train-healthy-normal-mixed-s1001-20261123t102740z",
+    "train-healthy-normal-mixed-s1002-20261123t113109z"
+  ],
+  "fit_inputs_sha256": {
+    "train-healthy-healthy-spike-s1003-20261123t224223z": "debe6cadec94a98ebaee47845080c8859cc7bf48cb50032998ca233a45477b66",
+    "train-healthy-healthy-spike-s1004-20261124t002521z": "408e07ca5ddc6ce2e8e2406657ae06d18b6014bbbd825400fd4147069dfb2d77",
+    "train-healthy-normal-mixed-s1001-20261123t102740z": "6a4655efb1711f5ee76b1a8ee8fa0023b7ccd629df6375454a63a8981a728207",
+    "train-healthy-normal-mixed-s1002-20261123t113109z": "20f0b7e089c8b403751cd923165758426361324541b6addb17c983b4afc879d7"
+  },
+  "scale_rule": "mad|meanad|unit_floor.v2",
+  "unit_floor": {
+    "ratio": 0.01,
+    "seconds": 0.01,
+    "per_second": 0.05,
+    "calls": 1.0,
+    "messages": 1.0,
+    "consumers": 0.2,
+    "cpu_seconds_per_second": 0.01,
+    "memory_bytes": 1048576.0
+  },
+  "excluded_windows": [
+    "warmup",
+    "telemetry_silent/caller_silent/consumer_silent"
+  ],
+  "dataset_id": "dataset-v0",
+  "dataset_manifest_sha256": "e42e093703ea5c7da1cfecced04901fca6bce2cb02834d3e17231e59af45efb2",
+  "stats": {
+    "service": {
+      "ai": {
+        "request_rate": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.03143712574850299,
+          "scale": 0.05,
+          "scale_basis": "unit_floor>meanad",
+          "n": 668
+        },
+        "cpu_usage": {
+          "median": 0.002157575,
+          "mad": 0.0002891083333333319,
+          "meanad": 0.0005153268712574852,
+          "scale": 0.01,
+          "scale_basis": "unit_floor>mad",
+          "n": 668
+        },
+        "memory_usage": {
+          "median": 146149376.0,
+          "mad": 2414592.0,
+          "meanad": 9548652.838323353,
+          "scale": 3579874.0991999996,
+          "scale_basis": "mad",
+          "n": 668
+        },
+        "log_error_rate": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.05,
+          "scale_basis": "unit_floor",
+          "n": 668
+        },
+        "trace_error_rate": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.01,
+          "scale_basis": "unit_floor",
+          "n": 191
+        },
+        "error_rate": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.01,
+          "scale_basis": "unit_floor",
+          "n": 201
+        },
+        "latency_p50": {
+          "median": 0.0033333333333333335,
+          "mad": 0.0004166666666666663,
+          "meanad": 0.0005569705653660878,
+          "scale": 0.01,
+          "scale_basis": "unit_floor>mad",
+          "n": 201
+        },
+        "latency_p95": {
+          "median": 0.01674999999999999,
+          "mad": 0.006375000000000009,
+          "meanad": 0.006649253731343283,
+          "scale": 0.01,
+          "scale_basis": "unit_floor>mad",
+          "n": 201
+        },
+        "latency_p99": {
+          "median": 0.02335000000000001,
+          "mad": 0.0012749999999999914,
+          "meanad": 0.007479104477611941,
+          "scale": 0.01,
+          "scale_basis": "unit_floor>mad",
+          "n": 201
+        },
+        "downstream_latency_p95": {
+          "median": 0.00475,
+          "mad": 0.0,
+          "meanad": 0.00046951993221325847,
+          "scale": 0.01,
+          "scale_basis": "unit_floor>meanad",
+          "n": 201
+        }
+      },
+      "ai-worker": {
+        "request_rate": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.05,
+          "scale_basis": "unit_floor",
+          "n": 668
+        },
+        "cpu_usage": {
+          "median": 0.0010765999999999905,
+          "mad": 0.00018484999999999005,
+          "meanad": 0.00040481419660678644,
+          "scale": 0.01,
+          "scale_basis": "unit_floor>mad",
+          "n": 668
+        },
+        "memory_usage": {
+          "median": 140427264.0,
+          "mad": 5595136.0,
+          "meanad": 11350157.029940119,
+          "scale": 8295348.633599999,
+          "scale_basis": "mad",
+          "n": 668
+        },
+        "log_error_rate": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.05,
+          "scale_basis": "unit_floor",
+          "n": 668
+        },
+        "trace_error_rate": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.01,
+          "scale_basis": "unit_floor",
+          "n": 242
+        },
+        "downstream_latency_p95": {
+          "median": 0.03499999999999997,
+          "mad": 0.007500000000000014,
+          "meanad": 0.011158697168693506,
+          "scale": 0.01111950000000002,
+          "scale_basis": "mad",
+          "n": 248
+        }
+      },
+      "course": {
+        "request_rate": {
+          "median": 5.725,
+          "mad": 3.2250000000000005,
+          "meanad": 4.6467065868263475,
+          "scale": 4.781385,
+          "scale_basis": "mad",
+          "n": 668
+        },
+        "error_rate": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.01,
+          "scale_basis": "unit_floor",
+          "n": 659
+        },
+        "latency_p50": {
+          "median": 0.0031026785714285713,
+          "mad": 0.00022321428571428535,
+          "meanad": 0.0005592091524051901,
+          "scale": 0.01,
+          "scale_basis": "unit_floor>mad",
+          "n": 659
+        },
+        "latency_p95": {
+          "median": 0.020058823529411757,
+          "mad": 0.0016966739967014775,
+          "meanad": 0.0024658976448806743,
+          "scale": 0.01,
+          "scale_basis": "unit_floor>mad",
+          "n": 659
+        },
+        "latency_p99": {
+          "median": 0.02405178571428571,
+          "mad": 0.0003386278195488604,
+          "meanad": 0.0010082728596493675,
+          "scale": 0.01,
+          "scale_basis": "unit_floor>mad",
+          "n": 659
+        },
+        "cpu_usage": {
+          "median": 0.017299666666666654,
+          "mad": 0.008147258333333355,
+          "meanad": 0.01064806778942116,
+          "scale": 0.012079125205000032,
+          "scale_basis": "mad",
+          "n": 668
+        },
+        "memory_usage": {
+          "median": 176121856.0,
+          "mad": 12103680.0,
+          "meanad": 18489951.04191617,
+          "scale": 17944915.968,
+          "scale_basis": "mad",
+          "n": 668
+        },
+        "trace_error_rate": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.01,
+          "scale_basis": "unit_floor",
+          "n": 658
+        },
+        "downstream_latency_p95": {
+          "median": 0.007047872340425532,
+          "mad": 0.0014102576615264446,
+          "meanad": 0.0018904285443625175,
+          "scale": 0.01,
+          "scale_basis": "unit_floor>mad",
+          "n": 659
+        },
+        "log_error_rate": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.05,
+          "scale_basis": "unit_floor",
+          "n": 668
+        }
+      },
+      "gateway": {
+        "request_rate": {
+          "median": 8.233333333333334,
+          "mad": 4.75,
+          "meanad": 6.862325349301398,
+          "scale": 7.04235,
+          "scale_basis": "mad",
+          "n": 668
+        },
+        "error_rate": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.01,
+          "scale_basis": "unit_floor",
+          "n": 659
+        },
+        "latency_p50": {
+          "median": 0.0036398176291793315,
+          "mad": 0.00025085761197822477,
+          "meanad": 0.0009170571909080623,
+          "scale": 0.01,
+          "scale_basis": "unit_floor>mad",
+          "n": 659
+        },
+        "latency_p95": {
+          "median": 0.037093558282208575,
+          "mad": 0.0033435582822085724,
+          "meanad": 0.006514344430922046,
+          "scale": 0.01,
+          "scale_basis": "unit_floor>mad",
+          "n": 659
+        },
+        "latency_p99": {
+          "median": 0.04784415584415584,
+          "mad": 0.0008662146676852583,
+          "meanad": 0.005084476211401141,
+          "scale": 0.01,
+          "scale_basis": "unit_floor>mad",
+          "n": 659
+        },
+        "cpu_usage": {
+          "median": 0.023708333333333442,
+          "mad": 0.012444450000000124,
+          "meanad": 0.01583482347804391,
+          "scale": 0.018450141570000182,
+          "scale_basis": "mad",
+          "n": 668
+        },
+        "memory_usage": {
+          "median": 133732352.0,
+          "mad": 17801216.0,
+          "meanad": 18122157.221556887,
+          "scale": 26392082.841599997,
+          "scale_basis": "mad",
+          "n": 668
+        },
+        "trace_error_rate": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.01,
+          "scale_basis": "unit_floor",
+          "n": 656
+        },
+        "downstream_latency_p95": {
+          "median": 0.03845930232558141,
+          "mad": 0.002469718992248064,
+          "meanad": 0.00404639414498418,
+          "scale": 0.01,
+          "scale_basis": "unit_floor>mad",
+          "n": 659
+        },
+        "log_error_rate": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.05,
+          "scale_basis": "unit_floor",
+          "n": 668
+        }
+      },
+      "identity": {
+        "request_rate": {
+          "median": 1.4666666666666666,
+          "mad": 0.9666666666666666,
+          "meanad": 1.4491516966067863,
+          "scale": 1.4331799999999997,
+          "scale_basis": "mad",
+          "n": 668
+        },
+        "error_rate": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.01,
+          "scale_basis": "unit_floor",
+          "n": 654
+        },
+        "latency_p50": {
+          "median": 0.026595744680851064,
+          "mad": 0.0011247301880974395,
+          "meanad": 0.0027827041391631445,
+          "scale": 0.01,
+          "scale_basis": "unit_floor>mad",
+          "n": 654
+        },
+        "latency_p95": {
+          "median": 0.047840909090909094,
+          "mad": 0.000215909090909093,
+          "meanad": 0.0007081166057415237,
+          "scale": 0.01,
+          "scale_basis": "unit_floor>mad",
+          "n": 654
+        },
+        "latency_p99": {
+          "median": 0.049625,
+          "mad": 0.00011303800366300673,
+          "meanad": 0.005461584547224426,
+          "scale": 0.01,
+          "scale_basis": "unit_floor>mad",
+          "n": 654
+        },
+        "cpu_usage": {
+          "median": 0.02955588333333329,
+          "mad": 0.017636374999999732,
+          "meanad": 0.02592385132235529,
+          "scale": 0.026147689574999602,
+          "scale_basis": "mad",
+          "n": 668
+        },
+        "memory_usage": {
+          "median": 149940224.0,
+          "mad": 7016448.0,
+          "meanad": 17494929.628742516,
+          "scale": 10402585.8048,
+          "scale_basis": "mad",
+          "n": 668
+        },
+        "downstream_latency_p95": {
+          "median": 0.008879573170731707,
+          "mad": 0.00028363095238095187,
+          "meanad": 0.0007580802808300493,
+          "scale": 0.01,
+          "scale_basis": "unit_floor>mad",
+          "n": 654
+        },
+        "log_error_rate": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.05,
+          "scale_basis": "unit_floor",
+          "n": 668
+        },
+        "trace_error_rate": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.01,
+          "scale_basis": "unit_floor",
+          "n": 650
+        }
+      },
+      "media": {
+        "request_rate": {
+          "median": 0.15,
+          "mad": 0.13333333333333333,
+          "meanad": 0.12672155688622755,
+          "scale": 0.19768,
+          "scale_basis": "mad",
+          "n": 668
+        },
+        "cpu_usage": {
+          "median": 0.0031059833333333324,
+          "mad": 0.0006857916666666685,
+          "meanad": 0.0008120764970059872,
+          "scale": 0.01,
+          "scale_basis": "unit_floor>mad",
+          "n": 668
+        },
+        "memory_usage": {
+          "median": 154789888.0,
+          "mad": 2820096.0,
+          "meanad": 11804684.263473054,
+          "scale": 4181074.3296,
+          "scale_basis": "mad",
+          "n": 668
+        },
+        "log_error_rate": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.05,
+          "scale_basis": "unit_floor",
+          "n": 668
+        },
+        "error_rate": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.01,
+          "scale_basis": "unit_floor",
+          "n": 493
+        },
+        "latency_p50": {
+          "median": 0.005833333333333334,
+          "mad": 0.0016666666666666661,
+          "meanad": 0.0019194286859076056,
+          "scale": 0.01,
+          "scale_basis": "unit_floor>mad",
+          "n": 493
+        },
+        "latency_p95": {
+          "median": 0.022299999999999993,
+          "mad": 0.0007999999999999952,
+          "meanad": 0.002092988363056822,
+          "scale": 0.01,
+          "scale_basis": "unit_floor>mad",
+          "n": 493
+        },
+        "latency_p99": {
+          "median": 0.024460000000000003,
+          "mad": 0.0001600000000000039,
+          "meanad": 0.001497705177682358,
+          "scale": 0.01,
+          "scale_basis": "unit_floor>mad",
+          "n": 493
+        },
+        "downstream_latency_p95": {
+          "median": 0.006749999999999998,
+          "mad": 0.001375000000000002,
+          "meanad": 0.0013936026572083347,
+          "scale": 0.01,
+          "scale_basis": "unit_floor>mad",
+          "n": 493
+        },
+        "trace_error_rate": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.01,
+          "scale_basis": "unit_floor",
+          "n": 463
+        }
+      },
+      "media-worker": {
+        "request_rate": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.05,
+          "scale_basis": "unit_floor",
+          "n": 668
+        },
+        "cpu_usage": {
+          "median": 0.0017948166666666616,
+          "mad": 0.0005159583333333291,
+          "meanad": 0.000627627245508982,
+          "scale": 0.01,
+          "scale_basis": "unit_floor>mad",
+          "n": 668
+        },
+        "memory_usage": {
+          "median": 161796096.0,
+          "mad": 2926592.0,
+          "meanad": 10710071.185628742,
+          "scale": 4338965.299199999,
+          "scale_basis": "mad",
+          "n": 668
+        },
+        "log_error_rate": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.05,
+          "scale_basis": "unit_floor",
+          "n": 668
+        },
+        "trace_error_rate": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.01,
+          "scale_basis": "unit_floor",
+          "n": 530
+        },
+        "downstream_latency_p95": {
+          "median": 0.004750000000000001,
+          "mad": 8.673617379884035e-19,
+          "meanad": 8.477668022305711e-05,
+          "scale": 0.01,
+          "scale_basis": "unit_floor>mad",
+          "n": 527
+        }
+      },
+      "notification": {
+        "request_rate": {
+          "median": 0.7666666666666667,
+          "mad": 0.5166666666666667,
+          "meanad": 0.8368512974051896,
+          "scale": 0.7660100000000001,
+          "scale_basis": "mad",
+          "n": 668
+        },
+        "error_rate": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.01,
+          "scale_basis": "unit_floor",
+          "n": 641
+        },
+        "latency_p50": {
+          "median": 0.0026347305389221557,
+          "mad": 8.585769637196178e-05,
+          "meanad": 0.0007875369761766651,
+          "scale": 0.01,
+          "scale_basis": "unit_floor>mad",
+          "n": 641
+        },
+        "latency_p95": {
+          "median": 0.005166666666666657,
+          "mad": 0.0004166666666666572,
+          "meanad": 0.002754875362361344,
+          "scale": 0.01,
+          "scale_basis": "unit_floor>mad",
+          "n": 641
+        },
+        "latency_p99": {
+          "median": 0.013412500000000094,
+          "mad": 0.005162500000000101,
+          "meanad": 0.005657689680515357,
+          "scale": 0.01,
+          "scale_basis": "unit_floor>mad",
+          "n": 641
+        },
+        "cpu_usage": {
+          "median": 0.004228558333333335,
+          "mad": 0.0015523583333333325,
+          "meanad": 0.002291806986027944,
+          "scale": 0.01,
+          "scale_basis": "unit_floor>mad",
+          "n": 668
+        },
+        "memory_usage": {
+          "median": 146380800.0,
+          "mad": 5677056.0,
+          "meanad": 11849010.586826347,
+          "scale": 8416803.225599999,
+          "scale_basis": "mad",
+          "n": 668
+        },
+        "downstream_latency_p95": {
+          "median": 0.00496590909090909,
+          "mad": 0.0002159090909090904,
+          "meanad": 0.0014535045372048873,
+          "scale": 0.01,
+          "scale_basis": "unit_floor>mad",
+          "n": 641
+        },
+        "log_error_rate": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.05,
+          "scale_basis": "unit_floor",
+          "n": 668
+        },
+        "trace_error_rate": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.01,
+          "scale_basis": "unit_floor",
+          "n": 590
+        }
+      },
+      "notification-worker": {
+        "request_rate": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.05,
+          "scale_basis": "unit_floor",
+          "n": 668
+        },
+        "cpu_usage": {
+          "median": 0.0021921166666666694,
+          "mad": 0.0002487833333333282,
+          "meanad": 0.002869020633732535,
+          "scale": 0.01,
+          "scale_basis": "unit_floor>mad",
+          "n": 668
+        },
+        "memory_usage": {
+          "median": 144726016.0,
+          "mad": 5029888.0,
+          "meanad": 12726725.748502994,
+          "scale": 7457311.948799999,
+          "scale_basis": "mad",
+          "n": 668
+        },
+        "log_error_rate": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.05,
+          "scale_basis": "unit_floor",
+          "n": 668
+        },
+        "trace_error_rate": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.01,
+          "scale_basis": "unit_floor",
+          "n": 228
+        },
+        "downstream_latency_p95": {
+          "median": 0.046875,
+          "mad": 7.820579110651149e-05,
+          "meanad": 0.001532316790487764,
+          "scale": 0.01,
+          "scale_basis": "unit_floor>mad",
+          "n": 226
+        }
+      },
+      "scheduler": {
+        "request_rate": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.05,
+          "scale_basis": "unit_floor",
+          "n": 668
+        },
+        "cpu_usage": {
+          "median": 0.000934950000000001,
+          "mad": 9.736666666666506e-05,
+          "meanad": 0.00018114219061876241,
+          "scale": 0.01,
+          "scale_basis": "unit_floor>mad",
+          "n": 668
+        },
+        "memory_usage": {
+          "median": 140341248.0,
+          "mad": 2449408.0,
+          "meanad": 10232034.874251498,
+          "scale": 3631492.3008,
+          "scale_basis": "mad",
+          "n": 668
+        },
+        "log_error_rate": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.05,
+          "scale_basis": "unit_floor",
+          "n": 668
+        }
+      },
+      "scheduler-worker": {
+        "request_rate": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.05,
+          "scale_basis": "unit_floor",
+          "n": 668
+        },
+        "cpu_usage": {
+          "median": 0.0034312083333333317,
+          "mad": 0.000432983333333333,
+          "meanad": 0.0004960088323353293,
+          "scale": 0.01,
+          "scale_basis": "unit_floor>mad",
+          "n": 668
+        },
+        "memory_usage": {
+          "median": 145858560.0,
+          "mad": 659456.0,
+          "meanad": 8838303.4251497,
+          "scale": 1048576.0,
+          "scale_basis": "unit_floor>mad",
+          "n": 668
+        },
+        "downstream_latency_p95": {
+          "median": 0.004749999999999999,
+          "mad": 0.0,
+          "meanad": 3.3823913189876083e-06,
+          "scale": 0.01,
+          "scale_basis": "unit_floor>meanad",
+          "n": 668
+        },
+        "log_error_rate": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.05,
+          "scale_basis": "unit_floor",
+          "n": 668
+        }
+      }
+    },
+    "edge": {
+      "ai-worker|ai-llm-provider": {
+        "call_count": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.6467065868263473,
+          "scale": 1.0,
+          "scale_basis": "unit_floor>meanad",
+          "n": 668
+        },
+        "error_ratio": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.01,
+          "scale_basis": "unit_floor",
+          "n": 169
+        },
+        "timeout_ratio": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.01,
+          "scale_basis": "unit_floor",
+          "n": 169
+        },
+        "duration_mean": {
+          "median": 0.0012882530000060798,
+          "mad": 0.00012470899987965765,
+          "meanad": 0.00026044007737400295,
+          "scale": 0.01,
+          "scale_basis": "unit_floor>mad",
+          "n": 169
+        },
+        "duration_p95": {
+          "median": 0.00475,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.01,
+          "scale_basis": "unit_floor",
+          "n": 169
+        }
+      },
+      "ai-worker|ai-postgres": {
+        "call_count": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 4.820359281437126,
+          "scale": 6.04135628742515,
+          "scale_basis": "meanad",
+          "n": 668
+        },
+        "error_ratio": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.01,
+          "scale_basis": "unit_floor",
+          "n": 248
+        },
+        "timeout_ratio": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.01,
+          "scale_basis": "unit_floor",
+          "n": 248
+        },
+        "duration_mean": {
+          "median": 0.0011401087143458424,
+          "mad": 0.00022776028564707828,
+          "meanad": 0.0008345250954434765,
+          "scale": 0.01,
+          "scale_basis": "unit_floor>mad",
+          "n": 248
+        },
+        "duration_p95": {
+          "median": 0.00475,
+          "mad": 8.673617379884035e-19,
+          "meanad": 0.0035562352205254885,
+          "scale": 0.01,
+          "scale_basis": "unit_floor>mad",
+          "n": 248
+        }
+      },
+      "ai-worker|ai-worker-course": {
+        "call_count": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.8922155688622755,
+          "scale": 1.11821377245509,
+          "scale_basis": "meanad",
+          "n": 668
+        },
+        "error_ratio": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.01,
+          "scale_basis": "unit_floor",
+          "n": 169
+        },
+        "timeout_ratio": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.01,
+          "scale_basis": "unit_floor",
+          "n": 169
+        },
+        "duration_mean": {
+          "median": 0.002870451499940828,
+          "mad": 0.000223816249985246,
+          "meanad": 0.00038999138265650226,
+          "scale": 0.01,
+          "scale_basis": "unit_floor>mad",
+          "n": 169
+        },
+        "duration_p95": {
+          "median": 0.00475,
+          "mad": 0.0,
+          "meanad": 0.0016346153846153843,
+          "scale": 0.01,
+          "scale_basis": "unit_floor>meanad",
+          "n": 169
+        }
+      },
+      "ai-worker|ai-worker-identity-token": {
+        "call_count": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.49700598802395207,
+          "scale": 1.0,
+          "scale_basis": "unit_floor>meanad",
+          "n": 668
+        },
+        "error_ratio": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.01,
+          "scale_basis": "unit_floor",
+          "n": 235
+        },
+        "timeout_ratio": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.01,
+          "scale_basis": "unit_floor",
+          "n": 235
+        },
+        "duration_mean": {
+          "median": 0.03338914499990642,
+          "mad": 0.0008681814998853787,
+          "meanad": 0.0022053438964319662,
+          "scale": 0.01,
+          "scale_basis": "unit_floor>mad",
+          "n": 235
+        },
+        "duration_p95": {
+          "median": 0.04875,
+          "mad": 0.0,
+          "meanad": 0.0008297872340425533,
+          "scale": 0.01,
+          "scale_basis": "unit_floor>meanad",
+          "n": 235
+        }
+      },
+      "ai-worker|ai-worker-media": {
+        "call_count": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.33532934131736525,
+          "scale": 1.0,
+          "scale_basis": "unit_floor>meanad",
+          "n": 668
+        },
+        "error_ratio": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.01,
+          "scale_basis": "unit_floor",
+          "n": 174
+        },
+        "timeout_ratio": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.01,
+          "scale_basis": "unit_floor",
+          "n": 174
+        },
+        "duration_mean": {
+          "median": 0.004637855499982833,
+          "mad": 0.0004007015000097487,
+          "meanad": 0.0007323662911914654,
+          "scale": 0.01,
+          "scale_basis": "unit_floor>mad",
+          "n": 174
+        },
+        "duration_p95": {
+          "median": 0.00475,
+          "mad": 0.0,
+          "meanad": 0.001485632183908046,
+          "scale": 0.01,
+          "scale_basis": "unit_floor>meanad",
+          "n": 174
+        }
+      },
+      "ai|ai-identity-jwks": {
+        "call_count": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.08982035928143713,
+          "scale": 1.0,
+          "scale_basis": "unit_floor>meanad",
+          "n": 668
+        },
+        "error_ratio": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.01,
+          "scale_basis": "unit_floor",
+          "n": 60
+        },
+        "timeout_ratio": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.01,
+          "scale_basis": "unit_floor",
+          "n": 60
+        },
+        "duration_mean": {
+          "median": 0.002411634000018238,
+          "mad": 0.00020449999999254745,
+          "meanad": 0.00021014673329579348,
+          "scale": 0.01,
+          "scale_basis": "unit_floor>mad",
+          "n": 60
+        },
+        "duration_p95": {
+          "median": 0.00475,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.01,
+          "scale_basis": "unit_floor",
+          "n": 60
+        }
+      },
+      "ai|ai-llm-provider": {
+        "call_count": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 1.0,
+          "scale_basis": "unit_floor",
+          "n": 668
+        }
+      },
+      "ai|ai-postgres": {
+        "call_count": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 3.18562874251497,
+          "scale": 3.992548502994012,
+          "scale_basis": "meanad",
+          "n": 668
+        },
+        "error_ratio": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.01,
+          "scale_basis": "unit_floor",
+          "n": 201
+        },
+        "timeout_ratio": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.01,
+          "scale_basis": "unit_floor",
+          "n": 201
+        },
+        "duration_mean": {
+          "median": 0.0008045689230426571,
+          "mad": 0.00016039517314549395,
+          "meanad": 0.0002769539203701046,
+          "scale": 0.01,
+          "scale_basis": "unit_floor>mad",
+          "n": 201
+        },
+        "duration_p95": {
+          "median": 0.00475,
+          "mad": 0.0,
+          "meanad": 0.0004790555872713015,
+          "scale": 0.01,
+          "scale_basis": "unit_floor>meanad",
+          "n": 201
+        }
+      },
+      "course|course-ai": {
+        "call_count": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 1.8862275449101797,
+          "scale": 2.3640089820359282,
+          "scale_basis": "meanad",
+          "n": 668
+        },
+        "error_ratio": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.01,
+          "scale_basis": "unit_floor",
+          "n": 202
+        },
+        "timeout_ratio": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.01,
+          "scale_basis": "unit_floor",
+          "n": 202
+        },
+        "duration_mean": {
+          "median": 0.004862658500089309,
+          "mad": 0.0007935576427761217,
+          "meanad": 0.0010954053758578512,
+          "scale": 0.01,
+          "scale_basis": "unit_floor>mad",
+          "n": 202
+        },
+        "duration_p95": {
+          "median": 0.019749999999999993,
+          "mad": 0.0031250000000000045,
+          "meanad": 0.005617883663366336,
+          "scale": 0.01,
+          "scale_basis": "unit_floor>mad",
+          "n": 202
+        }
+      },
+      "course|course-identity-jwks": {
+        "call_count": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.19161676646706588,
+          "scale": 1.0,
+          "scale_basis": "unit_floor>meanad",
+          "n": 668
+        },
+        "error_ratio": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.01,
+          "scale_basis": "unit_floor",
+          "n": 128
+        },
+        "timeout_ratio": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.01,
+          "scale_basis": "unit_floor",
+          "n": 128
+        },
+        "duration_mean": {
+          "median": 0.0025541639999719333,
+          "mad": 0.00030415150005137434,
+          "meanad": 0.0006608066250082627,
+          "scale": 0.01,
+          "scale_basis": "unit_floor>mad",
+          "n": 128
+        },
+        "duration_p95": {
+          "median": 0.00475,
+          "mad": 0.0,
+          "meanad": 0.0003125,
+          "scale": 0.01,
+          "scale_basis": "unit_floor>meanad",
+          "n": 128
+        }
+      },
+      "course|course-identity-token": {
+        "call_count": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.6646706586826348,
+          "scale": 1.0,
+          "scale_basis": "unit_floor>meanad",
+          "n": 668
+        },
+        "error_ratio": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.01,
+          "scale_basis": "unit_floor",
+          "n": 184
+        },
+        "timeout_ratio": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.01,
+          "scale_basis": "unit_floor",
+          "n": 184
+        },
+        "duration_mean": {
+          "median": 0.03426917600003071,
+          "mad": 0.0009541815000120579,
+          "meanad": 0.0019061927934562314,
+          "scale": 0.01,
+          "scale_basis": "unit_floor>mad",
+          "n": 184
+        },
+        "duration_p95": {
+          "median": 0.04875,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.01,
+          "scale_basis": "unit_floor",
+          "n": 184
+        }
+      },
+      "course|course-media": {
+        "call_count": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 1.0119760479041917,
+          "scale": 1.2683095808383236,
+          "scale_basis": "meanad",
+          "n": 668
+        },
+        "error_ratio": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.01,
+          "scale_basis": "unit_floor",
+          "n": 196
+        },
+        "timeout_ratio": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.01,
+          "scale_basis": "unit_floor",
+          "n": 196
+        },
+        "duration_mean": {
+          "median": 0.0036019986667670256,
+          "mad": 0.0004080915000638876,
+          "meanad": 0.0006257104724607264,
+          "scale": 0.01,
+          "scale_basis": "unit_floor>mad",
+          "n": 196
+        },
+        "duration_p95": {
+          "median": 0.00475,
+          "mad": 0.0,
+          "meanad": 0.001514880952380952,
+          "scale": 0.01,
+          "scale_basis": "unit_floor>meanad",
+          "n": 196
+        }
+      },
+      "course|course-postgres": {
+        "call_count": {
+          "median": 864.0,
+          "mad": 493.5,
+          "meanad": 678.2215568862275,
+          "scale": 731.6631,
+          "scale_basis": "mad",
+          "n": 668
+        },
+        "error_ratio": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.01,
+          "scale_basis": "unit_floor",
+          "n": 659
+        },
+        "timeout_ratio": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.01,
+          "scale_basis": "unit_floor",
+          "n": 659
+        },
+        "duration_mean": {
+          "median": 0.00135740854316257,
+          "mad": 0.0002011194892810621,
+          "meanad": 0.000290813452575515,
+          "scale": 0.01,
+          "scale_basis": "unit_floor>mad",
+          "n": 659
+        },
+        "duration_p95": {
+          "median": 0.006910377358490566,
+          "mad": 0.0014478773584905742,
+          "meanad": 0.0018923832600727327,
+          "scale": 0.01,
+          "scale_basis": "unit_floor>mad",
+          "n": 659
+        }
+      },
+      "gateway|gateway-ai": {
+        "call_count": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 1.0,
+          "scale_basis": "unit_floor",
+          "n": 668
+        }
+      },
+      "gateway|gateway-course": {
+        "call_count": {
+          "median": 344.5,
+          "mad": 194.5,
+          "meanad": 277.99700598802394,
+          "scale": 288.3657,
+          "scale_basis": "mad",
+          "n": 668
+        },
+        "error_ratio": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.01,
+          "scale_basis": "unit_floor",
+          "n": 659
+        },
+        "timeout_ratio": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.01,
+          "scale_basis": "unit_floor",
+          "n": 659
+        },
+        "duration_mean": {
+          "median": 0.0045921253882751,
+          "mad": 0.0006000710517231195,
+          "meanad": 0.00087132543303674,
+          "scale": 0.01,
+          "scale_basis": "unit_floor>mad",
+          "n": 659
+        },
+        "duration_p95": {
+          "median": 0.020301886792452824,
+          "mad": 0.0016318867924528316,
+          "meanad": 0.0023275764631034944,
+          "scale": 0.01,
+          "scale_basis": "unit_floor>mad",
+          "n": 659
+        }
+      },
+      "gateway|gateway-identity": {
+        "call_count": {
+          "median": 75.0,
+          "mad": 54.0,
+          "meanad": 85.08383233532935,
+          "scale": 80.0604,
+          "scale_basis": "mad",
+          "n": 668
+        },
+        "error_ratio": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.01,
+          "scale_basis": "unit_floor",
+          "n": 649
+        },
+        "timeout_ratio": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.01,
+          "scale_basis": "unit_floor",
+          "n": 649
+        },
+        "duration_mean": {
+          "median": 0.02054735706060436,
+          "mad": 0.0007528039075872205,
+          "meanad": 0.00119433487109194,
+          "scale": 0.01,
+          "scale_basis": "unit_floor>mad",
+          "n": 649
+        },
+        "duration_p95": {
+          "median": 0.04762867647058823,
+          "mad": 0.00021223262032086382,
+          "meanad": 0.002388665254971659,
+          "scale": 0.01,
+          "scale_basis": "unit_floor>mad",
+          "n": 649
+        }
+      },
+      "gateway|gateway-identity-jwks": {
+        "call_count": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.19161676646706588,
+          "scale": 1.0,
+          "scale_basis": "unit_floor>meanad",
+          "n": 668
+        },
+        "error_ratio": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.01,
+          "scale_basis": "unit_floor",
+          "n": 128
+        },
+        "timeout_ratio": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.01,
+          "scale_basis": "unit_floor",
+          "n": 128
+        },
+        "duration_mean": {
+          "median": 0.0017305279999272902,
+          "mad": 0.00014279350009746778,
+          "meanad": 0.00022178478124988018,
+          "scale": 0.01,
+          "scale_basis": "unit_floor>mad",
+          "n": 128
+        },
+        "duration_p95": {
+          "median": 0.00475,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.01,
+          "scale_basis": "unit_floor",
+          "n": 128
+        }
+      },
+      "gateway|gateway-identity-token": {
+        "call_count": {
+          "median": 7.0,
+          "mad": 1.0,
+          "meanad": 1.1676646706586826,
+          "scale": 1.4826,
+          "scale_basis": "mad",
+          "n": 668
+        },
+        "error_ratio": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.01,
+          "scale_basis": "unit_floor",
+          "n": 655
+        },
+        "timeout_ratio": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.01,
+          "scale_basis": "unit_floor",
+          "n": 655
+        },
+        "duration_mean": {
+          "median": 0.03397547099995424,
+          "mad": 0.0007592271666897119,
+          "meanad": 0.0011311503052647922,
+          "scale": 0.01,
+          "scale_basis": "unit_floor>mad",
+          "n": 655
+        },
+        "duration_p95": {
+          "median": 0.04875,
+          "mad": 0.0,
+          "meanad": 0.0010572519083969461,
+          "scale": 0.01,
+          "scale_basis": "unit_floor>meanad",
+          "n": 655
+        }
+      },
+      "gateway|gateway-media": {
+        "call_count": {
+          "median": 8.0,
+          "mad": 7.0,
+          "meanad": 6.522455089820359,
+          "scale": 10.3782,
+          "scale_basis": "mad",
+          "n": 668
+        },
+        "error_ratio": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.01,
+          "scale_basis": "unit_floor",
+          "n": 492
+        },
+        "timeout_ratio": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.01,
+          "scale_basis": "unit_floor",
+          "n": 492
+        },
+        "duration_mean": {
+          "median": 0.0077701630347178745,
+          "mad": 0.0008783382410973662,
+          "meanad": 0.0012394559664365271,
+          "scale": 0.01,
+          "scale_basis": "unit_floor>mad",
+          "n": 492
+        },
+        "duration_p95": {
+          "median": 0.023,
+          "mad": 0.0005000000000000004,
+          "meanad": 0.0016592326403983984,
+          "scale": 0.01,
+          "scale_basis": "unit_floor>mad",
+          "n": 492
+        }
+      },
+      "gateway|gateway-notification": {
+        "call_count": {
+          "median": 46.0,
+          "mad": 31.0,
+          "meanad": 50.217065868263475,
+          "scale": 45.9606,
+          "scale_basis": "mad",
+          "n": 668
+        },
+        "error_ratio": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.01,
+          "scale_basis": "unit_floor",
+          "n": 640
+        },
+        "timeout_ratio": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.01,
+          "scale_basis": "unit_floor",
+          "n": 640
+        },
+        "duration_mean": {
+          "median": 0.0026159323914406825,
+          "mad": 0.0003693306135174885,
+          "meanad": 0.001074295624700811,
+          "scale": 0.01,
+          "scale_basis": "unit_floor>mad",
+          "n": 640
+        },
+        "duration_p95": {
+          "median": 0.00649999999999999,
+          "mad": 0.0017499999999999903,
+          "meanad": 0.00415044784388763,
+          "scale": 0.01,
+          "scale_basis": "unit_floor>mad",
+          "n": 640
+        }
+      },
+      "gateway|gateway-scheduler": {
+        "call_count": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 1.0,
+          "scale_basis": "unit_floor",
+          "n": 668
+        }
+      },
+      "identity|identity-postgres": {
+        "call_count": {
+          "median": 124.5,
+          "mad": 83.5,
+          "meanad": 129.73502994011977,
+          "scale": 123.79709999999999,
+          "scale_basis": "mad",
+          "n": 668
+        },
+        "error_ratio": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.01,
+          "scale_basis": "unit_floor",
+          "n": 654
+        },
+        "timeout_ratio": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.01,
+          "scale_basis": "unit_floor",
+          "n": 654
+        },
+        "duration_mean": {
+          "median": 0.0024323463637930796,
+          "mad": 0.0003010536389603997,
+          "meanad": 0.00040314497238784654,
+          "scale": 0.01,
+          "scale_basis": "unit_floor>mad",
+          "n": 654
+        },
+        "duration_p95": {
+          "median": 0.008879573170731707,
+          "mad": 0.00028363095238095187,
+          "meanad": 0.0007580802808300493,
+          "scale": 0.01,
+          "scale_basis": "unit_floor>mad",
+          "n": 654
+        }
+      },
+      "media-worker|media-minio": {
+        "call_count": {
+          "median": 2.0,
+          "mad": 2.0,
+          "meanad": 2.2425149700598803,
+          "scale": 2.9652,
+          "scale_basis": "mad",
+          "n": 668
+        },
+        "error_ratio": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.01,
+          "scale_basis": "unit_floor",
+          "n": 400
+        },
+        "timeout_ratio": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.01,
+          "scale_basis": "unit_floor",
+          "n": 400
+        },
+        "duration_mean": {
+          "median": 0.0020492077499511636,
+          "mad": 0.00010205674980534162,
+          "meanad": 0.00026365818996092373,
+          "scale": 0.01,
+          "scale_basis": "unit_floor>mad",
+          "n": 400
+        },
+        "duration_p95": {
+          "median": 0.00475,
+          "mad": 0.0,
+          "meanad": 0.0006962499999999996,
+          "scale": 0.01,
+          "scale_basis": "unit_floor>meanad",
+          "n": 400
+        }
+      },
+      "media-worker|media-postgres": {
+        "call_count": {
+          "median": 29.0,
+          "mad": 20.0,
+          "meanad": 20.407185628742514,
+          "scale": 29.651999999999997,
+          "scale_basis": "mad",
+          "n": 668
+        },
+        "error_ratio": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.01,
+          "scale_basis": "unit_floor",
+          "n": 527
+        },
+        "timeout_ratio": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.01,
+          "scale_basis": "unit_floor",
+          "n": 527
+        },
+        "duration_mean": {
+          "median": 0.0007872710333826634,
+          "mad": 0.0001067888459287754,
+          "meanad": 0.00014534195456904922,
+          "scale": 0.01,
+          "scale_basis": "unit_floor>mad",
+          "n": 527
+        },
+        "duration_p95": {
+          "median": 0.00475,
+          "mad": 0.0,
+          "meanad": 7.056572079681821e-05,
+          "scale": 0.01,
+          "scale_basis": "unit_floor>meanad",
+          "n": 527
+        }
+      },
+      "media|media-identity-jwks": {
+        "call_count": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.16766467065868262,
+          "scale": 1.0,
+          "scale_basis": "unit_floor>meanad",
+          "n": 668
+        },
+        "error_ratio": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.01,
+          "scale_basis": "unit_floor",
+          "n": 112
+        },
+        "timeout_ratio": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.01,
+          "scale_basis": "unit_floor",
+          "n": 112
+        },
+        "duration_mean": {
+          "median": 0.0022961679999716576,
+          "mad": 0.00018785299983574075,
+          "meanad": 0.0005536631785923546,
+          "scale": 0.01,
+          "scale_basis": "unit_floor>mad",
+          "n": 112
+        },
+        "duration_p95": {
+          "median": 0.00475,
+          "mad": 0.0,
+          "meanad": 0.0006964285714285715,
+          "scale": 0.01,
+          "scale_basis": "unit_floor>meanad",
+          "n": 112
+        }
+      },
+      "media|media-minio": {
+        "call_count": {
+          "median": 12.0,
+          "mad": 12.0,
+          "meanad": 9.652694610778443,
+          "scale": 17.7912,
+          "scale_basis": "mad",
+          "n": 668
+        },
+        "error_ratio": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.01,
+          "scale_basis": "unit_floor",
+          "n": 462
+        },
+        "timeout_ratio": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.01,
+          "scale_basis": "unit_floor",
+          "n": 462
+        },
+        "duration_mean": {
+          "median": 0.0010828284171054748,
+          "mad": 5.392425048959576e-05,
+          "meanad": 0.00011781109324059514,
+          "scale": 0.01,
+          "scale_basis": "unit_floor>mad",
+          "n": 462
+        },
+        "duration_p95": {
+          "median": 0.00475,
+          "mad": 0.0,
+          "meanad": 5.9902118120640056e-05,
+          "scale": 0.01,
+          "scale_basis": "unit_floor>meanad",
+          "n": 462
+        }
+      },
+      "media|media-postgres": {
+        "call_count": {
+          "median": 15.0,
+          "mad": 14.0,
+          "meanad": 12.95059880239521,
+          "scale": 20.7564,
+          "scale_basis": "mad",
+          "n": 668
+        },
+        "error_ratio": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.01,
+          "scale_basis": "unit_floor",
+          "n": 493
+        },
+        "timeout_ratio": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.01,
+          "scale_basis": "unit_floor",
+          "n": 493
+        },
+        "duration_mean": {
+          "median": 0.0019345364000027373,
+          "mad": 0.00042379493845077403,
+          "meanad": 0.0006676951018445623,
+          "scale": 0.01,
+          "scale_basis": "unit_floor>mad",
+          "n": 493
+        },
+        "duration_p95": {
+          "median": 0.008166666666666664,
+          "mad": 0.0008333333333333352,
+          "meanad": 0.00156678421708341,
+          "scale": 0.01,
+          "scale_basis": "unit_floor>mad",
+          "n": 493
+        }
+      },
+      "notification-worker|notification-postgres": {
+        "call_count": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 99.68862275449102,
+          "scale": 124.9397508982036,
+          "scale_basis": "meanad",
+          "n": 668
+        },
+        "error_ratio": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.01,
+          "scale_basis": "unit_floor",
+          "n": 226
+        },
+        "timeout_ratio": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.01,
+          "scale_basis": "unit_floor",
+          "n": 226
+        },
+        "duration_mean": {
+          "median": 0.0009779477499541828,
+          "mad": 0.00016024375002598405,
+          "meanad": 0.00032890515100566587,
+          "scale": 0.01,
+          "scale_basis": "unit_floor>mad",
+          "n": 226
+        },
+        "duration_p95": {
+          "median": 0.00475,
+          "mad": 0.0,
+          "meanad": 0.0002820492691053725,
+          "scale": 0.01,
+          "scale_basis": "unit_floor>meanad",
+          "n": 226
+        }
+      },
+      "notification-worker|notification-smtp": {
+        "call_count": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 48.35928143712575,
+          "scale": 60.60868742514971,
+          "scale_basis": "meanad",
+          "n": 668
+        },
+        "error_ratio": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.01,
+          "scale_basis": "unit_floor",
+          "n": 226
+        },
+        "timeout_ratio": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.01,
+          "scale_basis": "unit_floor",
+          "n": 226
+        },
+        "duration_mean": {
+          "median": 0.043390455999876565,
+          "mad": 0.0005802217500185947,
+          "meanad": 0.0008290132278456729,
+          "scale": 0.01,
+          "scale_basis": "unit_floor>mad",
+          "n": 226
+        },
+        "duration_p95": {
+          "median": 0.04875,
+          "mad": 0.0,
+          "meanad": 0.002019051048457885,
+          "scale": 0.01,
+          "scale_basis": "unit_floor>meanad",
+          "n": 226
+        }
+      },
+      "notification-worker|notification-worker-identity": {
+        "call_count": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.9341317365269461,
+          "scale": 1.1707473053892217,
+          "scale_basis": "meanad",
+          "n": 668
+        },
+        "error_ratio": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.01,
+          "scale_basis": "unit_floor",
+          "n": 219
+        },
+        "timeout_ratio": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.01,
+          "scale_basis": "unit_floor",
+          "n": 219
+        },
+        "duration_mean": {
+          "median": 0.0028933350001461786,
+          "mad": 0.00031578599987551774,
+          "meanad": 0.000782059902056164,
+          "scale": 0.01,
+          "scale_basis": "unit_floor>mad",
+          "n": 219
+        },
+        "duration_p95": {
+          "median": 0.00475,
+          "mad": 0.0,
+          "meanad": 0.0013528158295281576,
+          "scale": 0.01,
+          "scale_basis": "unit_floor>meanad",
+          "n": 219
+        }
+      },
+      "notification-worker|notification-worker-identity-token": {
+        "call_count": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.31736526946107785,
+          "scale": 1.0,
+          "scale_basis": "unit_floor>meanad",
+          "n": 668
+        },
+        "error_ratio": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.01,
+          "scale_basis": "unit_floor",
+          "n": 199
+        },
+        "timeout_ratio": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.01,
+          "scale_basis": "unit_floor",
+          "n": 199
+        },
+        "duration_mean": {
+          "median": 0.03461770700011402,
+          "mad": 0.0018072820000816225,
+          "meanad": 0.0029665816758803767,
+          "scale": 0.01,
+          "scale_basis": "unit_floor>mad",
+          "n": 199
+        },
+        "duration_p95": {
+          "median": 0.04875,
+          "mad": 0.0,
+          "meanad": 0.0009547738693467337,
+          "scale": 0.01,
+          "scale_basis": "unit_floor>meanad",
+          "n": 199
+        }
+      },
+      "notification|notification-identity-jwks": {
+        "call_count": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.20359281437125748,
+          "scale": 1.0,
+          "scale_basis": "unit_floor>meanad",
+          "n": 668
+        },
+        "error_ratio": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.01,
+          "scale_basis": "unit_floor",
+          "n": 136
+        },
+        "timeout_ratio": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.01,
+          "scale_basis": "unit_floor",
+          "n": 136
+        },
+        "duration_mean": {
+          "median": 0.002449992500012741,
+          "mad": 0.00022487100004218476,
+          "meanad": 0.0008460716323863702,
+          "scale": 0.01,
+          "scale_basis": "unit_floor>mad",
+          "n": 136
+        },
+        "duration_p95": {
+          "median": 0.00475,
+          "mad": 0.0,
+          "meanad": 0.0005882352941176471,
+          "scale": 0.01,
+          "scale_basis": "unit_floor>meanad",
+          "n": 136
+        }
+      },
+      "notification|notification-postgres": {
+        "call_count": {
+          "median": 46.0,
+          "mad": 31.0,
+          "meanad": 50.202095808383234,
+          "scale": 45.9606,
+          "scale_basis": "mad",
+          "n": 668
+        },
+        "error_ratio": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.01,
+          "scale_basis": "unit_floor",
+          "n": 641
+        },
+        "timeout_ratio": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.01,
+          "scale_basis": "unit_floor",
+          "n": 641
+        },
+        "duration_mean": {
+          "median": 0.0012166433673332997,
+          "mad": 0.00025501721597438894,
+          "meanad": 0.0008405376400091927,
+          "scale": 0.01,
+          "scale_basis": "unit_floor>mad",
+          "n": 641
+        },
+        "duration_p95": {
+          "median": 0.00496590909090909,
+          "mad": 0.0002159090909090904,
+          "meanad": 0.0014623757770318557,
+          "scale": 0.01,
+          "scale_basis": "unit_floor>mad",
+          "n": 641
+        }
+      },
+      "scheduler-worker|scheduler-postgres": {
+        "call_count": {
+          "median": 252.0,
+          "mad": 0.0,
+          "meanad": 1.1197604790419162,
+          "scale": 1.4033958083832336,
+          "scale_basis": "meanad",
+          "n": 668
+        },
+        "error_ratio": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.01,
+          "scale_basis": "unit_floor",
+          "n": 668
+        },
+        "timeout_ratio": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.01,
+          "scale_basis": "unit_floor",
+          "n": 668
+        },
+        "duration_mean": {
+          "median": 0.0009313168115068487,
+          "mad": 3.512347420346916e-05,
+          "meanad": 4.8879957776923734e-05,
+          "scale": 0.01,
+          "scale_basis": "unit_floor>mad",
+          "n": 668
+        },
+        "duration_p95": {
+          "median": 0.004749999999999999,
+          "mad": 0.0,
+          "meanad": 3.3823913189876083e-06,
+          "scale": 0.01,
+          "scale_basis": "unit_floor>meanad",
+          "n": 668
+        }
+      },
+      "scheduler-worker|scheduler-worker-identity-token": {
+        "call_count": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 1.0,
+          "scale_basis": "unit_floor",
+          "n": 668
+        }
+      },
+      "scheduler-worker|scheduler-worker-media": {
+        "call_count": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 1.0,
+          "scale_basis": "unit_floor",
+          "n": 668
+        }
+      },
+      "scheduler|scheduler-identity-jwks": {
+        "call_count": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 1.0,
+          "scale_basis": "unit_floor",
+          "n": 668
+        }
+      },
+      "scheduler|scheduler-postgres": {
+        "call_count": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 1.0,
+          "scale_basis": "unit_floor",
+          "n": 668
+        }
+      }
+    },
+    "queue": {
+      "ai-worker|ai-worker--extract-ai-document-v1": {
+        "messages_ready": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 1.0,
+          "scale_basis": "unit_floor",
+          "n": 668
+        },
+        "messages_unacked": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 1.0,
+          "scale_basis": "unit_floor",
+          "n": 668
+        },
+        "consumers": {
+          "median": 1.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.2,
+          "scale_basis": "unit_floor",
+          "n": 668
+        }
+      },
+      "ai-worker|ai-worker--extract-ai-document-v1.error": {
+        "messages_ready": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 1.0,
+          "scale_basis": "unit_floor",
+          "n": 668
+        },
+        "messages_unacked": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 1.0,
+          "scale_basis": "unit_floor",
+          "n": 668
+        },
+        "consumers": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.2,
+          "scale_basis": "unit_floor",
+          "n": 668
+        }
+      },
+      "ai-worker|ai-worker--run-ai-job-v1": {
+        "messages_ready": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 1.0,
+          "scale_basis": "unit_floor",
+          "n": 668
+        },
+        "messages_unacked": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 1.0,
+          "scale_basis": "unit_floor",
+          "n": 668
+        },
+        "consumers": {
+          "median": 1.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.2,
+          "scale_basis": "unit_floor",
+          "n": 668
+        }
+      },
+      "ai-worker|ai-worker--run-ai-job-v1.error": {
+        "messages_ready": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 1.0,
+          "scale_basis": "unit_floor",
+          "n": 668
+        },
+        "messages_unacked": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 1.0,
+          "scale_basis": "unit_floor",
+          "n": 668
+        },
+        "consumers": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.2,
+          "scale_basis": "unit_floor",
+          "n": 668
+        }
+      },
+      "media-worker|media-worker--complete-notification-media-usage-job-v1": {
+        "messages_ready": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 1.0,
+          "scale_basis": "unit_floor",
+          "n": 668
+        },
+        "messages_unacked": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 1.0,
+          "scale_basis": "unit_floor",
+          "n": 668
+        },
+        "consumers": {
+          "median": 1.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.2,
+          "scale_basis": "unit_floor",
+          "n": 668
+        }
+      },
+      "media-worker|media-worker--complete-notification-media-usage-job-v1.error": {
+        "messages_ready": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 1.0,
+          "scale_basis": "unit_floor",
+          "n": 668
+        },
+        "messages_unacked": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 1.0,
+          "scale_basis": "unit_floor",
+          "n": 668
+        },
+        "consumers": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.2,
+          "scale_basis": "unit_floor",
+          "n": 668
+        }
+      },
+      "media-worker|media-worker--delete-media-usages-by-ids-v1": {
+        "messages_ready": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 1.0,
+          "scale_basis": "unit_floor",
+          "n": 668
+        },
+        "messages_unacked": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 1.0,
+          "scale_basis": "unit_floor",
+          "n": 668
+        },
+        "consumers": {
+          "median": 1.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.2,
+          "scale_basis": "unit_floor",
+          "n": 668
+        }
+      },
+      "media-worker|media-worker--delete-media-usages-by-ids-v1.error": {
+        "messages_ready": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 1.0,
+          "scale_basis": "unit_floor",
+          "n": 668
+        },
+        "messages_unacked": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 1.0,
+          "scale_basis": "unit_floor",
+          "n": 668
+        },
+        "consumers": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.2,
+          "scale_basis": "unit_floor",
+          "n": 668
+        }
+      },
+      "media-worker|media-worker--generate-media-thumbnail-v1": {
+        "messages_ready": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 1.0,
+          "scale_basis": "unit_floor",
+          "n": 668
+        },
+        "messages_unacked": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 1.0,
+          "scale_basis": "unit_floor",
+          "n": 668
+        },
+        "consumers": {
+          "median": 1.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.2,
+          "scale_basis": "unit_floor",
+          "n": 668
+        }
+      },
+      "media-worker|media-worker--generate-media-thumbnail-v1.error": {
+        "messages_ready": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 1.0,
+          "scale_basis": "unit_floor",
+          "n": 668
+        },
+        "messages_unacked": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 1.0,
+          "scale_basis": "unit_floor",
+          "n": 668
+        },
+        "consumers": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.2,
+          "scale_basis": "unit_floor",
+          "n": 668
+        }
+      },
+      "media-worker|media-worker--register-notification-media-usage-v1": {
+        "messages_ready": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 1.0,
+          "scale_basis": "unit_floor",
+          "n": 668
+        },
+        "messages_unacked": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 1.0,
+          "scale_basis": "unit_floor",
+          "n": 668
+        },
+        "consumers": {
+          "median": 1.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.2,
+          "scale_basis": "unit_floor",
+          "n": 668
+        }
+      },
+      "media-worker|media-worker--register-notification-media-usage-v1.error": {
+        "messages_ready": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 1.0,
+          "scale_basis": "unit_floor",
+          "n": 668
+        },
+        "messages_unacked": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 1.0,
+          "scale_basis": "unit_floor",
+          "n": 668
+        },
+        "consumers": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.2,
+          "scale_basis": "unit_floor",
+          "n": 668
+        }
+      },
+      "media-worker|media-worker--register-notification-media-usages-v1": {
+        "messages_ready": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 1.0,
+          "scale_basis": "unit_floor",
+          "n": 668
+        },
+        "messages_unacked": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 1.0,
+          "scale_basis": "unit_floor",
+          "n": 668
+        },
+        "consumers": {
+          "median": 1.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.2,
+          "scale_basis": "unit_floor",
+          "n": 668
+        }
+      },
+      "media-worker|media-worker--register-notification-media-usages-v1.error": {
+        "messages_ready": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 1.0,
+          "scale_basis": "unit_floor",
+          "n": 668
+        },
+        "messages_unacked": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 1.0,
+          "scale_basis": "unit_floor",
+          "n": 668
+        },
+        "consumers": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.2,
+          "scale_basis": "unit_floor",
+          "n": 668
+        }
+      },
+      "media-worker|media-worker--start-notification-media-usage-job-v1": {
+        "messages_ready": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 1.0,
+          "scale_basis": "unit_floor",
+          "n": 668
+        },
+        "messages_unacked": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 1.0,
+          "scale_basis": "unit_floor",
+          "n": 668
+        },
+        "consumers": {
+          "median": 1.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.2,
+          "scale_basis": "unit_floor",
+          "n": 668
+        }
+      },
+      "media-worker|media-worker--start-notification-media-usage-job-v1.error": {
+        "messages_ready": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 1.0,
+          "scale_basis": "unit_floor",
+          "n": 668
+        },
+        "messages_unacked": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 1.0,
+          "scale_basis": "unit_floor",
+          "n": 668
+        },
+        "consumers": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.2,
+          "scale_basis": "unit_floor",
+          "n": 668
+        }
+      },
+      "media-worker|media-worker--synchronize-markdown-media-usage-v1": {
+        "messages_ready": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 1.0,
+          "scale_basis": "unit_floor",
+          "n": 668
+        },
+        "messages_unacked": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 1.0,
+          "scale_basis": "unit_floor",
+          "n": 668
+        },
+        "consumers": {
+          "median": 1.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.2,
+          "scale_basis": "unit_floor",
+          "n": 668
+        }
+      },
+      "media-worker|media-worker--synchronize-markdown-media-usage-v1.error": {
+        "messages_ready": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 1.0,
+          "scale_basis": "unit_floor",
+          "n": 668
+        },
+        "messages_unacked": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 1.0,
+          "scale_basis": "unit_floor",
+          "n": 668
+        },
+        "consumers": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.2,
+          "scale_basis": "unit_floor",
+          "n": 668
+        }
+      },
+      "notification-worker|notification-worker--dispatch-notification-batch-v1": {
+        "messages_ready": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 1.0,
+          "scale_basis": "unit_floor",
+          "n": 668
+        },
+        "messages_unacked": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.008982035928143712,
+          "scale": 1.0,
+          "scale_basis": "unit_floor>meanad",
+          "n": 668
+        },
+        "consumers": {
+          "median": 1.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.2,
+          "scale_basis": "unit_floor",
+          "n": 668
+        }
+      },
+      "notification-worker|notification-worker--dispatch-notification-batch-v1.error": {
+        "messages_ready": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 1.0,
+          "scale_basis": "unit_floor",
+          "n": 668
+        },
+        "messages_unacked": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 1.0,
+          "scale_basis": "unit_floor",
+          "n": 668
+        },
+        "consumers": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.2,
+          "scale_basis": "unit_floor",
+          "n": 668
+        }
+      },
+      "notification-worker|notification-worker--dispatch-single-notification-v1": {
+        "messages_ready": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 1.0,
+          "scale_basis": "unit_floor",
+          "n": 668
+        },
+        "messages_unacked": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 1.0,
+          "scale_basis": "unit_floor",
+          "n": 668
+        },
+        "consumers": {
+          "median": 1.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.2,
+          "scale_basis": "unit_floor",
+          "n": 668
+        }
+      },
+      "notification-worker|notification-worker--dispatch-single-notification-v1.error": {
+        "messages_ready": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 1.0,
+          "scale_basis": "unit_floor",
+          "n": 668
+        },
+        "messages_unacked": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 1.0,
+          "scale_basis": "unit_floor",
+          "n": 668
+        },
+        "consumers": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.2,
+          "scale_basis": "unit_floor",
+          "n": 668
+        }
+      },
+      "notification-worker|notification-worker--snapshot-notification-batch-v1": {
+        "messages_ready": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 1.0,
+          "scale_basis": "unit_floor",
+          "n": 668
+        },
+        "messages_unacked": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 1.0,
+          "scale_basis": "unit_floor",
+          "n": 668
+        },
+        "consumers": {
+          "median": 1.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.2,
+          "scale_basis": "unit_floor",
+          "n": 668
+        }
+      },
+      "notification-worker|notification-worker--snapshot-notification-batch-v1.error": {
+        "messages_ready": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 1.0,
+          "scale_basis": "unit_floor",
+          "n": 668
+        },
+        "messages_unacked": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 1.0,
+          "scale_basis": "unit_floor",
+          "n": 668
+        },
+        "consumers": {
+          "median": 0.0,
+          "mad": 0.0,
+          "meanad": 0.0,
+          "scale": 0.2,
+          "scale_basis": "unit_floor",
+          "n": 668
+        }
+      }
+    }
+  }
+}

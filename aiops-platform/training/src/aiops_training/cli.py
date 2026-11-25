@@ -14,12 +14,24 @@ from pathlib import Path
 
 import httpx
 
+from .anomaly import cli as anomaly_cli
+from .evaluation.detection.config import (
+    DEFAULT_EVALUATION_CONFIG,
+    TRAINING_ROOT,
+    load_evaluation_config,
+)
+from .evaluation.detection.harness import (
+    evaluate_detection,
+    slot_from_run_manifest,
+    slots_from_dataset,
+)
 from .features.baseline import apply_baseline, fit_baseline, sha256_file
 from .features.leakage import check_leakage, is_healthy
-from .features.pipeline import FeatureError, write_features
+from .features.pipeline import FeatureConfig, FeatureError, write_features
 from .ground_truth.build import build_ground_truth, read_jsonl
 from .ground_truth.symptoms import SymptomConfig, measure_from_ground_truth, measure_symptoms
 from .ground_truth.validate import apply_verification, verify
+from .incident import cli as incident_cli
 from .telemetry.adapters.loki import LokiAdapter
 from .telemetry.adapters.prometheus import PrometheusAdapter
 from .telemetry.adapters.tempo import TempoAdapter, TempoExportOptions
@@ -115,7 +127,17 @@ def _run_quality(args: argparse.Namespace) -> int:
 def _features_parser(sub: argparse._SubParsersAction) -> None:
     parser = sub.add_parser("features", help="Sinh đặc trưng theo cửa sổ (feature pipeline v1)")
     parser.add_argument("artifact_dir", type=Path, help="Thư mục artifact (có manifest.json)")
-    parser.add_argument("--out", type=Path, help="Mặc định <artifact_dir>/features")
+    parser.add_argument(
+        "--out",
+        type=Path,
+        help="Mặc định <artifact_dir>/features (cửa sổ 60 s) hoặc <artifact_dir>/features-w<N>",
+    )
+    parser.add_argument(
+        "--window-s",
+        type=int,
+        default=FeatureConfig().window_s,
+        help="Độ dài cửa sổ (giây, bội của bước 15 s); mặc định 60",
+    )
     parser.add_argument(
         "--query-started-at",
         help="ISO-8601 có múi giờ: ghi đè mốc export bắt đầu truy vấn backend (mặc định đọc "
@@ -126,11 +148,17 @@ def _features_parser(sub: argparse._SubParsersAction) -> None:
 def _run_features(args: argparse.Namespace) -> int:
     query_start = parse_utc(args.query_started_at) if args.query_started_at else None
     try:
-        meta = write_features(args.artifact_dir, args.out, query_start=query_start)
+        meta = write_features(
+            args.artifact_dir,
+            args.out,
+            query_start=query_start,
+            config=FeatureConfig(window_s=args.window_s),
+        )
     except FeatureError as error:
         raise SystemExit(str(error)) from error
     keys = (
         "run_id",
+        "window_s",
         "feature_config_version",
         "noise_filter_version",
         "windows",
@@ -202,8 +230,12 @@ def _run_ground_truth(args: argparse.Namespace) -> int:
     return 0 if record["run_status"] == "valid" else 1
 
 
-def _features_of(runs_dir: Path, run_id: str) -> Path:
-    return runs_dir / run_id / "telemetry" / "features"
+#: Thư mục feature trong mỗi run của runner; cửa sổ khác 60 s nằm ở `telemetry/features-w<N>`.
+DEFAULT_FEATURES_SUBDIR = "telemetry/features"
+
+
+def _features_of(runs_dir: Path, run_id: str, subdir: str = DEFAULT_FEATURES_SUBDIR) -> Path:
+    return runs_dir / run_id / subdir
 
 
 def _manifest_runs(manifest: dict, split: str | None = None, healthy: bool = False) -> list[str]:
@@ -223,6 +255,11 @@ def _baseline_parsers(sub: argparse._SubParsersAction) -> None:
     fit.add_argument("--dataset", type=Path, required=True, help="dataset manifest (JSON)")
     fit.add_argument("--runs-dir", type=Path, required=True, help="Thư mục runs/ của runner")
     fit.add_argument("--out", type=Path, required=True, help="File baseline JSON")
+    fit.add_argument(
+        "--features-subdir",
+        default=DEFAULT_FEATURES_SUBDIR,
+        help="Thư mục feature trong mỗi run, ví dụ telemetry/features-w30 (mặc định 60 s)",
+    )
     apply = sub.add_parser("apply-baseline", help="Tính robust z của một run theo baseline đã fit")
     apply.add_argument("features_dir", type=Path)
     apply.add_argument("--baseline", type=Path, required=True)
@@ -231,13 +268,18 @@ def _baseline_parsers(sub: argparse._SubParsersAction) -> None:
     leak.add_argument("--dataset", type=Path, required=True)
     leak.add_argument("--runs-dir", type=Path, required=True)
     leak.add_argument("--baseline", type=Path)
+    leak.add_argument(
+        "--features-subdir",
+        default=DEFAULT_FEATURES_SUBDIR,
+        help="Thư mục feature trong mỗi run, ví dụ telemetry/features-w30 (mặc định 60 s)",
+    )
 
 
 def _run_fit_baseline(args: argparse.Namespace) -> int:
     manifest = json.loads(args.dataset.read_text(encoding="utf-8"))
     # Chỉ đọc run train healthy (`case` rỗng, mục 9.1); kiểm tra leakage xác nhận lại sau.
     runs = {
-        run_id: _features_of(args.runs_dir, run_id)
+        run_id: _features_of(args.runs_dir, run_id, args.features_subdir)
         for run_id in _manifest_runs(manifest, "train", healthy=True)
     }
     missing = [run_id for run_id, path in runs.items() if not path.exists()]
@@ -272,7 +314,7 @@ def _run_check_leakage(args: argparse.Namespace) -> int:
     dirs = {
         run_id: path
         for run_id in _manifest_runs(manifest)
-        if (path := _features_of(args.runs_dir, run_id)).exists()
+        if (path := _features_of(args.runs_dir, run_id, args.features_subdir)).exists()
     }
     errors = check_leakage(manifest, baseline, dirs, manifest_sha256=sha256_file(args.dataset))
     print(
@@ -329,6 +371,100 @@ def _run_symptoms(args: argparse.Namespace) -> int:
     return 0
 
 
+def _evaluate_detection_parser(sub: argparse._SubParsersAction) -> None:
+    parser = sub.add_parser(
+        "evaluate-detection",
+        help="Chấm incident record với ground truth (P/R/F1, FPR, báo động giả, delay)",
+    )
+    source = parser.add_mutually_exclusive_group(required=True)
+    source.add_argument("--dataset", type=Path, help="dataset manifest (JSON), đi cùng --split")
+    source.add_argument(
+        "--run-id", action="append", help="Chấm run ngoài dataset (ví dụ pilot); lặp được"
+    )
+    parser.add_argument("--split", choices=["train", "validation", "test"])
+    parser.add_argument("--runs-dir", type=Path, required=True, help="Thư mục runs/ của runner")
+    parser.add_argument(
+        "--incidents",
+        required=True,
+        help="Mẫu đường dẫn incident record, có {run_id}, ví dụ runs/{run_id}/incidents.json",
+    )
+    parser.add_argument("--evaluation-config", type=Path, default=DEFAULT_EVALUATION_CONFIG)
+    parser.add_argument(
+        "--load-dir",
+        type=Path,
+        default=TRAINING_ROOT.parent / "load",
+        help="Gốc của workload.plan_path trong run manifest (kế hoạch phát lại cho đoạn cao điểm)",
+    )
+    parser.add_argument("--out", type=Path, required=True, help="Đường dẫn ghi evaluation artifact")
+    parser.add_argument("--no-bootstrap", action="store_true", help="Bỏ bootstrap CI (chạy nhanh)")
+    parser.add_argument(
+        "--final-test",
+        action="store_true",
+        help="Bắt buộc khi chấm run thuộc split test (kể cả qua --run-id): xác nhận đây là lần "
+        "chấm final test đã freeze (mục 6.3)",
+    )
+    parser.add_argument(
+        "--allow-dirty",
+        action="store_true",
+        help="Cho chấm khi code training có thay đổi chưa commit (artifact ghi cờ dirty)",
+    )
+    parser.add_argument(
+        "--allow-missing-peak",
+        action="store_true",
+        help="Không trả mã lỗi khi run khỏe của profile cao điểm không tính được đoạn cao điểm",
+    )
+
+
+def _run_evaluate_detection(args: argparse.Namespace) -> int:
+    if args.dataset is not None and args.split is None:
+        raise SystemExit("--dataset cần --split")
+    config = load_evaluation_config(args.evaluation_config)
+    dataset = None
+    if args.dataset is not None:
+        dataset = json.loads(args.dataset.read_text(encoding="utf-8"))
+        slots = slots_from_dataset(dataset, args.split)
+    else:
+        slots = []
+        for run_id in args.run_id:
+            path = args.runs_dir / run_id / "run-manifest.json"
+            manifest = json.loads(path.read_text(encoding="utf-8")) if path.is_file() else {}
+            slots.append(slot_from_run_manifest(run_id, manifest))
+    artifact = evaluate_detection(
+        slots,
+        runs_dir=args.runs_dir,
+        incidents_template=args.incidents,
+        config=config,
+        config_path=args.evaluation_config,
+        load_dir=args.load_dir,
+        dataset=dataset,
+        dataset_path=args.dataset,
+        split=args.split,
+        final_test=args.final_test,
+        allow_dirty=args.allow_dirty,
+        bootstrap=not args.no_bootstrap,
+    )
+    args.out.parent.mkdir(parents=True, exist_ok=True)
+    args.out.write_text(json.dumps(artifact, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    summary = artifact["summary"]
+    brief = {
+        "evaluation_artifact_id": artifact["evaluation_artifact_id"],
+        "late_tolerance_seconds": artifact["late_tolerance_seconds"],
+        "pooled": summary["pooled"],
+        "false_alarm_rate": summary["false_alarm_rate"],
+        "excluded_by_reason": summary["excluded_by_reason"],
+        "peak_unavailable_by_reason": summary["peak_unavailable_by_reason"],
+    }
+    print(json.dumps(brief, ensure_ascii=False, indent=2))
+    if summary["peak_unavailable_by_reason"] and not args.allow_missing_peak:
+        print(
+            "Có run khỏe thuộc profile cao điểm không tính được đoạn cao điểm (xem "
+            "peak_unavailable_by_reason); dùng --allow-missing-peak nếu chấp nhận",
+            file=sys.stderr,
+        )
+        return 1
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="aiops-training")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -338,7 +474,16 @@ def main(argv: list[str] | None = None) -> int:
     _ground_truth_parser(sub)
     _symptoms_parser(sub)
     _baseline_parsers(sub)
+    _evaluate_detection_parser(sub)
+    anomaly_cli.register(sub)
+    incident_cli.register(sub)
     args = parser.parse_args(argv)
+    if args.command == "evaluate-detection":
+        return _run_evaluate_detection(args)
+    if args.command in anomaly_cli.COMMANDS:
+        return anomaly_cli.dispatch(args)
+    if args.command in incident_cli.COMMANDS:
+        return incident_cli.dispatch(args)
     if args.command == "symptoms":
         return _run_symptoms(args)
     if args.command == "fit-baseline":

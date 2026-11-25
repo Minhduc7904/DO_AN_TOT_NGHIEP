@@ -265,7 +265,7 @@ Hệ quả cho feature pipeline: **mọi metric của runtime đã ngừng vẫn
 
 ## 9. Bảng đặc trưng v1 (`features/`, task-05 tuần 15; v0 ở task-07 tuần 14)
 
-`uv run aiops-training features <artifact_dir>` ghi `features/service_windows.parquet`, `features/edge_windows.parquet`, `features/queue_windows.parquet` và `features/features-manifest.json` (`feature_config_version = feature.v1`, `noise_filter_version = noise.v1`, cấu hình cửa sổ, bộ lọc nhiễu, quy tắc thời điểm, file đầu vào, thống kê trace của export). Cửa sổ `[window_start, window_end)` dài 60 s, bước 15 s, mốc chia hết cho 15 s; theo [telemetry-and-ground-truth-schema-v1](telemetry-and-ground-truth-schema-v1.md) mục 11.1–11.2. Đặc trưng chỉ đọc telemetry, không đọc ground truth, fault manifest hay nhật ký workload.
+`uv run aiops-training features <artifact_dir>` ghi `features/service_windows.parquet`, `features/edge_windows.parquet`, `features/queue_windows.parquet` và `features/features-manifest.json` (`feature_config_version = feature.v1`, `noise_filter_version = noise.v1`, cấu hình cửa sổ, bộ lọc nhiễu, quy tắc thời điểm, file đầu vào, thống kê trace của export). Cửa sổ `[window_start, window_end)` mặc định dài 60 s (cửa sổ khác qua `--window-s`, mục 9.7), bước 15 s, mốc chia hết cho 15 s; theo [telemetry-and-ground-truth-schema-v1](telemetry-and-ground-truth-schema-v1.md) mục 11.1–11.2. Đặc trưng chỉ đọc telemetry, không đọc ground truth, fault manifest hay nhật ký workload.
 
 **Thay đổi của v1 so với v0** (sau khi chạy trên run 48 phút có fault của pilot tuần 15):
 
@@ -335,10 +335,11 @@ Cạnh async (producer → hàng đợi → consumer) không có trong metric de
   - `run_id` trong `features-manifest.json` hay manifest export khác run đang kiểm;
   - cột hay khóa ground truth (`fault_*`, `root_cause_*`, `expected_*`, `scenario_id`, `case_id`, `repeat_index`, `split`) trong bảng feature hoặc manifest feature;
   - phiên bản feature hay lọc nhiễu không đồng nhất, hoặc đồng nhất nhưng khác `feature.v1`/`noise.v1`;
+  - độ dài cửa sổ (`window_s`) của các run và của baseline không đồng nhất (mục 9.7);
   - manifest feature không khai báo quy tắc thời điểm của v1;
   - thời điểm: `time_end` của feature khác manifest export (`telemetry/manifest.json`); manifest feature không ghi mốc truy vấn, khai nguồn file mà file không còn, hoặc mốc muộn hơn mốc ghi trong manifest export hay `run-manifest.json`; có `window_end` sau min(`time_end`, mốc sớm nhất − 10 s); export ghi xong (`generated_at`) sớm hơn `time_end` + 10 s.
 
-  Mỗi loại có test cố ý vi phạm ở `tests/test_baseline_leakage.py`.
+  Mỗi loại có test cố ý vi phạm ở `tests/test_baseline_leakage.py` và `tests/test_window_lengths.py`.
 
 ### 9.5. Kết quả của v0 trên run thử có fault (18/11/2026)
 
@@ -360,6 +361,21 @@ Chạy trên 10 run train/validation của [dataset v0](dataset-v0.md) (mục 6)
   Lần chạy lại cho cả 10 run (cùng điều kiện) cho 53,9–64,3 s, RSS đỉnh 1.530–1.768 MB. RSS dao động khoảng 150 MB giữa các lần chạy cùng một run. Mỗi lần chạy cần khoảng 2 GB RAM trống.
 - `fit-baseline` trên dataset manifest v0 đọc đúng 4 run train healthy (2 `normal-mixed`, 2 `healthy-spike`): 3,4 s, RSS 146 MB. Kết quả có 11 nhóm service, 38 cạnh, 24 hàng đợi, và bỏ cửa sổ `warmup` cùng cửa sổ im lặng. Artifact `aiops-platform/training/baselines/dataset-v0.json` được fit lại trên feature mới, ghi sha256 của dataset manifest và của manifest feature của từng run train.
 - `apply-baseline` chạy cho cả 10 run, ghi `baseline-apply.json` với sha256 của baseline. `check-leakage` (gồm các kiểm ở mục 9.4) trên dataset manifest v0, với baseline trên, kiểm 10 run và không báo vi phạm nào (`errors` rỗng).
+
+### 9.7. Cửa sổ 30 s và luật thang đo v2 (task-02 tuần 16, 25/11/2026)
+
+`detection-candidates.v1` (evaluation-protocol-v1 mục 6.1.2) có cửa sổ 30 s và 60 s. Pipeline v1 vì vậy nhận độ dài cửa sổ làm tham số; mọi quy tắc khác giữ nguyên (bước 15 s, lọc nhiễu, quy tắc thời điểm, warm-up).
+
+- `aiops-training features <artifact_dir> --window-s 30` ghi vào `features-w30/` cạnh `features/` (60 s, mặc định, giữ tên cũ), để feature 30 s không ghi đè feature 60 s. `features-manifest.json` ghi thêm `window_s` ở cấp trên cùng; manifest cũ chỉ có `config.window_s` vẫn đọc được. Độ dài phải là bội dương của bước 15 s.
+- Baseline ghi `window_s`. `apply-baseline` và `check-leakage` từ chối khi `window_s` của feature và baseline lệch nhau; trước đây chỉ so phiên bản, nên áp baseline 60 s lên feature 30 s sẽ không bị phát hiện. Baseline cũ không có `window_s` (`dataset-v0.json`) không được ghi lại, vì đổi file làm đổi sha256 trong lineage: `window_s` suy từ manifest của các run fit khi `check-leakage` có thư mục của chúng, nếu không thì lấy 60 s, kèm cờ `baseline_window_s_legacy`.
+- `fit-baseline` và `check-leakage` nhận `--features-subdir` (ví dụ `telemetry/features-w30`).
+- **Luật thang đo v2** (`mad|meanad|unit_floor.v2`, khai báo ở evaluation-protocol-v1 mục 6.1.3): như mục 9.4 nhưng thang đo không nhỏ hơn sàn theo đơn vị. Trên train, MAD có lúc chỉ là sai số dấu phẩy động (8,7e-19 ở `media-worker.downstream_latency_p95`), làm robust z tới 1e15 trên chính run khỏe. Thành phần `scale_basis` ghi `unit_floor>mad` hay `unit_floor>meanad` khi sàn thay giá trị tính được. Luật v1 vẫn chọn được để tái lập baseline cũ.
+
+**Kết quả trên 10 run train/validation của dataset v0:**
+
+- **Hồi quy 60 s:** bảng `service`, `edge`, `queue` sinh lại bằng code mới trên `train-healthy-normal-mixed-s1001` bằng hệt bảng đã có (`pyarrow.Table.equals`); manifest chỉ khác `generated_at` và trường mới `window_s`. `check-leakage` với baseline cũ `dataset-v0.json` vẫn không lỗi.
+- **Feature 30 s:** 10/10 run thoát 0, mỗi run 193 cửa sổ (60 s: 191; cùng bước 15 s nên số cửa sổ gần như bằng nhau, chỉ hơn ở hai đầu). Chỉ run validation C6 có cửa sổ im lặng (18). Thời gian và RAM đo bằng `/usr/bin/time`, chạy tuần tự, máy đang chạy một run k6 mức 1 nhẹ ở nền: 61,1–74,0 s, RSS đỉnh 1.618–1.849 MB mỗi run, ngang bản 60 s (mục 9.6); cần khoảng 2 GB RAM trống.
+- **Baseline theo luật v2:** `baselines/dataset-v0-w60.json` (sha256 `9d8ffe388fe890b9…`) và `baselines/dataset-v0-w30.json` (`08ddaefb4c0e4206…`), fit chỉ trên 4 run train khỏe; mỗi baseline có 11 nhóm service, 38 cạnh, 24 hàng đợi. Ở 60 s, sàn đơn vị thay giá trị tính được ở 106 thống kê (75 từ MAD, 31 từ MeanAD). Fit 60 s 3,9 s, RSS 114 MB. Đã áp cho 10 run; `check-leakage` với baseline 30 s (`--features-subdir telemetry/features-w30`), baseline 60 s v2 và baseline cũ đều không lỗi.
 
 ## 10. Giới hạn và việc tiếp theo
 
