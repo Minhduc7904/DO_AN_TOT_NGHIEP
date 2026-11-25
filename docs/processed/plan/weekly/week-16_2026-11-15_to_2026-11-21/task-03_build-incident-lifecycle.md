@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-03_build-incident-lifecycle` |
 | Tuần | `week-16_2026-11-15_to_2026-11-21` |
-| Trạng thái | Đã giao |
+| Trạng thái | Chờ review |
 | Người phụ trách | Bách |
 | Collaborator | Không có |
 | Ưu tiên | Cao |
@@ -58,22 +58,24 @@ Theo [analysis-anomaly-rca-blueprint-v1](../../../architecture/analysis-anomaly-
 
 ## Definition of Done
 
-- [ ] Unit test cho mọi chuyển trạng thái, persistence có cửa sổ null, recovery, merge gap, nhiều service cùng lúc, incident mở trước fault và kéo dài qua fault; chạy hai lần cùng input cho cùng output, kể cả `incident_id`.
-- [ ] `detected_at` đúng với 4 cặp window/persistence của `detection-candidates.v1` (test).
-- [ ] Incident record có đủ trường ở trên cùng lineage; không trường nào lấy từ ground truth.
-- [ ] Chạy hết chuỗi feature → detector → incident trên run pilot (một run khỏe, một fault run mỗi case có sẵn).
-- [ ] `uv run pytest` và `ruff` đạt.
+- [x] Unit test cho mọi chuyển trạng thái, persistence có cửa sổ null, recovery, merge gap, nhiều service cùng lúc, incident mở trước fault và kéo dài qua fault; chạy hai lần cùng input cho cùng output, kể cả `incident_id`.
+- [x] `detected_at` đúng với 4 cặp window/persistence của `detection-candidates.v1` (test).
+- [x] Incident record có đủ trường ở trên cùng lineage; không trường nào lấy từ ground truth.
+- [x] Chạy hết chuỗi feature → detector → incident trên run pilot (một run khỏe, một fault run mỗi case có sẵn).
+- [x] `uv run pytest` và `ruff` đạt.
 
 ## Liên kết hồ sơ thực hiện
 
 - Input workspace: Không tạo (giai đoạn tự bắt kịp; bằng chứng nằm trong PR).
 - Output workspace: Không tạo.
 - Pull request: Chưa tạo.
-- Kết quả review: Chưa review.
+- Kết quả review: Chờ review. Đã review bằng agent riêng bốn vòng và sửa các điểm nêu (xem mô tả PR).
 
 > URL/số PR và `Chờ review` phải được commit/push vào PR head trước review. Thành viên còn lại phải gửi `APPROVED` hợp lệ trên GitHub; sau đó người phụ trách finalization metadata, ghi `Hoàn thành` trên chính branch/PR và tự merge task của mình. Card chỉ canonically hoàn thành khi commit đó vào nhánh canonical; xem [vòng đời task canonical](../../../rules/git-and-pull-request-rules.md#vòng-đời-task-canonical).
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 25/11/2026 — lập card.
+- Cập nhật gần nhất: 25/11/2026 — module `incident/`: máy trạng thái theo service, persistence theo từng khóa bằng chứng với `max_chain_gap_seconds`, recovery, gộp theo merge gap và cửa sổ tương quan, `incident-record.v1`; chạy hết chuỗi trên 4 fault run pilot (mỗi case một run) và 1 run pilot khỏe (README training, mục Incident).
 - Ghi chú/tồn đọng:
+  - Thêm ngoài card: `max_chain_gap_seconds` (ngăn hai sự kiện đơn lẻ trên cạnh thưa cộng thành một chuỗi), khai báo ở `detection-candidates.v2`.
+  - Tương quan chỉ theo thời gian; đồ thị v2 thay ở tuần 17 (phải tăng `incident_config_version`).
