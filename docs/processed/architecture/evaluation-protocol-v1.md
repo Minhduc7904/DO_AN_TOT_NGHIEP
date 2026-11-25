@@ -681,6 +681,8 @@ Các lưới vì vậy trải từ mức báo nhiều tới mức gần như kh�
 
 **Thực thi.** Task-02, task-01, task-03, task-04 và task-05 tuần 16 phải nằm trên `main` trước lần chấm validation đầu tiên. Mọi lần chấm chạy trên commit chứa merge commit của PR khai báo v2 và được ghi vào ledger chấm validation (task-06 tuần 16). Harness vẫn đọc `late_tolerance` và `step_seconds` từ v1 (v2 không định nghĩa lại); sha256 của v2 ghi vào ledger và config đã freeze.
 
+**Kết quả (25/11/2026, task-06 tuần 16).** 27 lần chấm như khai báo, ghi ở ledger [`evaluations/validation-v1/ledger.jsonl`](../../../aiops-platform/training/evaluations/validation-v1/ledger.jsonl). Kết quả chọn: cửa sổ 30 s, persistence 4, robust z 5; merge gap 300 s, `max_chain_gap` 120 s; ngưỡng tĩnh `loose`; Isolation Forest q 99,5%; fused trọng số bằng nhau q 99,9%. Config đã freeze: `detector-e1.v1`, `incident-e1.v1`. Chi tiết, E1 sơ bộ và error analysis ở [detection-validation-report-v1](detection-validation-report-v1.md). Luật phân vị gộp mọi service làm Isolation Forest không vượt được ở `course` và `scheduler` (mục 5, 9 của báo cáo); giới hạn này được ghi lại, không đổi sau khi xem kết quả.
+
 ### 6.2. Validation
 
 Validation được phép dùng để:
