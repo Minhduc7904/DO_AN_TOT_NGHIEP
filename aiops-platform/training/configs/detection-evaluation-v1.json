@@ -1,0 +1,109 @@
+{
+  "evaluation_config_version": "detection-evaluation.v1",
+  "declared_at": "2026-11-25",
+  "source": "docs/processed/architecture/evaluation-protocol-v1.md mục 6.1.2, 7.1, 17, 20.2, 20.6, 20.7, 22",
+  "candidates_config": "configs/detection-candidates-v1.json",
+  "protocol_version": "evaluation-protocol-v1",
+  "early_tolerance_seconds": 0,
+  "late_tolerance": {
+    "formula": "window_seconds + max(0, persistence_windows - 1) * step_seconds",
+    "value_source": "detection-candidates-v1.json window_persistence[].late_tolerance_seconds, tra theo cặp (window_seconds, persistence_windows) của incident record; harness không tự tính lại",
+    "persistence_semantics": "skip_without_breaking_chain",
+    "equivalence": "Giữ nguyên công thức mục 17.3 cho ngữ nghĩa persistence bỏ qua cửa sổ null. persistence_windows đếm cửa sổ có dữ liệu; khi không có cửa sổ null, chuỗi P cửa sổ liên tiếp đóng sau window + (P - 1) * step giây, đúng công thức. Cửa sổ null xen giữa làm chuỗi kéo dài hơn, nhưng tolerance không được nới theo số cửa sổ null: cũng như độ trễ lan truyền (mục 17.3, 7.3), độ trễ do thiếu dữ liệu nằm trong delay của detector chứ không được bù bằng tolerance. Incident hoàn tất chuỗi sau fault_end + late_tolerance là FP."
+  },
+  "evaluation_interval": {
+    "start": "workload_start + warmup_seconds",
+    "end": "workload_end",
+    "warmup_seconds": 360,
+    "bounds": "closed: [evaluation_start, evaluation_end]",
+    "time_source": "workload_start, workload_end, fault_start, fault_end của RunGroundTruth (chỉ harness đọc)",
+    "reason": "warmup_seconds bằng timeline.warmup_s của fault manifest v2 và FeatureConfig.warmup_s (cờ warmup của feature v1). evaluation_end = workload_end bao phủ recovery tối thiểu 600 s sau fault_end (fault manifest v2). Incident ngoài khoảng giữ trong artifact làm diagnostic, không tính chỉ số (mục 7.1).",
+    "fault_run_requirement": "evaluation_start <= fault_start và fault_end + late_tolerance <= evaluation_end; nếu không, run bị loại với lý do evaluation_interval_invalid"
+  },
+  "matching": {
+    "eligible_interval": "[fault_start, fault_end + late_tolerance_seconds] (đóng hai đầu)",
+    "order": ["detected_at", "incident_id"],
+    "rule": "incident sớm nhất trong eligible_interval là TP; mọi incident khác trong evaluation interval là FP (trước fault, sau late_tolerance, trùng); không có incident eligible thì fault là FN (mục 17.4)"
+  },
+  "null_metric_policy": "Precision, Recall, F1, tỉ lệ và trung bình là null khi mẫu số bằng 0 (mục 17.6); không quy ước 0 hoặc 1",
+  "detection_delay": {
+    "formula": "matched_incident.detected_at - fault_start (giây)",
+    "fn_policy": "FN không có delay (null), báo số FN riêng làm mẫu số",
+    "report": "count, mean, median gộp, theo case và theo nhóm align_peak (fault trùng cao điểm)"
+  },
+  "false_alarm_rate": {
+    "unit": "incident mỗi giờ",
+    "numerator": "incident trong evaluation interval của run khỏe + incident trong evaluation interval của fault run có detected_at < fault_start hoặc > fault_end + late_tolerance_seconds (mục 6.1.2 luật chọn bước 2)",
+    "denominator": "thời lượng evaluation interval của run khỏe + thời lượng evaluation interval của fault run trừ đoạn [fault_start, fault_end + late_tolerance_seconds]",
+    "exclude_late_tolerance_tail": true,
+    "exclude_late_tolerance_tail_reason": "Tử số không đếm incident có detected_at trong (fault_end, fault_end + late_tolerance] (đoạn đó thuộc khoảng ghép của fault, incident ở đó là TP hoặc incident trùng), nên mẫu số cũng không tính đoạn đó: tử và mẫu phải đo trên cùng một khoảng thời gian phơi nhiễm. Nếu giữ đoạn đó trong mẫu số thì tổ hợp có late_tolerance lớn được thêm thời gian mà không có rủi ro báo động giả tương ứng, làm tỉ lệ thấp hơn thực tế. Hệ quả: mẫu số phụ thuộc late_tolerance (chênh tối đa 75 s mỗi fault run giữa các cặp của detection-candidates.v1); artifact ghi mẫu số theo từng run.",
+    "cap_per_hour": 1,
+    "healthy_hour_rate": "Báo thêm FP incidents per healthy hour (mục 17.7): incident trên run khỏe chia cho tổng thời lượng evaluation interval của run khỏe, gộp và theo profile"
+  },
+  "healthy_run_fpr": "số run khỏe có >= 1 incident trong evaluation interval / số run khỏe eligible, gộp và theo profile (mục 17.7)",
+  "peak_segment": {
+    "profiles": ["healthy-spike"],
+    "source": "Kế hoạch phát lại của run (replay-plan.v1, sessions[].start_s), đường dẫn và sha256 lấy từ run-manifest.json (workload.plan_path, workload.plan_sha256), đặt dưới thư mục aiops-platform/load; không dùng telemetry",
+    "duration_seconds": 600,
+    "scan_step_seconds": 30,
+    "scan_range": "[warmup_seconds, plan.run_seconds - duration_seconds]",
+    "rule": "Đoạn [s, s + duration_seconds) có nhiều lần bắt đầu phiên nhất trong kế hoạch; hòa thì s nhỏ nhất. Cùng thuật toán với peakAlignedStart của faults/fault-schedule.mjs (--align-peak), bỏ ràng buộc recovery vì run khỏe không có fault.",
+    "anchor": "workload_start + s (giây tính từ đầu kế hoạch, window_start_s = 0)",
+    "duration_reason": "600 s bằng thời lượng fault C2 của slot validation trùng cao điểm (fault manifest v2, align_peak), nên đoạn cao điểm của run khỏe và cửa sổ fault trùng cao điểm cùng kích thước và cùng luật chọn; 600 s là 5 giờ của ngày nén (1 giờ = 120 s), phủ đỉnh buổi tối 4 giờ (8 phút) của workload-design-v1 mục 7.4.",
+    "metric": "báo động giả trong đoạn cao điểm: incident trong evaluation interval có peak_start <= detected_at < peak_end; mẫu số là phần đoạn cao điểm nằm trong evaluation interval",
+    "unavailable": "Thiếu file kế hoạch hoặc sha256 lệch: run vẫn tính chỉ số khác, chỉ bị loại khỏi chỉ số cao điểm và ghi lý do peak_plan_missing / peak_plan_sha256_mismatch"
+  },
+  "bootstrap": {
+    "method": "percentile",
+    "confidence": 0.95,
+    "resamples": 10000,
+    "seed": 20261125,
+    "unit": "run",
+    "strata": {
+      "fault_run": "case",
+      "healthy_run": "profile"
+    },
+    "percentile_interpolation": "linear trên giá trị đã sắp (q * (n - 1))",
+    "null_resamples": "Lần lấy mẫu có chỉ số null (mẫu số 0) bị bỏ; artifact ghi số lần hợp lệ",
+    "degenerate_rule": "Tầng tham gia chỉ số có đúng một run thì CI của chỉ số đó báo degenerate (ci_low, ci_high = null), không báo như khoảng tin cậy thật (mục 20.7)",
+    "statistics": [
+      "recall",
+      "precision",
+      "f1",
+      "false_alarms_per_hour",
+      "fp_per_healthy_hour",
+      "healthy_run_fpr"
+    ]
+  },
+  "eligibility": {
+    "ground_truth_run_status": "valid",
+    "execution_gate": "pass",
+    "accepted_quality_statuses": ["pass", "partial"],
+    "quality_reason": "dataset-v0 mục 5: chất lượng pass hoặc partial; partial của dataset-v0 là truncated_modality:traces đã biết (dataset-v0 mục 6)",
+    "exclusion_reasons": [
+      "run_not_collected",
+      "ground_truth_missing",
+      "ground_truth_invalid",
+      "ground_truth_failed",
+      "run_manifest_missing",
+      "execution_gate_failed",
+      "telemetry_quality_fail",
+      "telemetry_quality_missing",
+      "incident_record_missing",
+      "evaluation_interval_invalid"
+    ]
+  },
+  "selection_rule": {
+    "source": "detection-candidates-v1.json selection_rule",
+    "cap": "false_alarms_per_hour <= 1",
+    "order_when_cap_met": [
+      "matched_fault_runs giảm dần",
+      "false_alarms_per_hour tăng dần",
+      "late_tolerance_seconds tăng dần",
+      "threshold giảm dần"
+    ],
+    "fallback": "Không tổ hợp nào đạt cap: chọn false_alarms_per_hour nhỏ nhất, hòa thì matched_fault_runs giảm dần, late_tolerance_seconds tăng dần, threshold giảm dần; ghi meets_cap = false",
+    "false_alarm_comparison": "So sánh theo tỉ lệ mỗi giờ (cùng đơn vị với cap) vì mẫu số khác nhau theo late_tolerance; tỉ lệ null (mẫu số 0) không đạt cap và xếp sau cùng",
+    "final_tie_break": "combination_id (chỉ để xác định, các tổ hợp khai báo không trùng nhau)"
+  }
+}
