@@ -6,7 +6,7 @@
 | --- | --- |
 | Mã task | `task-04_build-detection-evaluation-harness` |
 | Tuần | `week-16_2026-11-15_to_2026-11-21` |
-| Trạng thái | Đã giao |
+| Trạng thái | Chờ review |
 | Người phụ trách | Bách |
 | Collaborator | Không có |
 | Ưu tiên | Cao |
@@ -54,23 +54,26 @@ Theo [evaluation-protocol-v1](../../../architecture/evaluation-protocol-v1.md) m
 
 ## Definition of Done
 
-- [ ] Unit test với incident và ground truth dựng tay cho mọi nhánh của mục 17.2–17.7: trước fault, trong khoảng, sau `late_tolerance`, incident trùng, FN, mẫu số 0, run khỏe không có incident, incident ngoài evaluation interval.
-- [ ] Test riêng cho hàm luật chọn (điều kiện, thứ tự ưu tiên, fallback), mẫu số báo động giả và báo động giả trong đoạn cao điểm.
-- [ ] Bootstrap CI xác định (cùng seed cùng kết quả) và báo suy biến khi tầng chỉ có một run (test).
-- [ ] Evaluation config có version, ghi đoạn cao điểm và mẫu số, được commit trước khi task-05 khai báo v2.
-- [ ] Chạy trên incident record của task-03 cho run pilot, ra evaluation artifact đúng schema và đủ lineage.
-- [ ] `uv run pytest` và `ruff` đạt.
+- [x] Unit test với incident và ground truth dựng tay cho mọi nhánh của mục 17.2–17.7: trước fault, trong khoảng, sau `late_tolerance`, incident trùng, FN, mẫu số 0, run khỏe không có incident, incident ngoài evaluation interval.
+- [x] Test riêng cho hàm luật chọn (điều kiện, thứ tự ưu tiên, fallback), mẫu số báo động giả và báo động giả trong đoạn cao điểm.
+- [x] Bootstrap CI xác định (cùng seed cùng kết quả) và báo suy biến khi tầng chỉ có một run (test).
+- [x] Evaluation config có version, ghi đoạn cao điểm và mẫu số, được commit trước khi task-05 khai báo v2.
+- [x] Chạy trên incident record của task-03 cho run pilot, ra evaluation artifact đúng schema và đủ lineage.
+- [x] `uv run pytest` và `ruff` đạt.
 
 ## Liên kết hồ sơ thực hiện
 
 - Input workspace: Không tạo (giai đoạn tự bắt kịp; bằng chứng nằm trong PR).
 - Output workspace: Không tạo.
 - Pull request: Chưa tạo.
-- Kết quả review: Chưa review.
+- Kết quả review: Chờ review. Đã review bằng agent riêng hai vòng và sửa các điểm nêu (xem mô tả PR).
 
 > URL/số PR và `Chờ review` phải được commit/push vào PR head trước review. Thành viên còn lại phải gửi `APPROVED` hợp lệ trên GitHub; sau đó người phụ trách finalization metadata, ghi `Hoàn thành` trên chính branch/PR và tự merge task của mình. Card chỉ canonically hoàn thành khi commit đó vào nhánh canonical; xem [vòng đời task canonical](../../../rules/git-and-pull-request-rules.md#vòng-đời-task-canonical).
 
 ## Cập nhật tiến độ
 
-- Cập nhật gần nhất: 25/11/2026 — lập card.
+- Cập nhật gần nhất: 25/11/2026 — module `evaluation/detection/` và lệnh `evaluate-detection`, `configs/detection-evaluation-v1.json`; chạy trên incident record thật của task-03 cho 4 fault run pilot (C2, C3, C4, C6) và 1 run pilot khỏe với 4 detector (README training, mục harness).
 - Ghi chú/tồn đọng:
+  - Thêm ngoài card: `tie_rank` cho luật hòa đã khai báo (yêu cầu của `detection-candidates.v2`), chặn chấm split test ở mọi đường vào.
+  - Rủi ro cho tuần 19: test chỉ có 1 run khỏe mỗi profile nên CI báo động giả/giờ suy biến (ghi ở config `bootstrap.risk`).
+  - Pilot không có run khỏe `healthy-spike`, nên phần đoạn cao điểm mới kiểm bằng test và plan pilot, chưa chạy trên run thật.
