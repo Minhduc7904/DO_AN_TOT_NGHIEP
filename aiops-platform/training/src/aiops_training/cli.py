@@ -15,6 +15,16 @@ from pathlib import Path
 import httpx
 
 from .anomaly import cli as anomaly_cli
+from .evaluation.detection.config import (
+    DEFAULT_EVALUATION_CONFIG,
+    TRAINING_ROOT,
+    load_evaluation_config,
+)
+from .evaluation.detection.harness import (
+    evaluate_detection,
+    slot_from_run_manifest,
+    slots_from_dataset,
+)
 from .features.baseline import apply_baseline, fit_baseline, sha256_file
 from .features.leakage import check_leakage, is_healthy
 from .features.pipeline import FeatureConfig, FeatureError, write_features
@@ -361,6 +371,100 @@ def _run_symptoms(args: argparse.Namespace) -> int:
     return 0
 
 
+def _evaluate_detection_parser(sub: argparse._SubParsersAction) -> None:
+    parser = sub.add_parser(
+        "evaluate-detection",
+        help="Chấm incident record với ground truth (P/R/F1, FPR, báo động giả, delay)",
+    )
+    source = parser.add_mutually_exclusive_group(required=True)
+    source.add_argument("--dataset", type=Path, help="dataset manifest (JSON), đi cùng --split")
+    source.add_argument(
+        "--run-id", action="append", help="Chấm run ngoài dataset (ví dụ pilot); lặp được"
+    )
+    parser.add_argument("--split", choices=["train", "validation", "test"])
+    parser.add_argument("--runs-dir", type=Path, required=True, help="Thư mục runs/ của runner")
+    parser.add_argument(
+        "--incidents",
+        required=True,
+        help="Mẫu đường dẫn incident record, có {run_id}, ví dụ runs/{run_id}/incidents.json",
+    )
+    parser.add_argument("--evaluation-config", type=Path, default=DEFAULT_EVALUATION_CONFIG)
+    parser.add_argument(
+        "--load-dir",
+        type=Path,
+        default=TRAINING_ROOT.parent / "load",
+        help="Gốc của workload.plan_path trong run manifest (kế hoạch phát lại cho đoạn cao điểm)",
+    )
+    parser.add_argument("--out", type=Path, required=True, help="Đường dẫn ghi evaluation artifact")
+    parser.add_argument("--no-bootstrap", action="store_true", help="Bỏ bootstrap CI (chạy nhanh)")
+    parser.add_argument(
+        "--final-test",
+        action="store_true",
+        help="Bắt buộc khi chấm run thuộc split test (kể cả qua --run-id): xác nhận đây là lần "
+        "chấm final test đã freeze (mục 6.3)",
+    )
+    parser.add_argument(
+        "--allow-dirty",
+        action="store_true",
+        help="Cho chấm khi code training có thay đổi chưa commit (artifact ghi cờ dirty)",
+    )
+    parser.add_argument(
+        "--allow-missing-peak",
+        action="store_true",
+        help="Không trả mã lỗi khi run khỏe của profile cao điểm không tính được đoạn cao điểm",
+    )
+
+
+def _run_evaluate_detection(args: argparse.Namespace) -> int:
+    if args.dataset is not None and args.split is None:
+        raise SystemExit("--dataset cần --split")
+    config = load_evaluation_config(args.evaluation_config)
+    dataset = None
+    if args.dataset is not None:
+        dataset = json.loads(args.dataset.read_text(encoding="utf-8"))
+        slots = slots_from_dataset(dataset, args.split)
+    else:
+        slots = []
+        for run_id in args.run_id:
+            path = args.runs_dir / run_id / "run-manifest.json"
+            manifest = json.loads(path.read_text(encoding="utf-8")) if path.is_file() else {}
+            slots.append(slot_from_run_manifest(run_id, manifest))
+    artifact = evaluate_detection(
+        slots,
+        runs_dir=args.runs_dir,
+        incidents_template=args.incidents,
+        config=config,
+        config_path=args.evaluation_config,
+        load_dir=args.load_dir,
+        dataset=dataset,
+        dataset_path=args.dataset,
+        split=args.split,
+        final_test=args.final_test,
+        allow_dirty=args.allow_dirty,
+        bootstrap=not args.no_bootstrap,
+    )
+    args.out.parent.mkdir(parents=True, exist_ok=True)
+    args.out.write_text(json.dumps(artifact, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    summary = artifact["summary"]
+    brief = {
+        "evaluation_artifact_id": artifact["evaluation_artifact_id"],
+        "late_tolerance_seconds": artifact["late_tolerance_seconds"],
+        "pooled": summary["pooled"],
+        "false_alarm_rate": summary["false_alarm_rate"],
+        "excluded_by_reason": summary["excluded_by_reason"],
+        "peak_unavailable_by_reason": summary["peak_unavailable_by_reason"],
+    }
+    print(json.dumps(brief, ensure_ascii=False, indent=2))
+    if summary["peak_unavailable_by_reason"] and not args.allow_missing_peak:
+        print(
+            "Có run khỏe thuộc profile cao điểm không tính được đoạn cao điểm (xem "
+            "peak_unavailable_by_reason); dùng --allow-missing-peak nếu chấp nhận",
+            file=sys.stderr,
+        )
+        return 1
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="aiops-training")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -370,9 +474,12 @@ def main(argv: list[str] | None = None) -> int:
     _ground_truth_parser(sub)
     _symptoms_parser(sub)
     _baseline_parsers(sub)
+    _evaluate_detection_parser(sub)
     anomaly_cli.register(sub)
     incident_cli.register(sub)
     args = parser.parse_args(argv)
+    if args.command == "evaluate-detection":
+        return _run_evaluate_detection(args)
     if args.command in anomaly_cli.COMMANDS:
         return anomaly_cli.dispatch(args)
     if args.command in incident_cli.COMMANDS:
